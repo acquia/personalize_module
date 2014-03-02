@@ -1,0 +1,358 @@
+<?php
+
+/**
+ * @file
+ * Sets up the base table for our agent entity.
+ */
+
+
+/**
+ * Implements hook_schema().
+ */
+function personalize_schema() {
+  $schema = array();
+
+  $schema['personalize_agent'] = array(
+    'description' => 'Stores Decision Agents for personalization.',
+    'export' => array(
+      'key' => 'machine_name',
+      'identifier' => 'personalize_agent',
+      'default hook' => 'personalize_default_agents',
+      'api' => array(
+        'owner' => 'personalize',
+        'api' => 'personalize',
+        'minimum_version' => 1,
+        'current_version' => 1,
+     ),
+      'export callback' => 'personalize_agent_export',
+    ),
+    'fields' => array(
+      'machine_name' => array(
+        'description' => 'The primary identifier of the agent.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'plugin' => array(
+        'description' => 'The plugin providing this agent.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => 'Integer representing the status of this agent.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => PERSONALIZE_STATUS_NOT_STARTED,
+      ),
+      'started' => array(
+        'description' => 'The Unix timestamp of when the agent was first activated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'label' => array(
+        'description' => 'The administrative label for the agent.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data.',
+      ),
+    ),
+    'primary key' => array('machine_name'),
+  );
+
+  $schema['personalize_option_sets'] = array(
+    'description' => 'Stores Option Sets for personalization.',
+    'fields' => array(
+      'osid' => array(
+        'description' => 'The primary identifier for an option set.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'plugin' => array(
+        'description' => 'The plugin responsible for this Option Set.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'An administrative label for this Option Set.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'agent' => array(
+        'description' => 'The Decision Agent used with this Option Set.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'mvt' => array(
+        'description' => 'The name of the multivariate test this Option Set belongs to, if any.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'decision_name' => array(
+        'description' => 'The name of the decision for this option set.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'executor' => array(
+        'description' => 'The executor to use for this option set.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'options' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array specifying the options in this option set.',
+      ),
+      'winner' => array(
+        'description' => 'The ID of the winning option for this Option Set.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => FALSE,
+      ),
+      'stateful' => array(
+        'description' => 'Boolean indicating whether this is a stateful option set.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array of additional data.',
+      ),
+    ),
+    'primary key' => array('osid'),
+    'foreign keys' => array(
+      'option_set_mvt' => array(
+        'table' => 'personalize_multivariate_test',
+        'columns' => array('mvt' => 'machine_name'),
+      ),
+    ),
+  );
+
+  $schema['personalize_multivariate_test'] = array(
+    'description' => 'Stores collections of Option Sets as multivariate tests.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for the MVT.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'machine_name' => array(
+        'description' => 'The machine-readable name of this MVT.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'An administrative label for this MVT.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'agent' => array(
+        'description' => 'The Decision Agent used with this MVT.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'stateful' => array(
+        'description' => 'Boolean indicating whether this is a stateful MVT.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'unique keys' => array(
+      'machine_name' => array('machine_name'),
+    ),
+  );
+
+  $schema['personalize_campaign_goals'] = array(
+    'description' => 'Stores visitor actions as goals for campaigns.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The primary identifier for this goal.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'action' => array(
+        'description' => 'The name of the action.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'agent' => array(
+        'description' => 'The Decision Agent this goal is for.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'value' => array(
+        'description' => 'The value of the goal.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'goal_action' => array('action'),
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function personalize_enable() {
+  // If the module were previously enabled and had campaign goals set,
+  // the list of subscribers to those actions will need to be rebuilt.
+  rebuild_subscribers_for_goal_actions();
+}
+
+/**
+ * Implements hook_disable().
+ */
+function personalize_disable() {
+  if (isset($_SESSION['personalize_campaign'])) {
+    unset($_SESSION['personalize_campaign']);
+  }
+  // For all actions we were subscribed to for goals, the subscribers list
+  // will need to be rebuilt.
+  rebuild_subscribers_for_goal_actions();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function personalize_uninstall() {
+  // Delete variables.
+  variable_del('personalize_use_local_caching');
+  variable_del('personalize_local_caching_expiration');
+  variable_del('personalize_use_admin_mode');
+  variable_del('personalize_visitor_context_disabled');
+}
+
+/**
+ * Rebuilds the cache of action subscribers for actions that goals are
+ * subscribed to.
+ */
+function rebuild_subscribers_for_goal_actions() {
+  $result = db_query('SELECT DISTINCT action FROM {personalize_campaign_goals}');
+  foreach ($result as $row) {
+    visitor_actions_clear_subscribers($row->action);
+  }
+}
+
+/**
+ * Add a database column for specifying an agent's status.
+ */
+function personalize_update_7001() {
+  db_add_field('personalize_agent', 'status', array(
+    'description' => 'Integer representing the status of this agent.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => PERSONALIZE_STATUS_NOT_STARTED,
+  ));
+  // Existing campaigns should have their status set to 2, which means
+  // 'running' since there was no concept of an inactive campaign previously.
+  db_query("UPDATE {personalize_agent} SET status = :status", array(':status' => PERSONALIZE_STATUS_RUNNING));
+}
+
+/**
+ * Add database column for specifying the winner in an Option Set.
+ */
+function personalize_update_7002() {
+  db_add_field('personalize_option_sets', 'winner', array(
+    'description' => 'The ID of the winning option for this Option Set.',
+    'type' => 'varchar',
+    'length' => 64,
+    'not null' => FALSE,
+  ));
+}
+
+/**
+ * Add database column for specifying the time an agent is first activated.
+ */
+function personalize_update_7003() {
+  db_add_field('personalize_agent', 'started', array(
+    'description' => 'The Unix timestamp of when the agent was first activated.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+}
+
+/**
+ * Rename the 'type' field in personalize_option_sets table to 'plugin'.
+ */
+function personalize_update_7004() {
+  db_change_field('personalize_option_sets', 'type', 'plugin', array(
+    'description' => 'The plugin responsible for this Option Set.',
+    'type' => 'varchar',
+    'length' => 64,
+    'not null' => TRUE,
+    'default' => '',
+  ));
+}
+
+/**
+ * Rename existing user_context info to visitor_context.
+ */
+function personalize_update_7005() {
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a', array('machine_name', 'data'))
+    ->execute();
+  foreach ($result as $row) {
+    $data = unserialize($row->data);
+    if (isset($data['user_context'])) {
+      $data['visitor_context'] = $data['user_context'];
+      unset($data['user_context']);
+    }
+    db_update('personalize_agent')
+      ->condition('machine_name', $row->machine_name)
+      ->fields(array('data' => serialize($data)))
+      ->execute();
+  }
+}

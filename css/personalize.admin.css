@@ -1,0 +1,103 @@
+/**
+ * @file
+ * Styles for Personalize administrative interfaces.
+ */
+
+/**
+ * Arrange the campaign context configuration options in columns.
+ */
+.personalize-goals-wrapper {
+  margin-bottom: 1.4em;
+}
+
+.personalize-goal {
+  padding: 1em 0;
+  border-collapse: collapse;
+  border-top: .1em solid #ccc;
+}
+.personalize-goal:first-child {
+  border-top: none;
+}
+.personalize-goal:last-child {
+  border-bottom: .1em solid #ccc;
+}
+
+.personalize-goal .form-item {
+  display: inline-block;
+  margin-right: 1em;
+  padding: 0;
+}
+.personalize-goal .form-item:last-child {
+  margin-right: 0;
+}
+
+.personalize-goal-triggers {
+  display: inline-block;
+  margin-right: 1em;
+  margin-bottom: 9px;
+}
+
+/* Add a goal button should appear as an action link
+* @todo would much rather use action-link style from theme instead
+*/
+input.personalize-add-goal.form-submit {
+  background: transparent url(../images/add.png) no-repeat 0 center;
+  border: none;
+  color: #0074BD;
+  font-size: 1em;
+  padding: 0 0 0 15px;
+  margin: 0;
+  line-height: 30px;
+}
+
+input.personalize-add-goal:hover {
+  text-decoration: underline;
+}
+
+/**
+ * Content sets
+ */
+@media screen and (min-width: 44em) {
+  .personalize-admin-primary,
+  .personalize-admin-secondary {
+    float: left;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    width: 49%;
+    min-height: 4em;
+  }
+
+  .personalize-admin-primary {
+    margin-right: 2%;
+  }
+}
+
+.personalize-content-variation {
+  padding: 1em 0;
+  border-collapse: collapse;
+  border-bottom: .1em solid #ccc;
+}
+
+.personalize-content-variation .personalize-variation-label:before,
+.personalize-content-variation .personalize-variation-label:after {
+  content: '"';
+}
+.personalize-content-variation .personalize-variation-label {
+  width: 75%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+html.js .personalize-collapsed .personalize-admin-content-content {
+  height: 0;
+  overflow: hidden;
+}
+
+#personalize-agent-page-messages .personalize-alert {
+  font-weight: bold;
+  color: red;
+}

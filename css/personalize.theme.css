@@ -1,0 +1,143 @@
+
+/**
+ * Content sets
+ */
+.personalize-admin-section {
+  width: 100%;
+}
+
+.personalize-admin-content {
+  margin: 1em 0;
+  padding: 1em;
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+
+.personalize-admin-content.personalize-collapsed {
+  border: none;
+}
+
+/**
+ * Avoid boxes within boxes
+ */
+.personalize-admin-content fieldset,
+.personalize-admin-content .personalize-admin-content{
+  border: none;
+}
+
+.personalize-admin-content-title,
+.personalize-admin-content-item-title {
+  margin: 0;
+}
+
+.personalize-admin-content-title {
+  display: inline-block;
+  font-size: 1.2em;
+}
+
+.personalize-content-set-item-title {
+  font-size: 1em;
+}
+
+.personalize-content-set-title {
+  display: inline-block;
+  margin-right: 1em; /* LTR */
+}
+
+.personalize-content-set-item {
+  border-top: 1px solid #ccc;
+  margin-bottom: 1em;
+  padding-top: 1em;
+}
+
+.personalize-content-set-item:first-child {
+  border-top: none;
+}
+
+.personalize-content-set-item:last-child {
+  margin-bottom: 0;
+}
+
+.personalize-variation-count {
+  margin-left: 1em; /* LTR */
+}
+
+.personalize-collapse-trigger {
+  float: right; /* LTR */
+}
+
+.personalize-admin-content-title-secondary {
+    display: inline;
+    margin-left: 25px;
+}
+
+.personalize-admin-content-collapsed-wrapper {
+  margin: 0 0 2em 1em;
+}
+
+.personalize-admin-content-collapsed-wrapper:first-child {
+  margin-top: 1em;
+}
+
+.personalize-admin-content-collapsed {
+  display: none;
+}
+
+.personalize-collapsed .personalize-admin-content-collapsed {
+  display: block;
+
+}
+
+/* Variant counter display */
+.personalize-admin-content .personalize-variant {
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+  line-height: 30px;
+  -moz-border-radius: 15px; /* or 50% */
+  border-radius: 15px; /* or 50% */
+  background-color: #0074BD;
+  color: white;
+  text-align: center;
+  font-size: 1.2em;
+  margin-right: 10px;
+  border: solid 1px #ccc;
+}
+
+/**
+ * Indent admin content within a variation count block
+ */
+.personalize-admin-content .personalize-variant ~ .personalize-admin-content-content {
+  padding-left: 45px;
+}
+
+.personalize-content-variation-stopped {
+  color: #999;
+}
+
+.personalize-content-variation .form-type-radio {
+  float: right;
+}
+
+.personalize-content-variation .form-type-radio label {
+  color: #000;
+  margin-right: 5px;
+  vertical-align: bottom;
+  display: inline;
+  font-weight: normal;
+}
+
+.personalize-content-variation-winner .form-type-radio label {
+  color: #0074BD;
+  font-weight: bold;
+}
+
+#personalize-agent-option-sets-form .personalize-ctools-dropdown,
+#personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-link-wrapper,
+#personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper {
+  display: inline;
+}
+
+#personalize-agent-option-sets-form .personalize-ctools-dropdown {
+  margin-right: 15px;
+}

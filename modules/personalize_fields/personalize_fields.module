@@ -1,0 +1,663 @@
+<?php
+
+/**
+ * @file personalize_fields.module
+ * Provides interaction between fields and the personalize module.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function personalize_fields_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#personalize_panels':
+      return t("This module allows you to use Fields as Option Sets in Personalization.");
+  }
+}
+
+/**
+ * Implements hook_personalize_option_set_type().
+ */
+function personalize_fields_personalize_option_set_type() {
+  return array(
+    'fields' => array()
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function personalize_fields_ctools_plugin_api($owner, $api) {
+  if ($owner == 'personalize' && $api == 'personalize') {
+    return array('version' => 1);
+  }
+}
+
+function personalize_fields_field_info_alter(&$info) {
+  // Add a setting to all field types.
+  foreach ($info as $field_type => $field_type_info) {
+    $info[$field_type]['settings'] += array(
+      'personalizable' => FALSE,
+    );
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add a checkbox to make a field "personalizable"
+ */
+function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  $field = $form['#field'];
+  if (!$form['#field']['locked']) {
+    // Add the "personalizable checkbox, unless this is a user field
+    // and the setting to allow personalizable user fields has not been
+    // enabled.
+    if ($form['#instance']['entity_type'] == 'user' && !variable_get('personalize_fields_user_fields', FALSE)) {
+      return;
+    }
+    $form['field']['settings']['personalizable'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Make this field personalizable?'),
+      '#default_value' => $field['settings']['personalizable'],
+      '#description' => t("This setting is only valid for multi-value fields."),
+      '#states' => array(
+        'disabled' => array(':input[name="field[cardinality]"]' => array('value' => 1)),
+        'invalid' => array(':input[name="field[cardinality]"]' => array('value' => 1)),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function personalize_fields_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['#entity_type']) && isset($form_state['field'])) {
+    personalize_fields_add_personalized_fields($form, $form_state, $form['#entity_type']);
+  }
+}
+
+
+/**
+ * Implements hook_contextual_links_view_alter().
+ */
+function personalize_fields_contextual_links_view_alter(&$element, $items) {
+  // Add a "personalize this" link to the contextual links of any node
+  // that has one or more personalizable fields. We cannot add this for other
+  // entities as we have no way of knowing the edit path to go to.
+  if (isset($element['#element']['#node'])) {
+
+    $personalizable = FALSE;
+    $node = $element['#element']['#node'];
+    if (!node_access('update', $node) || !user_access('manage personalized content')) {
+      return;
+    }
+    // Go through the fields on this node and see if there's at least
+    // one that is personalizable.
+    $instances = field_info_instances('node', $element['#element']['#bundle']);
+    foreach ($instances as $instance) {
+      $field = field_info_field($instance['field_name']);
+      if (isset($field['settings']['personalizable']) && $field['settings']['personalizable']) {
+        $personalizable = TRUE;
+        break;
+      }
+    }
+    if (!$personalizable) {
+      return;
+    }
+    $links = &$element['#links'];
+    $options = array();
+    // Check if this entity has already been personalized and add a class
+    // to that effect.
+    if (isset($node->option_sets)) {
+      $options += array(
+        'attributes' => array(
+          'class' => array('personalize-already-personalized')
+        )
+      );
+    }
+    personalize_add_personalize_this_contextual_link($links, "node/{$node->nid}/edit", $options);
+  }
+}
+
+/**
+ * Adds required info for personalizable fields on an entity form.
+ *
+ * @param $form
+ * @param $form_state
+ * @param $entity_type
+ */
+function personalize_fields_add_personalized_fields(&$form, &$form_state, $entity_type) {
+  $personalized_fields = array();
+  // Determine the entity and entity id if they exist.
+  $entity = _personalize_fields_entity_from_form($form, $form_state);
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+  foreach ($form_state['field'] as $key => $field) {
+    $field_lang = field_language($form['#entity_type'], $entity, $key);
+    if (!empty($field[$field_lang]['field']['settings']['personalizable'])) {
+      $personalized_fields[$key] = $field[$field_lang];
+      drupal_alter('personalize_fields_form_element', $form[$key], $field_lang);
+    }
+  }
+  // If there aren't any personalized fields, there's nothing left to do.
+  if (empty($personalized_fields)) {
+    return;
+  }
+
+  // Load the default agent if one is already set.
+  $current_agent = NULL;
+  foreach ($personalized_fields as $key => $field) {
+    // Load the Option Sets if we have an entity id and entity.
+    if ($entity_id && ($option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key))) {
+      $current_agent = $option_set->agent;
+    }
+  }
+
+  if ($current_agent !== NULL) {
+    // Make sure a warning message is delivered if this is a running
+    // campaign.
+    personalize_warn_if_running($current_agent);
+    $form['agent_select'] = array(
+      '#type' => 'value',
+      '#value' => $current_agent,
+    );
+  }
+  else {
+    $form += personalize_get_agent_selection_form($current_agent);
+  }
+  $form['#validate'][] = 'personalize_fields_form_validate';
+  // Add the submit handler to store personalized field settings.
+  $form['#submit'][] = 'personalize_fields_form_submit';
+
+  // Store the personalized fields for use in validation and submission.
+  $form['personalized_fields'] = array(
+    '#type' => 'value',
+    '#value' => $personalized_fields,
+  );
+}
+
+/**
+ * Validation callback for entity forms with personalized fields.
+ *
+ * Prevents users without the 'manage personalized content' permission
+ * from making changes to personalized fields.
+ */
+function personalize_fields_form_validate($form, &$form_state) {
+  if (!isset($form_state['values']['personalized_fields']) || user_access('manage personalized content')) {
+    // No need to validate anything, they can make whatever changes
+    // they like.
+    return;
+  }
+
+  // Extract information about the entity from the form.
+  $entity_type = $form['#entity_type'];
+  $entity = _personalize_fields_entity_from_form($form, $form_state);
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+
+  $original_entity = $entity_id ? entity_load_unchanged($entity_type, $entity_id) : NULL;
+
+  $personalized_fields = array_keys($form_state['values']['personalized_fields']);
+  foreach ($personalized_fields as $field_name) {
+    $actual_submitted_values = $actual_existing_values = array(LANGUAGE_NONE => array());
+    foreach ($form_state['values'][$field_name][LANGUAGE_NONE] as $index => $value) {
+      if (!is_numeric($index) || empty($value['value'])) {
+        continue;
+      }
+      $actual_submitted_values[LANGUAGE_NONE][$index] = $value['value'];
+    }
+    if ($original_entity) {
+      foreach ( $original_entity->{$field_name}[LANGUAGE_NONE] as $index => $value) {
+        $actual_existing_values[LANGUAGE_NONE][$index] = $value['value'];
+      }
+      if (count($actual_existing_values[LANGUAGE_NONE]) == 1 && count($actual_submitted_values[LANGUAGE_NONE]) == 1) {
+        continue;
+      }
+      if ($actual_submitted_values != $actual_existing_values) {
+        form_error($form, t('You have attempted to change a personalized field, but do not have permission to manage personalized content'));
+      }
+    }
+    elseif (count($actual_submitted_values[LANGUAGE_NONE]) > 1) {
+      form_error($form, t('You have attempted to create a personalized field, but do not have permission to manage personalized content'));
+    }
+  }
+}
+
+function personalize_fields_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+
+  if (isset($values['agent_select']) && isset($values['personalized_fields'])) {
+
+    // Extract information about the entity from the form.
+    $entity_type = $form['#entity_type'];
+    $entity = _personalize_fields_entity_from_form($form, $form_state);
+    list($entity_id) = entity_extract_ids($entity_type, $entity);
+
+    // Set up the option sets for the entity if not already done.
+    if(!isset($form_state[$entity_type]->option_sets)) {
+      $form_state[$entity_type]->option_sets = array();
+    }
+    $agent_name = $values['agent_select'];
+    if ($values['agent_select'] == PERSONALIZE_NEW_AGENT_FORM_VALUE) {
+      if ($new_agent = personalize_save_agent_from_form_values($values)) {
+        $agent_name = $new_agent->machine_name;
+      }
+      else {
+        drupal_set_message('There was a problem saving the new campaign', 'error');
+        return;
+      }
+    }
+    foreach($values['personalized_fields'] as $key => $field) {
+      // Attempt to load an Option Set that's already been saved in the database.
+      if (!$option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key)) {
+        $option_set = new stdClass();
+        $option_set->is_new = TRUE;
+      }
+      $option_set->plugin = 'fields';
+      $option_set->agent = $agent_name;
+
+      // If the entity already has an ID then we can go ahead and save the option set.
+      if ($entity_id) {
+        personalize_fields_option_set_save($option_set, $entity_type, $entity, $key);
+      }
+      // Otherwise we add the info to the entity so that it will be processed on
+      // hook_entity_insert.
+      else {
+        $form_state[$entity_type]->option_sets[$key] = $option_set;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function personalize_fields_form_personalize_admin_form_alter(&$form, &$form_state) {
+  $form['personalize_fields_user_fields'] = array(
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('personalize_fields_user_fields', FALSE),
+    '#title' => t('Allow personalizable user fields.'),
+    '#description' => t('By default, any field on any entity can be made personalizable. However, it rarely makes sense to have personalizable user profile fields as they are, by definition, personalized. In such rare cases, this setting can be turned on to enable personalizable user profile fields.')
+  );
+}
+
+/**
+ * Saves an Option Set to the database.
+ *
+ * This function should be used rather than a direct personalize_option_set_save()
+ * call when saving Option Sets for fields. This updates both the actual Option
+ * Set, as well as the table that links entities to Option Sets.
+ *
+ * @param $option_set
+ *   An object representing the Option Set to be saved.
+ * @param $entity_type
+ *   The type of the entity the Option Set is associated with, e.g. 'node'.
+ * @param $entity
+ *   The entity the Option Set is associated with.
+ * @param $field_name
+ *   The name of the field the Option Set is tied to.
+ */
+function personalize_fields_option_set_save($option_set, $entity_type, $entity, $field_name) {
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+  // Update the Options in the Option Set.
+  $options = array();
+  foreach($entity->{$field_name}[LANGUAGE_NONE] as $delta => $option_field) {
+    $options[$delta] = isset($option_set->options[$delta]) ? $option_set->options[$delta] :
+      array(
+        'option_label' => personalize_generate_option_label($delta)
+      );
+  }
+  // If this is a new option set and there's only one option, abort.
+  if (isset($option_set->is_new) && count($options) < 2) {
+    return;
+  }
+  $option_set->options = $options;
+  $option_set->label = personalize_fields_generate_option_set_label($entity_type, $entity_id, $entity, $field_name);
+  // Save the Option Set.
+  $option_set = personalize_option_set_save($option_set);
+
+  // Save the link between the Option Set and the Entity.
+  db_merge('personalize_fields_option_sets')
+    ->key(array('osid' => $option_set->osid))
+    ->fields(array(
+      'osid' => $option_set->osid,
+      'entity_type' => $entity_type,
+      'entity_id' => $entity_id,
+      'field_name' => $field_name
+    ))
+    ->execute();
+}
+
+/**
+ * Generates a suitable label for a field-based Option Set.
+ *
+ * @param $entity_type
+ *   The entity type that the OS is being created on, e.g. 'node'.
+ * @param $entity_id
+ *   The entity ID.
+ * @param $entity
+ *   An object representing the entity.
+ * @param $field_name
+ *   The name of the field that the Option Set is tied to.
+ * @return string
+ *   A string to use as the Option Set label.
+ */
+function personalize_fields_generate_option_set_label($entity_type, $entity_id, $entity, $field_name) {
+  if ($entity_type == 'node') {
+    return $entity->title . ': ' . $field_name;
+  }
+  return $entity_type . '_' . $entity_id . ': ' . $field_name;
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Used to update Option Sets after an entity has been saved to the database.
+ */
+function personalize_fields_entity_insert($entity, $type) {
+  if (isset($entity->option_sets)) {
+    foreach($entity->option_sets as $field_name => $option_set) {
+      personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Used to update Option Sets after an entity has been saved to the database.
+ */
+function personalize_fields_entity_update($entity, $type) {
+  if (isset($entity->option_sets)) {
+    foreach($entity->option_sets as $field_name => $option_set) {
+      personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function personalize_fields_entity_load($entities, $type) {
+  // First load any option sets associated with these entities.
+  $result = db_select('personalize_fields_option_sets', 'o')
+    ->fields('o')
+    ->condition('o.entity_type', $type)
+    ->condition('o.entity_id', array_keys($entities), 'IN')
+    ->execute();
+
+  // Load results into an array keyed by entity ids.
+  $option_sets = array();
+  foreach ($result as $record) {
+    if(!isset($option_sets[$record->entity_id])) {
+      $option_sets[$record->entity_id] = array();
+    }
+    $option_set = personalize_option_set_load($record->osid);
+    $option_sets[$record->entity_id][$record->field_name] = $option_set;
+  }
+
+  // Add Option Sets to the entity.
+  foreach ($entities as $entity) {
+    list($entity_id) = entity_extract_ids($type, $entity);
+    if (isset($option_sets[$entity_id])) {
+      $entity->option_sets = $option_sets[$entity_id];
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ */
+function personalize_fields_entity_view_alter(&$build, $type) {
+  if (isset($build['#entity']) && is_object($build['#entity'])) {
+    $entity = $build['#entity'];
+  }
+  elseif(isset($build['#' . $type])) {
+    $entity = $build['#' . $type];
+  }
+  if (!isset($entity)) {
+    return;
+  }
+  if (isset($entity->option_sets)) {
+    $view_mode = $build['#view_mode'];
+    foreach ($entity->option_sets as $option_set) {
+      $instance = field_info_instance($type, $option_set->field_info['field_name'], $build['#bundle']);
+      $display = field_get_display($instance, $view_mode, $entity);
+      if ($display['type'] != 'hidden') {
+        personalize_element_with_option_set($build, $option_set);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function personalize_fields_entity_delete($entity, $type) {
+  if (isset($entity->option_sets)) {
+    foreach ($entity->option_sets as $option_set) {
+      personalize_option_set_delete($option_set->osid);
+    }
+  }
+}
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function personalize_fields_field_delete_instance($instance) {
+  $result = db_select('personalize_fields_option_sets', 'f')
+    ->fields('f', array('osid'))
+    ->condition('f.entity_type', $instance['entity_type'])
+    ->condition('f.field_name', $instance['field_name'])
+    ->execute();
+  foreach ($result as $row) {
+    personalize_option_set_delete($row->osid);
+  }
+}
+
+/**
+ * Implements hook_personalize_option_set_delete().
+ */
+function personalize_fields_personalize_option_set_delete($option_set) {
+  db_delete('personalize_fields_option_sets')
+    ->condition('osid', $option_set->osid)
+    ->execute();
+}
+
+/**
+ * Implements hook_personalize_option_set_load().
+ */
+function personalize_fields_personalize_option_set_load(&$option_sets) {
+  foreach ($option_sets as $option_set) {
+    if ($option_set->plugin != 'fields') {
+      continue;
+    }
+    $option_set->field_info = _personalize_fields_get_field_info_from_option_set($option_set->osid);
+  }
+}
+
+/**
+ * Implements hook_personalize_option_values_for_admin().
+ */
+function personalize_fields_personalize_option_values_for_admin($option_set) {
+  if ($option_set->plugin != 'fields') {
+    return FALSE;
+  }
+  $field_info = _personalize_fields_get_field_info_from_option_set($option_set->osid);
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', $field_info['entity_type'])
+    ->entityCondition('entity_id', $field_info['entity_id']);
+  $result = $query->execute();
+  if (empty($result)) {
+    return FALSE;
+  }
+  $entity_info = $result[$field_info['entity_type']][$field_info['entity_id']];
+  $bundle = isset($entity_info->type) ? $entity_info->type : $entity_info->bundle;
+  $instance = field_info_instance($field_info['entity_type'], $field_info['field_name'], $bundle);
+  $field_id = $instance['field_id'];
+
+  // Use field_attach_load to populate the field value we're interested in.
+  field_attach_load($field_info['entity_type'], array($field_info['entity_id'] => $entity_info), FIELD_LOAD_CURRENT, array('field_id' => $field_id));
+
+  $items = field_get_items($field_info['entity_type'], $entity_info, $field_info['field_name']);
+  $option_values = array();
+  foreach ($option_set->options as $index => $option) {
+    if (!empty($items[$index]['safe_value'])) {
+      $option_values[$option['option_id']] = $items[$index]['safe_value'];
+    }
+
+  }
+  return $option_values;
+}
+
+/**
+ * Implements hook_field_attach_view_alter().
+ */
+function personalize_fields_field_attach_view_alter(&$output, $context) {
+  $entity = $context['entity'];
+  if (!isset($entity->option_sets)) {
+    return;
+  }
+  foreach ($entity->option_sets as $field_name => $option_set) {
+    if (isset($output[$field_name])) {
+      $element = &$output[$field_name];
+
+      $element['#first_option'] = $element[0];
+      $element['#personalize_option_set'] = $option_set;
+      $element['#theme_wrappers'][] = 'personalize_options_wrapper';
+      $element['#personalize_options'] = array();
+      foreach($option_set->options as $i => $option) {
+        $element['#personalize_options'][$option['option_id']] = $element[$i];
+      }
+
+    }
+  }
+}
+
+/**
+ * Implements template_preprocess_field().
+ *
+ * Add the necessary classes and data attributes to personalized fields.
+ */
+function personalize_fields_preprocess_field(&$variables, $hook) {
+  // Load the entity if one exists.
+  $element = isset($variables['element']) ? $variables['element'] : NULL;
+  if (!isset($element['#object'])) {
+    return;
+  }
+  $entity = $element['#object'];
+
+  // Extract the entity id from the entity.
+  $entity_type = isset($element['#entity_type']) ? $element['#entity_type'] : '';
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+
+  $option_sets = isset($entity->option_sets) ? $entity->option_sets : array();
+  foreach ($option_sets as $field_name => $option_set) {
+    if ($field_name == $element['#field_name']) {
+      foreach ($variables['items'] as $delta => $item) {
+        if ($option_name = isset($option_set->options[$delta]['option_id']) ? $option_set->options[$delta]['option_id'] : NULL) {
+          $variables['item_attributes_array'][$delta][PERSONALIZE_OPTION_NAME_DATA_ATTR] = array(drupal_clean_css_identifier($option_name));
+        }
+      }
+    }
+  }
+
+}
+
+/**
+ * Implements hook_personalize_create_new_links().
+ */
+function personalize_fields_personalize_create_new_links() {
+  $links = array();
+  // Find all node types with personalizable fields.
+  // @todo If we knew the path to create a new instance of non-node entities
+  //   we could include them here. Anyway to get that without a dependency on
+  //   Entity API module?
+  $instances = field_info_instances('node');
+  $bundles = array();
+  foreach ($instances as $bundle => $fields) {
+    foreach ($fields as $field_name => $field_info) {
+      $field = field_info_field($field_name);
+      if (isset($field['settings']['personalizable']) && $field['settings']['personalizable']) {
+        $type = node_type_get_type($bundle);
+        $bundles[$bundle] = $type->name;
+      }
+    }
+  }
+  foreach ($bundles as $bundle => $name) {
+    $links[] = array(
+      'title' => $name,
+      'path' => 'node/add/' . str_replace('_', '-', $bundle),
+    );
+  }
+  return $links;
+}
+
+/*
+ * Extract an entity object from a form array.
+ *
+ * Sadly this is quite inconsistent between different entity types, so doing
+ * the best we can here.
+ */
+function _personalize_fields_entity_from_form($form, $form_state) {
+  $entity = NULL;
+  if (isset($form_state['entity'])) {
+    return $form_state['entity'];
+  }
+  $entity_type = $form['#entity_type'];
+  if (isset($form['#entity']) && is_object($form['#entity'])) {
+    $entity = $form['#entity'];
+  }
+  elseif (isset($form['#' . $entity_type]) && is_object($form['#' . $entity_type])) {
+    $entity = $form['#' . $entity_type];
+  }
+  elseif (isset($form[$entity_type]) && is_object($form[$entity_type])) {
+    $entity = $form[$entity_type];
+  }
+  elseif (isset($form[$entity_type]) && is_array($form[$entity_type]) && isset($form[$entity_type]['#value']) && is_object($form[$entity_type]['#value'])) {
+    $entity = $form[$entity_type]['#value'];
+  }
+
+  return $entity;
+}
+
+/**
+ * Helper function to get an option set for a specific field instance.
+ *
+ * @param $entity_type
+ *   The entity type, e.g. 'node'.
+ * @param $entity_id
+ *   The entity ID, i.e. the nid in the case of a node.
+ * @param $field_name
+ *   The name of the field.
+ * @return A fully loaded option set or NULL if none exists for this field.
+ */
+function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $field_name) {
+  $name = implode('__', array($entity_type, $entity_id, $field_name));
+  $option_sets = &drupal_static(__FUNCTION__, array());
+  if (isset($option_sets[$name])) {
+    return $option_sets[$name];
+  }
+
+  if ($osid = db_query("SELECT osid FROM {personalize_fields_option_sets} WHERE entity_type = :entity_type AND entity_id = :entity_id AND field_name = :field_name", array(':entity_type' => $entity_type, ':entity_id' => $entity_id, ':field_name' => $field_name))->fetchField()) {
+    $option_sets[$name] = personalize_option_set_load($osid);
+    return $option_sets[$name];
+  }
+  $option_sets[$name] = FALSE;
+  return FALSE;
+}
+
+/**
+ * Helper function to retrieve field info for a given option set.
+ *
+ * @param $osid
+ *   The osid of the option set.
+ * @return An array of information with the following keys:
+ *   - field_name The field name
+ *   - entity_type The type of entity, e.g. 'node'
+ *   - entity_id The unique ID of the entity
+ */
+function _personalize_fields_get_field_info_from_option_set($osid) {
+  $record = db_query("SELECT entity_type, entity_id, field_name FROM {personalize_fields_option_sets} WHERE osid = :osid", array(':osid' => $osid))->fetchAssoc();
+  return empty($record) ? array() : $record;
+}

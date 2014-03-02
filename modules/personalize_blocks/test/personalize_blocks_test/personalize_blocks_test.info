@@ -1,0 +1,6 @@
+name = Personalize Blocks test module
+description = Contains custom blocks for testing
+core = 7.x
+package = Personalization
+
+dependencies[] = personalize_blocks

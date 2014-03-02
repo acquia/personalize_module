@@ -1,0 +1,22 @@
+/**
+ * @file
+ * Styles for Personalize administrative interfaces.
+ */
+
+/**
+ * Content sets
+ */
+.personalize-content-set-title {
+  margin-right: auto; /* RTL */
+  margin-left: 1em; /* RTL */
+}
+
+.personalize-variation-count {
+  margin-right: 1em; /* RTL */
+  margin-left: auto; /* RTL */
+}
+
+.personalize-collapse-trigger {
+  float: left; /* RTL */
+}
+

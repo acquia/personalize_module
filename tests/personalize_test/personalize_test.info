@@ -1,0 +1,6 @@
+name = Personalize Test
+description = Module for testing base Personalize functionality.
+dependencies[] = personalize
+package = Testing
+core = 7.x
+hidden = TRUE

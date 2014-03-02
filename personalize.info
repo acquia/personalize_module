@@ -1,0 +1,11 @@
+name = Personalize
+description = The Personalize module serves as an API for controlling personalization of content on pages based on the user's context.
+
+dependencies[] = ctools
+dependencies[] = visitor_actions
+
+files[] = includes/personalize.classes.inc
+files[] = tests/personalize.test
+
+package = Personalization
+core = 7.x

@@ -1,0 +1,6 @@
+name = Personalize Test Extra Agent
+description = Provides an extra agent type for testing with multiple agent types.
+dependencies[] = personalize
+package = Testing
+core = 7.x
+hidden = TRUE
