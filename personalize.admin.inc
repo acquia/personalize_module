@@ -26,6 +26,11 @@ function personalize_admin_form($form, &$form_state) {
       ),
     ),
   );
+  $form['personalize_cache_visitor_context'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Cache visitor context in localStorage if available'),
+    '#default_value' => variable_get('personalize_cache_visitor_context', FALSE),
+  );
   $form['personalize_use_admin_mode'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use admin mode'),

@@ -225,6 +225,7 @@ function personalize_page_build(&$page) {
   $settings = array(
     'caching' => variable_get('personalize_use_local_caching', TRUE) ? 'localStorage' : FALSE,
     'cacheExpiration' => variable_get('personalize_local_caching_expiration', 30),
+    'cacheVisitorContext' => variable_get('personalize_cache_visitor_context', FALSE),
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
   );
 
