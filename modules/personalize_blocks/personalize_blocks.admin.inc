@@ -54,7 +54,12 @@ function personalize_blocks_clone($block) {
  */
 function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL) {
   if (!isset($pblock)) {
-    $pblock = new stdClass;
+    if (!empty($form_state['pblock'])) {
+      $pblock = $form_state['pblock'];
+    }
+    else {
+      $pblock = new stdClass;
+    }
   }
   // The contents of $pblock will either come from the db or from $form_state.
   if (isset($form_state['values']['title'])) {
@@ -148,6 +153,8 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
     $pblock->options[] = array('option_label' => personalize_generate_option_label($num_blocks));
   }
   $form_state['num_blocks'] = count($pblock->options);
+  // Keep track of block options throughout Ajax submits.
+  $form_state['pblock'] =  $pblock;
 
   // If the "Remove" button was clicked for a block, we need to remove that block
   // from the form.
