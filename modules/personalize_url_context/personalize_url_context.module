@@ -67,10 +67,25 @@ function personalize_url_context_page_build(&$page) {
   );
 }
 
+/**
+ * Configuration form for url querystring params.
+ *
+ * This form allows the specification of querystring parameters and their
+ * corresponding sets of possible values so that these can be used for
+ * targeting purposes. The lists of possible values are only needed for
+ * explicit targeting.
+ */
 function personalize_url_context_admin_form($form, &$form_state) {
+  $form = array(
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'personalize_url_context') . '/css/personalize_url_context.admin.css'
+      )
+    )
+  );
   $contexts = array();
-  if (isset($form_state['values']['contexts'])) {
-    $contexts = $form_state['values']['contexts'];
+  if (isset($form_state['contexts'])) {
+    $contexts = $form_state['contexts'];
   }
   else {
     $query_string_contexts = variable_get('personalize_url_querystring_contexts', array());
@@ -107,7 +122,6 @@ function personalize_url_context_admin_form($form, &$form_state) {
 
   // If the "Add another" button was clicked, we need to increment the number of
   // contexts by one.
-
   $num_contexts = count($contexts);
   if (empty($contexts) || (isset($form_state['num_contexts']) && $form_state['num_contexts'] > $num_contexts)) {
     $contexts[] = array(
@@ -116,26 +130,22 @@ function personalize_url_context_admin_form($form, &$form_state) {
     );
   }
   $form_state['num_contexts'] = count($contexts);
-
-  // If the "Remove" button was clicked for a context, we need to remove that context
-  // from the form.
-  if (isset($form_state['to_remove'])) {
-    unset($contexts[$form_state['to_remove']]);
-    unset($form_state['to_remove']);
-    $form_state['num_contexts']--;
-  }
-
+  $form_state['contexts'] = $contexts;
   // Add current tabs to the form.
   foreach ($contexts as $delta => $context) {
     $context_form = array(
       '#tree' => TRUE,
     );
     $context_form['name'] = array(
+      '#prefix' => '<div class="personalize-url-context-name-element">',
+      '#suffix' => '</div>',
       '#type' => 'textfield',
       '#title' => t('Querystring parameter'),
       '#default_value' => !empty($context['name']) ? $context['name'] : '',
     );
     $context_form['values'] = array(
+      '#prefix' => '<div class="personalize-url-context-values-element">',
+      '#suffix' => '</div>',
       '#type' => 'textarea',
       '#title' => t('Possible values'),
       '#default_value' => !empty($context['values']) ? $context['values'] : '',
@@ -151,6 +161,9 @@ function personalize_url_context_admin_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Submit callback for the configuration form.
+ */
 function personalize_url_context_admin_form_submit($form, &$form_state) {
   if($form_state['clicked_button']['#id'] == 'edit-submit-form') {
     $contexts = array();
@@ -165,6 +178,9 @@ function personalize_url_context_admin_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Ajax callback for the "Add another" button.
+ */
 function personalize_url_context_ajax_callback($form, &$form_state) {
   return $form['context_wrapper']['contexts'];
 }
