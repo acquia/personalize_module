@@ -1,0 +1,5 @@
+name = Personalize URL Context
+description = Provides a visitor context plugin for targeting based on url querystring parameters.
+dependencies[] = personalize
+package = Personalize
+core = 7.x

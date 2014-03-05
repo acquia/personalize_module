@@ -1,0 +1,179 @@
+<?php
+
+/**
+ * @file personalize_url_context.module
+ * Provides a visitor context plugin for querystring params.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function personalize_url_context_menu() {
+  $items = array();
+  $items['admin/config/content/personalize/url_context'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Querystring Contexts',
+    'description' => 'Configure which querystring parameters can be used as visitor contexts.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_url_context_admin_form'),
+    'access arguments' => array('administer personalize configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_personalize_visitor_contexts().
+ */
+function personalize_url_context_personalize_visitor_context() {
+  $info = array();
+  $path = drupal_get_path('module', 'personalize_url_context') . '/plugins';
+  $info['querystring_context'] = array(
+    'path' => $path . '/visitor_context',
+    'handler' => array(
+      'file' => 'QuerystringContext.inc',
+      'class' => 'QuerystringContext',
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function personalize_url_context_ctools_plugin_api($owner, $api) {
+  if ($owner == 'personalize' && $api == 'personalize') {
+    return array('version' => 1);
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function personalize_url_context_page_build(&$page) {
+  $settings = array(
+    'querystring_params' => drupal_get_query_parameters(),
+  );
+
+  $page['page_top']['personalize_url_context'] = array(
+    '#attached' => array(
+      'js' => array(
+        drupal_get_path('module', 'personalize_url_context') . '/js/personalize_url_context.js' => array(),
+        array(
+          'data' => array('personalize_url_context' => $settings),
+          'type' => 'setting'
+        ),
+      ),
+    )
+  );
+}
+
+function personalize_url_context_admin_form($form, &$form_state) {
+  $contexts = array();
+  if (isset($form_state['values']['contexts'])) {
+    $contexts = $form_state['values']['contexts'];
+  }
+  else {
+    $query_string_contexts = variable_get('personalize_url_querystring_contexts', array());
+    foreach ($query_string_contexts as $name => $values) {
+      $contexts[] = array('name' => $name, 'values' => implode("\n", $values));
+    }
+  }
+
+  // Add a wrapper for the blocks and Add Another Tab button.
+  $form['context_wrapper'] = array(
+    '#tree' => FALSE,
+    '#title' => t('Contexts'),
+  );
+
+  $form['context_wrapper']['contexts'] = array(
+    '#tree' => TRUE,
+    '#theme_wrappers' => array('container'),
+    '#attributes' => array('id' => 'personalize-url-contexts'),
+  );
+
+  $form['context_wrapper']['contexts_more'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add another'),
+    '#attributes' => array('class' => array('personalize-contexts-add-context'), 'title' => t('Click here to add more contexts.')),
+    '#weight' => 1,
+    '#submit' => array('personalize_url_context_more_submit'),
+    '#ajax' => array(
+      'callback' => 'personalize_url_context_ajax_callback',
+      'wrapper' => 'personalize-url-contexts',
+      'effect' => 'fade',
+    ),
+    '#limit_validation_errors' => array(),
+  );
+
+  // If the "Add another" button was clicked, we need to increment the number of
+  // contexts by one.
+
+  $num_contexts = count($contexts);
+  if (empty($contexts) || (isset($form_state['num_contexts']) && $form_state['num_contexts'] > $num_contexts)) {
+    $contexts[] = array(
+      'name' => '',
+      'values' => '',
+    );
+  }
+  $form_state['num_contexts'] = count($contexts);
+
+  // If the "Remove" button was clicked for a context, we need to remove that context
+  // from the form.
+  if (isset($form_state['to_remove'])) {
+    unset($contexts[$form_state['to_remove']]);
+    unset($form_state['to_remove']);
+    $form_state['num_contexts']--;
+  }
+
+  // Add current tabs to the form.
+  foreach ($contexts as $delta => $context) {
+    $context_form = array(
+      '#tree' => TRUE,
+    );
+    $context_form['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Querystring parameter'),
+      '#default_value' => !empty($context['name']) ? $context['name'] : '',
+    );
+    $context_form['values'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Possible values'),
+      '#default_value' => !empty($context['values']) ? $context['values'] : '',
+    );
+    $form['context_wrapper']['contexts'][$delta] = $context_form;
+  }
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit_form'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  return $form;
+}
+
+function personalize_url_context_admin_form_submit($form, &$form_state) {
+  if($form_state['clicked_button']['#id'] == 'edit-submit-form') {
+    $contexts = array();
+    foreach ($form_state['values']['contexts'] as $context) {
+      if (!empty($context['name']) && !empty($context['values'])) {
+        $name = $context['name'];
+        $values = explode("\r\n", $context['values']);
+        $contexts[$name] = $values;
+      }
+    }
+    variable_set('personalize_url_querystring_contexts', $contexts);
+  }
+}
+
+function personalize_url_context_ajax_callback($form, &$form_state) {
+  return $form['context_wrapper']['contexts'];
+}
+
+/**
+ * Submit handler for the "Add another" button.
+ */
+function personalize_url_context_more_submit($form, &$form_state) {
+  // Increment the number of context element sets to be rendered.
+  $form_state['num_contexts']++;
+  $form_state['rebuild'] = TRUE;
+}
