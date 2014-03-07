@@ -26,6 +26,11 @@ function personalize_admin_form($form, &$form_state) {
       ),
     ),
   );
+  $form['personalize_cache_visitor_context'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Cache visitor context in localStorage if available'),
+    '#default_value' => variable_get('personalize_cache_visitor_context', FALSE),
+  );
   $form['personalize_use_admin_mode'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use admin mode'),
@@ -46,7 +51,9 @@ function personalize_admin_form($form, &$form_state) {
 function personalize_admin_form_validate($form, &$form_state) {
   // Perform some slight re-organization of the values because the visitor context
   // settings need to be shuffled around.
-  $form_state['values']['personalize_visitor_context_disabled'] = personalize_admin_convert_visitor_context_form_values($form_state['values']['personalize_visitor_context_disabled']);
+  if (isset($form_state['values']['personalize_visitor_context_disabled'])) {
+    $form_state['values']['personalize_visitor_context_disabled'] = personalize_admin_convert_visitor_context_form_values($form_state['values']['personalize_visitor_context_disabled']);
+  }
 }
 
 /**

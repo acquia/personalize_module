@@ -1003,6 +1003,37 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertEqual($machine_name, $response['personalize_campaign'], 'The new campaign is the active personalize campaign context.');
   }
 
+  function testConfigurationSettings() {
+    $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
+    $this->drupalLogin($admin_user);
+    // Set localStorage for decisions to false.
+    $this->drupalPost('admin/config/content/personalize', array('personalize_use_local_caching' => FALSE), $this->getButton('config'));
+    $this->drupalGet('');
+    // Assert the correct setting is in the js.
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse($settings['personalize']['caching']);
+    // Set localStorage for decisions to true
+    $this->drupalPost('admin/config/content/personalize', array('personalize_use_local_caching' => TRUE, 'personalize_local_caching_expiration' => 60), $this->getButton('config'));
+    $this->drupalGet('');
+    // Assert the correct setting is in the js.
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual('localStorage', $settings['personalize']['caching']);
+    $this->assertEqual(60, $settings['personalize']['cacheExpiration']);
+
+    // Set localStorage for visitor context to false.
+    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => FALSE), $this->getButton('config'));
+    $this->drupalGet('');
+    // Assert the correct setting is in the js.
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse($settings['personalize']['cacheVisitorContext']);
+    // Set localStorage for visitor context to true
+    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => TRUE), $this->getButton('config'));
+    $this->drupalGet('');
+    // Assert the correct setting is in the js.
+    $settings = $this->drupalGetSettings();
+    $this->assertTrue($settings['personalize']['cacheVisitorContext']);
+  }
+
   /**
    * Asserts that a wrapper div for the specified Option Set has been output.
    *

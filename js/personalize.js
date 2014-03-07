@@ -61,7 +61,7 @@
       }
 
       // Clear out any expired local storage.
-      Drupal.personalize.localStorage.maintain();
+      Drupal.personalize.localStorage.maintain('Drupal.personalize:');
 
       // First process MVTs if there are any.
       processMVTs(settings);
@@ -219,6 +219,43 @@
   };
 
   /**
+   * Reads a visitor context item from localStorage.
+   *
+   * @param key
+   *   The name of the context item to retrieve.
+   * @returns {*}
+   *   The value of the specified context item or null if not found or
+   *   if not configured to store visitor context in localStorage.
+   */
+  Drupal.personalize.visitor_context_read = function(key) {
+    if (!Drupal.settings.personalize.cacheVisitorContext) {
+      return null;
+    }
+
+    var full_key = 'Drupal.personalize:visitor_context:' + key;
+    return Drupal.personalize.localStorage.read(full_key);
+  };
+
+  /**
+   * Writes a visitor context item to localStorage.
+   *
+   * Checks if the site is configured to allow storing of visitor
+   * context items in localStorage and does nothing if not.
+   *
+   * @param key
+   *   The name of the context item to store.
+   * @param value
+   *   The value of the context item to store.
+   */
+  Drupal.personalize.visitor_context_write = function(key, value) {
+    if (!Drupal.settings.personalize.cacheVisitorContext) {
+      return;
+    }
+    var full_key = 'Drupal.personalize:visitor_context:' + key;
+    Drupal.personalize.localStorage.write(full_key, value);
+  };
+
+  /**
    * Processes all multivariate tests on the page.
    *
    * @param settings
@@ -264,6 +301,23 @@
         }
       }
     }
+  }
+
+  function readDecisionsfromStorage(agent_name, point) {
+    if (!sessionID || Drupal.settings.personalize.caching != 'localStorage') {
+      return null;
+    }
+    key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
+    decisions = Drupal.personalize.localStorage.read(key);
+    return decisions;
+  }
+
+  function writeDecisionsToStorage(agent_name, point, decisions) {
+    if (!sessionID || Drupal.settings.personalize.caching != 'localStorage') {
+      return;
+    }
+    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
+    Drupal.personalize.localStorage.write(key, decisions);
   }
 
   /**
@@ -318,18 +372,14 @@
             // Only continue if this decision point hasn't previously been processed.
             if (!processedDecisions[agent_name][point]) {
               processedDecisions[agent_name][point] = 1;
-              decisions = null;
               // Only talk to the agent if the decision hasn't already been
               // made and cached locally.
-              if (sessionID && settings.personalize.caching == 'localStorage') {
-                key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-                decisions = Drupal.personalize.localStorage.read(key);
-                // Decisions from localStorage need to be checked against the known valid
-                // set of choices because they may be stale (e.g. if an option has been
-                // removed after being stored in a user's localStorage).
-                if (!decisionsAreValid(decisions, agent.decisionPoints[point].choices)) {
-                  decisions = null;
-                }
+              decisions = readDecisionsfromStorage(agent_name, point);
+              // Decisions from localStorage need to be checked against the known valid
+              // set of choices because they may be stale (e.g. if an option has been
+              // removed after being stored in a user's localStorage).
+              if (!decisionsAreValid(decisions, agent.decisionPoints[point].choices)) {
+                decisions = null;
               }
               if (decisions != null) {
                 callCallbacksWithSelection(agent.decisionPoints[point].callbacks, decisions);
@@ -338,10 +388,7 @@
                 callback = (function(inner_agent_name, inner_agent, inner_point) {
                   return function(selection) {
                     // Save to local storage.
-                    if (sessionID && settings.personalize.caching == 'localStorage') {
-                      var key = 'Drupal.personalize:' + inner_agent_name + ':' + sessionID + ':' + inner_point;
-                      Drupal.personalize.localStorage.write(key, selection);
-                    }
+                    writeDecisionsToStorage(inner_agent_name, inner_point, selection)
                     // Call the per-option-set callbacks.
                     callCallbacksWithSelection(inner_agent.decisionPoints[inner_point].callbacks, selection);
                   };
@@ -538,9 +585,6 @@ Drupal.personalize.localStorage = (function() {
     if (supportsHtmlLocalStorage != undefined) {
       return supportsHtmlLocalStorage;
     }
-    if (Drupal.settings.personalize.caching != 'localStorage') {
-      supportsHtmlLocalStorage = false;
-    }
     try {
       supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
     } catch (e) {
@@ -568,7 +612,7 @@ Drupal.personalize.localStorage = (function() {
       var record = {ts:new Date().getTime(), val:value};
       store.setItem(key, JSON.stringify(record));
     },
-    maintain: function() {
+    maintain: function(str) {
       if (!supportsLocalStorage()) { return; }
       if (wasMaintained) { return; }
       var store = localStorage;
@@ -576,7 +620,7 @@ Drupal.personalize.localStorage = (function() {
       var cachingMaxAge = Drupal.settings.personalize.cacheExpiration * 60 * 1000;
       for (var i = 0; i < store.length; i++) {
         var key = store.key(i);
-        if (key.indexOf('Drupal.personalize:') == 0) {
+        if (key.indexOf(str) == 0) {
           var stored = store.getItem(key);
           if (stored) {
             var record = JSON.parse(stored);
