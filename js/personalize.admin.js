@@ -81,7 +81,7 @@
       }
 
       // Get an array of the selected visitor contexts for this campaign
-      var selectedContexts = $('.form-item-user-context select option:selected', $agent_form).map(function() {
+      var selectedContexts = $('.form-item-visitor-context select option:selected', $agent_form).map(function() {
         return $(this).text();
       }).get();
       if (selectedContexts.length > 0) {
