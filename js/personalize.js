@@ -475,28 +475,30 @@
     // Mark this Option Set as processed so it doesn't get processed again.
     processedOptionSets.push(option_set.osid);
 
-    // We need this check because the Option Set isn't necessarily in the DOM - it
-    // could be part of an MVT where not all Option Sets are present on the page.
-    if ($option_set.length > 0) {
-      // If we have a pre-selected decision for this option set, just
-      // call the executor and be done.
-      if (selection = getPreselection(osid)) {
-        Drupal.personalize.executors[executor].execute($option_set, selection, null, osid);
-        return;
+    var chosenID = null, chosenIndex = null;
+    // If we have a pre-selected decision for this option set, just
+    // use that.
+    if (selection = getPreselection(osid)) {
+      chosenID = selection
+    }
+    // If we're in admin mode or the campaign is paused, just show the first option,
+    // or, if available, the "winner" option.
+    else if (adminMode || !agent_info.active) {
+      chosenIndex = 0;
+      if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
+        chosenIndex = option_set.winner;
       }
-      else if (adminMode || !agent_info.active) {
-        // If we're in admin mode or the campaign is paused, just show the first option,
-        // or, if available, the "winner" option.
-        var chosenOption = 0;
-        if (option_set.hasOwnProperty('winner')) {
-          chosenOption = option_set.winner;
-        }
-        if (!Drupal.personalize.executors[executor]) {
-          return;
-        }
-        Drupal.personalize.executors[executor].execute($option_set, null, chosenOption, osid);
-        return;
+    }
+    // If we now have a chosen option, just call the executor and be done.
+    if (chosenID !== null || chosenIndex !== null) {
+      // We need the check for $option_set.length because the Option Set isn't
+      // necessarily in the DOM - it could be part of an MVT where not all Option
+      // Sets are present on the page.
+      if ($option_set.length > 0 && Drupal.personalize.executors.hasOwnProperty(executor)) {
+        Drupal.personalize.executors[executor].execute($option_set, chosenID, chosenIndex, osid);
       }
+      // Either way, no further processing should take place.
+      return;
     }
 
     if (!agent_info) {
