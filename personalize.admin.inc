@@ -456,10 +456,10 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
     // Update the agent data to the new status for subsequent form rebuilds.
     // Because this is the only field that changed, no need to reload.
     $agent_data->status = $form_state['values']['status'];
-    $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
     $option_sets_form = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
     $commands[] = ajax_command_replace('#personalize-agent-option-sets-form', drupal_render($option_sets_form));
   }
+  $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
 
   // Show status messages relative to the personalize page.
   $commands[] = ajax_command_replace('#personalize-agent-page-messages', '<div id="personalize-agent-page-messages">' . theme('status_messages') . '</div>');
