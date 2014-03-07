@@ -940,7 +940,7 @@ function personalize_add_personalize_this_contextual_link(&$links, $path, $optio
     'href' => $path,
     'query' => array('destination' => $_GET['q']),
     'attributes' => array(
-      'class' => 'personalize-this-contextual-link'
+      'class' => array('personalize-this-contextual-link'),
     )
   );
   $link = array_merge_recursive($link, $options);
