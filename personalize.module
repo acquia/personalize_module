@@ -2153,6 +2153,9 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
     }
   }
   $os_array['option_names'] = $option_names;
+  $os_array += array(
+    'selector' => '#personalize-' . $js_id
+  );
 
   return array(
     $js_id => $os_array
