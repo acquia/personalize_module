@@ -1,0 +1,172 @@
+<?php
+
+/**
+ * @file personalize_elements.module
+ * Provides an option set plugin for personalizing ALL THE THINGS.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function personalize_elements_menu() {
+  $items['admin/structure/personalize-elements'] = array(
+    'title' => 'Personalize Elements',
+    'description' => 'Personalize page elements.',
+    'page callback' => 'personalize_elements_list',
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'personalize_elements.admin.inc',
+  );
+  $items['admin/structure/personalize-elements/list'] = array(
+    'title' => 'List personalize_elements',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/structure/personalize-elements/add'] = array(
+    'title' => 'Add personalize_elements Instance',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_form', 'add'),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'personalize_elements.admin.inc',
+  );
+  $items['admin/structure/personalize-elements/manage/%personalize_element'] = array(
+    'title' => 'Edit Personalized Element',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_form', FALSE, 4),
+    'access arguments' => array('manage personalized content'),
+    'file' => 'personalize_elements.admin.inc',
+  );
+  $items['admin/structure/personalize-elements/manage/%personalize_element/edit'] = array(
+    'title' => 'Edit Personalized Element',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'context' => MENU_CONTEXT_INLINE,
+  );
+  $items['admin/structure/personalize-elements/manage/%personalize_element/delete'] = array(
+    'title' => 'Delete Personalized Element',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_element_delete', 4),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'personalize_elements.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_personalize_agent_type().
+ */
+function personalize_elements_personalize_option_set_type() {
+  return array(
+    'elements' => array()
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function personalize_elements_ctools_plugin_api($owner, $api) {
+  if ($owner == 'personalize' && $api == 'personalize') {
+    return array('version' => 1);
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function personalize_elements_page_build(&$page) {
+  $option_sets = personalize_option_set_load_by_type('elements');
+  $elements = array();
+  foreach ($option_sets as $option_set) {
+    $js_id = $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+    $elements[$js_id] = array(
+      'selector' => $option_set->data['personalize_elements_selector'],
+      'variation_type' => $option_set->data['personalize_elements_type'],
+    );
+  }
+  $page['page_top']['personalize_elements'] = array(
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'personalize_elements') . '/css/personalize_elements.test_styles.css' => array(),
+      ),
+      'js' => array(
+        drupal_get_path('module', 'personalize_elements') . '/js/personalize_elements.js' => array(),
+        array(
+          'data' => array('personalize_elements' => array('elements' => $elements)),
+          'type' => 'setting'
+        ),
+      ),
+    )
+  );
+  foreach ($option_sets as $option_set) {
+    personalize_element_with_option_set($page['page_top']['personalize_elements'], $option_set);
+  }
+}
+
+/**
+ * Implements hook_personalize_element_load().
+ */
+function personalize_elements_personalize_option_set_load($option_sets) {
+  foreach ($option_sets as $option_set) {
+    if ($option_set->plugin == 'elements') {
+      // Rendered Option Sets are usually in a div with an id of #personalize-osid-123
+      // but for arbitrary elements on the page, the selector is just what was
+      // specified when the Option Set was configured.
+      $option_set->selector = $option_set->data['personalize_elements_selector'];
+    }
+  }
+}
+
+/**
+ * Implements hook_personalize_create_new_links().
+ */
+function personalize_elements_personalize_create_new_links() {
+  return array(
+    array(
+      'title' => 'Personalized Element',
+      'path' => 'admin/structure/personalize-elements/add',
+    ),
+  );
+}
+
+/**
+ * Implements hook_personalize_option_values_for_admin().
+ */
+function personalize_elements_personalize_option_values_for_admin($option_set) {
+  if ($option_set->plugin != 'elements') {
+    return FALSE;
+  }
+  $option_values = array();
+  foreach($option_set->options as &$option) {
+    $option_values[$option['option_id']] = $option['personalize_elements_content'];
+  }
+  return $option_values;
+}
+
+/**
+ * Implements hook_personalize_elements_variation_types().
+ */
+function personalize_elements_personalize_elements_variation_types() {
+  return array(
+    'replaceText' => t('Replace the text'),
+    'addClass' => t('Add a class'),
+    'appendHtml' => t('Append HTML'),
+    'prependHtml' => t('Prepend HTML'),
+  );
+}
+
+/**
+ * Loads a personalized element by its osid.
+ *
+ * @param $osid
+ *   The osid of the option set.
+ * @return The loaded option set or NULL if no option set of type
+ *   'elements' exists with the given osid.
+ */
+function personalize_element_load($osid) {
+  $os = personalize_option_set_load($osid);
+  if (!$os || $os->plugin != 'elements') {
+    return NULL;
+  }
+  return $os;
+}

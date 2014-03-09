@@ -1,0 +1,20 @@
+/**
+ * @file
+ * Styles for testing the addClass behavior.
+ */
+
+.node-teaser h2 a.test-class-1 {
+    color: blue;
+    background-color: lightblue;
+}
+
+
+.node-teaser h2 a.test-class-2 {
+    color: green;
+    background-color: red;
+}
+
+.node-teaser h2 a.test-class-2 {
+    color: orange;
+    background-color: #ffff00;
+}
