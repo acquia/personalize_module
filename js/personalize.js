@@ -112,7 +112,7 @@
    * chosen one.
    */
   Drupal.personalize.executors.show = {
-    'execute': function ($option_set, choice_name, choice_index, osid) {
+    'execute': function ($option_set, choice_name, osid) {
       var $option_source = $('script[type="text/template"]', $option_set);
       var element = $option_source.get(0);
       var json = element.innerText;
@@ -122,23 +122,12 @@
       var choices = jQuery.parseJSON(json);
       var winner = '';
 
-      if (choices == null || choices === false) {
+      if (choices == null || choices === false || !choices.hasOwnProperty(choice_name)) {
         // Invalid JSON in the template.  Just show the noscript option.
         winner = $(element).prev('noscript').html();
-      } else {
-        if (choice_name != undefined && choices.hasOwnProperty(choice_name)) {
-          winner = choices[choice_name]['html'];
-        } else {
-          choice_index = typeof choice_index == 'number' ? choice_index : 0;
-          for (var option in choices) {
-            if (choices.hasOwnProperty(option)) {
-              if (choices[option]['index'] === choice_index) {
-                winner = choices[option]['html'];
-                break;
-              }
-            }
-          }
-        }
+      }
+      else {
+        winner = choices[choice_name]['html'];
       }
 
       // Remove any previously existing options.
@@ -149,13 +138,17 @@
       // Append the selected option.
       $option_set.append(winner);
 
-      // Trigger an event to let others respond to the option change.
-      $(document).trigger('personalizeOptionChange', [$option_set, choice_name, choice_index, osid]);
+      Drupal.personalize.executorCompleted($option_set, choice_name, osid);
       // Lots of Drupal modules expect context to be document on the first pass.
       var bread = document; // context.
       var circus = Drupal.settings; // settings.
       Drupal.attachBehaviors(bread, circus);
     }
+  };
+
+  Drupal.personalize.executorCompleted = function($option_set, option_name, osid) {
+    // Trigger an event to let others respond to the option change.
+    $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
   Drupal.personalize.agents = Drupal.personalize.agents || {};
@@ -471,31 +464,32 @@
       // If we have an empty or undefined decision point, use the decision name.
       decision_point = option_set.decision_point == undefined || option_set.decision_point == '' ? decision_name : option_set.decision_point,
       choices = option_set.option_names,
-      $option_set = $('#personalize-' + osid);
+      $option_set = $(option_set.selector);
     // Mark this Option Set as processed so it doesn't get processed again.
     processedOptionSets.push(option_set.osid);
 
-    var chosenID = null, chosenIndex = null;
+    var chosenOption = null;
     // If we have a pre-selected decision for this option set, just
     // use that.
     if (selection = getPreselection(osid)) {
-      chosenID = selection
+      chosenOption = selection;
     }
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
     else if (adminMode || !agent_info.active) {
-      chosenIndex = 0;
+      var chosenIndex = 0;
       if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
         chosenIndex = option_set.winner;
       }
+      chosenOption = choices[chosenIndex];
     }
     // If we now have a chosen option, just call the executor and be done.
-    if (chosenID !== null || chosenIndex !== null) {
+    if (chosenOption !== null) {
       // We need the check for $option_set.length because the Option Set isn't
       // necessarily in the DOM - it could be part of an MVT where not all Option
       // Sets are present on the page.
       if ($option_set.length > 0 && Drupal.personalize.executors.hasOwnProperty(executor)) {
-        Drupal.personalize.executors[executor].execute($option_set, chosenID, chosenIndex, osid);
+        Drupal.personalize.executors[executor].execute($option_set, chosenOption, osid);
       }
       // Either way, no further processing should take place.
       return;
@@ -531,7 +525,7 @@
     // Add a callback for this option set to the decision point.
     if ($option_set.length > 0) {
       agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {
-        Drupal.personalize.executors[executor].execute($option_set, decision, null, osid);
+        Drupal.personalize.executors[executor].execute($option_set, decision, osid);
       });
     }
     else {

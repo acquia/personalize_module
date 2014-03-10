@@ -1,0 +1,14 @@
+/**
+ * @file
+ * Styles for Personalize Elements administration page.
+ */
+
+div.personalize-elements-option-label-element {
+    clear: both;
+    width: 150px;
+    float: left;
+}
+
+div.personalize-elements-option-content-element {
+    margin-left: 150px;
+}
