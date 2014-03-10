@@ -1028,6 +1028,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#description' => 'If a visitor shares the URL the receiver will see what the sharer saw, not a personalized variation.',
       '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
     );
+    $executor = module_invoke($plugin['module'], 'personalize_executors_for_admin', $option_set);
+    if (!empty($executor)) {
+      $section['option_set_' . $option_set->osid]['advanced']['executor'] = $executor;
+    }
   }
 
   $section['actions'] = array('#type' => 'actions');
@@ -1268,6 +1272,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
     if ($option_set = personalize_option_set_load($osid)) {
       $option_set->label = $values['advanced']['label'];
       $option_set->stateful = $values['advanced']['stateful'];
+      if (isset($values['advanced']['executor'])) {
+        $option_set->executor = $values['advanced']['executor'];
+      }
       if ($values['winner']) {
         $option_set->winner = $values['winner'];
       }

@@ -175,7 +175,7 @@ function personalize_blocks_contextual_links_view_alter(&$element, $items) {
  */
 function personalize_blocks_build_personalized_block($osid) {
   if ($option_set = personalize_block_load($osid)) {
-    $personalized_block = new PersonalizedBlock($option_set->options);
+    $personalized_block = new PersonalizedBlock($option_set->options, $option_set->executor);
     try {
       $renderable = $personalized_block->build();
     }
@@ -314,4 +314,22 @@ function personalize_blocks_personalize_option_values_for_admin($option_set) {
     $option_values[$option['option_id']] = !empty($block->title) ? $block->title : $option['bid'];
   }
   return $option_values;
+}
+
+/**
+ * Implements hook_personalize_executors_for_admin().
+ */
+function personalize_blocks_personalize_executors_for_admin($option_set) {
+  if ($option_set->plugin != 'block') {
+    return FALSE;
+  }
+  return array(
+    '#type' => 'radios',
+    '#title' => 'Rendering',
+    '#options' => array(
+      'show' => t('Render all options and display the winning option immediately; optimizes performance for smaller content variation sets.'),
+      'callback' => t('Render no options and retrieve the winning option with an additional callback; ideal for larger content variation sets.'),
+    ),
+    '#default_value' => isset($option_set->executor) ? $option_set->executor : 'show',
+  );
 }

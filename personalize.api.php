@@ -244,6 +244,24 @@ function hook_personalize_option_values_for_admin() {
 }
 
 /**
+ * Returns the available executor options to show in the admin UI.
+ *
+ * This hook should be implemented whenever the site administrator is allowed
+ * to specify the executor to use for a particular option set.  It should return
+ * a form element to be rendered within the campaign edit form that defines
+ * the possible values for the executor.
+ *
+ * @param stdClass $option_set
+ *   A stdClass object representing the loaded option set.
+ *
+ * @return array
+ *   The form element to include within the campaign edit UI.
+ */
+function hook_personalize_executors_for_admin($option_set) {
+
+}
+
+/**
  * Returns a render array or themed output for a report on the specified agent.
  *
  * This hook will be invoked on the module responsible for the agent type of
