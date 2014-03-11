@@ -325,20 +325,14 @@ function personalize_blocks_personalize_option_values_for_admin($option_set) {
 }
 
 /**
- * Implements hook_personalize_executors_for_admin().
+ * Implements hook_personalize_get_executor_options().
  */
-function personalize_blocks_personalize_executors_for_admin($option_set) {
-  if ($option_set->plugin != 'block') {
-    return FALSE;
-  }
+function personalize_blocks_personalize_get_executor_options() {
   return array(
-    '#type' => 'radios',
-    '#title' => 'Rendering',
-    '#options' => array(
-      'show' => t('Render all options and display the winning option immediately; optimizes performance for smaller content variation sets.'),
-      'callback' => t('Render no options and retrieve the winning option with an additional callback; ideal for larger content variation sets.'),
+    'show' => array(
+      'default' => TRUE,
     ),
-    '#default_value' => isset($option_set->executor) ? $option_set->executor : 'show',
+    'callback' => array(),
   );
 }
 

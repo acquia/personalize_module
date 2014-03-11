@@ -244,24 +244,6 @@ function hook_personalize_option_values_for_admin() {
 }
 
 /**
- * Returns the available executor options to show in the admin UI.
- *
- * This hook should be implemented whenever the site administrator is allowed
- * to specify the executor to use for a particular option set.  It should return
- * a form element to be rendered within the campaign edit form that defines
- * the possible values for the executor.
- *
- * @param stdClass $option_set
- *   A stdClass object representing the loaded option set.
- *
- * @return array
- *   The form element to include within the campaign edit UI.
- */
-function hook_personalize_executors_for_admin($option_set) {
-
-}
-
-/**
  * Returns a render array or themed output for a report on the specified agent.
  *
  * This hook will be invoked on the module responsible for the agent type of
@@ -274,6 +256,32 @@ function hook_personalize_executors_for_admin($option_set) {
  *   Either a string of themed output or an array that can be passed to drupal_render.
  */
 function hook_personalize_campaign_report($agent_data) {
+
+}
+
+/**
+ * Allows alteration the array of available executors.
+ *
+ * @param array $executors
+ *   An array of all available executors keyed by executor name.
+ *   - description: The description to display for this executor.
+ */
+function hook_personalize_executors_alter($executors) {
+
+}
+
+/**
+ * Returns an array of executors options supported by a personalizable option.
+ *
+ * Executors may define a single executor on the option set if selectable
+ * options are not supported.
+ *
+ * @return array
+ *   An array of executors options keyed by executor name.  Each can specify
+ *   the following values:
+ *   - default: option boolean indicating if this is the default executor.
+ */
+function hook_personalize_get_executor_options() {
 
 }
 
