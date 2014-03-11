@@ -127,6 +127,25 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#default_value' => isset($option_set->data['personalize_elements_type']) ? $option_set->data['personalize_elements_type'] : '',
   );
 
+  // If the "Add another" button was clicked, we need to increment the number of
+  // options by one.
+  $num_options = count($options);
+  if (empty($options) || (isset($form_state['num_options']) && $form_state['num_options'] > $num_options)) {
+    $index = isset($options[0]['option_label']) && $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID ? $num_options - 1 : $num_options;
+    $options[] = array(
+      'option_label' => personalize_generate_option_label($index),
+      'content' => '',
+    );
+  }
+  $form_state['num_options'] = count($options);
+  $form_state['options'] = $options;
+
+  $form['add_control_option'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use a control "do nothing" option'),
+    '#default_value' => $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL ? 1 : 0,
+  );
+
   // Add a wrapper for the options and Add another option button.
   $form['options_wrapper'] = array(
     '#tree' => FALSE,
@@ -153,17 +172,6 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#limit_validation_errors' => array(),
   );
 
-  // If the "Add another" button was clicked, we need to increment the number of
-  // options by one.
-  $num_options = count($options);
-  if (empty($options) || (isset($form_state['num_options']) && $form_state['num_options'] > $num_options)) {
-    $options[] = array(
-      'option_label' => personalize_generate_option_label($num_options),
-      'content' => '',
-    );
-  }
-  $form_state['num_options'] = count($options);
-  $form_state['options'] = $options;
   // Add current tabs to the form.
   foreach ($options as $delta => $option) {
     $option_form = array(
@@ -187,6 +195,12 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     );
     $form['options_wrapper']['options'][$delta] = $option_form;
   }
+  $form['options_wrapper']['options'][0]['option_label']['#states'] =
+  $form['options_wrapper']['options'][0]['personalize_elements_content']['#states'] = array(
+    'disabled' => array(
+      ':input[name="options[0][option_label]"]' => array('value' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL)
+    )
+  );
 
   $form['advanced'] = array(
     '#type' => 'fieldset',
@@ -229,7 +243,50 @@ function personalize_elements_add_option_ajax_callback($form, &$form_state) {
 }
 
 /**
- * Submit handler for the element creation form.
+ * Validation callback for the element creation/edit form.
+ */
+function personalize_elements_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  if ($values['op'] == t('Save')) {
+    if (empty($values['variation_type'])) {
+      form_set_error('variation_type', t('You must choose a variation type'));
+    }
+    $needs_control_option = isset($values['add_control_option']) && $values['add_control_option'];
+    $has_control_option = $values['options'][0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
+    // If the option set needs a control option and doesn't yet have one, then
+    // one will be added on submit so only 1 additional option is required,
+    // otherwise a minimum of 2 options must be supplied.
+    $num_required = 2;
+    if ($needs_control_option && !$has_control_option) {
+      $num_required = 1;
+    }
+    elseif ($has_control_option && !$needs_control_option) {
+      // THe control option will be removed, there should be an additional 2
+      // options besides the control option.
+      $num_required = 3;
+    }
+    // If an option has an empty label and empty content, it will be removed so
+    // we need to count how many non-empty options there are.
+    $non_empty_options = 0;
+    foreach ($values['options'] as $i => $option) {
+      if (!empty($option['option_label']) || !empty($option['personalize_elements_content'])) {
+        $non_empty_options++;
+        if (empty($option['option_label'])) {
+          form_set_error('options[' . $i . '][option_label', t('Please enter a label for each option'));
+        }
+        if ($option['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL && empty($option['personalize_elements_content'])) {
+          form_set_error('options[' . $i . '][personalize_elements_content', t('Please enter content for each option'));
+        }
+      }
+    }
+    if ($non_empty_options < $num_required) {
+      form_set_error('', t('You must have at least 2 options for an option set'));
+    }
+  }
+}
+
+/**
+ * Submit handler for the element creation/edit form.
  */
 function personalize_elements_form_submit($form, &$form_state) {
   $op = isset($form_state['values']['op']) ? $form_state['values']['op'] : '';
@@ -267,15 +324,40 @@ function personalize_elements_option_more_submit($form, &$form_state) {
  *   An array that can be saved as an element to the db.
  */
 function personalize_elements_convert_form_values_to_option_set($values) {
+  $options = $values['options'];
+  // Remove empty options.
+  foreach ($options as $i => $option) {
+    if (empty($option['option_label']) && empty($option['personalize_elements_content'])) {
+      unset($options[$i]);
+    }
+  }
+  $options = array_values($options);
+  if ($options[0]['option_label'] === PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+    // This will get added back on if needed, after the other options have
+    // been processed.
+    $control_option = array_shift($options);
+  }
+  if (isset($values['add_control_option']) && $values['add_control_option']) {
+    if (!isset($control_option)) {
+      $control_option = array('option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
+    }
+    // Auto-generation of option IDs needs to happen *before* we add the control
+    // option as it should not affect the numbering scheme.
+    $options = personalize_ensure_unique_option_ids($options);
+    // Now add (back) the control option.
+    array_unshift($options, $control_option);
+  }
+
   $option_set = array(
     'label' => $values['title'],
     'plugin' => 'elements',
     'agent' => $values['agent_select'],
     'executor' => 'personalizeElements',
-    'options' => $values['options'],
+    'options' => $options,
     'data' => array(
       'personalize_elements_selector' => $values['selector'],
-      'personalize_elements_type' => $values['variation_type']
+      'personalize_elements_type' => $values['variation_type'],
+      'pages' => $values['pages'],
     )
   );
   if (isset($values['osid'])) {
