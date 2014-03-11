@@ -183,36 +183,43 @@ function personalize_blocks_build_personalized_block($osid) {
       return NULL;
     }
 
-    $children = element_children($renderable['sub_blocks']);
-    $mismatch = count($children) != count($option_set->options);
-    foreach ($children as $key => $child) {
-      if ($mismatch && $key > 0) {
-        // Something went wrong with at least one option. Just output a single
-        // block.
-        unset($renderable['sub_blocks'][$child]);
-      }
-      else {
-        // Add a contextual link for editing the personalize block.
-        foreach (element_children($renderable['sub_blocks'][$child]) as $key) {
-          $renderable['sub_blocks'][$child][$key]['#contextual_links']['personalize_blocks'] = array(
-            'admin/structure/personalize-blocks/manage',
-            array($osid, 'edit'),
-          );
+    // Block renders all content variations.
+    if (isset($renderable['sub_blocks'])) {
+      $children = element_children($renderable['sub_blocks']);
+      $mismatch = count($children) != count($option_set->options);
+      foreach ($children as $key => $child) {
+        if ($mismatch && $key > 0) {
+          // Something went wrong with at least one option. Just output a single
+          // block.
+          unset($renderable['sub_blocks'][$child]);
+        }
+        else {
+          // Add a contextual link for editing the personalize block.
+          foreach (element_children($renderable['sub_blocks'][$child]) as $key) {
+            $renderable['sub_blocks'][$child][$key]['#contextual_links']['personalize_blocks'] = array(
+              'admin/structure/personalize-blocks/manage',
+              array($osid, 'edit'),
+            );
+          }
         }
       }
+      if ($mismatch) {
+        // Something went wrong with at least one option. Return without further
+        // processing.
+        return $renderable;
+      }
+      $renderable['#first_option'] = $renderable['sub_blocks'][0];
+      $renderable['#personalize_options'] = array();
+      $renderable['#theme_wrappers'] = array('personalize_options_wrapper');
+      foreach($option_set->options as $i => $option) {
+        $renderable['#personalize_options'][$option['option_id']] = $renderable['sub_blocks'][$i];
+      }
     }
-    if ($mismatch) {
-      // Something went wrong with at least one option. Return without further
-      // processing.
-      return $renderable;
-    }
-    $renderable['#first_option'] = $renderable['sub_blocks'][0];
-    $renderable['#personalize_options'] = array();
-    foreach($option_set->options as $i => $option) {
-      $renderable['#personalize_options'][$option['option_id']] = $renderable['sub_blocks'][$i];
+    else {
+      // Chosen block is rendered upon at decision time.
+      $renderable['#theme_wrappers'] = array('personalize_options_callback_wrapper');
     }
     $renderable['#personalize_option_set'] = $option_set;
-    $renderable['#theme_wrappers'] = array('personalize_options_wrapper');
     personalize_element_with_option_set($renderable, $option_set);
     $renderable['#attached']['css'][] = drupal_get_path('module', 'personalize_blocks') . '/personalize-blocks.css';
 

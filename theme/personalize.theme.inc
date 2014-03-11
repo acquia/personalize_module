@@ -52,6 +52,17 @@ function theme_personalize_options_wrapper($variables) {
 }
 
 /**
+ * Theme wrapper for option sets that are populated via callback.
+ *
+ * Provides a div to use with Ajax callback population.
+ */
+function theme_personalize_options_callback_wrapper($variables) {
+  $option_set = $variables['element']['#personalize_option_set'];
+  $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+  return '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" id="personalize-' . $js_id . '"></div>';
+}
+
+/**
  * Theme wrapper for campaign status alert update message.
  *
  * @param $variables

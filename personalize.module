@@ -414,6 +414,11 @@ function personalize_theme($existing, $type, $theme, $path) {
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
     ),
+    'personalize_options_callback_wrapper' => array(
+      'render element' => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    ),
     'personalize_html_tag' => array(
       'render element'  => 'element',
       'path' => $path . '/theme',
@@ -2140,7 +2145,7 @@ function _personalize_generate_option_index($index) {
  *   an array representing the Option Set as value.
  */
 function _personalize_convert_option_set_to_js_setting($option_set) {
-  // We never want to use numberic keys in the JS so convert it to a
+  // We never want to use numeric keys in the JS so convert it to a
   // string using the prefix if it is numeric.
   $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
   $os_array = (array) $option_set;

@@ -15,9 +15,7 @@ class PersonalizedBlock {
       // Callback executor determines the option and then displays after
       // an Ajax callback.
       case 'callback':
-        return array(
-          'sub_blocks' => array(),
-        );
+        return array();
         break;
 
       // Show executor renders all blocks and then determines which one to show.
