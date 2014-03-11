@@ -3,3 +3,5 @@ description = Allows personalization of any element on a page, specified by sele
 dependencies[] = personalize
 package = Personalize
 core = 7.x
+
+files[] = tests/personalize_elements.test

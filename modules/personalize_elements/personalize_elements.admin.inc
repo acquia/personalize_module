@@ -131,7 +131,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   // options by one.
   $num_options = count($options);
   if (empty($options) || (isset($form_state['num_options']) && $form_state['num_options'] > $num_options)) {
-    $index = isset($options[0]['option_label']) && $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID ? $num_options - 1 : $num_options;
+    $index = isset($options[0]['option_label']) && $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL ? $num_options - 1 : $num_options;
     $options[] = array(
       'option_label' => personalize_generate_option_label($index),
       'content' => '',
