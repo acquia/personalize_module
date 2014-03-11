@@ -151,6 +151,36 @@
     $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
+  /**
+   * Executor that executes a callback function to retrieve the chosen
+   * option set to display.
+   */
+  Drupal.personalize.executors.callback = {
+  'execute': function($option_set, choice_name, osid) {
+    // Set up such that Drupal ajax handling can be utilized without a trigger.
+    var custom_settings = {};
+    custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
+    custom_settings.event = 'onload';
+    custom_settings.keypress = false;
+    custom_settings.prevent = false;
+    var callback_action = new Drupal.ajax(null, $option_set, custom_settings);
+
+    try {
+        $.ajax(callback_action.options);
+      }
+      catch (err) {
+        // If we can't process the result dynamically, then show the
+        // default option selected within the noscript block.
+        // NOTE: jQuery returns escaped HTML when calling the html property
+        // on a noscript tag.
+        var defaultHtml = $option_set.next('noscript').text();
+        $option_set.html(defaultHtml);
+        $option_set.next('noscript').remove();
+        return false;
+      }
+    }
+  }
+
   Drupal.personalize.agents = Drupal.personalize.agents || {};
   /**
    * Provides a default agent.

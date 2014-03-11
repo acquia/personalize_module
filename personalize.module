@@ -304,6 +304,7 @@ function personalize_page_build(&$page) {
       'library' => array(
         array('system', 'jquery.cookie'),
         array('system', 'jquery.bbq'),
+        array('system', 'drupal.ajax'),
       ),
     )
   );
