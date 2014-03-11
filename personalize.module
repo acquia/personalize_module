@@ -1643,7 +1643,7 @@ function personalize_option_set_ajax($decision_name, $choice_name) {
   $plugin = personalize_get_option_set_type($option_set->plugin);
   $render = module_invoke($plugin['module'], 'personalize_option_load', $option_set, $option);
   $commands = array();
-  $commands[] = ajax_command_append('#personalize-' . $decision_name, drupal_render($render));
+  $commands[] = ajax_command_replace('#personalize-' . $decision_name, '<div id="personalize-' . $decision_name . '">' . drupal_render($render) . '</div>');
   $page = array('#type' => 'ajax', '#commands' => $commands);
   ajax_deliver($page);
 }
