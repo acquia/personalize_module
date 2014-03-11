@@ -15,7 +15,10 @@ class PersonalizedBlock {
       // Callback executor determines the option and then displays after
       // an Ajax callback.
       case 'callback':
-        return array();
+        $default_block = array_shift($this->blocks);
+        return array(
+          'default_block' => $this->buildBlock($default_block['bid']),
+        );
         break;
 
       // Show executor renders all blocks and then determines which one to show.

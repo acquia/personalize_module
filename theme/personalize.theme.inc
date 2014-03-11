@@ -59,7 +59,9 @@ function theme_personalize_options_wrapper($variables) {
 function theme_personalize_options_callback_wrapper($variables) {
   $option_set = $variables['element']['#personalize_option_set'];
   $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
-  return '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" id="personalize-' . $js_id . '"></div>';
+  $rendered = '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" id="personalize-' . $js_id . '"></div>';
+  $rendered .= '<noscript>' . drupal_render($variables['element']['#first_option']) . '</noscript>';
+  return $rendered;
 }
 
 /**
