@@ -343,5 +343,11 @@ function personalize_blocks_personalize_option_load($option_set, $option) {
   $bid = $option['bid'];
   $personalized_block = new PersonalizedBlock(array($option));
   $block = $personalized_block->buildBlock($bid);
+  list($module, $delta) = PersonalizedBlock::extractBlockId($bid);
+  $block["{$module}_{$delta}"]['#contextual_links']['personalize_blocks'] = array(
+    'admin/structure/personalize-blocks/manage',
+    array($option_set->osid, 'edit'),
+  );
+
   return $block;
 }

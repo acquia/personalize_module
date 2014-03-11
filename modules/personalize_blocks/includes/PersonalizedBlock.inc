@@ -43,6 +43,23 @@ class PersonalizedBlock {
   }
 
   /**
+   * Extracts the module and delta for a block from the personalized block id.
+   *
+   * @param $bid
+   *   The personalized block id stored with option sets.
+   * @return array
+   *   An array with two keys:
+   *   - the module name
+   *   - the block delta
+   */
+  public static function extractBlockId($bid) {
+    $pos = strpos($bid, '_delta_');
+    $module = drupal_substr($bid, 0, $pos);
+    $delta = drupal_substr($bid, $pos + 7);
+    return array($module, $delta);
+  }
+
+  /**
    * Builds specific block data and optionally generates renderable
    * output for personalization region.
    *
@@ -53,9 +70,7 @@ class PersonalizedBlock {
    */
   public function buildBlock($bid, $render = TRUE) {
     $output = array();
-    $pos = strpos($bid, '_delta_');
-    $module = drupal_substr($bid, 0, $pos);
-    $delta = drupal_substr($bid, $pos + 7);
+    list($module, $delta) = self::extractBlockId($bid);
     // Make sure the user can access the block.
     if ($this->accessBlock($module, $delta)) {
       $block = block_load($module, $delta);
