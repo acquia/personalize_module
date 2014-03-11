@@ -177,6 +177,13 @@ function personalize_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize.admin.inc',
   );
+  $items['personalize/option_set/%/%/ajax'] = array(
+    'page callback' => 'personalize_option_set_ajax',
+    'page arguments' => array(2, 3),
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -877,18 +884,32 @@ function personalize_get_label_for_decision_point_name($point_name) {
  *   A human-readable name or FALSE if none can be found.
  */
 function personalize_get_option_label_for_decision_and_choice($decision_name, $option_id) {
-  if (preg_match("/osid\-(\d+)/", $decision_name, $matches) !== FALSE) {
-    $osid = $matches[1];
-    if ($option_set = personalize_option_set_load($osid)) {
-      foreach ($option_set->options as $option) {
-        if ($option['option_id'] == $option_id) {
-          if (isset($option['option_label'])) {
-            return $option['option_label'];
-          }
-          return FALSE;
+  if ($option_set = personalize_get_option_set_for_decision($decision_name)) {
+    foreach ($option_set->options as $option) {
+      if ($option['option_id'] == $option_id) {
+        if (isset($option['option_label'])) {
+          return $option['option_label'];
         }
+        return FALSE;
       }
     }
+  }
+  return FALSE;
+}
+
+/**
+ * Returns the option set for a decision name.
+ *
+ * @param $decision_name
+ *   The name of the decision the option belongs to.
+ *
+ * @return
+ *   The option set class or FALSE if none can be found.
+ */
+function personalize_get_option_set_for_decision($decision_name) {
+  if (preg_match("/osid\-(\d+)/", $decision_name, $matches) !== FALSE) {
+    $osid = $matches[1];
+    return personalize_option_set_load($osid);
   }
   return FALSE;
 }
@@ -1596,6 +1617,34 @@ function _personalize_unpack_option_set($record) {
   $option_set->decision_name = personalize_get_decision_name_for_option_set($record);
   $option_set->decision_point = personalize_get_decision_point_name_for_option_set($record);
   return $option_set;
+}
+
+/**
+ * Returns a particular option set selection for display in JSON.
+ *
+ * @param $option_set
+ *   The set of options.
+ * @param $choice_name
+ *   The choice to be displayed from the options.
+ */
+function personalize_option_set_ajax($decision_name, $choice_name) {
+  $option_set = personalize_get_option_set_for_decision($decision_name);
+  foreach($option_set->options as $delta => $option) {
+    if ($option['option_id'] == $choice_name) {
+      $selected = $option;
+      break;
+    }
+  }
+  if (!isset($selected)) {
+    return array();
+  }
+
+  $plugin = personalize_get_option_set_type($option_set->plugin);
+  $render = module_invoke($plugin['module'], 'personalize_option_load', $option_set, $option);
+  $commands = array();
+  $commands[] = ajax_command_append('#personalize-' . $decision_name, drupal_render($render));
+  $page = array('#type' => 'ajax', '#commands' => $commands);
+  ajax_deliver($page);
 }
 
 /**

@@ -340,3 +340,13 @@ function personalize_blocks_personalize_executors_for_admin($option_set) {
     '#default_value' => isset($option_set->executor) ? $option_set->executor : 'show',
   );
 }
+
+/**
+ * Implements hook_personalize_option_load().
+ */
+function personalize_blocks_personalize_option_load($option_set, $option) {
+  $bid = $option['bid'];
+  $personalized_block = new PersonalizedBlock(array($option));
+  $block = $personalized_block->buildBlock($bid);
+  return $block;
+}
