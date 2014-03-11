@@ -80,12 +80,23 @@ function personalize_elements_ctools_plugin_api($owner, $api) {
 function personalize_elements_page_build(&$page) {
   $option_sets = personalize_option_set_load_by_type('elements');
   $elements = array();
-  foreach ($option_sets as $option_set) {
+  foreach ($option_sets as $osid => $option_set) {
+    $page_match = TRUE;
+    if (isset($option_set->data['pages']) && !empty($option_set->data['pages'])) {
+      $page_match = personalize_elements_match_page($option_set->data['pages']);
+    }
+    if (!$page_match) {
+      unset($option_sets[$osid]);
+      continue;
+    }
     $js_id = $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
     $elements[$js_id] = array(
       'selector' => $option_set->data['personalize_elements_selector'],
       'variation_type' => $option_set->data['personalize_elements_type'],
     );
+  }
+  if (empty($elements)) {
+    return;
   }
   $page['page_top']['personalize_elements'] = array(
     '#attached' => array(
@@ -177,4 +188,24 @@ function personalize_element_load($osid) {
     return NULL;
   }
   return $os;
+}
+
+/**
+ * Returns whether the supplied list of pages includes a match for
+ * the current page.
+ *
+ * @param $pages
+ *   String containing a set of pages separated by \n, \r or \r\n.
+ * @return bool
+ *   Returns TRUE if the current path is matched, FALSE otherwise.
+ */
+function personalize_elements_match_page($pages) {
+  // Convert the Drupal path to lowercase
+  $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+  // Compare the lowercase internal and lowercase path alias (if any).
+  $page_match = drupal_match_path($path, $pages);
+  if ($path != $_GET['q']) {
+    $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+  }
+  return $page_match;
 }
