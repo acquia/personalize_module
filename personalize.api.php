@@ -258,3 +258,47 @@ function hook_personalize_option_values_for_admin() {
 function hook_personalize_campaign_report($agent_data) {
 
 }
+
+/**
+ * Allows alteration the array of available executors.
+ *
+ * @param array $executors
+ *   An array of all available executors keyed by executor name.
+ *   - description: The description to display for this executor.
+ */
+function hook_personalize_executors_alter($executors) {
+
+}
+
+/**
+ * Returns an array of executors options supported by a personalizable option.
+ *
+ * Executors may define a single executor on the option set if selectable
+ * options are not supported.
+ *
+ * @return array
+ *   An array of executors options keyed by executor name.  Each can specify
+ *   the following values:
+ *   - default: option boolean indicating if this is the default executor.
+ */
+function hook_personalize_get_executor_options() {
+
+}
+
+/**
+ * Returns a render array for a specific option.
+ *
+ * This hook is invoked with the selected option from an option set and is
+ * required in order to support rendering via Ajax callback.
+ *
+ * @param stdClass $option_set
+ *   A stdClass object representing the loaded option set.
+ * @param array $option
+ *   The option data for the selected option.
+ *
+ * @return array
+ *   The render array for the selected option.
+ */
+function hook_personalize_option_load($option_set, $option) {
+
+}

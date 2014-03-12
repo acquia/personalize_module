@@ -5,27 +5,58 @@
  */
 class PersonalizedBlock {
 
-  public function __construct($blocks) {
+  public function __construct($blocks, $executor = 'show') {
     $this->blocks = $blocks;
+    $this->executor = $executor;
   }
 
   public function build() {
-    $render_array = array(
-       'sub_blocks' => array(
-       )
-    );
-    $renderable_blocks = array();
-    foreach ($this->blocks as $block) {
-      $block_ra = $this->buildBlock($block['bid']);
-      if (!empty($block_ra)) {
-        $renderable_blocks[] = $block_ra;
-      }
+    switch ($this->executor) {
+      // Callback executor determines the option and then displays after
+      // an Ajax callback.
+      case 'callback':
+        $default_block = array_shift($this->blocks);
+        return array(
+          'default_block' => $this->buildBlock($default_block['bid']),
+        );
+        break;
+
+      // Show executor renders all blocks and then determines which one to show.
+      default:
+        $render_array = array(
+          'sub_blocks' => array(
+          )
+        );
+        $renderable_blocks = array();
+        foreach ($this->blocks as $block) {
+          $block_ra = $this->buildBlock($block['bid']);
+          if (!empty($block_ra)) {
+            $renderable_blocks[] = $block_ra;
+          }
+        }
+        if (empty($renderable_blocks)) {
+          throw new Exception('No available blocks to render');
+        }
+        $render_array['sub_blocks'] += $renderable_blocks;
+        return $render_array;
     }
-    if (empty($renderable_blocks)) {
-      throw new Exception('No available blocks to render');
-    }
-    $render_array['sub_blocks'] += $renderable_blocks;
-    return $render_array;
+  }
+
+  /**
+   * Extracts the module and delta for a block from the personalized block id.
+   *
+   * @param $bid
+   *   The personalized block id stored with option sets.
+   * @return array
+   *   An array with two keys:
+   *   - the module name
+   *   - the block delta
+   */
+  public static function extractBlockId($bid) {
+    $pos = strpos($bid, '_delta_');
+    $module = drupal_substr($bid, 0, $pos);
+    $delta = drupal_substr($bid, $pos + 7);
+    return array($module, $delta);
   }
 
   /**
@@ -39,9 +70,7 @@ class PersonalizedBlock {
    */
   public function buildBlock($bid, $render = TRUE) {
     $output = array();
-    $pos = strpos($bid, '_delta_');
-    $module = drupal_substr($bid, 0, $pos);
-    $delta = drupal_substr($bid, $pos + 7);
+    list($module, $delta) = self::extractBlockId($bid);
     // Make sure the user can access the block.
     if ($this->accessBlock($module, $delta)) {
       $block = block_load($module, $delta);

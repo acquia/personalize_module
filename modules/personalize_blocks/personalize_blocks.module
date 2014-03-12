@@ -175,7 +175,7 @@ function personalize_blocks_contextual_links_view_alter(&$element, $items) {
  */
 function personalize_blocks_build_personalized_block($osid) {
   if ($option_set = personalize_block_load($osid)) {
-    $personalized_block = new PersonalizedBlock($option_set->options);
+    $personalized_block = new PersonalizedBlock($option_set->options, $option_set->executor);
     try {
       $renderable = $personalized_block->build();
     }
@@ -183,36 +183,44 @@ function personalize_blocks_build_personalized_block($osid) {
       return NULL;
     }
 
-    $children = element_children($renderable['sub_blocks']);
-    $mismatch = count($children) != count($option_set->options);
-    foreach ($children as $key => $child) {
-      if ($mismatch && $key > 0) {
-        // Something went wrong with at least one option. Just output a single
-        // block.
-        unset($renderable['sub_blocks'][$child]);
-      }
-      else {
-        // Add a contextual link for editing the personalize block.
-        foreach (element_children($renderable['sub_blocks'][$child]) as $key) {
-          $renderable['sub_blocks'][$child][$key]['#contextual_links']['personalize_blocks'] = array(
-            'admin/structure/personalize-blocks/manage',
-            array($osid, 'edit'),
-          );
+    // Block renders all content variations.
+    if (isset($renderable['sub_blocks'])) {
+      $children = element_children($renderable['sub_blocks']);
+      $mismatch = count($children) != count($option_set->options);
+      foreach ($children as $key => $child) {
+        if ($mismatch && $key > 0) {
+          // Something went wrong with at least one option. Just output a single
+          // block.
+          unset($renderable['sub_blocks'][$child]);
+        }
+        else {
+          // Add a contextual link for editing the personalize block.
+          foreach (element_children($renderable['sub_blocks'][$child]) as $key) {
+            $renderable['sub_blocks'][$child][$key]['#contextual_links']['personalize_blocks'] = array(
+              'admin/structure/personalize-blocks/manage',
+              array($osid, 'edit'),
+            );
+          }
         }
       }
+      if ($mismatch) {
+        // Something went wrong with at least one option. Return without further
+        // processing.
+        return $renderable;
+      }
+      $renderable['#first_option'] = $renderable['sub_blocks'][0];
+      $renderable['#personalize_options'] = array();
+      $renderable['#theme_wrappers'] = array('personalize_options_wrapper');
+      foreach($option_set->options as $i => $option) {
+        $renderable['#personalize_options'][$option['option_id']] = $renderable['sub_blocks'][$i];
+      }
     }
-    if ($mismatch) {
-      // Something went wrong with at least one option. Return without further
-      // processing.
-      return $renderable;
-    }
-    $renderable['#first_option'] = $renderable['sub_blocks'][0];
-    $renderable['#personalize_options'] = array();
-    foreach($option_set->options as $i => $option) {
-      $renderable['#personalize_options'][$option['option_id']] = $renderable['sub_blocks'][$i];
+    else {
+      // Chosen block is rendered upon at decision time.
+      $renderable['#theme_wrappers'] = array('personalize_options_callback_wrapper');
+      $renderable['#first_option'] = $renderable['default_block'];
     }
     $renderable['#personalize_option_set'] = $option_set;
-    $renderable['#theme_wrappers'] = array('personalize_options_wrapper');
     personalize_element_with_option_set($renderable, $option_set);
     $renderable['#attached']['css'][] = drupal_get_path('module', 'personalize_blocks') . '/personalize-blocks.css';
 
@@ -314,4 +322,32 @@ function personalize_blocks_personalize_option_values_for_admin($option_set) {
     $option_values[$option['option_id']] = !empty($block->title) ? $block->title : $option['bid'];
   }
   return $option_values;
+}
+
+/**
+ * Implements hook_personalize_get_executor_options().
+ */
+function personalize_blocks_personalize_get_executor_options() {
+  return array(
+    'show' => array(
+      'default' => TRUE,
+    ),
+    'callback' => array(),
+  );
+}
+
+/**
+ * Implements hook_personalize_option_load().
+ */
+function personalize_blocks_personalize_option_load($option_set, $option) {
+  $bid = $option['bid'];
+  $personalized_block = new PersonalizedBlock(array($option));
+  $block = $personalized_block->buildBlock($bid);
+  list($module, $delta) = PersonalizedBlock::extractBlockId($bid);
+  $block["{$module}_{$delta}"]['#contextual_links']['personalize_blocks'] = array(
+    'admin/structure/personalize-blocks/manage',
+    array($option_set->osid, 'edit'),
+  );
+
+  return $block;
 }

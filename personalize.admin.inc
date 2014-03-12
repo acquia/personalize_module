@@ -1028,6 +1028,34 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#description' => 'If a visitor shares the URL the receiver will see what the sharer saw, not a personalized variation.',
       '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
     );
+    // Display options to select the executor if supported.
+    $executors = personalize_get_executors();
+    $supported_executors = module_invoke($plugin['module'], 'personalize_get_executor_options');
+    if (count($supported_executors) == 1) {
+      $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
+        '#type' => 'value',
+        '#value' => array_shift(array_keys($supported_executors)),
+      );
+    }
+    else if (count($supported_executors) > 1) {
+      $default_executor = '';
+      $options = array();
+      foreach($supported_executors as $executor_name => $supported_options) {
+        $options[$executor_name] = $executors[$executor_name]['description'];
+        if (isset($supported_options['default']) && $supported_options['default'] === TRUE) {
+          $default_executor = $executor_name;
+        }
+      }
+      if (empty($default_executor)) {
+        $default_executor = array_shift(array_keys($supported_executors));
+      }
+      $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
+        '#type' => 'radios',
+        '#title' => t('Rendering'),
+        '#options' => $options,
+        '#default_value' => isset($option_set->executor) ? $option_set->executor : $default_executor,
+      );
+    }
   }
 
   $section['actions'] = array('#type' => 'actions');
@@ -1268,6 +1296,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
     if ($option_set = personalize_option_set_load($osid)) {
       $option_set->label = $values['advanced']['label'];
       $option_set->stateful = $values['advanced']['stateful'];
+      if (isset($values['advanced']['executor'])) {
+        $option_set->executor = $values['advanced']['executor'];
+      }
       if ($values['winner']) {
         $option_set->winner = $values['winner'];
       }

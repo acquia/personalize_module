@@ -177,6 +177,13 @@ function personalize_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize.admin.inc',
   );
+  $items['personalize/option_set/%/%/ajax'] = array(
+    'page callback' => 'personalize_option_set_ajax',
+    'page arguments' => array(2, 3),
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -297,6 +304,7 @@ function personalize_page_build(&$page) {
       'library' => array(
         array('system', 'jquery.cookie'),
         array('system', 'jquery.bbq'),
+        array('system', 'drupal.ajax'),
       ),
     )
   );
@@ -411,6 +419,11 @@ function personalize_theme($existing, $type, $theme, $path) {
   return array(
     'personalize_options_wrapper' => array(
       'render element'  => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    ),
+    'personalize_options_callback_wrapper' => array(
+      'render element' => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
     ),
@@ -872,18 +885,32 @@ function personalize_get_label_for_decision_point_name($point_name) {
  *   A human-readable name or FALSE if none can be found.
  */
 function personalize_get_option_label_for_decision_and_choice($decision_name, $option_id) {
-  if (preg_match("/osid\-(\d+)/", $decision_name, $matches) !== FALSE) {
-    $osid = $matches[1];
-    if ($option_set = personalize_option_set_load($osid)) {
-      foreach ($option_set->options as $option) {
-        if ($option['option_id'] == $option_id) {
-          if (isset($option['option_label'])) {
-            return $option['option_label'];
-          }
-          return FALSE;
+  if ($option_set = personalize_get_option_set_for_decision($decision_name)) {
+    foreach ($option_set->options as $option) {
+      if ($option['option_id'] == $option_id) {
+        if (isset($option['option_label'])) {
+          return $option['option_label'];
         }
+        return FALSE;
       }
     }
+  }
+  return FALSE;
+}
+
+/**
+ * Returns the option set for a decision name.
+ *
+ * @param $decision_name
+ *   The name of the decision the option belongs to.
+ *
+ * @return
+ *   The option set class or FALSE if none can be found.
+ */
+function personalize_get_option_set_for_decision($decision_name) {
+  if (preg_match("/osid\-(\d+)/", $decision_name, $matches) !== FALSE) {
+    $osid = $matches[1];
+    return personalize_option_set_load($osid);
   }
   return FALSE;
 }
@@ -1594,6 +1621,34 @@ function _personalize_unpack_option_set($record) {
 }
 
 /**
+ * Returns a particular option set selection for display in JSON.
+ *
+ * @param $option_set
+ *   The set of options.
+ * @param $choice_name
+ *   The choice to be displayed from the options.
+ */
+function personalize_option_set_ajax($decision_name, $choice_name) {
+  $option_set = personalize_get_option_set_for_decision($decision_name);
+  foreach($option_set->options as $delta => $option) {
+    if ($option['option_id'] == $choice_name) {
+      $selected = $option;
+      break;
+    }
+  }
+  if (!isset($selected)) {
+    return array();
+  }
+
+  $plugin = personalize_get_option_set_type($option_set->plugin);
+  $render = module_invoke($plugin['module'], 'personalize_option_load', $option_set, $option);
+  $commands = array();
+  $commands[] = ajax_command_replace('#personalize-' . $decision_name, '<div id="personalize-' . $decision_name . '">' . drupal_render($render) . '</div>');
+  $page = array('#type' => 'ajax', '#commands' => $commands);
+  ajax_deliver($page);
+}
+
+/**
  * Deletes the specified option set.
  *
  * @param $osid
@@ -1636,6 +1691,22 @@ function personalize_get_decision_name_for_option_set($option_set) {
   }
   // Default to a name based on the osid.
   return _personalize_get_nonnumeric_osid($option_set->osid);
+}
+
+/**
+ * Returns a list of all available executors.
+ */
+function personalize_get_executors() {
+  $executors = array(
+    'show' => array(
+      'description' => t('Render all options and display the winning option immediately; optimizes performance for smaller content variation sets.'),
+    ),
+    'callback' => array(
+      'description' => t('Render no options and retrieve the winning option with an additional callback; ideal for larger content variation sets.'),
+    ),
+  );
+  drupal_alter('personalize_executors', $executors);
+  return $executors;
 }
 
 /**
@@ -2140,7 +2211,7 @@ function _personalize_generate_option_index($index) {
  *   an array representing the Option Set as value.
  */
 function _personalize_convert_option_set_to_js_setting($option_set) {
-  // We never want to use numberic keys in the JS so convert it to a
+  // We never want to use numeric keys in the JS so convert it to a
   // string using the prefix if it is numeric.
   $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
   $os_array = (array) $option_set;
