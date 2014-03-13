@@ -966,6 +966,110 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertEqual(2, $option_set_settings['osid-1']['winner']);
   }
 
+  /**
+   * Tests the ajax callback executor available for personalized blocks.
+   *
+   * This test also tests the setting of the executor setting.
+   */
+  function testAjaxCallbackExecutor() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+
+    // Create a new agent via the UI.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[machine_name]' => $machine_name,
+      'agent_basic_info[agent_type]' => 'test_extra_agent',
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+
+    // Add some personalized blocks to the form.
+    $personalized_blocks_form_state = array(
+      'values' => array(
+        'agent_select' => $machine_name,
+        'title' => $this->randomName(),
+        'blocks' => array(
+          array(
+            'option_label' => 'Option A',
+            'option_id' => 'option-A',
+            'weight' => 0,
+            'bid' => 'comment_delta_recent',
+            'remove' => 'remove_0',
+          ),
+          array(
+            'option_label' => 'Option B',
+            'option_id' => 'option-B',
+            'weight' => 1,
+            'bid' => 'system_delta_powered-by',
+            'remove' => 'remove_1',
+          ),
+          array(
+            'option_label' => 'Option C',
+            'option_id' => 'option-C',
+            'weight' => 2,
+            'bid' => 'user_delta_online',
+            'remove' => 'remove_2',
+          ),
+        ),
+      ),
+    );
+    $option_set = personalize_option_set_save(_personalize_blocks_convert_form_to_personalized_block($personalized_blocks_form_state));
+    $osid = $option_set->osid;
+
+    // Go to the campaign edit form and verify rendering options.
+    $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
+    $this->assertFieldByName("option_sets[option_set_{$osid}][advanced][executor]", 'show');
+    $this->assertFieldByName("option_sets[option_set_{$osid}][advanced][executor]", 'callback');
+
+    // Show should be checked by default.
+    $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-show");
+
+    // Now update to callback.
+    $edit = array(
+      "option_sets[option_set_{$osid}][advanced][executor]" => 'callback',
+      "option_sets[option_set_{$osid}][advanced][label]" => $option_set->label,
+    );
+    $this->drupalPost(null, $edit, $this->getButton('option'));
+
+    // Now callback should be checked.
+    $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-callback");
+
+    // Place these blocks on a page.
+    $edit = array();
+    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+
+    // Verify on page there isn't a template script tag for the option set.
+    $show_pattern = '/<div class="personalize-option-set" id="personalize-osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
+
+    $this->drupalGet('');
+    $this->assertNoPattern($show_pattern);
+
+    // Change the rendering to show.
+    $edit = array(
+      "option_sets[option_set_{$osid}][advanced][executor]" => 'show',
+      "option_sets[option_set_{$osid}][advanced][label]" => $option_set->label,
+    );
+    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/edit", $edit, $this->getButton('option'));
+
+    // Verify on the page there is a template script tag for the option set.
+    $this->drupalGet('');
+    $this->assertPattern($show_pattern);
+
+    // Verify the JSON that would be returned for a specific choice.
+    $commands = $this->drupalGetAJAX("personalize/option_set/osid-{$osid}/option-A/ajax");
+    $selector = "personalize-osid-{$osid}";
+    foreach ($commands as $command) {
+      if ($command['command'] == 'insert') {
+        $this->assertEqual($command['selector'], "#{$selector}");
+        $this->assertEqual(strpos($command['data'], '<div id="' . $selector . '">'), 0, 'Response begins by replacing the selector.');
+      }
+    }
+  }
+
   function testCampaignContextAjaxCallbacks() {
     $admin_user = $this->drupalCreateUser(array('manage personalized content'));
     $this->drupalLogin($admin_user);
@@ -1092,7 +1196,7 @@ class PersonalizeTest extends DrupalWebTestCase {
   }
 
   /**
-   * Helper method to move buttons names to one pace to simplify
+   * Helper method to move buttons names to one place to simplify
    * it's maintaining
    *
    * Kind of Page Objects Patterns
