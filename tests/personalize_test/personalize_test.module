@@ -36,6 +36,12 @@ function personalize_test_menu() {
     'page arguments' => array('personalize_test_embedded_agent_creation_form'),
     'access arguments' => array('access administration pages'),
   );
+  $items['personalize-test/send-goal/ajax'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Endpoint for receiving goals from the client',
+    'page callback' => 'personalize_test_goal_ajax',
+    'access arguments' => array('access content'),
+  );
   return $items;
 }
 
@@ -192,6 +198,30 @@ function personalize_test_form() {
 function personalize_test_form_submit($form, &$form_state) {
   personalize_set_goal('test-agent-3', 'some-goal', 4);
   $form_state['redirect'] = '';
+}
+
+/**
+ * Receives a goal.
+ *
+ * @param $agent_name
+ * @param $session
+ * @param $goal_name
+ * @param $goal_value
+ */
+function personalize_test_goal_ajax($agent_name, $session, $goal_name, $goal_value) {
+  $current_goals = variable_get('personalize_test_goals_received', array());
+  if (!isset($current_goals[$agent_name])) {
+    $current_goals[$agent_name] = array();
+  }
+  if (!isset($current_goals[$agent_name][$goal_name])) {
+    $current_goals[$agent_name][$goal_name] = array();
+  }
+  if (!isset($current_goals[$agent_name][$goal_name][$session])) {
+    $current_goals[$agent_name][$goal_name][$session] = 0;
+  }
+  $current_goals[$agent_name][$goal_name][$session] += $goal_value;
+  variable_set('personalize_test_goals_received', $current_goals);
+  drupal_exit();
 }
 
 /**

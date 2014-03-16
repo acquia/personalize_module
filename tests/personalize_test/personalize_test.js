@@ -16,6 +16,13 @@ Drupal.personalize.agents.test_agent = {
     if (window.console) {
       console.log('Sending goal ' + goal_name + ' to agent ' + agent_name + ' with value ' + value);
     }
+    var session_id = Drupal.personalize.initializeSessionID();
+    if (!session_id) {
+      session_id = "anonymous";
+    }
+    $.ajax({
+      "url": '/personalize-test/send-goal/ajax/' + agent_name + '/' + session_id + '/' + goal_name + '/' + value
+    });
   }
 };
 
