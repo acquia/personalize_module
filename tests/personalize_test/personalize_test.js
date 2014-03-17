@@ -12,7 +12,7 @@ Drupal.personalize.agents.test_agent = {
     }
     callback(decisions);
   },
-  'sendGoalToAgent': function(agent_name, goal_name, value) {
+  'sendGoalToAgent': function(agent_name, goal_name, value, jsEvent) {
     if (window.console) {
       console.log('Sending goal ' + goal_name + ' to agent ' + agent_name + ' with value ' + value);
     }
@@ -20,8 +20,15 @@ Drupal.personalize.agents.test_agent = {
     if (!session_id) {
       session_id = "anonymous";
     }
+    var callback = Drupal.visitorActions.preventDefaultCallback(jsEvent);
     $.ajax({
-      "url": '/personalize-test/send-goal/ajax/' + agent_name + '/' + session_id + '/' + goal_name + '/' + value
+      "url": '/personalize-test/send-goal/ajax/' + agent_name + '/' + session_id + '/' + goal_name + '/' + value,
+      "complete": function(jqXHR, status) {
+        if (typeof callback === 'function') {
+          callback();
+          callback = null;
+        }
+      }
     });
   }
 };
