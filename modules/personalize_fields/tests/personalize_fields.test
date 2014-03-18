@@ -17,6 +17,9 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp(array('personalize_fields', 'personalize_test'));
+    // Make sure the default agent is persisted in the database.
+    $agent = personalize_agent_load('test-agent');
+    personalize_agent_save($agent);
   }
 
   /**
@@ -29,7 +32,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $field = array(
       'type' => 'text',
       'field_name' => 'article_headline',
-      'cardinality' => 2,
+      'cardinality' => -1,
       'settings' => array(
         'personalizable' => 1,
       ),
@@ -49,7 +52,9 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
     $edit['agent_select'] = 'test-agent';
-    $this->drupalPost('node/add/article', $edit, t('Save'));
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
 
     // Assert that we can load the new option set from the db.
     $option_set = personalize_option_set_load(1);
@@ -69,17 +74,36 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertEqual($option_set, $option_sets['article_headline']);
 
     // Create another node with a personalized headline
+    // Set up two headline fields
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
     $edit = array();
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
     $edit['agent_select'] = 'test-agent';
-    $this->drupalPost('node/add/article', $edit, t('Save'));
+    $this->drupalPost(NULL, $edit, t('Save'));
 
     // Load the node edit form and confirm there is no agent dropdown.
     $this->drupalGet('node/1/edit');
     $this->assertFieldByName('article_headline[und][0][value]');
     $this->assertNoFieldByName('agent_select');
+
+    // Add another personalized field and confirm that the agent is paused.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    unset($edit['agent_select']);
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $edit['article_headline[und][2][value]'] = 'third option';
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
+    // Restart the agent and make sure that other changes do not cause pausing.
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] .= ': edited';
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertNoText(t('The campaign has been paused because you have made changes.'));
 
     // Delete the first node and confirm that the option set gets deleted.
     node_delete(1);

@@ -256,13 +256,10 @@ function personalize_fields_form_submit($form, &$form_state) {
       $option_set->plugin = 'fields';
       $option_set->agent = $agent_name;
 
-      // If the entity already has an ID then we can go ahead and save the option set.
-      if ($entity_id) {
-        personalize_fields_option_set_save($option_set, $entity_type, $entity, $key);
-      }
-      // Otherwise we add the info to the entity so that it will be processed on
-      // hook_entity_insert.
-      else {
+      // If the entity already has an ID then the options will be saved on
+      // hook_entity_update.  Otherwise we add the info to the entity so that
+      // it will be processed on hook_entity_insert.
+      if (!$entity_id) {
         $form_state[$entity_type]->option_sets[$key] = $option_set;
       }
     }
@@ -366,11 +363,39 @@ function personalize_fields_entity_insert($entity, $type) {
  * Implements hook_entity_insert().
  *
  * Used to update Option Sets after an entity has been saved to the database.
+ *
+ * @see personalize_fields_entity_presave()
  */
 function personalize_fields_entity_update($entity, $type) {
+  $updates = drupal_static('personalize_fields_entity_presave', array());
   if (isset($entity->option_sets)) {
     foreach($entity->option_sets as $field_name => $option_set) {
-      personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+      if (!empty($updates[$field_name])) {
+        personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ *
+ * An option set change is significant if the number of options change.
+ */
+function personalize_fields_entity_presave($entity, $type) {
+  $updates = &drupal_static(__FUNCTION__, array());
+  if (isset($entity->option_sets)) {
+    list($entity_id, $rev_id, $bundle) = entity_extract_ids($type, $entity);
+    // The value change is only relevant to editing entities.
+    if ($entity_id == NULL) {
+      return;
+    }
+    $entities = entity_load($type, array($entity_id));
+    $current = $entities[$entity_id];
+    foreach($entity->option_sets as $field_name => $option_set) {
+      if (count($entity->{$field_name}[LANGUAGE_NONE]) !== count($current->{$field_name}[LANGUAGE_NONE])) {
+        $updates[$field_name] = TRUE;
+      }
     }
   }
 }

@@ -609,7 +609,6 @@ function personalize_agent_set_status($agent_name, $status) {
     watchdog('personalize', 'Attempt to set an agent to an invalid status');
     return FALSE;
   }
-
   $old_status = personalize_agent_get_status($agent_name);
   if (!$old_status) {
     return FALSE;
@@ -643,6 +642,9 @@ function personalize_agent_set_status($agent_name, $status) {
     ->fields($fields)
     ->condition('machine_name', $agent_name)
     ->execute();
+
+  // Clear the agent cache for this agent.
+  personalize_agent_load($agent_name, TRUE);
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
@@ -1243,7 +1245,7 @@ function personalize_agent_load_agent($agent_name, $reset = FALSE) {
   $loaded = &drupal_static(__FUNCTION__, array());
   if ($reset || !isset($loaded[$agent_name])) {
     $loaded[$agent_name] = FALSE;
-    if ($agent_data = personalize_agent_load($agent_name)) {
+    if ($agent_data = personalize_agent_load($agent_name, $reset)) {
       ctools_include('plugins');
       if ($agent_class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
         if ($agent = call_user_func_array(array($agent_class, 'create'), array($agent_data))) {
@@ -1381,7 +1383,6 @@ function personalize_option_set_save($option_set) {
   if (!isset($option_set->plugin) || !isset($option_set->agent) || !isset($option_set->options) || !is_array($option_set->options)) {
     throw new Exception('An Option Set must have a type, an agent and an array of options');
   }
-
   if (isset($option_set->osid)) {
     $prior_values = personalize_option_set_load($option_set->osid, TRUE);
     if ($prior_values) {
@@ -1454,10 +1455,11 @@ function personalize_option_set_save($option_set) {
       personalize_status_toggle_message($option_set->agent, PERSONALIZE_STATUS_PAUSED);
     }
   }
-  // Allow modules to act after an option set has been saved.
-  module_invoke_all('personalize_option_set_save', $option_set);
   // Set the active campaign to the one this option set was created for.
   personalize_set_campaign_context($option_set->agent);
+
+  // Allow modules to act after an option set has been saved.
+  module_invoke_all('personalize_option_set_save', $option_set);
   return $option_set;
 }
 
