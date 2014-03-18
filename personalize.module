@@ -243,9 +243,17 @@ function personalize_page_build(&$page) {
   // passed in the querystring.
   if (isset($_GET[PERSONALIZE_PRESELECTION_PARAM])) {
     $preselected = explode(',', $_GET[PERSONALIZE_PRESELECTION_PARAM]);
-    foreach ($preselected as $option_set) {
-      list($option_set_id, $selection) = explode('--', trim($option_set));
-      $settings['preselected'][$option_set_id] = $selection;
+    foreach ($preselected as $option_str) {
+      list($osid, $selection) = explode('--', trim($option_str));
+      // Make sure this is a valid option set.
+      if ($option_set = personalize_get_option_set_for_decision($osid)) {
+        foreach ($option_set->options as $option) {
+          if ($option['option_id'] === $selection) {
+            $settings['preselected'][$osid] = $option['option_id'];
+            break;
+          }
+        }
+      }
     }
   }
   if ($active_campaign = personalize_get_campaign_context()) {
@@ -908,7 +916,7 @@ function personalize_get_option_label_for_decision_and_choice($decision_name, $o
  *   The option set class or FALSE if none can be found.
  */
 function personalize_get_option_set_for_decision($decision_name) {
-  if (preg_match("/osid\-(\d+)/", $decision_name, $matches) !== FALSE) {
+  if (preg_match("/^osid\-(\d+)$/", $decision_name, $matches) !== FALSE) {
     $osid = $matches[1];
     return personalize_option_set_load($osid);
   }
