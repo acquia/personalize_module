@@ -50,8 +50,14 @@ function personalize_url_context_ctools_plugin_api($owner, $api) {
  * Implements hook_page_build().
  */
 function personalize_url_context_page_build(&$page) {
+  $all_params = drupal_get_query_parameters();
+  $contexts = variable_get('personalize_url_querystring_contexts', array());
+  $params = array_intersect_key($all_params, $contexts);
+  foreach ($params as $key => &$value) {
+    $value = check_plain($value);
+  }
   $settings = array(
-    'querystring_params' => drupal_get_query_parameters(),
+    'querystring_params' => $params,
   );
 
   $page['page_top']['personalize_url_context'] = array(
