@@ -452,6 +452,11 @@ function personalize_theme($existing, $type, $theme, $path) {
       'file' => 'personalize.theme.inc',
       'template' => 'personalize-admin-content',
     ),
+    'personalize_admin_info_details' => array(
+      'render element' => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    ),
     'personalize_content_set_item' => array(
       'render element' => 'element',
       'path' => $path . '/theme',
@@ -1709,10 +1714,14 @@ function personalize_get_decision_name_for_option_set($option_set) {
 function personalize_get_executors() {
   $executors = array(
     'show' => array(
-      'description' => t('Render all options and display the winning option immediately; optimizes performance for smaller content variation sets.'),
+      'title' => t('Preload all variations'),
+      'description' => t('Typically faster for fewer variations.'),
+      'details' => t('Preloading renders all of the variations on the page and hides all but the personalized variation using Javascript.  This allows the full page to be cached and the personalized variation to load instantly.'),
     ),
     'callback' => array(
-      'description' => t('Render no options and retrieve the winning option with an additional callback; ideal for larger content variation sets.'),
+      'title' => 'Load personalized variation only',
+      'description' => t('Faster page-load for many or complex variations.  The variation will load slightly after the rest of the page.'),
+      'details' => t('This increases performance by removing the weight of all of the other variations from the pageload.  An AJAX request will be made to the server to load the personalized variation slightly after the page.  We recommend you use this option if you are not using caching, for example if most of your users are authenticated.'),
     ),
   );
   drupal_alter('personalize_executors', $executors);

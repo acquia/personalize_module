@@ -101,3 +101,10 @@ html.js .personalize-collapsed .personalize-admin-content-content {
   font-weight: bold;
   color: red;
 }
+
+.personalize-admin-optional {
+  color: #999;
+}
+.personalize-admin-optional-trigger {
+  margin-left: 0.4em;
+}

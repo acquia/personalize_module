@@ -176,4 +176,29 @@
     }
   }
 
+  /**
+   * Handle show/hide of optional admin information.
+   */
+  Drupal.behaviors.personalizeAdminOptional = {
+    attach: function(context, settings) {
+      $('.personalize-admin-optional', context).once().each(function() {
+        var closedText = Drupal.t('Info');
+        var openedText = Drupal.t('Hide info');
+        var $optional = $(this);
+        // The optional content will be nested within parent text.
+        $optional.before('<a href="#" class="personalize-admin-optional-trigger">' + closedText + '</a>');
+        $('.personalize-admin-optional-trigger',$optional.parent()).click(function(e) {
+          $optional.slideToggle();
+          if ($(this).text() == closedText) {
+            $(this).text(openedText);
+          } else {
+            $(this).text(closedText);
+          }
+          return false;
+        });
+        $optional.hide();
+      });
+    }
+  }
+
 })(jQuery);

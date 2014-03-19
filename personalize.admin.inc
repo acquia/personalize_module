@@ -1040,8 +1040,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     else if (count($supported_executors) > 1) {
       $default_executor = '';
       $options = array();
-      foreach($supported_executors as $executor_name => $supported_options) {
-        $options[$executor_name] = $executors[$executor_name]['description'];
+      foreach($supported_executors as $executor_name => &$supported_options) {
+        // Allow the supported declarations to overwrite the default displays.
+        $supported_options += $executors[$executor_name];
+        $options[$executor_name] = $supported_options['title'];
         if (isset($supported_options['default']) && $supported_options['default'] === TRUE) {
           $default_executor = $executor_name;
         }
@@ -1054,7 +1056,14 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         '#title' => t('Rendering'),
         '#options' => $options,
         '#default_value' => isset($option_set->executor) ? $option_set->executor : $default_executor,
+        '#title_display' => 'invisible',
       );
+      // Add descriptions to the executor options
+      foreach($supported_executors as $executor_name => $options) {
+        $section['option_set_' . $option_set -> osid]['advanced']['executor'][$executor_name] = array(
+          '#description' => $options['description'] . theme('personalize_admin_info_details', $options),
+        );
+      }
     }
   }
 

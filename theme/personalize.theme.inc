@@ -110,6 +110,21 @@ function theme_personalize_campaign_status_update($variables) {
 }
 
 /**
+ * Theme wrapper for an administrative option that displays optional
+ * details beyond the base description.
+ *
+ * @param $variables
+ *   Associative array of variables for the theme.
+ *   - details: The optional details that should only be shown when requested.
+ */
+function theme_personalize_admin_info_details($variables) {
+  if (!empty($variables['details'])) {
+    return '<div class="personalize-admin-optional">' . $variables['details'] . '</div>';
+  }
+  return '';
+}
+
+/**
  * Implements hook_personalize_admin_section().
  */
 function personalize_preprocess_personalize_admin_section(&$variables, $hook) {

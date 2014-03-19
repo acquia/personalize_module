@@ -20,3 +20,6 @@
   float: left; /* RTL */
 }
 
+.personalize-admin-optional-trigger {
+  margin-right: 0.4em; /* RTL */
+}
