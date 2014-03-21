@@ -2259,10 +2259,11 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
  *   The form element to add the #states property to.
  */
 function personalize_form_element_add_states($state, &$element) {
-  // If this element has children we add the #states property to the children,
-  // not the element itself.
+  // If this element has children but is not a fieldset, we add the #states
+  // property to the children, not the element itself.
   $children = element_children($element);
-  if (!empty($children)) {
+  $is_fieldset = isset($element['#type']) && $element['#type'] === 'fieldset';
+  if (!$is_fieldset && !empty($children)) {
     foreach ($children as $child) {
       personalize_form_element_add_states($state, $element[$child]);
     }
