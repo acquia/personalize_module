@@ -651,7 +651,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     '#type' => 'submit',
     '#value' => t('Add goal'),
     '#attributes' => array(
-      'class' => array('personalize-add-goal'),
+      'class' => array('personalize-add-link'),
       'title' => t('Click here to add more goals.')
     ),
     '#submit' => array('personalize_agent_add_goal_submit'),

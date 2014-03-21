@@ -37,10 +37,11 @@
   margin-bottom: 9px;
 }
 
-/* Add a goal button should appear as an action link
-* @todo would much rather use action-link style from theme instead
+/* For submit buttons to appear as add action link.
+* @todo would much rather use action-link style from theme instead but it is
+* specific to "ul.action-links a" selector in Ember and we need a submit button.
 */
-input.personalize-add-goal.form-submit {
+input[type="submit"].personalize-add-link {
   background: transparent url(../images/add.png) no-repeat 0 center;
   border: none;
   color: #0074BD;
@@ -49,9 +50,10 @@ input.personalize-add-goal.form-submit {
   margin: 0;
   line-height: 30px;
 }
-
-input.personalize-add-goal:hover {
+input[type="submit"].personalize-add-link:hover {
   text-decoration: underline;
+  background: transparent url(../images/add.png) no-repeat 0 center;
+  color: #0074BD;
 }
 
 /**
