@@ -1001,6 +1001,13 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         }
       }
     }
+    if ($agent instanceof PersonalizeAgentReportInterface) {
+      $section['option_set_' . $option_set->osid]['report'] = array(
+        '#type' => 'markup',
+        '#markup' => theme('personalize_option_set_report', array('report' => $agent->renderStatsForOptionSet($option_set, $agent_data->started)))
+      );
+    }
+
     $section['option_set_' . $option_set->osid]['advanced'] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,

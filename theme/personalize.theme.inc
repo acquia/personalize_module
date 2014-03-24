@@ -110,6 +110,23 @@ function theme_personalize_campaign_status_update($variables) {
 }
 
 /**
+ * Theme function to output a report for an Option Set.
+ *
+ * @param $variables
+ *   An associative array of variables with a single 'report' key that
+ *   holds the report.
+ * @return string
+ *   The themed output.
+ */
+function theme_personalize_option_set_report($variables) {
+  if (empty($variables['report'])) {
+    return '';
+  }
+  $output = '<div class="personalize-option-set-report">' . $variables['report'] . '</div>';
+  return $output;
+}
+
+/**
  * Theme wrapper for an administrative option that displays optional
  * details beyond the base description.
  *

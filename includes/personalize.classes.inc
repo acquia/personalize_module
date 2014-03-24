@@ -126,6 +126,24 @@ interface PersonalizeAgentInterface {
   public function verify();
 }
 
+interface PersonalizeAgentReportInterface {
+
+  /**
+   * Returns information about the performance of the Option Set.
+   *
+   * @param $option_set
+   *   The Option Set to return stats for.
+   * @param $date_from
+   *   The starting date for the report.
+   * @param null $date_to
+   *   The end date for the report.
+   * @return string
+   *   A string of text / markup containing the stats.
+   */
+  public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL);
+
+}
+
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
 
   const EXPLICIT_TARGETING_MULTIPLE_OR = 1;
