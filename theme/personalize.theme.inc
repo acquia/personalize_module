@@ -161,15 +161,12 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   $variables['title_attributes_array']['class'][] = 'personalize-admin-content-title';
   $variables['content_attributes_array']['class'][] = 'personalize-admin-content-content';
 
-  // Add content numbering to the title prefix
-  if (isset($variables['element']['#content_number'])) {
-    $variables['title_prefix']['content_number'] = array(
-      '#theme_wrappers' => array('container'),
-      '#markup' => $variables['element']['#content_number'],
-      '#attributes' => array(
-        'class' => array('personalize-variant'),
-      ),
-    );
+  // Add "add" links to the title suffix.
+  if (isset($variables['element']['#add_markup'])) {
+    if (isset($variables['element']['#add_markup']['#prefix'])) {
+      $variables['element']['#add_markup']['#prefix'] = '<span class="personalize-admin-content-add">' . $variables['element']['#add_markup']['#prefix'] . '</span>';
+    }
+    $variables['title_suffix']['add_markup'] = $variables['element']['#add_markup'];
   }
 
   // Add the variation count to the title suffix.
@@ -187,12 +184,11 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   if ($variables['collapsible']) {
     $variables['classes_array'][] = 'personalize-collapsible';
     $variables['classes_array'][] = 'personalize-collapsed';
-    $variables['title_suffix']['collapse-trigger'] = array(
+    $variables['title_prefix']['collapse-trigger'] = array(
       '#type' => 'link',
-      '#title' => isset($variables['element']['#title_reveal']) ? $variables['element']['#title_reveal'] : t('Show all'),
+      '#title' => t('edit'),
       '#href' => '',
-      '#attributes' => array('class' => array('personalize-collapse-trigger')),
-      '#weight' => 20,
+      '#attributes' => array('class' => array('personalize-collapse-edit')),
     );
   }
 }

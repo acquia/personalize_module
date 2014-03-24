@@ -236,15 +236,33 @@ function personalize_agent_list() {
  *   A callback function to apply Ajax settings to the form.
  */
 function personalize_status_toggle_form($form, &$form_state, $agent_name, $current_status, $ajax_callback = NULL) {
+  // If called via Ajax, then retrieve the new status values from the previous submit.
+  if (!empty($form_state['values']['agent'])) {
+    $agent_data = personalize_agent_load($agent_name);
+    $current_status = $agent_data->status;
+  }
+  $form = personalize_status_toggle_form_definition($agent_name, $current_status, FALSE, $ajax_callback);
+  return $form;
+}
+
+/**
+ * Gets the form fields that define the status toggle form.
+ *
+ * @param $agent_name
+ *   The name of the campaign for which to toggle status.
+ * @param $current_status
+ *   The current status of the campaign, should match defined constant values.
+ * @param $add_handlers
+ *   Indicates if submit/validate handlers need to be added to the submit.
+ *   These are only needed if the form is included within another form.
+ * @param $ajax_callback
+ *   A callback function to apply Ajax settings to the form.
+ */
+function personalize_status_toggle_form_definition($agent_name, $current_status, $add_handlers = FALSE, $ajax_callback = NULL) {
   $form = array();
   $form['#prefix'] = !empty($form['#prefix']) ? '<div id="personalize-status-toggle-form">' . $form['#prefix'] : '<div id="personalize-status-toggle-form">';
   $form['#suffix'] = !empty($form['#suffix']) ? $form['#suffix'] . '</div>' : '</div>';
 
-  // If called via Ajax, then retrieve the new status values from the previous submit.
-  if (!empty($form_state['values']['agent'])) {
-    $agent_data = personalize_agent_load($form_state['values']['agent']);
-    $current_status = $form_state['values']['status'];
-  }
   switch ($current_status) {
     case PERSONALIZE_STATUS_NOT_STARTED:
       $new_status = PERSONALIZE_STATUS_RUNNING;
@@ -274,17 +292,15 @@ function personalize_status_toggle_form($form, &$form_state, $agent_name, $curre
   );
   $form['actions']['toggle_form'] = array(
     '#type' => 'submit',
+    '#name' => 'toggle_submit',
     '#value' => $button_text,
   );
+  if ($add_handlers) {
+    $form['actions']['toggle_form']['#submit'] = array('personalize_status_toggle_form_submit');
+  }
   if (is_callable($ajax_callback)) {
     $form = $ajax_callback($form);
   }
-  // We have to specify the include file so as not to lose it during rendering from ajax.
-  // @see personalize_agent_form_ajax_submit()
-  // @see drupal_retrieve_form():734
-  $form_state['build_info']['files'] = array(
-    drupal_get_path('module', 'personalize') . '/personalize.admin.inc',
-  );
   return $form;
 }
 
@@ -381,7 +397,6 @@ function personalize_agent_page($agent_data) {
       'id' => 'personalize-agent-page-messages',
     ),
   );
-  $build['toggle_form'] = drupal_get_form("personalize_status_toggle_form", $agent_data->machine_name, $agent_data->status, 'personalize_agent_page_status_toggle_ajax_callback');
   $build['agent'] = drupal_get_form('personalize_agent_form', $agent_data);
   $build['option_sets'] = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
   $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
@@ -404,13 +419,25 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
       '#theme_wrappers' => array('container'),
     ),
   );
+
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'personalize_admin_content',
     '#collapsible' => empty($agent_data->machine_name) ? 0 : 1,
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
-    '#title_reveal' => t('configure'),
   );
+
+  $form['agent_form']['agent_fieldset']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
+  );
+  if (isset($form_state['values']['agent'])) {
+    $agent_data = personalize_agent_load($form_state['values']['agent']);
+  }
+  $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+
   $form['agent_form']['agent_fieldset']['agent_basic'] = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
 
   // Add visitor context items to the form.
@@ -437,6 +464,13 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
     );
   }
 
+  // We have to specify the include file so as not to lose it during rendering from ajax.
+  // @see personalize_agent_form_ajax_submit()
+  // @see drupal_retrieve_form():734
+  $form_state['build_info']['files'] = array(
+    drupal_get_path('module', 'personalize') . '/personalize.admin.inc',
+  );
+
   return $form;
 }
 
@@ -449,28 +483,28 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent'], TRUE);
   }
+
   if ($form['#form_id'] == 'personalize_agent_form') {
     // Configuration the agent pauses the agent status so toggle and
     // option sets must also be updated.
     $agent_data = personalize_agent_load($form_state['values']['agent_basic_info']['machine_name'], TRUE);
-    $toggle_form = drupal_get_form("personalize_status_toggle_form", $agent_data->machine_name, $agent_data->status, 'personalize_agent_page_status_toggle_ajax_callback');
-    $commands[] = ajax_command_replace('#personalize-status-toggle-form', drupal_render($toggle_form));
     $option_sets_form = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
     $commands[] = ajax_command_replace('#personalize-agent-option-sets-form', drupal_render($option_sets_form));
+    // This could be triggered by the status toggle so enforce reloading the
+    // full personalize-agent-form regardless of the submit used.
+    $form_div_id = 'personalize-agent-form';
   }
-  elseif (strpos($form['#form_id'], 'personalize_status_toggle_form') === 0) {
-    // Toggling the status can cause display changes for the option sets.
-    // Update the agent data to the new status for subsequent form rebuilds.
-    // Because this is the only field that changed, no need to reload.
-    $agent_data->status = $form_state['values']['status'];
-    $option_sets_form = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
-    $commands[] = ajax_command_replace('#personalize-agent-option-sets-form', drupal_render($option_sets_form));
-  }
-  $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
 
   // Show status messages relative to the personalize page.
   $commands[] = ajax_command_replace('#personalize-agent-page-messages', '<div id="personalize-agent-page-messages">' . theme('status_messages') . '</div>');
-  $commands[] = ajax_command_replace('#' . $form_state['triggering_element']['#ajax']['wrapper'], drupal_render($form));
+
+  // Return the updated build of the submitted form.
+  $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
+  if (!isset($form_div_id)) {
+    $form_div_id = $form_state['triggering_element']['#ajax']['#wrapper'];
+  }
+  $commands[] = ajax_command_replace('#' . $form_div_id, drupal_render($form));
+
   // Any agent type that needs to sync changes to a 3rd party system will probably
   // do so asynchronously. They can implement this hook to sync the changes during
   // ajax submit of these forms, so they don't have to wait for a new page load.
@@ -643,11 +677,16 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     '#collapsible' => 1,
     '#tree' => FALSE,
     '#title' => t('Goals'),
-    '#title_reveal' => t('edit'),
   );
 
-  $section = &$form['variations']['primary']['goals_fieldset'];
-  $section['goals_more'] = array(
+  $form['variations']['primary']['goals_fieldset']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
+  );
+  $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
+    '#prefix' => '+',
     '#type' => 'submit',
     '#value' => t('Add goal'),
     '#attributes' => array(
@@ -662,6 +701,8 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     ),
     '#limit_validation_errors' => array(array('goals')),
   );
+
+  $section = &$form['variations']['primary']['goals_fieldset'];
   $section['goals'] = array(
     '#tree' => TRUE,
     '#theme_wrappers' => array('container'),
@@ -736,13 +777,6 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         '#attributes' => array(
           'class' => array('personalize-goal-triggers'),
         ),
-      ),
-    );
-    $section['goals'][$delta]['triggers']['variant'] = array(
-      '#theme_wrappers' => array('container'),
-      '#markup' => $delta + 1,
-      '#attributes' => array(
-        'class' => array('personalize-variant'),
       ),
     );
     $section['goals'][$delta]['triggers']['action_name'] = array(
@@ -837,17 +871,19 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     '#tree' => TRUE,
     '#type' => 'personalize_admin_content',
     '#collapsible' => 1,
-    '#title' => t('Content variations'),
-    '#title_reveal' => t('edit'),
+    '#title' => t('Content variation sets'),
   );
-  $section = &$form['variations']['primary']['option_sets'];
-  $section['create_option_sets'] = array(
-    '#tree' => FALSE,
+  $form['variations']['primary']['option_sets']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
   );
-  $section['create_option_sets']['add_new'] = array(
-    '#type' => 'markup',
+  $form['variations']['primary']['option_sets']['header']['add'] = array(
     '#markup' => personalize_get_create_new_links_dropbutton("admin/structure/personalize/manage/{$agent_data->machine_name}/edit"),
   );
+
+  $section = &$form['variations']['primary']['option_sets'];
   // For any option sets that have been created for this campaign, display
   // advanced options for specifying decision name etc.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
@@ -859,12 +895,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   foreach ($option_sets as $option_set) {
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
-      '#type' => 'personalize_admin_content',
+      '#type' => 'fieldset',
       '#collapsible' => 1,
+      '#collapsed' => TRUE,
       '#title' => isset($option_set->label) ? $option_set->label : t('Option Set @id', array('@id' => $option_set->osid)),
-      '#title_reveal' => t('edit'),
-      '#content_number' => $option_number,
-      '#description' => t('This is a @type Option Set with @num options defined', array('@type' => $option_set->plugin, '@num' => count($option_set->options))),
     );
     $option_number++;
     $agent = personalize_agent_load_agent($agent_data->machine_name);
@@ -1122,7 +1156,6 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
     '#collapsible' => TRUE,
     '#tree' => TRUE,
     '#title' => t('Multivariate Tests'),
-    '#title_reveal' => t('edit'),
   );
   $form['mvt_wrapper']['mvt']['agent'] = array(
     '#type' => 'value',
@@ -1147,7 +1180,6 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
         '#type' => 'personalize_admin_content',
         '#collapsible' => FALSE,
         '#title' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
-        '#content_number' => $delta,
       );
       $delta++;
     }

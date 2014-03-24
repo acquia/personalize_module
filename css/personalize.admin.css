@@ -42,18 +42,24 @@
 * specific to "ul.action-links a" selector in Ember and we need a submit button.
 */
 input[type="submit"].personalize-add-link {
-  background: transparent url(../images/add.png) no-repeat 0 center;
+  background: transparent;
   border: none;
   color: #0074BD;
-  font-size: 1em;
-  padding: 0 0 0 15px;
-  margin: 0;
+  font-size: .75em;
+  padding: 0;
+  margin: 0 0 0 0.3em;
   line-height: 30px;
 }
 input[type="submit"].personalize-add-link:hover {
   text-decoration: underline;
-  background: transparent url(../images/add.png) no-repeat 0 center;
+  background: transparent;
   color: #0074BD;
+}
+/* The + before the Add Goals button */
+#personalize-agent-goals-form .personalize-admin-content-header:not(input) {
+  color: #0074BD;
+  font-size: 1.3em;
+  display: inline-block;
 }
 
 /**
@@ -109,4 +115,11 @@ html.js .personalize-collapsed .personalize-admin-content-content {
 }
 .personalize-admin-optional-trigger {
   margin-left: 0.4em;
+}
+
+.personalize-admin-content-title-suffix,
+.personalize-admin-content-title-suffix div,
+#personalize-agent-form #personalize-status-toggle-form,
+#personalize-agent-form #personalize-status-toggle-form div{
+  display: inline;
 }
