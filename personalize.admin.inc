@@ -294,6 +294,9 @@ function personalize_status_toggle_form_definition($agent_name, $current_status,
     '#type' => 'submit',
     '#name' => 'toggle_submit',
     '#value' => $button_text,
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
   );
   if ($add_handlers) {
     $form['actions']['toggle_form']['#submit'] = array('personalize_status_toggle_form_submit');
@@ -454,7 +457,23 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset']['actions'] = array('#type' => 'actions');
   $form['agent_form']['agent_fieldset']['actions']['submit_form'] = array(
     '#type' => 'submit',
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
     '#value' => t('Save Campaign settings'),
+  );
+  $form['agent_form']['agent_fieldset']['actions']['reset'] = array(
+    '#type' => 'button',
+    '#button_type' => 'reset',
+    '#value' => t('Cancel'),
+    '#attributes' => array(
+      'class' => array('form-submit'),
+    ),
+    '#ajax' => array(
+      'callback' => 'personalize_agent_form_ajax_reset',
+      'wrapper' => 'personalize-agent-form',
+      'effect' => 'fade',
+    ),
   );
   if (!empty($agent_data->machine_name)) {
     $form['agent_form']['agent_fieldset']['actions']['submit_form']['#ajax'] = array(
@@ -472,6 +491,21 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   );
 
   return $form;
+}
+
+/**
+ * Ajax callback for agent form to reset the current subform.
+ */
+function personalize_agent_form_ajax_reset($form, &$form_state) {
+  // Clear custom storage.
+  unset($form_state['to_remove']);
+  unset($form_state['num_goals']);
+  // Clear user input.
+  unset($form_state['complete form']);
+  $form_state['input'] = array();
+  $form_state['values'] = array();
+  // Rebuild the form.
+  return drupal_rebuild_form($form['#form_id'], $form_state, $form);
 }
 
 /**
@@ -831,6 +865,22 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       'wrapper' => 'personalize-agent-goals-form',
       'effect' => 'fade',
     ),
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
+  );
+  $section['actions']['reset'] = array(
+    '#type' => 'button',
+    '#button_type' => 'reset',
+    '#value' => t('Cancel'),
+    '#attributes' => array(
+      'class' => array('form-submit'),
+    ),
+    '#ajax' => array(
+      'callback' => 'personalize_agent_form_ajax_reset',
+      'wrapper' => 'personalize-agent-goals-form',
+      'effect' => 'fade',
+    )
   );
   return $form;
 }
@@ -1121,6 +1171,22 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       'wrapper' => 'personalize-agent-option-sets-form',
       'effect' => 'fade',
     ),
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
+  );
+  $section['actions']['reset'] = array(
+    '#type' => 'button',
+    '#button_type' => 'reset',
+    '#value' => t('Cancel'),
+    '#ajax' => array(
+      'callback' => 'personalize_agent_form_ajax_reset',
+      'wrapper' => 'personalize-agent-option-sets-form',
+      'effect' => 'fade',
+    ),
+    '#attributes' => array(
+      'class' => array('form-submit'),
+    ),
   );
 
   // We have to specify the include file so as not to lose it during rendering from ajax.
@@ -1206,6 +1272,22 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       'callback' => 'personalize_agent_form_ajax_submit',
       'wrapper' => 'personalize-agent-mvt-form',
       'effect' => 'fade',
+    ),
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
+  );
+  $form['mvt_wrapper']['mvt']['add']['actions']['reset'] = array(
+    '#type' => 'button',
+    '#button_type' => 'reset',
+    '#value' => t('Cancel'),
+    '#ajax' => array(
+      'callback' => 'personalize_agent_form_ajax_reset',
+      'wrapper' => 'personalize-agent-mvt-form',
+      'effect' => 'fade',
+    ),
+    '#attributes' => array(
+      'class' => array('form-submit'),
     ),
   );
 
@@ -1573,6 +1655,9 @@ function personalize_mvt_form($form, &$form_state, $mvt) {
   $form['actions']['submit_form'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
+    '#attributes' => array(
+      'class' => 'action-item-primary-active',
+    ),
   );
   return $form;
 }
