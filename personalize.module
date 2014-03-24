@@ -472,6 +472,13 @@ function personalize_theme($existing, $type, $theme, $path) {
           'option_sets' => array(),
       ),
     ),
+    'personalize_option_set_report' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'report' => '',
+      ),
+    ),
   );
 }
 
