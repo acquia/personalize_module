@@ -48,9 +48,11 @@ class QuerystringContext extends PersonalizeContextBase {
     $possible_values = array();
     $param_values = variable_get('personalize_url_querystring_contexts', array());
     foreach ($this->selectedContext as $name) {
-      foreach ($param_values[$name] as $key) {
-        $code = $this->agent->convertContextToFeatureString($name, $key);
-        $possible_values[$code] = $name . ': ' . $key;
+      $possible_values[$name] = array(
+        'values' => array(),
+      );
+      foreach ($param_values[$name] as $value) {
+        $possible_values[$name]['values'][$value] = $value;
       }
     }
     return $possible_values;
