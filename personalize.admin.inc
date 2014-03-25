@@ -331,10 +331,31 @@ function personalize_agent_page_status_toggle_ajax_callback(&$form) {
 function personalize_status_toggle_form_submit($form, &$form_state) {
   $status_map = personalize_get_agent_status_map();
   if (personalize_agent_set_status($form_state['values']['agent'], $form_state['values']['status'])) {
-    drupal_set_message(t('The status of agent @agent has been set to @status', array('@agent' => $form_state['values']['agent'], '@status' => $status_map[$form_state['values']['status']])));
+    switch ($form_state['values']['status']) {
+      case PERSONALIZE_STATUS_RUNNING:
+        drupal_set_message(t('The campaign "@agent" is now live.', array(
+          '@agent' => $form_state['values']['agent'],
+        )));
+        break;
+      case PERSONALIZE_STATUS_PAUSED:
+      case PERSONALIZE_STATUS_COMPLETED:
+        drupal_set_message(t('The campaign "@agent" is @status.', array(
+          '@agent' => $form_state['values']['agent'],
+          '@status' => drupal_strtolower($status_map[$form_state['values']['status']]),
+        )));
+        break;
+      default:
+        drupal_set_message(t('The status of agent @agent has been set to @status', array(
+          '@agent' => $form_state['values']['agent'],
+          '@status' => drupal_strtolower($status_map[$status_map[$form_state['values']['status']]]),
+        )));
+    }
   }
   else {
-    drupal_set_message(t('There was a problem setting the status of agent @agent to @status', array('@agent' => $form_state['values']['agent'], '@status' => $status_map[$form_state['values']['status']])), 'error');
+    drupal_set_message(t('There was a problem setting the status of agent @agent to @status', array(
+      '@agent' => $form_state['values']['agent'],
+      '@status' => drupal_strtolower($status_map[$form_state['values']['status']]))
+    ), 'error');
   }
   personalize_status_toggle_message($form_state['values']['agent'], $form_state['values']['status']);
   $form_state['redirect'] = 'admin/structure/personalize';
@@ -349,7 +370,6 @@ function personalize_status_toggle_message($agent_name, $current_status) {
   }
   $theme_variables = array(
     'option_sets' => array(),
-    'status_message' => ($current_status === PERSONALIZE_STATUS_COMPLETED) ? t('The campaign has been stopped.') : t('The campaign has been paused.'),
     'option_message' => '',
     'alert_message' => '',
   );
@@ -382,7 +402,7 @@ function personalize_status_toggle_message($agent_name, $current_status) {
     );
   }
   if (!empty($theme_variables['option_sets'])) {
-    $theme_variables['option_message'] = t('The following variations will be shown to all users:');
+    $theme_variables['option_message'] = t('All visitor will see the following variations:');
   }
   drupal_set_message(theme('personalize_campaign_status_update', $theme_variables));
 }

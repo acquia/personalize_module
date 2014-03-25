@@ -467,7 +467,6 @@ function personalize_theme($existing, $type, $theme, $path) {
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
       'variables' => array(
-          'status_message' => '',
           'option_message' => '',
           'option_sets' => array(),
       ),
