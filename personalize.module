@@ -484,6 +484,18 @@ function personalize_theme($existing, $type, $theme, $path) {
       'variables' => array(
         'enum' => '',
         'title' => '',
+        'title_prefix' => '',
+        'title_suffix' => '',
+        'attributes' => array(),
+      ),
+    ),
+    'personalize_option_set_header' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'variation_count' => 0,
+        'report' => array(),
+        'report_link' => '',
       ),
     ),
   );

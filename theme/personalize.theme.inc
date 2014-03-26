@@ -118,7 +118,8 @@ function theme_personalize_campaign_status_update($variables) {
  *   - title_suffix: An optional suffix for the title.
  */
 function theme_personalize_admin_enumerated_item($variables) {
-  $text = '<div class="personalize-admin-enumerated-item"><strong>' . $variables['enum'] . '</strong> ';
+  $variables['attributes']['class'][] = 'personalize-admin-enumerated-item';
+  $text = '<div ' . drupal_attributes($variables['attributes']) . '><strong>' . $variables['enum'] . '</strong> ';
   if (!empty($variables['title_prefix'])) {
     $text .= $variables['title_prefix'];
   }
@@ -135,7 +136,7 @@ function theme_personalize_admin_enumerated_item($variables) {
  *
  * @param $variables
  *   An associative array of variables with a single 'report' key that
- *   holds the report.
+ *   holds an array of reporting statistics.
  * @return string
  *   The themed output.
  */
@@ -143,7 +144,35 @@ function theme_personalize_option_set_report($variables) {
   if (empty($variables['report'])) {
     return '';
   }
-  $output = '<div class="personalize-option-set-report">' . $variables['report'] . '</div>';
+  $output = '<div class="personalize-option-set-report">';
+  foreach($variables['report'] as $stat) {
+    $output .= '<span class="personalize-stat">' . $stat . '</span>';
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to output header information for an option set.
+ *
+ * @param $variables
+ *   An associative array of variables.
+ *   - variation_count: the number of variations within the option set.
+ *   - report: an array of reporting statistics for this option set.
+ *   - report_link: the link to the report for this option set.
+ * @return string
+ *   The themed output.
+ */
+function theme_personalize_option_set_header($variables) {
+  $output = '<span class="personalize-option-header-item">';
+  $output .= format_plural($variables['variation_count'], '1 variation', '@count variations');
+  $output .= '</span>';
+  if (!empty($variables['report'])) {
+    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
+  }
+  if (!empty($variables['report_link'])) {
+    $output .= '<span class="personalize-option-header-report-link">' . $variables['report_link'] . '</span>';
+  }
   return $output;
 }
 

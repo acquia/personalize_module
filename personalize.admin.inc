@@ -1023,6 +1023,22 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#collapsible' => 1,
       '#collapsed' => TRUE,
       '#title' => $option_sets_labels[$option_set->osid],
+      '#attributes' => array(
+        'class' => array('personalize-option-set'),
+      ),
+    );
+    // Header information to be shown in the fieldset summary.
+    $section['option_set_' . $option_set->osid]['summary'] = array(
+      '#type' => 'markup',
+      '#markup' => theme('personalize_option_set_header', array(
+        'variation_count' => count($option_set->options),
+        'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
+        'report_link' => l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report"),
+      )),
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('personalize-summary'),
+      ),
     );
     $option_number++;
     $agent = personalize_agent_load_agent($agent_data->machine_name);
@@ -1050,12 +1066,45 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         }
       }
 
-    if ($agent instanceof PersonalizeAgentReportInterface) {
-      $section['option_set_' . $option_set->osid]['report'] = array(
-        '#type' => 'markup',
-        '#markup' => theme('personalize_option_set_report', array('report' => $agent->renderStatsForOptionSet($option_set, $agent_data->started)))
-      );
-    }
+    // Table header row for option set basic information.
+    $section['option_set_' . $option_set->osid]['header'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-variation-row'),
+      ),
+    );
+    $section['option_set_' . $option_set->osid]['header']['col1'] = array(
+      '#type' => 'markup',
+      '#markup' => '&nbsp;', // Creating an empty div.
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('personalize-variation-col1', 'personalize-variation-header'),
+      ),
+    );
+    $section['option_set_' . $option_set->osid]['header']['col2'] = array(
+      '#type' => 'markup',
+      '#markup' => t('Control'),
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('personalize-variation-col2', 'personalize-variation-header'),
+      ),
+    );
+    $section['option_set_' . $option_set->osid]['header']['col3'] = array(
+      '#type' => 'markup',
+      '#markup' => t('Fallback/winner'),
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('personalize-variation-col3', 'personalize-variation-header'),
+      ),
+    );
+    $section['option_set_' . $option_set->osid]['header']['col4'] = array(
+      '#type' => 'markup',
+      '#markup' => l(t('edit'), 'javascript:void(0);', array('attributes' => array('class' => array('personalize-option-set-edit-trigger')))),
+      '#theme_wrappers' => array('container'),
+      '#attributes' => array(
+        'class' => array('personalize-variation-col4', 'personalize-variation-header'),
+      ),
+    );
 
     $variant_number = 1;
     $plugin = personalize_get_option_set_type($option_set->plugin);
@@ -1082,38 +1131,74 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         ),
       );
       $option_label = isset($option_values[$option['option_id']]) ? $option_values[$option['option_id']] : $option['option_label'];
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('personalize-variation-row'),
+        ),
+      );
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
         'title' => check_plain($option_label),
         'title_prefix' => '"',
         'title_suffix' => '"',
+        'attributes' => array(
+          'class' => array('personalize-variation-col1'),
+        ),
       ));
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['heading'] = array(
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
         '#markup' => $heading,
       );
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['winner'] = array(
+      $classes = array('personalize-variation-col2', 'personalize-variation-control');
+      if ($variant_number == 1) {
+        $classes[] = 'personalize-variation-selected-control';
+      }
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['control'] = array(
         '#type' => 'radio',
-        '#title' => t('Winner'),
-        '#title_display' => empty($option_set->winner) || $is_winner ? 'before' : 'invisible',
+        '#return_value' => $option['option_id'],
+        '#default_value' => $variant_number == 1,
+        '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'control'),
+        '#attributes' => array('class' => $classes),
+        '#disabled' => TRUE,
+        '#theme_wrappers' => array('container'),
+      );
+      $classes = array('personalize-variation-col3', 'personalize-variation-winner');
+      if ($is_winner) {
+        $classes[] = 'personalize-variation-selected-winner';
+      }
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['winner'] = array(
+        '#type' => 'radio',
         '#return_value' => $option['option_id'],
         '#default_value' => $is_winner,
         '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'winner'),
-        '#attributes' => array(
-          'class' => array('personalize-winner'),
-        )
+        '#attributes' => array('class' => $classes),
+        '#theme_wrappers' => array('container'),
       );
-
-      $variant_number++;
-
       if ($targeting_support && !empty($explicit_targeting_values)) {
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['enable_explicit_targeting'] = array(
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array('personalize-variation-row'),
+          ),
+        );
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
           '#title' => t('Show to visitors with specific traits'),
           '#type' => 'checkbox',
           '#default_value' => !empty($option['fixed_targeting']) ? 1 : 0,
+          '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
         );
 
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = array(
           '#tree' => TRUE,
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array('personalize-variation-row'),
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
+            ),
+          ),
         );
 
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['mapping'] = array(
@@ -1123,16 +1208,18 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           '#title' => t('Always show for: '),
           '#title_display' => 'invisible',
           '#default_value' => isset($option['fixed_targeting']) ? $option['fixed_targeting'] : array(),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
-            ),
-          ),
         );
+        // And/Or targeting selection.
         if ($targeting_support == PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH) {
+          $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategies'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array('personalize-variation-row'),
+            ),
+          );
           // Add radio buttons so the user can select how multiple features for an option
           // should be treated.
-          $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategy'] = array(
+          $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategies']['strategy'] = array(
             '#type' => 'radios',
             '#description' => t('Choose how multiple features should be applied to options. Choose "Or" if the rule should apply if the user has any features. Choose "And" if the rule should apply only the user has all features.'),
             '#options' => array(
@@ -1145,8 +1232,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
                 ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
               ),
             ),
+            '#parents' => array('option_set_' . $option_set->osid, 'options', $option['option_id'], 'explicit_targeting', 'strategy'),
           );
         }
+        // @todo: This is run for each variation right now, but only applies to the option set as a whole.
         switch ($targeting_support) {
           case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
@@ -1168,6 +1257,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
             break;
         }
       }
+      $variant_number++;
     } // end of loop through variations.
 
     // Advanced area per option set.
