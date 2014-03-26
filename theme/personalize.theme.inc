@@ -114,9 +114,20 @@ function theme_personalize_campaign_status_update($variables) {
  *   Associative array of enumerated list item details
  *   - enum: The enumeration text; e.g., Set 1, Goal 2, etc.
  *   - title: The title of the list item.
+ *   - title_prefix: An optional prefix for the title.
+ *   - title_suffix: An optional suffix for the title.
  */
 function theme_personalize_admin_enumerated_item($variables) {
-  return '<div class="personalize-admin-enumerated-item"><strong>' . $variables['enum'] . '</strong> ' . $variables['title'] . '</div>';
+  $text = '<div class="personalize-admin-enumerated-item"><strong>' . $variables['enum'] . '</strong> ';
+  if (!empty($variables['title_prefix'])) {
+    $text .= $variables['title_prefix'];
+  }
+  $text .= $variables['title'];
+  if (!empty($variables['title_suffix'])) {
+    $text .= $variables['title_suffix'];
+  }
+  $text .= '</div>';
+  return $text;
 }
 
 /**

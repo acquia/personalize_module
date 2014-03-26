@@ -632,7 +632,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
   ksort($agent_type_options);
 
   $form['agent_basic_info']['title'] = array(
-    '#title' => t('Campaign Name'),
+    '#title' => t('Name'),
     '#type' => 'textfield',
     '#default_value' => isset($agent_data->label) ? $agent_data->label : '',
     '#weight' => -9,
@@ -1081,13 +1081,13 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           'class' => $classes,
         ),
       );
-      $heading = '<span class="personalize-variation-number">V' . $variant_number . '</span> ';
-      $heading .= '<span class="personalize-variation-label">';
-
-      $option_label_detail = isset($option_values[$option['option_id']]) ? $option_values[$option['option_id']] : $option['option_label'];
-      $option_label_detail = check_plain($option_label_detail);
-      $heading .= $option_label_detail;
-      $heading .= '</span>';
+      $option_label = isset($option_values[$option['option_id']]) ? $option_values[$option['option_id']] : $option['option_label'];
+      $heading = theme('personalize_admin_enumerated_item', array(
+        'enum' => t('V@delta', array('@delta' => $variant_number)),
+        'title' => check_plain($option_label),
+        'title_prefix' => '"',
+        'title_suffix' => '"',
+      ));
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['heading'] = array(
         '#markup' => $heading,
       );
@@ -1107,7 +1107,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
 
       if ($targeting_support && !empty($explicit_targeting_values)) {
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['enable_explicit_targeting'] = array(
-          '#title' => t('Show to users with specific contexts'),
+          '#title' => t('Show to visitors with specific traits'),
           '#type' => 'checkbox',
           '#default_value' => !empty($option['fixed_targeting']) ? 1 : 0,
         );
@@ -1151,19 +1151,19 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
               '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this Option Set. If you choose multiple features for an option, then the user must have all specified features for the rule to apply.')
+              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple features for an option, then the user must have all specified features for the rule to apply.')
             );
             break;
           case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
               '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this Option Set. If you choose multiple features for an option, then the rule will apply if the user has any of the specified features.')
+              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple features for an option, then the rule will apply if the user has any of the specified features.')
             );
             break;
           default:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
               '#type' => 'markup',
-              '#markup' => t('Explicit targeting is not available for this Option Set.')
+              '#markup' => t('Explicit targeting is not available for this content variation.')
             );
             break;
         }
@@ -1175,12 +1175,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#title' => t('Advanced options'),
+      '#title' => t('Advanced'),
     );
     $section['option_set_' . $option_set->osid]['advanced']['label'] = array(
       '#type' => 'textfield',
       '#title' => 'Name',
-      '#description' => 'Shown in the menu when you are viewing option sets on a page.',
+      '#description' => 'Shown in the menu when you are viewing content variations on a page.',
       '#default_value' => isset($option_set->label) ? $option_set->label : '',
     );
     // @todo Once we want to provide support for using the same decision name across
@@ -1195,7 +1195,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     $section['option_set_' . $option_set->osid]['advanced']['stateful'] = array(
       '#type' => 'checkbox',
       '#title' => t('Shareable'),
-      '#description' => 'If a visitor shares the URL the receiver will see what the sharer saw, not a personalized variation.',
+      '#description' => 'Will display what the original visitor saw, not another variation.',
       '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
     );
     // Display options to select the executor if supported.
@@ -1240,7 +1240,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   $section['actions'] = array('#type' => 'actions');
   $section['actions']['submit_form'] = array(
     '#type' => 'submit',
-    '#value' => t('Save content variations'),
+    '#value' => t('Save variation sets'),
     '#ajax' => array(
       'callback' => 'personalize_agent_form_ajax_submit',
       'wrapper' => 'personalize-agent-option-sets-form',
