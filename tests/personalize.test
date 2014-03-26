@@ -36,11 +36,7 @@ class PersonalizeTest extends DrupalWebTestCase {
     // @todo test all permissions
   }
 
-  /**
-   * Tests that an agent defined in the default hook is loaded correctly.
-   */
-  function testAgentCRUD() {
-    // @todo Add tests for agent save and delete.
+  function testAgentEdit() {
     $agent = personalize_agent_load_agent('test-agent');
     $this->assertTrue($agent instanceof PersonalizeAgentBase);
     $this->drupalGet('admin/structure/personalize/add');
@@ -65,6 +61,65 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertNoFieldByName('agent_basic_info[title]');
     $agent = personalize_agent_load_agent($machine_name);
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
+  }
+
+  function testAgentDelete() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    $machine_name = $agent->getMachineName();
+    $delete_path = "admin/structure/personalize/manage/$machine_name/delete";
+    $this->drupalGet('admin/structure/personalize');
+    // It should be possible to delete this agent.
+    $this->assertLinkByHref($delete_path);
+    $this->drupalGet($delete_path);
+    $this->assertResponse(200);
+
+    // Now add an option set.
+    $option_set = array(
+      'plugin' => 'block',
+      'label' => $this->randomName(),
+      'agent' => $machine_name,
+    );
+    $options = array();
+    for ($j = 0; $j < 2; $j++) {
+      $options[$j] = array(
+        'option_label' => personalize_generate_option_label($j),
+      );
+    }
+    $option_set['options'] = $options;
+    $option_set = (object) $option_set;
+    personalize_option_set_save($option_set);
+    $machine_name = $agent->getMachineName();
+    $this->drupalGet('admin/structure/personalize');
+    // It should no longer be possible to delete this option set.
+    $this->assertNoLinkByHref($delete_path);
+    $this->drupalGet($delete_path);
+    $this->assertResponse(403);
+
+    // Set the status of the agent to running.
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
+
+    // Now delete the option set.
+    personalize_option_set_delete(1);
+    $this->drupalGet('admin/structure/personalize');
+    // It still should not be possible to delete this option set.
+    $this->assertNoLinkByHref($delete_path);
+    $this->drupalGet($delete_path);
+    $this->assertResponse(403);
+
+    // Set the status of the agent to paused.
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_PAUSED);
+    $this->drupalGet('admin/structure/personalize');
+    // It should now be possible to delete this agent.
+    $this->assertLinkByHref($delete_path);
+    $this->drupalGet($delete_path);
+    $this->assertResponse(200);
+    $this->drupalPost(NULL, array(), t('Delete'));
+    $this->resetAll();
+
+    $agent_data = personalize_agent_load($machine_name);
+    $this->assertNull($agent_data);
   }
 
   function testMultipleAgentTypes() {

@@ -220,7 +220,7 @@ function personalize_delete_agent_access($agent) {
   }
   $status = personalize_agent_get_status($agent->machine_name);
   $option_sets = personalize_option_set_load_by_agent($agent->machine_name);
-  return $status == PERSONALIZE_STATUS_NOT_STARTED && count($option_sets) == 0;
+  return $status != PERSONALIZE_STATUS_RUNNING && count($option_sets) == 0;
 }
 
 /**
