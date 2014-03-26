@@ -104,8 +104,11 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
         // We didn't add the some-param context
         continue;
       }
+      $expected_values[$name] = array(
+        'values' => array()
+      );
       foreach ($values as $value) {
-        $expected_values[$name . '--' . $value] = $name . ': ' . $value;
+        $expected_values[$name]['values'][$value] = $value;
       }
     }
     $possible_values = $context_plugin->getPossibleValues();

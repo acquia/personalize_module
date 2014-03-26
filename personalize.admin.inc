@@ -879,10 +879,13 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           $selected_context = array_filter($contexts);
           if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
             if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-              $value_options = $plugin->getPossibleValues($agent_data);
-              if (!empty($value_options)) {
-                // This essentially de-dupes our targeting strings.
-                $explicit_targeting_values += $value_options;
+              $value_options = $plugin->getPossibleValues();
+              foreach ($value_options as $key => $info) {
+                $mutex = isset($info['mutex']) && $info['mutex'];
+                foreach ($info['values'] as $value => $label) {
+                  $code = $agent->convertContextToFeatureString($key, $value, $mutex);
+                  $explicit_targeting_values[$code] = $key . ': ' . $label;
+                }
               }
             }
           }
