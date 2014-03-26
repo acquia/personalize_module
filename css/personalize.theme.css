@@ -17,12 +17,14 @@
   background-color: inherit;
   border: none;
 }
-
-/**
- * Avoid boxes within boxes
- */
+.personalize-admin-content.personalize-collapsed:hover,
+.personalize-admin-content.personalize-collapsed:active {
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+/* Avoid boxes within boxes */
 .personalize-admin-content fieldset,
-.personalize-admin-content .personalize-admin-content{
+.personalize-admin-content .personalize-admin-content {
   border: none;
 }
 
@@ -33,7 +35,7 @@
 
 .personalize-admin-content-title {
   display: inline-block;
-  font-size: 1.2em;
+  font-size: 1.4em;
   margin-right: 0.4em; /* LTR */
 }
 
@@ -64,6 +66,8 @@
   margin-left: 1em; /* LTR */
 }
 
+.personalize-admin-content.personalize-collapsed:hover .personalize-collapse-edit,
+.personalize-admin-content.personalize-collapsed:active .personalize-collapse-edit,
 .personalize-admin-section .personalize-collapse-edit {
   background-image: url("../images/edit_active.png");
   background-image: url("../images/edit_active.svg"), none; /* Displays SVG with PNG fallback */
@@ -74,6 +78,7 @@
   cursor: pointer;
   margin-right: 5px; /* LTR */
 }
+
 .personalize-admin-section .personalize-collapsed .personalize-collapse-edit {
   background-image: url("../images/edit.png");
   background-image: url("../images/edit.svg"), none;
@@ -94,7 +99,7 @@
 
 .personalize-admin-content-content,
 .personalize-admin-content-collapsed {
-  padding-left: 29px; /* LTR */
+  padding-left: 3em; /* LTR */
 }
 
 .personalize-admin-content-collapsed {
@@ -105,22 +110,8 @@
   display: block;
 }
 
-.personalize-content-variation-stopped {
-  color: #999;
-}
-.personalize-content-variation .form-type-radio {
-  float: right;
-}
-.personalize-content-variation .form-type-radio label {
-  color: #000;
-  margin-right: 5px;
-  vertical-align: bottom;
-  display: inline;
-  font-weight: normal;
-}
-.personalize-content-variation-winner .form-type-radio label {
-  color: #0074BD;
-  font-weight: bold;
+.personalize-admin-content-collapsed .personalize-admin-enumerated-item {
+  font-size: 1.2em;
 }
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown,

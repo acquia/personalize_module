@@ -108,6 +108,18 @@ function theme_personalize_campaign_status_update($variables) {
 }
 
 /**
+ * Theme function to display the title of an enumerated list.
+ *
+ * @param $variables
+ *   Associative array of enumerated list item details
+ *   - enum: The enumeration text; e.g., Set 1, Goal 2, etc.
+ *   - title: The title of the list item.
+ */
+function theme_personalize_admin_enumerated_item($variables) {
+  return '<div class="personalize-admin-enumerated-item"><strong>' . $variables['enum'] . '</strong> ' . $variables['title'] . '</div>';
+}
+
+/**
  * Theme function to output a report for an Option Set.
  *
  * @param $variables
@@ -154,18 +166,11 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   // Move elements to the template variables.
   $variables['title'] = $variables['element']['#title'];
   $variables['collapsible'] = $variables['element']['#collapsible'];
+  $variables['collapsed'] = isset($variables['element']['#collapsed']) ? $variables['element']['#collapsed'] : TRUE;
 
   // Add general classes.
   $variables['title_attributes_array']['class'][] = 'personalize-admin-content-title';
   $variables['content_attributes_array']['class'][] = 'personalize-admin-content-content';
-
-  // Add "add" links to the title suffix.
-  if (isset($variables['element']['#add_markup'])) {
-    if (isset($variables['element']['#add_markup']['#prefix'])) {
-      $variables['element']['#add_markup']['#prefix'] = '<span class="personalize-admin-content-add">' . $variables['element']['#add_markup']['#prefix'] . '</span>';
-    }
-    $variables['title_suffix']['add_markup'] = $variables['element']['#add_markup'];
-  }
 
   // Add the variation count to the title suffix.
   if (isset($variables['element']['#variation_count'])) {
@@ -181,13 +186,19 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   // Add needed pieces for collapsing content.
   if ($variables['collapsible']) {
     $variables['classes_array'][] = 'personalize-collapsible';
-    $variables['classes_array'][] = 'personalize-collapsed';
+    if ($variables['collapsed']) {
+      $variables['classes_array'][] = 'personalize-collapsed';
+    }
     $variables['title_prefix']['collapse-trigger'] = array(
       '#type' => 'link',
       '#title' => t('edit'),
       '#href' => '',
       '#attributes' => array('class' => array('personalize-collapse-edit')),
     );
+    // Get the collapsed content and add into the
+    if (isset($variables['element']['#collapsed_content'])) {
+      $variables['collapsed_content'] = $variables['element']['#collapsed_content'];
+    }
   }
 }
 

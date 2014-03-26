@@ -21,6 +21,7 @@
  *   container.
  * - $content_attributes: A string of attributes to be applied to the content
  *   container.
+ * - $collapsed_content: Content to be shown when the element is collapsed.
  *
  * Status variables:
  * - $collapsible: Signifies if a content set is collapsible.
@@ -38,6 +39,9 @@
     <h2<?php print $title_attributes; ?>><?php print $title; ?></h2>
   <?php endif; ?>
   <?php print render($title_suffix); ?>
+  <?php if (isset($collapsed_content) && !empty($collapsed_content)) : ?>
+    <div class="personalize-admin-content-collapsed"><?php print $collapsed_content; ?></div>
+  <?php endif; ?>
 
   <div<?php print $content_attributes; ?>>
     <?php print $element['#children']; ?>

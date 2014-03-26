@@ -446,6 +446,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'personalize_admin_content',
     '#collapsible' => empty($agent_data->machine_name) ? 0 : 1,
+    '#collapsed' => FALSE,
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
   );
@@ -711,67 +712,13 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
  * Builds a form for editing the goals of an agent.
  */
 function personalize_agent_goals_form($form, &$form_state, $agent_data) {
-  $form = array();
-  $form['#agent'] = $agent_data;
-  $form['agent'] = array(
-    '#type' => 'value',
-    '#value' => $agent_data->machine_name
-  );
-  // Assemble the form in nested containers to allow for easier styling.
-  $form['variations'] = array(
-    '#type' => 'personalize_admin_section',
-    '#tree' => FALSE,
-    'primary' => array(
-      '#theme_wrappers' => array('container'),
-    ),
-  );
-
-  $form['variations']['primary']['goals_fieldset'] = array(
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => 1,
-    '#tree' => FALSE,
-    '#title' => t('Goals'),
-  );
-
-  $form['variations']['primary']['goals_fieldset']['header'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('personalize-admin-content-header'),
-    ),
-  );
-  $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
-    '#prefix' => '+',
-    '#type' => 'submit',
-    '#value' => t('Add goal'),
-    '#attributes' => array(
-      'class' => array('personalize-add-link'),
-      'title' => t('Click here to add more goals.')
-    ),
-    '#submit' => array('personalize_agent_add_goal_submit'),
-    '#ajax' => array(
-      'callback' => 'personalize_agent_goals_ajax_callback',
-      'wrapper' => 'personalize-goals',
-      'effect' => 'fade',
-    ),
-    '#limit_validation_errors' => array(array('goals')),
-  );
-
-  $section = &$form['variations']['primary']['goals_fieldset'];
-  $section['goals'] = array(
-    '#tree' => TRUE,
-    '#theme_wrappers' => array('container'),
-    '#attributes' => array(
-      'id' => 'personalize-goals',
-      'class' => array('personalize-goals-wrapper'),
-    ),
-  );
-
+  // Determine goals for inclusion.
   $goals = $exclude = array();
   if (isset($form_state['values']['goals'])) {
     foreach ($form_state['values']['goals'] as $delta => $goal) {
       $goals[$delta] = array(
-        'action' => $goal['triggers']['action_name'],
-        'value' => $goal['triggers']['value']
+        'action' => $goal['action_name'],
+        'value' => $goal['value']
       );
     }
   }
@@ -819,21 +766,88 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     ));
     $new_goal_options[$link] = t('[Add new action in context...]');
   }
-  foreach ($goals as $delta => $goal) {
-    $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
-    $section['goals'][$delta] = array(
+
+  // Begin form generation.
+  $form = array();
+  $form['#agent'] = $agent_data;
+  $form['agent'] = array(
+    '#type' => 'value',
+    '#value' => $agent_data->machine_name
+  );
+  // Assemble the form in nested containers to allow for easier styling.
+  $form['variations'] = array(
+    '#type' => 'personalize_admin_section',
+    '#tree' => FALSE,
+    'primary' => array(
       '#theme_wrappers' => array('container'),
+    ),
+  );
+  // Determine the collapsed content.
+  $collapsed = '';
+  foreach($goals as $delta => &$goal) {
+    // Save the display goal title for use later
+    $goal['display_title'] =  theme('personalize_admin_enumerated_item', array(
+      'enum' => t('Goal @delta', array('@delta' => ($delta + 1))),
+      'title' => $goal['action'],
+    ));
+    $collapsed .= $goal['display_title'];
+  }
+  $form['variations']['primary']['goals_fieldset'] = array(
+    '#type' => 'personalize_admin_content',
+    '#collapsible' => 1,
+    '#tree' => FALSE,
+    '#title' => t('Goals'),
+    '#collapsed_content' => $collapsed,
+  );
+  // Header content for goals.
+  $form['variations']['primary']['goals_fieldset']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
+  );
+  $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
+    '#prefix' => '+',
+    '#type' => 'submit',
+    '#value' => t('Add goal'),
+    '#attributes' => array(
+      'class' => array('personalize-add-link'),
+      'title' => t('Click here to add more goals.')
+    ),
+    '#submit' => array('personalize_agent_add_goal_submit'),
+    '#ajax' => array(
+      'callback' => 'personalize_agent_goals_ajax_callback',
+      'wrapper' => 'personalize-goals',
+      'effect' => 'fade',
+    ),
+    '#limit_validation_errors' => array(array('goals')),
+  );
+
+  // Now handle the goals display.
+  $section = &$form['variations']['primary']['goals_fieldset'];
+  $section['goals'] = array(
+    '#tree' => TRUE,
+    '#theme_wrappers' => array('container'),
+    '#attributes' => array(
+      'id' => 'personalize-goals',
+      'class' => array('personalize-goals-wrapper'),
+    ),
+  );
+
+  foreach ($goals as $delta => $goal) {
+    $section['goals'][$delta] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#title' => $goal['display_title'],
+      '#tree' => TRUE,
       '#attributes' => array(
-        'class' => array('personalize-goal'),
-      ),
-      'triggers' => array(
-        '#theme_wrappers' => array('container'),
-        '#attributes' => array(
-          'class' => array('personalize-goal-triggers'),
-        ),
-      ),
+        'class' => array('personalize-admin-collapsed-content'),
+        'id' => "personalize-goal-$delta"
+      )
     );
-    $section['goals'][$delta]['triggers']['action_name'] = array(
+    $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
+    $section['goals'][$delta]['action_name'] = array(
       '#type' => 'select',
       '#title' => t('Action'),
       '#options' => $options,
@@ -842,7 +856,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         'class' => array('personalize-goal-action'),
       ),
     );
-    $section['goals'][$delta]['triggers']['value'] = array(
+    $section['goals'][$delta]['value'] = array(
       '#type' => 'textfield',
       '#title' => t('Value'),
       '#size' => 5,
@@ -909,10 +923,36 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
  * Builds a form for editing the Option Sets of an agent.
  */
 function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
-  $form = array();
+  // Load the data used throughout form.
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+
+  $agent = personalize_agent_load_agent($agent_data->machine_name);
   // Targeting is only supported when a campaign is running.  Also, winners are
   // only shown when the campaign is stopped.
   $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
+  $targeting_support = FALSE;
+  if ($agent instanceof PersonalizeExplicitTargetingInterface) {
+    $targeting_support = $agent->explicitTargetingSupportMultiple();
+    // Build up a list of targeting values so we can map options to them.
+    $explicit_targeting_values = array();
+    $data = $agent->getData();
+    if (!empty($data['visitor_context'])) {
+      foreach ($data['visitor_context'] as $name => $contexts) {
+        $selected_context = array_filter($contexts);
+        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+          if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+            $value_options = $plugin->getPossibleValues($agent_data);
+            if (!empty($value_options)) {
+              // This essentially de-dupes our targeting strings.
+              $explicit_targeting_values += $value_options;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  $form = array();
   $form['#agent'] = $agent_data;
   $form['agent'] = array(
     '#type' => 'value',
@@ -937,11 +977,27 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     ),
     */
   );
+  // Determine collapsed content.
+  $collapsed = '';
+  $counter = 1;
+  // Tricky: key is not necessarily from 0.
+  // Setting value on existing object causes unwanted recursion so labels
+  // are saved within their own object.
+  $option_sets_labels = array();
+  foreach($option_sets as $option_set) {
+    $option_sets_labels[$option_set->osid] = theme('personalize_admin_enumerated_item', array(
+      'enum' => t('Set @delta', array('@delta' => $counter)),
+      'title' => isset($option_set->label) ? $option_set->label : t('Option Set @id', array('@id' => $option_set->osid)),
+    ));
+    $collapsed .= $option_sets_labels[$option_set->osid];
+    $counter++;
+  }
   $form['variations']['primary']['option_sets'] = array(
     '#tree' => TRUE,
     '#type' => 'personalize_admin_content',
     '#collapsible' => 1,
     '#title' => t('Content variation sets'),
+    '#collapsed_content' => $collapsed,
   );
   $form['variations']['primary']['option_sets']['header'] = array(
     '#type' => 'container',
@@ -956,19 +1012,17 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   $section = &$form['variations']['primary']['option_sets'];
   // For any option sets that have been created for this campaign, display
   // advanced options for specifying decision name etc.
-  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   if (empty($option_sets)) {
     return $form;
   }
 
-  $option_number = 1;
   foreach ($option_sets as $option_set) {
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
       '#collapsible' => 1,
       '#collapsed' => TRUE,
-      '#title' => isset($option_set->label) ? $option_set->label : t('Option Set @id', array('@id' => $option_set->osid)),
+      '#title' => $option_sets_labels[$option_set->osid],
     );
     $option_number++;
     $agent = personalize_agent_load_agent($agent_data->machine_name);
@@ -995,6 +1049,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           }
         }
       }
+
+    if ($agent instanceof PersonalizeAgentReportInterface) {
+      $section['option_set_' . $option_set->osid]['report'] = array(
+        '#type' => 'markup',
+        '#markup' => theme('personalize_option_set_report', array('report' => $agent->renderStatsForOptionSet($option_set, $agent_data->started)))
+      );
     }
 
     $variant_number = 1;
@@ -1108,14 +1168,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
             break;
         }
       }
-    }
-    if ($agent instanceof PersonalizeAgentReportInterface) {
-      $section['option_set_' . $option_set->osid]['report'] = array(
-        '#type' => 'markup',
-        '#markup' => theme('personalize_option_set_report', array('report' => $agent->renderStatsForOptionSet($option_set, $agent_data->started)))
-      );
-    }
+    } // end of loop through variations.
 
+    // Advanced area per option set.
     $section['option_set_' . $option_set->osid]['advanced'] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
@@ -1180,7 +1235,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         );
       }
     }
-  }
+  } // End loop through option sets.
 
   $section['actions'] = array('#type' => 'actions');
   $section['actions']['submit_form'] = array(
@@ -1229,6 +1284,8 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
   if (count($option_sets) < 2) {
     return array();
   }
+  $mvts = personalize_mvt_load_all_by_agent($agent_data->machine_name);
+
   $form = array();
   $form['mvt_wrapper'] = array(
     '#tree' => FALSE,
@@ -1237,27 +1294,33 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       '#theme_wrappers' => array('container'),
     ),
   );
+  $collapsed = '';
+  foreach($mvts as $delta => &$mvt) {
+    $mvt->display_label = theme('personalize_admin_enumerated_item', array(
+      'enum' => t('Test @delta', array('@delta' => ($delta + 1))),
+      'title' => $mvt->label,
+    ));
+    $collapsed .= $mvt->display_label;
+  }
   $form['mvt_wrapper']['mvt'] = array(
     '#type' => 'personalize_admin_content',
     '#collapsible' => TRUE,
     '#tree' => TRUE,
     '#title' => t('Multivariate Tests'),
+    '#collapsed_content' => $collapsed,
   );
   $form['mvt_wrapper']['mvt']['agent'] = array(
     '#type' => 'value',
     '#value' => $agent_data->machine_name,
   );
   // Show a list of existing MVTs with links to edit them.
-  $mvts = personalize_mvt_load_all_by_agent($agent_data->machine_name);
   if (!empty($mvts)) {
-    $markup = '';
-    $delta = 1;
-    foreach ($mvts as $existing) {
+    foreach ($mvts as $delta => $existing) {
       $os_names = array();
       foreach ($existing->option_sets as $os) {
         $os_names[] = $os->label;
       }
-      $label = $existing->label;
+      $label = $existing->display_label;
       if (!empty($os_names)) {
         $label .= ': ' . implode('/', $os_names);
       }
@@ -1267,7 +1330,6 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
         '#collapsible' => FALSE,
         '#title' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
       );
-      $delta++;
     }
   }
   // Adds the form to add a new MVT.
@@ -1397,12 +1459,12 @@ function personalize_agent_goals_form_submit($form, &$form_state) {
     $existing_goals[$goal['action']] = $goal['id'];
   }
   foreach ($form_values as $goal) {
-    if (!empty($goal['triggers']['action_name'])) {
-      personalize_goal_save($agent_name, $goal['triggers']['action_name'], $goal['triggers']['value']);
+    if (!empty($goal['action_name'])) {
+      personalize_goal_save($agent_name, $goal['action_name'], $goal['value']);
       // Add this to the array of saved goals so that at the end
       // we know that anything in $existing_goals but not in $saved_goals
       // needs to be deleted.
-      $saved_goals[$goal['triggers']['action_name']] = isset($existing_goals[$goal['triggers']['action_name']]) ? $existing_goals[$goal['triggers']['action_name']] : 'new';
+      $saved_goals[$goal['action_name']] = isset($existing_goals[$goal['action_name']]) ? $existing_goals[$goal['action_name']] : 'new';
     }
   }
   // The difference between existing goals and saved goals are the ones

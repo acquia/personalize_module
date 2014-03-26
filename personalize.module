@@ -478,6 +478,14 @@ function personalize_theme($existing, $type, $theme, $path) {
         'report' => '',
       ),
     ),
+    'personalize_admin_enumerated_item' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'enum' => '',
+        'title' => '',
+      ),
+    ),
   );
 }
 
