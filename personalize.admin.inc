@@ -1409,15 +1409,15 @@ function personalize_mvt_save_from_form_values($form_values) {
  * Menu callback for displaying a list of campaign results.
  */
 function personalize_campaign_report($agent_data) {
-  $report = array(
-    '#markup' => t('No reports available for the specified agent')
-  );
   $plugins = personalize_get_agent_types();
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
     $report = module_invoke($module, 'personalize_campaign_report', $agent_data);
+    if (!empty($report)) {
+      return $report;
+    }
   }
-  return $report;
+  return t('No reports available for the specified campaign');
 }
 
 /**
