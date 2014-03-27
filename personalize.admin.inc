@@ -844,7 +844,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       '#title' => $goal['display_title'],
       '#tree' => TRUE,
       '#attributes' => array(
-        'class' => array('personalize-admin-collapsed-content'),
+        'class' => array('personalize-admin-collapsed-content', 'personalize-goal'),
         'id' => "personalize-goal-$delta"
       )
     );

@@ -3,6 +3,33 @@
  * Styles for Personalize administrative interfaces.
  */
 
+/**
+ * Arrange the goals configuration options in columns.
+ */
+.personalize-goals-wrapper {
+  margin-bottom: 1.4em;
+}
+
+.personalize-goal {
+  padding: 1em 0;
+  border-collapse: collapse;
+}
+
+.personalize-goal .form-item {
+  display: inline-block;
+  margin-right: 1em;
+  padding: 0;
+}
+.personalize-goal .form-item:last-child {
+  margin-right: 0;
+}
+
+.personalize-goal-triggers {
+  display: inline-block;
+  margin-right: 1em;
+  margin-bottom: 9px;
+}
+
 /* For submit buttons to appear as add action link.
 * @todo would much rather use action-link style from theme instead but it is
 * specific to "ul.action-links a" selector in Ember and we need a submit button.
