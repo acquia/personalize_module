@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function personalize_url_context_uninstall() {
+  variable_del('personalize_url_querystring_contexts');
+}
