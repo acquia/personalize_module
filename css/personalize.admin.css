@@ -80,6 +80,9 @@ input[type="submit"].personalize-add-link:hover {
   margin-right: .5em;
   padding-right: .5em;
 }
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
+  border-right: none;
+}
 
 .personalize-variation-row {
   clear: both;
