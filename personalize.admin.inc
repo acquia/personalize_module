@@ -197,6 +197,7 @@ function personalize_agent_list() {
     $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent->status);
     // @todo We are ignoring the "storage" info and the clone/export functionality
     //   for now. Revisit once we can provide full support for clone/export.
+    $plugin = personalize_agent_load_agent($agent->machine_name);
     $tablerow = array(
       array('data' => check_plain($agent->label)),
       array('data' => $agent->plugin),
@@ -204,7 +205,7 @@ function personalize_agent_list() {
       array('data' => drupal_render($status_toggle_form)),
       //array('data' => $storage),
       array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-      array('data' => l(t('Reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report')),
+      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('Reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
       //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
       //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
       array('data' => $delete_link),
