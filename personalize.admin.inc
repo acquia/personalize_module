@@ -459,9 +459,8 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   );
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
+    $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
   }
-  $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
-
   $form['agent_form']['agent_fieldset']['agent_basic'] = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
 
   // Add visitor context items to the form.
