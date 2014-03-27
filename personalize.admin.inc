@@ -1033,7 +1033,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#markup' => theme('personalize_option_set_header', array(
         'variation_count' => count($option_set->options),
         'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report"),
+        'report_link' => $agent instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
       )),
       '#theme_wrappers' => array('container'),
       '#attributes' => array(
@@ -1694,12 +1694,17 @@ function personalize_mvt_save_from_form_values($form_values) {
 
 /**
  * Menu callback for displaying a list of campaign results.
+ *
+ * @param stdClass $agent_data
+ *   The campaign class for the report.
+ * @param stdClass $option_set
+ *   (optional) Content variation set to use for initial display.
  */
-function personalize_campaign_report($agent_data) {
+function personalize_campaign_report($agent_data, $option_set = NULL) {
   $plugins = personalize_get_agent_types();
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
-    $report = module_invoke($module, 'personalize_campaign_report', $agent_data);
+    $report = module_invoke($module, 'personalize_campaign_report', $agent_data, $option_set);
     if (!empty($report)) {
       return $report;
     }

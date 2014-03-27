@@ -251,11 +251,13 @@ function hook_personalize_option_values_for_admin() {
  *
  * @param stdClass $agent_data
  *   A stdClass object representing the loaded agent.
+ * @param stdClass $option_set
+ *   (optional) The content variation set for filtering report data.
  *
  * @return string|array
  *   Either a string of themed output or an array that can be passed to drupal_render.
  */
-function hook_personalize_campaign_report($agent_data) {
+function hook_personalize_campaign_report($agent_data, $option_set) {
 
 }
 
