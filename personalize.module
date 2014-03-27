@@ -701,6 +701,27 @@ function personalize_warn_if_running($agent_name) {
 }
 
 /**
+ * Pauses the passed in agent if it's running.
+ *
+ * @param $agent_name
+ *   The name of the agent.
+ */
+function personalize_pause_if_running($agent_name) {
+  $status = personalize_agent_get_status($agent_name);
+  if ($status & PERSONALIZE_STATUS_RUNNING) {
+    personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
+    $campaign_url = "admin/structure/personalize/manage/{$agent_name}/edit";
+    $current_path = current_path();
+    if ($current_path !== $campaign_url && $current_path !== 'system/ajax') {
+      drupal_set_message(t('The campaign has been paused because you have made changes. You can edit and restart the campaign !here', array('!here' => l('here', $campaign_url))), 'warning');
+    }
+    else {
+      personalize_status_toggle_message($agent_name, PERSONALIZE_STATUS_PAUSED);
+    }
+  }
+}
+
+/**
  * Returns an agent selection form element for use in option set forms.
  *
  * @param string $default
@@ -1455,18 +1476,7 @@ function personalize_option_set_save($option_set) {
   personalize_option_set_load($option_set->osid, TRUE);
 
   // Pause the campaign because changes have been made.
-  $status = personalize_agent_get_status($option_set->agent);
-  if ($status & PERSONALIZE_STATUS_RUNNING) {
-    personalize_agent_set_status($option_set->agent, PERSONALIZE_STATUS_PAUSED);
-    $campaign_url = "admin/structure/personalize/manage/{$option_set->agent}/edit";
-    $current_path = current_path();
-    if ($current_path !== $campaign_url && $current_path !== 'system/ajax') {
-      drupal_set_message(t('The campaign has been paused because you have made changes. You can edit and restart the campaign !here', array('!here' => l('here', $campaign_url))), 'warning');
-    }
-    else {
-      personalize_status_toggle_message($option_set->agent, PERSONALIZE_STATUS_PAUSED);
-    }
-  }
+  personalize_pause_if_running($option_set->agent);
   // Set the active campaign to the one this option set was created for.
   personalize_set_campaign_context($option_set->agent);
 
@@ -1681,6 +1691,8 @@ function personalize_option_set_delete($osid) {
   db_delete('personalize_option_sets')
     ->condition('osid', $osid)
     ->execute();
+  // Pause the campaign because changes have been made.
+  personalize_pause_if_running($option_set->agent);
   module_invoke_all('personalize_option_set_delete', $option_set);
 }
 

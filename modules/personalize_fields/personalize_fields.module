@@ -308,6 +308,12 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
   if (isset($option_set->is_new) && count($options) < 2) {
     return;
   }
+  elseif (count($options) < 2) {
+    // Removing all but one value from a personalized multi-value field means
+    // the field is no longer personalized, so delete the Option Set.
+    personalize_option_set_delete($option_set->osid);
+    return;
+  }
   $option_set->options = $options;
   $option_set->label = personalize_fields_generate_option_set_label($entity_type, $entity_id, $entity, $field_name);
   // Save the Option Set.

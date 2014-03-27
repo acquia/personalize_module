@@ -150,6 +150,39 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $node = node_load(3);
     $this->assertFalse(isset($node->option_sets));
 
+    // Create another node with a personalized headline
+    // Set up two headline fields
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first option';
+    $edit['article_headline[und][1][value]'] = 'second option';
+    $edit['agent_select'] = 'test-agent';
+    $this->drupalPost(NULL, $edit, t('Save'));
+    // Confirm that an option set has been created for this node.
+    $option_set = personalize_option_set_load(3);
+    $this->assertEqual('fields', $option_set->plugin);
+    $field_info = array(
+      'entity_type' => 'node',
+      'entity_id' => 4,
+      'field_name' => 'article_headline',
+    );
+    $this->assertEqual($field_info, $option_set->field_info);
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    unset($edit['agent_select']);
+    // Now remove all but one option.
+    $edit['article_headline[und][1][value]'] = '';
+    $edit['article_headline[und][2][value]'] = '';
+    $this->drupalPost('node/4/edit', $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+    // Confirm that the Option Set has been deleted.
+    $option_set = personalize_option_set_load(3, TRUE);
+    $this->assertNull($option_set);
+    // Confirm that the campaign has indeed been paused.
+    $status = personalize_agent_get_status('test-agent');
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
+
     // Now delete the field instance from the article content type.
     $instance = field_info_instance('node', 'article_headline', 'article');
     field_delete_instance($instance);
