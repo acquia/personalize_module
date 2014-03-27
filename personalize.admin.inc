@@ -485,19 +485,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
     ),
     '#value' => t('Save Campaign settings'),
   );
-  $form['agent_form']['agent_fieldset']['actions']['reset'] = array(
-    '#type' => 'button',
-    '#button_type' => 'reset',
-    '#value' => t('Cancel'),
-    '#attributes' => array(
-      'class' => array('form-submit'),
-    ),
-    '#ajax' => array(
-      'callback' => 'personalize_agent_form_ajax_reset',
-      'wrapper' => 'personalize-agent-form',
-      'effect' => 'fade',
-    ),
-  );
+  $form['agent_form']['agent_fieldset']['actions']['reset'] =  _personalize_agent_get_cancel('personalize-agent-form');
   if (!empty($agent_data->machine_name)) {
     $form['agent_form']['agent_fieldset']['actions']['submit_form']['#ajax'] = array(
       'callback' => 'personalize_agent_form_ajax_submit',
@@ -558,7 +546,7 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   // Return the updated build of the submitted form.
   $form = drupal_rebuild_form($form['#form_id'], $form_state, $form);
   if (!isset($form_div_id)) {
-    $form_div_id = $form_state['triggering_element']['#ajax']['#wrapper'];
+    $form_div_id = $form_state['triggering_element']['#ajax']['wrapper'];
   }
   $commands[] = ajax_command_replace('#' . $form_div_id, drupal_render($form));
 
@@ -905,19 +893,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       'class' => array('action-item-primary-active'),
     ),
   );
-  $section['actions']['reset'] = array(
-    '#type' => 'button',
-    '#button_type' => 'reset',
-    '#value' => t('Cancel'),
-    '#attributes' => array(
-      'class' => array('form-submit'),
-    ),
-    '#ajax' => array(
-      'callback' => 'personalize_agent_form_ajax_reset',
-      'wrapper' => 'personalize-agent-goals-form',
-      'effect' => 'fade',
-    )
-  );
+  $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-goals-form');
   return $form;
 }
 
@@ -1342,19 +1318,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       'class' => array('action-item-primary-active'),
     ),
   );
-  $section['actions']['reset'] = array(
-    '#type' => 'button',
-    '#button_type' => 'reset',
-    '#value' => t('Cancel'),
-    '#ajax' => array(
-      'callback' => 'personalize_agent_form_ajax_reset',
-      'wrapper' => 'personalize-agent-option-sets-form',
-      'effect' => 'fade',
-    ),
-    '#attributes' => array(
-      'class' => array('form-submit'),
-    ),
-  );
+  $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-option-sets-form');
 
   // We have to specify the include file so as not to lose it during rendering from ajax.
   // @see personalize_agent_form_ajax_submit()
@@ -1398,7 +1362,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
     '#type' => 'personalize_admin_content',
     '#collapsible' => TRUE,
     '#tree' => TRUE,
-    '#title' => t('Multivariate Tests'),
+    '#title' => t('Multivariate tests'),
     '#collapsed_content' => $collapsed,
   );
   $form['mvt_wrapper']['mvt']['agent'] = array(
@@ -1441,7 +1405,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
   $form['mvt_wrapper']['mvt']['add']['actions'] = array('#type' => 'actions');
   $form['mvt_wrapper']['mvt']['add']['actions']['submit_form'] = array(
     '#type' => 'submit',
-    '#value' => t('Save MVT'),
+    '#value' => t('Save test'),
     '#ajax' => array(
       'callback' => 'personalize_agent_form_ajax_submit',
       'wrapper' => 'personalize-agent-mvt-form',
@@ -1451,21 +1415,39 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       'class' => array('action-item-primary-active'),
     ),
   );
-  $form['mvt_wrapper']['mvt']['add']['actions']['reset'] = array(
+  $form['mvt_wrapper']['mvt']['add']['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-mvt-form');
+
+  return $form;
+}
+
+/**
+ * Generate the render array for a cancel button to be included on the agent
+ * edit form.
+ *
+ * @param string $wrapper
+ *   The wrapping div id for Ajax callback.
+ * @param string $button_text
+ *   (optional) The text to display on the button (already translated).
+ */
+function _personalize_agent_get_cancel($wrapper, $button_text = NULL) {
+  if (empty($button_text)) {
+    $button_text = t('Cancel');
+  }
+  return array(
     '#type' => 'button',
     '#button_type' => 'reset',
-    '#value' => t('Cancel'),
+    '#value' => $button_text,
     '#ajax' => array(
       'callback' => 'personalize_agent_form_ajax_reset',
-      'wrapper' => 'personalize-agent-mvt-form',
+      'wrapper' => $wrapper,
       'effect' => 'fade',
     ),
+    '#validate' => array(),
+    '#limit_validation_errors' => array(),
     '#attributes' => array(
       'class' => array('form-submit'),
     ),
   );
-
-  return $form;
 }
 
 /**
