@@ -101,6 +101,9 @@ class UserProfileContext extends PersonalizeContextBase {
     $entity = new stdClass();
     $form = $form_state = array();
     foreach ($this->selectedContext as $name) {
+      $possible_values[$name] = array(
+        'values' => array()
+      );
       $field_name = 'field_' . $name;
       $field = field_info_field($field_name);
       $instance = field_info_instance('user', $field_name, 'user');
@@ -113,11 +116,7 @@ class UserProfileContext extends PersonalizeContextBase {
         $element = options_field_widget_form($form, $form_state, $field, $instance, LANGUAGE_NONE, array(), 0, array('#required' => FALSE, '#entity_type' => 'user', '#entity' => $entity));
         foreach ($element['#options'] as $key => $label) {
           if ($key != '_none') {
-            // Each type of agent has its own way of consuming visitor context. We
-            // need to use the value that we know will be used by the agent at
-            // runtime as our code for mapping this feature.
-            $code = $this->agent->convertContextToFeatureString($name, $key);
-            $possible_values[$code] = $name . ': ' . $label;
+            $possible_values[$name]['values'][$key] = $label;
           }
         }
       }

@@ -113,10 +113,12 @@ interface PersonalizeAgentInterface {
    *   The key name, could be something like "gender".
    * @param $value
    *   The value, e.g. "male", "female" or "other".
+   * @param $is_mutex
+   *   Whether this context has mutually exclusive values.
    * @return string
    *   A string that this agent can consume for explicit targeting.
    */
-  public static function convertContextToFeatureString($name, $value);
+  public static function convertContextToFeatureString($name, $value, $is_mutex = FALSE);
 
   /**
    * Checks whether the agent is ready to run.
@@ -279,7 +281,7 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   /**
    * Implements PersonalizeAgentInterface::convertContextToFeatureString().
    */
-  public static function convertContextToFeatureString($name, $value) {
+  public static function convertContextToFeatureString($name, $value, $is_mutex = FALSE) {
     return $name . '--' . $value;
   }
 
