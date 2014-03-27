@@ -13,6 +13,10 @@
    */
   Drupal.personalize.admin.toggleClickHandler = function (event) {
     var $container = [];
+    // Ignore any clicks from the links in the title suffix.
+    if ($(event.target).parents('.personalize-admin-content-title-suffix').length > 0) {
+      return;
+    }
     if ($(event.target).hasClass('personalize-collapsible')) {
       $container = $(event.target);
     } else {
