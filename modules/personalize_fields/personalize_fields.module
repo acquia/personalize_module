@@ -536,7 +536,10 @@ function personalize_fields_personalize_option_values_for_admin($option_set) {
     if (!empty($items[$index]['safe_value'])) {
       $option_values[$option['option_id']] = $items[$index]['safe_value'];
     }
-
+    // For multi-value image fields.
+    else if (!empty($items[$index]['filename'])) {
+      $option_values[$option['option_id']] = $items[$index]['filename'];
+    }
   }
   return $option_values;
 }
