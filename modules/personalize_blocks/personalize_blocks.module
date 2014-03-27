@@ -318,8 +318,8 @@ function personalize_blocks_personalize_option_values_for_admin($option_set) {
   $option_values = array();
   $personalized_block = new PersonalizedBlock($option_set->options);
   foreach($option_set->options as &$option) {
-    $block = $personalized_block->buildBlock($option['bid'], FALSE);
-    $option_values[$option['option_id']] = !empty($block->title) ? $block->title : $option['bid'];
+    $block = $personalized_block->buildBlock($option['bid'], FALSE, TRUE);
+    $option_values[$option['option_id']] = !empty($block->title) ? $block->title : $block->info;
   }
   return $option_values;
 }

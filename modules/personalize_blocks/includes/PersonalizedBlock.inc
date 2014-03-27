@@ -67,8 +67,11 @@ class PersonalizedBlock {
    *   The id of the block to build.
    * @param bool $render
    *   True builds renderable array, False returns data only; defaults to true.
+   * @param bool $include_custom
+   *   True to include custom block data such as description and format, False
+   *   to include only base block information.
    */
-  public function buildBlock($bid, $render = TRUE) {
+  public function buildBlock($bid, $render = TRUE, $include_custom = FALSE) {
     $output = array();
     list($module, $delta) = self::extractBlockId($bid);
     // Make sure the user can access the block.
@@ -76,6 +79,12 @@ class PersonalizedBlock {
       $block = block_load($module, $delta);
       $block->region = 'personalized_blocks';
       $block->personalized = TRUE;
+      if ($include_custom) {
+        $custom = block_custom_block_get($delta);
+        foreach($custom as $prop => $value) {
+          $block->{$prop} = $value;
+        }
+      }
       if (!$render) {
         return $block;
       }
