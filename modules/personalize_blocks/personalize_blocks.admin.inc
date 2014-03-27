@@ -415,6 +415,9 @@ function personalize_blocks_form_validate($form, &$form_state) {
 function personalize_blocks_form_submit($form, &$form_state) {
   if ($form_state['clicked_button']['#id'] == 'edit-submit-form') {
     $pblock = _personalize_blocks_convert_form_to_personalized_block($form_state);
+    // @todo This section should really be the responsibility of personalize module, figure
+    //   out a way to not have to add this to every submit callback of a form that uses
+    //   the embedded campaign creation form.
     if ($form_state['values']['agent_select'] == PERSONALIZE_NEW_AGENT_FORM_VALUE) {
       if ($new_agent = personalize_save_agent_from_form_values($form_state['values'])) {
         $pblock->agent = $new_agent->machine_name;

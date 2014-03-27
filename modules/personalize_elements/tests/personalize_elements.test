@@ -139,6 +139,37 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     }
   }
 
+  function testPersonalizeElementsNewCampaign() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Now choose to add a new agent instead of selecting an existing one.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_select' => PERSONALIZE_NEW_AGENT_FORM_VALUE,
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[options][test_agent][use_client_side_goal_processing]' => FALSE,
+      'title' => $this->randomName(),
+      'variation_type' => 'replaceText',
+      'selector' => '#some-id',
+      'add_control_option' => TRUE,
+      'options[0][option_label]' => 'first-option',
+      'options[0][personalize_elements_content]' => 'some content'
+    );
+    $this->drupalPost('admin/structure/personalize-elements/add', $edit, t('Save'));
+    $this->resetAll();
+    if ($agent = personalize_agent_load_agent($machine_name)) {
+      $this->assertTrue($agent instanceof PersonalizeTestAgent);
+      $this->assertFalse($agent->useClientSideGoalDelivery());
+    }
+    else {
+      $this->fail("The agent was not saved");
+    }
+    $option_set = personalize_option_set_load(1);
+    $this->assertEqual(2, count($option_set->options));
+    $this->assertEqual($machine_name, $option_set->agent);
+  }
+
   /**
    * Tests that the correct settings are added when Personalize Elements
    * are configured.

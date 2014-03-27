@@ -293,6 +293,18 @@ function personalize_elements_form_submit($form, &$form_state) {
 
   if ($op == t('Save')) {
     $option_set = personalize_elements_convert_form_values_to_option_set($form_state['values']);
+    // @todo This section should really be the responsibility of personalize module, figure
+    //   out a way to not have to add this to every submit callback of a form that uses
+    //   the embedded campaign creation form.
+    if ($form_state['values']['agent_select'] == PERSONALIZE_NEW_AGENT_FORM_VALUE) {
+      if ($new_agent = personalize_save_agent_from_form_values($form_state['values'])) {
+        $option_set->agent = $new_agent->machine_name;
+      }
+      else {
+        drupal_set_message('There was a problem saving the new campaign', 'error');
+        return;
+      }
+    }
     personalize_option_set_save($option_set);
     drupal_set_message(t('The option set was saved.'));
     $form_state['redirect'] = 'admin/structure/personalize-elements';
