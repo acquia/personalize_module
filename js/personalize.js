@@ -556,6 +556,8 @@
     if ($option_set.length > 0) {
       agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {
         Drupal.personalize.executors[executor].execute($option_set, decision, osid);
+        // Fire an event so other code can respond to the decision.
+        $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
       });
     }
     else {
