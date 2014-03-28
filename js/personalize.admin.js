@@ -50,9 +50,12 @@
   };
 
   /**
+   * Campaign edit page functionality.
+   *
    * Make personalize admin content containers collapsible.
+   * Adds add in context link for goals.
    */
-  Drupal.behaviors.personalizeCollapse = {
+  Drupal.behaviors.personalizeCampaignEdit = {
     attach: function (context, settings) {
       $('.personalize-collapsible', context).once().each(function() {
         var $container = $(this),
