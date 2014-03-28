@@ -85,6 +85,11 @@ input[type="submit"].personalize-add-link:hover {
   margin: 1em 0;
   padding: 1em 0 .4em 0;
 }
+/** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
+#personalize-agent-option-sets-form fieldset.personalize-option-set {
+  min-width: 0;
+  display: table-cell;
+}
 #personalize-agent-option-sets-form fieldset.personalize-option-set,
 #personalize-agent-option-sets-form fieldset.personalize-option-set legend,
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend{
@@ -115,7 +120,6 @@ input[type="submit"].personalize-add-link:hover {
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
   border-right: none;
 }
-
 .personalize-variation-row {
   clear: both;
   margin-bottom: 1em;
@@ -137,7 +141,6 @@ input[type="submit"].personalize-add-link:hover {
   text-align: center;
 }
 
-
 .personalize-variation-row input.personalize-variation-control,
 .personalize-variation-row input.personalize-variation-winner {
   display: inline-block;
@@ -154,6 +157,15 @@ input[type="submit"].personalize-add-link:hover {
   background-repeat: no-repeat;
   background-size: contain;
   height: 1.2em;
+}
+
+/* Truncate content variation title */
+.personalize-content-variation .personalize-admin-enumerated-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 60%;
+  max-width: 60%;
 }
 
 /*
