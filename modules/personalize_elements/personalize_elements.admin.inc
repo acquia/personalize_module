@@ -188,8 +188,8 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     $option_form['personalize_elements_content'] = array(
       '#prefix' => '<div class="personalize-elements-option-content-element">',
       '#suffix' => '</div>',
-      '#type' => 'textfield',
-      '#size' => 120,
+      '#type' => 'textarea',
+      '#rows' => 2,
       '#title' => t('Content'),
       '#default_value' => !empty($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '',
     );

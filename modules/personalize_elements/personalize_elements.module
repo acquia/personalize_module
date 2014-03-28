@@ -167,7 +167,7 @@ function personalize_elements_personalize_option_values_for_admin($option_set) {
  */
 function personalize_elements_personalize_elements_variation_types() {
   return array(
-    'replaceText' => t('Replace the text'),
+    'replaceHtml' => t('Replace the html'),
     'addClass' => t('Add a class'),
     'appendHtml' => t('Append HTML'),
     'prependHtml' => t('Prepend HTML'),

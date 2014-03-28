@@ -21,19 +21,19 @@
 
   Drupal.personalizeElements = {};
 
-  Drupal.personalizeElements.replaceText = {
-    controlText : {},
+  Drupal.personalizeElements.replaceHtml = {
+    controlContent : {},
     execute : function($selector, selectedContent, isControl, osid) {
       // We need to keep track of how we've changed the element, if only
       // to support previewing different options.
-      if (!this.controlText.hasOwnProperty(osid)) {
-        this.controlText[osid] = $selector.text();
+      if (!this.controlContent.hasOwnProperty(osid)) {
+        this.controlContent[osid] = $selector.html();
       }
       if (isControl) {
-        $selector.text(this.controlText[osid]);
+        $selector.html(this.controlContent[osid]);
       }
       else {
-        $selector.text(selectedContent);
+        $selector.html(selectedContent);
       }
 
     }

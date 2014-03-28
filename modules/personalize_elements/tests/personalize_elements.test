@@ -34,7 +34,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalPost('admin/structure/personalize-elements/add', $edit, t('Save'));
     $this->assertText('You must choose a variation type');
 
-    $edit['variation_type'] = 'replaceText';
+    $edit['variation_type'] = 'replaceHtml';
     $this->drupalPost('admin/structure/personalize-elements/add', $edit, t('Save'));
     $this->assertText('You must have at least 2 options for an option set');
     $this->drupalPost(NULL, array(), t('Add another'));
@@ -150,7 +150,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'agent_basic_info[title]' => $agent_name,
       'agent_basic_info[options][test_agent][use_client_side_goal_processing]' => FALSE,
       'title' => $this->randomName(),
-      'variation_type' => 'replaceText',
+      'variation_type' => 'replaceHtml',
       'selector' => '#some-id',
       'add_control_option' => TRUE,
       'options[0][option_label]' => 'first-option',
@@ -237,7 +237,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'agent_select' => 'test-agent',
       'title' => $this->randomName(),
       'selector' => '#some-id',
-      'variation_type' => 'replaceText',
+      'variation_type' => 'replaceHtml',
       'add_control_option' => FALSE,
       'pages' => '',
       'options[0][option_label]' => personalize_generate_option_label(0),
