@@ -403,7 +403,7 @@ function personalize_status_toggle_message($agent_name, $current_status) {
     );
   }
   if (!empty($theme_variables['option_sets'])) {
-    $theme_variables['option_message'] = t('All visitor will see the following variations:');
+    $theme_variables['option_message'] = t('All visitors will see the following variations:');
   }
   drupal_set_message(theme('personalize_campaign_status_update', $theme_variables));
 }
