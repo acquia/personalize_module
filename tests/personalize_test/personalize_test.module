@@ -279,6 +279,21 @@ function personalize_test_ctools_plugin_api($owner, $api) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * This form alter makes it possible to use the 'remove' buttons on the personalize
+ * blocks form during tests.
+ */
+function personalize_test_form_personalize_blocks_form_alter(&$form, &$form_state) {
+  $pblock = $form_state['pblock'];
+  foreach ($pblock->options as $delta => $block) {
+    foreach (array('#tag', '#text', '#theme_wrappers', '#attributes') as $key) {
+      unset($form['pblock_wrapper']['blocks'][$delta]['remove'][$key]);
+    }
+  }
+}
+
+/**
  * Implements hook_personalize_default_agents().
  */
 function personalize_test_personalize_default_agents() {

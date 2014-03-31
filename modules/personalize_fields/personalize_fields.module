@@ -512,7 +512,7 @@ function personalize_fields_personalize_option_set_load(&$option_sets) {
  */
 function personalize_fields_personalize_option_values_for_admin($option_set) {
   if ($option_set->plugin != 'fields') {
-    return FALSE;
+    return array();
   }
   $field_info = _personalize_fields_get_field_info_from_option_set($option_set->osid);
   $query = new EntityFieldQuery();
@@ -520,7 +520,7 @@ function personalize_fields_personalize_option_values_for_admin($option_set) {
     ->entityCondition('entity_id', $field_info['entity_id']);
   $result = $query->execute();
   if (empty($result)) {
-    return FALSE;
+    return array();
   }
   $entity_info = $result[$field_info['entity_type']][$field_info['entity_id']];
   $bundle = isset($entity_info->type) ? $entity_info->type : $entity_info->bundle;

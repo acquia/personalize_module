@@ -97,11 +97,12 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->drupalGet($delete_path);
     $this->assertResponse(403);
 
+    // Now delete the option set.
+    personalize_option_set_delete(1);
+
     // Set the status of the agent to running.
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
 
-    // Now delete the option set.
-    personalize_option_set_delete(1);
     $this->drupalGet('admin/structure/personalize');
     // It still should not be possible to delete this option set.
     $this->assertNoLinkByHref($delete_path);
@@ -855,6 +856,8 @@ class PersonalizeTest extends DrupalWebTestCase {
         'fixed_targeting_strategy' => 'OR'
       ),
       'option-C' => array(
+        'fixed_targeting' => array(),
+        'fixed_targeting_strategy' => 'OR'
       ),
     );
     $this->assertExplicitTargeting($option_set, $expected_targeting);
@@ -870,6 +873,8 @@ class PersonalizeTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1);
     $expected_targeting = array(
       'option-A' => array(
+        'fixed_targeting' => array(),
+        'fixed_targeting_strategy' => 'OR'
       ),
       'option-B' => array(
         'fixed_targeting' => array('test_user_field--second_value'),

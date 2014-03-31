@@ -153,11 +153,16 @@ function personalize_elements_personalize_create_new_links() {
  */
 function personalize_elements_personalize_option_values_for_admin($option_set) {
   if ($option_set->plugin != 'elements') {
-    return FALSE;
+    return array();
   }
   $option_values = array();
   foreach($option_set->options as &$option) {
-    $option_values[$option['option_id']] = $option['personalize_elements_content'];
+    if ($option['option_id'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID) {
+      $option_values[$option['option_id']] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
+    }
+    else {
+      $option_values[$option['option_id']] = truncate_utf8($option['personalize_elements_content'], 100, FALSE, TRUE);
+    }
   }
   return $option_values;
 }

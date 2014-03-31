@@ -1425,6 +1425,21 @@ function personalize_option_set_save($option_set) {
       $os_array = (array) $option_set;
       $os_array += $prior_os_array;
       $os_array['data'] += $prior_os_array['data'];
+      // Pull out the existing options into an array keyed by option id
+      // so that we can easily grab information from them.
+      $old_options = array();
+      foreach ($prior_os_array['options'] as $old_option) {
+        $old_options[$old_option['option_id']] = $old_option;
+      }
+      // This ensures things like fixed targeting information don't get clobbered
+      // when we're saving just basic information about the options.
+      // @todo There really has to be a better way, but it may involve restructuring
+      //   Option Set data :(
+      foreach ($os_array['options'] as &$option) {
+        if (isset($option['option_id']) && isset($old_options[$option['option_id']])) {
+          $option += $old_options[$option['option_id']];
+        }
+      }
       $option_set = (object) $os_array;
     }
   }

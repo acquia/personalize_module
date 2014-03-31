@@ -921,6 +921,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       $heading .= '<span class="personalize-variation-label">';
 
       $option_label_detail = isset($option_values[$option['option_id']]) ? $option_values[$option['option_id']] : $option['option_label'];
+      $option_label_detail = check_plain($option_label_detail);
       $heading .= $option_label_detail;
       $heading .= '</span>';
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['heading'] = array(
@@ -1321,14 +1322,17 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       if ($values['winner']) {
         $option_set->winner = $values['winner'];
       }
-      // Keep track of which explicit targeting features have already been
-      // designated as each can only be specified for one option.
-      $used_features = $features = array();
+
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
         continue;
       }
+
+      // Keep track of which explicit targeting features have already been
+      // designated as each can only be specified for one option.
+      $used_features = $features = array();
       foreach ($values['options'] as $option_id => $settings) {
+        $features[$option_id] = array();
         if (isset($settings['explicit_targeting'])) {
           $feature_values = $settings['explicit_targeting']['mapping'];
           foreach ($feature_values as $feature) {
@@ -1350,12 +1354,6 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
           // then store this as well.
           if (isset($values['options'][$option['option_id']]['explicit_targeting']['strategy'])) {
             $option['fixed_targeting_strategy'] = $values['options'][$option['option_id']]['explicit_targeting']['strategy'];
-          }
-        }
-        elseif (isset($option['fixed_targeting'])) {
-          unset($option['fixed_targeting']);
-          if (isset($option['fixed_targeting_strategy'])) {
-            unset($option['fixed_targeting_strategy']);
           }
         }
       }

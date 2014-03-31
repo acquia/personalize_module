@@ -313,7 +313,7 @@ function personalize_blocks_personalize_create_new_links() {
  */
 function personalize_blocks_personalize_option_values_for_admin($option_set) {
   if ($option_set->plugin != 'block') {
-    return FALSE;
+    return array();
   }
   $option_values = array();
   $personalized_block = new PersonalizedBlock($option_set->options);
