@@ -254,9 +254,9 @@ function personalize_page_build(&$page) {
   if (isset($_GET[PERSONALIZE_PRESELECTION_PARAM])) {
     $preselected = explode(',', $_GET[PERSONALIZE_PRESELECTION_PARAM]);
     foreach ($preselected as $option_str) {
-      list($osid, $selection) = explode('--', trim($option_str));
+      list($osid_str, $selection) = explode('--', trim($option_str));
       // Make sure this is a valid option set.
-      if ($option_set = personalize_get_option_set_for_decision($osid)) {
+      if ($osid = personalize_resolve_stringified_osid($osid_str) && $option_set = personalize_option_set_load($osid)) {
         foreach ($option_set->options as $option) {
           if ($option['option_id'] === $selection) {
             $settings['preselected'][$osid] = $option['option_id'];
@@ -977,14 +977,37 @@ function personalize_get_option_label_for_decision_and_choice($decision_name, $o
  *   The name of the decision the option belongs to.
  *
  * @return
- *   The option set class or FALSE if none can be found.
+ *   The option set object or FALSE if none can be found.
  */
 function personalize_get_option_set_for_decision($decision_name) {
-  if (preg_match("/^osid\-(\d+)$/", $decision_name, $matches) !== FALSE) {
-    $osid = $matches[1];
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $decision_name));
+  if (!empty($option_sets)) {
+    return reset($option_sets);
+  }
+  elseif ($osid = personalize_resolve_stringified_osid($decision_name)) {
     return personalize_option_set_load($osid);
   }
-  return FALSE;
+  return NULL;
+}
+
+/**
+ * Resolves an Option Set ID in the form 'osid-123' to just the numeric ID.
+ *
+ * @param string $osid
+ *   An Option Set ID in the form 'osid-n' where n is the numeric ID.
+ *
+ * @return int
+ *   The numeric part of the ID or NULL if there is none.
+ */
+function personalize_resolve_stringified_osid($osid) {
+  if (is_numeric($osid)) {
+    return (int) $osid;
+  }
+  $prefix = preg_quote(PERSONALIZE_OPTION_SET_PREFIX);
+  if (preg_match("/^$prefix(\d+)$/", $osid, $matches) !== FALSE) {
+    return $matches[1];
+  }
+  return NULL;
 }
 
 /**
@@ -1768,7 +1791,7 @@ function personalize_get_decision_name_for_option_set($option_set) {
     return $option_set->decision_name;
   }
   // Default to a name based on the osid.
-  return _personalize_get_nonnumeric_osid($option_set->osid);
+  return personalize_stringify_osid($option_set->osid);
 }
 
 /**
@@ -2295,7 +2318,7 @@ function _personalize_generate_option_index($index) {
 function _personalize_convert_option_set_to_js_setting($option_set) {
   // We never want to use numeric keys in the JS so convert it to a
   // string using the prefix if it is numeric.
-  $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+  $js_id = personalize_stringify_osid($option_set->osid);
   $os_array = (array) $option_set;
   $os_array['osid'] = $js_id;
   $option_names = array();
@@ -2349,6 +2372,6 @@ function personalize_form_element_add_states($state, &$element) {
  * @param $osid
  * @return string
  */
-function _personalize_get_nonnumeric_osid($osid) {
+function personalize_stringify_osid($osid) {
   return is_numeric($osid) ? PERSONALIZE_OPTION_SET_PREFIX . $osid : $osid;
 }
