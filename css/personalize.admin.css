@@ -10,11 +10,6 @@
   margin-bottom: 1.4em;
 }
 
-.personalize-goal {
-  padding: 1em 0;
-  border-collapse: collapse;
-}
-
 .personalize-goal .form-item {
   display: inline-block;
   margin-right: 1em;
@@ -96,6 +91,7 @@ input[type="submit"].personalize-add-link:hover {
   width: 100%;
   display: block;
 }
+#personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend,
 #personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend {
   background-position: .5em .5em;
 }

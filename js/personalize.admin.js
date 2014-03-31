@@ -62,7 +62,7 @@
             $trigger = $container.children('.personalize-collapse-edit');
         // Title and edit link always toggles editing.
         $trigger.bind('click', Drupal.personalize.admin.toggleClickHandler);
-        $('.personalize-admin-content-title', $container).bind('click', Drupal.personalize.admin.toggleClickHandler);
+        $('.personalize-admin-content-title', $container).first().bind('click', Drupal.personalize.admin.toggleClickHandler);
 
         // If it is collapsed, allow click on full div to toggle editing.
         if ($container.hasClass('personalize-collapsed')) {

@@ -119,7 +119,7 @@ function theme_personalize_campaign_status_update($variables) {
  */
 function theme_personalize_admin_enumerated_item($variables) {
   $variables['attributes']['class'][] = 'personalize-admin-enumerated-item';
-  $text = '<div ' . drupal_attributes($variables['attributes']) . '><strong>' . $variables['enum'] . '</strong> ';
+  $text = '<div' . drupal_attributes($variables['attributes']) . '><strong>' . $variables['enum'] . '</strong> ';
   if (!empty($variables['title_prefix'])) {
     $text .= $variables['title_prefix'];
   }
