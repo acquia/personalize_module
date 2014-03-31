@@ -4,23 +4,72 @@
   Drupal.personalize.admin = Drupal.personalize.admin || {};
 
   /**
-   * Make personalize admin content containers collapsible.
+   * Click handler to toggle editing within a collapsible admin container.
+   *
+   * The container to toggle is either the target or a parent of the target.
+   *
+   * @param event
+   *   Triggering event.
    */
-  Drupal.behaviors.personalizeCollapse = {
+  Drupal.personalize.admin.toggleClickHandler = function (event) {
+    var $container = [];
+    // Ignore any clicks from the links in the title suffix.
+    if ($(event.target).parents('.personalize-admin-content-title-suffix').length > 0) {
+      return;
+    }
+    if ($(event.target).hasClass('personalize-collapsible')) {
+      $container = $(event.target);
+    } else {
+      $container = $(event.target).parents('.personalize-collapsible');
+    }
+    if ($container.length == 0) {
+      return;
+    }
+    Drupal.personalize.admin.togglePersonalizeCollapse($container);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+
+  /**
+   * Toggle the collapse/editing state for a collapsible admin container.
+   *
+   * @param $container
+   *   The jQuery container to toggle.
+   */
+  Drupal.personalize.admin.togglePersonalizeCollapse = function ($container) {
+    var closedText = Drupal.t('edit'),
+      openText = Drupal.t('close'),
+      label = $container.hasClass('personalize-collapsed') ? openText : closedText;
+    $container.toggleClass('personalize-collapsed');
+    $container.children('personalize-collapse-edit').text(label);
+    if ($container.hasClass('personalize-collapsed')) {
+      $container.bind('click', Drupal.personalize.admin.toggleClickHandler);
+    } else {
+      $container.unbind('click', Drupal.personalize.admin.toggleClickHandler);
+    }
+  };
+
+  /**
+   * Campaign edit page functionality.
+   *
+   * Make personalize admin content containers collapsible.
+   * Adds add in context link for goals.
+   */
+  Drupal.behaviors.personalizeCampaignEdit = {
     attach: function (context, settings) {
       $('.personalize-collapsible', context).once().each(function() {
-        var container = $(this),
-            trigger = container.children('.personalize-collapse-trigger'),
-            closedText = trigger.text(),
-            openText = Drupal.t('close');
+        var $container = $(this),
+            $trigger = $container.children('.personalize-collapse-edit');
+        // Title and edit link always toggles editing.
+        $trigger.bind('click', Drupal.personalize.admin.toggleClickHandler);
+        $('.personalize-admin-content-title', $container).first().bind('click', Drupal.personalize.admin.toggleClickHandler);
 
-        trigger.click(function ( event ) {
-          event.preventDefault();
-          var label = container.hasClass('personalize-collapsed') ? openText : closedText;
-          container.toggleClass('personalize-collapsed');
-          $(this).text(label);
-        });
+        // If it is collapsed, allow click on full div to toggle editing.
+        if ($container.hasClass('personalize-collapsed')) {
+          $container.bind('click', Drupal.personalize.admin.toggleClickHandler);
+        }
       });
+      // Add in context link for goals.
       $('.personalize-goal-action', context).once('personalize-goal-action', function() {
         $(this).bind('change', function(e) {
           var val = e.currentTarget.selectedOptions[0].value;
@@ -33,158 +82,30 @@
   };
 
   /**
-   * Retrieves the requested form from the behavior context.
+   * Add personalize admin content header sections.
    *
-   * The form could be
-   * part of the context or could be the context itself.
-   *
-   * @param formId
-   *   The id attribute of the form to retrieve.  This can be the base form
-   *   id if the actual id has additional information at the end.
-   * @param context
-   *   The Drupal behavior attach content.
-   *
-   * @returns {*|HTMLElement}
-   *   The jQuery form element.
+   * This is content that should appear inline with the admin content title.
+   * It should be shown regardless of collapsed state of the container.
    */
-  Drupal.personalize.getFormFromContext = function (formId, context) {
-    var $form = $('#' + formId, context);
-    if ($form.length === 0) {
-      if ($(context).is('#' + formId)) {
-        return $(context);
-      }
-    }
-    return $form;
-  }
-
-  Drupal.personalize.addCollapsedContent = function (content, context) {
-    var wrappedContent = content.map(function(currentValue) {
-      return '<div class="personalize-admin-content-collapsed-wrapper">' + currentValue + '</div>';
-    });
-
-    var $collapsedDiv = $('.personalize-admin-content-collapsed', context);
-    if ($collapsedDiv.length > 0) {
-      $collapsedDiv.html(wrappedContent.join(''));
-    } else {
-      $('a.personalize-collapse-trigger:first', context).after('<div class="personalize-admin-content-collapsed">' + wrappedContent.join('') + '</div>');
-    }
-  }
-
-  /**
-   * Handle secondary titles for the agent section of the form.
-   */
-  Drupal.behaviors.personalizeAgentSecondaryTitle = {
-    attach: function(context, settings) {
-      var $agent_form = Drupal.personalize.getFormFromContext('personalize-agent-form', context);
-      if ($agent_form.length === 0) {
-        return;
-      }
-
-      // Get an array of the selected visitor contexts for this campaign
-      var selectedContexts = $('.form-item-visitor-context select option:selected', $agent_form).map(function() {
-        return $(this).text();
-      }).get();
-      if (selectedContexts.length > 0) {
-        var titleSecondary = '<b>' + Drupal.t('Visitor contexts:') + '</b>&nbsp;' + selectedContexts.join(', ');
-        var $titleDiv = $('.personalize-admin-content-title-secondary', $agent_form);
-        if ($titleDiv.length > 0) {
-          $titleDiv.html(titleSecondary);
-        } else {
-          $('h2.personalize-admin-content-title', $agent_form).after('<div class="personalize-admin-content-title-secondary">' + titleSecondary + '</div>');
-        }
-      }
-    }
-  }
-
-  /**
-   * Handle secondary collapsed display for the content variation form.
-   */
-  Drupal.behaviors.personalizeContentVariationSecondaryTitle = {
+  Drupal.behaviors.personalizeAdminContentHeader = {
     attach: function (context, settings) {
-      var $optionSetsForm = Drupal.personalize.getFormFromContext('personalize-agent-option-sets-form', context);
-
-      if ($optionSetsForm.length === 0) {
-        return;
-      }
-
-      // Get all the numbers and content variant titles
-      var collapsedContent = [];
-      $('.personalize-admin-content .personalize-admin-content', $optionSetsForm).each(function() {
-        var includeContent = '';
-        includeContent += $(this).find('.personalize-variant').get(0).outerHTML;
-        includeContent += $(this).find('.personalize-admin-content-title').get(0).outerHTML;
-        if (includeContent.length > 0) {
-          collapsedContent.push(includeContent);
-        }
+      $('.personalize-admin-content-header', context).once().each(function() {
+        var $container = $(this).parents('.personalize-collapsible');
+        $container.find('.personalize-admin-content-title').after('<div class="personalize-admin-content-title-suffix"></div>');
+        $('.personalize-admin-content-title-suffix', $container).append($(this));
       });
-      Drupal.personalize.addCollapsedContent(collapsedContent, $optionSetsForm);
     }
-  }
-
-  /**
-   * Handle secondary collapsed display for the goals form.
-   */
-  Drupal.behaviors.personalizeGoalsSecondaryTitle = {
-    attach: function(context, settings) {
-      var $goalsForm = Drupal.personalize.getFormFromContext('personalize-agent-goals-form', context);
-      if ($goalsForm.length === 0) {
-        return;
-      }
-
-      // Get all the numbers and content variant tiles.
-      var collapsedContent = [];
-      $('#personalize-goals .personalize-goal', $goalsForm).each(function() {
-        var includeContent = '';
-        var actionName = '';
-        var $selectedOption = $(this).find('select.personalize-goal-action option:selected');
-
-        if ($selectedOption.length > 0 && $selectedOption.val().length > 0) {
-          includeContent += $(this).find('.personalize-variant').get(0).outerHTML;
-          actionName = $selectedOption.text();
-          if (actionName.length) {
-            includeContent += '<h2 class="personalize-admin-content-title">' + actionName + '</h2>';
-          }
-          if (includeContent.length > 0) {
-            collapsedContent.push(includeContent);
-          }
-        }
-      });
-      Drupal.personalize.addCollapsedContent(collapsedContent, $goalsForm);
-    }
-  }
-
-  /**
-   * Handle secondary collapsed display for MVT form.
-   */
-  Drupal.behaviors.personalizeMVTSecondaryTitle = {
-    attach: function(context, settings) {
-      var $mvtForm = Drupal.personalize.getFormFromContext('personalize-agent-mvt-form', context);
-      if ($mvtForm.length === 0) {
-        return;
-      }
-
-      var collapsedContent = [];
-      var editString = Drupal.t('edit');
-      var editRegex = new RegExp(' - ' + editString + '$');
-      $('.personalize-admin-content-content .personalize-admin-content', $mvtForm).each(function() {
-        var includeContent = $(this).find('.personalize-variant').get(0).outerHTML;
-        var title = $(this).find('.personalize-admin-content-title').text();
-        includeContent += '<h2 class="personalize-admin-content-title">' + title.replace(editRegex,'') + '</h2>';
-        collapsedContent.push(includeContent);
-      });
-      Drupal.personalize.addCollapsedContent(collapsedContent, $mvtForm);
-    }
-  }
+  };
 
   /**
    * Handle show/hide of optional admin information.
    */
   Drupal.behaviors.personalizeAdminOptional = {
-    attach: function(context, settings) {
+    attach: function (context, settings) {
       $('.personalize-admin-optional', context).once().each(function() {
-        var closedText = Drupal.t('Info');
-        var openedText = Drupal.t('Hide info');
-        var $optional = $(this);
+        var closedText = Drupal.t('Info'),
+          openedText = Drupal.t('Hide info'),
+          $optional = $(this);
         // The optional content will be nested within parent text.
         $optional.before('<a href="#" class="personalize-admin-optional-trigger">' + closedText + '</a>');
         $('.personalize-admin-optional-trigger',$optional.parent()).click(function(e) {
@@ -199,6 +120,36 @@
         $optional.hide();
       });
     }
-  }
+  };
+
+  /**
+   * Add any summary data to administrative fieldsets.
+   */
+  Drupal.behaviors.personalizeAdminFieldset = {
+    attach: function (context, settings) {
+      $('#personalize-agent-option-sets-form .personalize-admin-content-content fieldset').once().each(function() {
+        var fieldset = this,
+          $summary = $('.fieldset-legend:first .summary', this),
+          $summary_text = $('.fieldset-wrapper:first .personalize-summary', this);
+        if ($summary_text.length == 0) {
+          return;
+        }
+        if ($summary.length == 0) {
+          $summary = $('.fieldset-legend').append('<span class="summary"></span>');
+        }
+        $summary.html($summary_text.html());
+        $summary_text.hide();
+
+        var editText = $('.fieldset-wrapper .personalize-option-set-edit-trigger', fieldset).text(),
+          hideText = Drupal.t('hide');
+        $('.fieldset-wrapper .personalize-option-set-edit-trigger', fieldset).bind('click', function(e) {
+          e.preventDefault();
+          $('input.personalize-variation-winner', fieldset).toggleClass('personalize-edit');
+          var currentText = $(this).text();
+          $(this).text(currentText == editText ? hideText : editText);
+        });
+      });
+    }
+  };
 
 })(jQuery);

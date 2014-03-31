@@ -118,6 +118,16 @@ function personalize_menu() {
     'context' => MENU_CONTEXT_PAGE,
     'file' => 'personalize.admin.inc',
   );
+  $items['admin/structure/personalize/manage/%personalize_agent/report/%personalize_option_set'] = array(
+    'title' => 'Report',
+    'description' => 'Evaluate your personalization campaign content variation results.',
+    'page callback' => 'personalize_campaign_report',
+    'page arguments' => array(4, 6),
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'personalize.admin.inc',
+  );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(
     'title' => 'Delete campaign',
     'page callback' => 'drupal_get_form',
@@ -467,7 +477,6 @@ function personalize_theme($existing, $type, $theme, $path) {
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
       'variables' => array(
-          'status_message' => '',
           'option_message' => '',
           'option_sets' => array(),
       ),
@@ -477,6 +486,26 @@ function personalize_theme($existing, $type, $theme, $path) {
       'file' => 'personalize.theme.inc',
       'variables' => array(
         'report' => '',
+      ),
+    ),
+    'personalize_admin_enumerated_item' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'enum' => '',
+        'title' => '',
+        'title_prefix' => '',
+        'title_suffix' => '',
+        'attributes' => array(),
+      ),
+    ),
+    'personalize_option_set_header' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'variation_count' => 0,
+        'report' => array(),
+        'report_link' => '',
       ),
     ),
   );
@@ -1748,14 +1777,14 @@ function personalize_get_decision_name_for_option_set($option_set) {
 function personalize_get_executors() {
   $executors = array(
     'show' => array(
-      'title' => t('Preload all variations'),
+      'title' => t('Pre-load all variations'),
       'description' => t('Typically faster for fewer variations.'),
-      'details' => t('Preloading renders all of the variations on the page and hides all but the personalized variation using Javascript.  This allows the full page to be cached and the personalized variation to load instantly.'),
+      'details' => t('Preloading renders all of the variations on the page but shows only the personalized variation using Javascript.  This allows the page to be cached and the variation to load instantly.'),
     ),
     'callback' => array(
       'title' => 'Load personalized variation only',
-      'description' => t('Faster page-load for many or complex variations.  The variation will load slightly after the rest of the page.'),
-      'details' => t('This increases performance by removing the weight of all of the other variations from the pageload.  An AJAX request will be made to the server to load the personalized variation slightly after the page.  We recommend you use this option if you are not using caching, for example if most of your users are authenticated.'),
+      'description' => t('Faster page-load for many or complex variations.'),
+      'details' => t('No variations are loaded with the page.  After the page loads, the personalized variation loads via an AJAX call (there may be a slight delay).  Use this option for uncached pages, eg. where authentication is required.'),
     ),
   );
   drupal_alter('personalize_executors', $executors);

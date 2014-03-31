@@ -14,14 +14,17 @@
 }
 
 .personalize-admin-content.personalize-collapsed {
+  background-color: inherit;
   border: none;
 }
-
-/**
- * Avoid boxes within boxes
- */
+.personalize-admin-content.personalize-collapsed:hover,
+.personalize-admin-content.personalize-collapsed:active {
+  background-color: #fff;
+  border: 1px solid #ccc;
+}
+/* Avoid boxes within boxes */
 .personalize-admin-content fieldset,
-.personalize-admin-content .personalize-admin-content{
+.personalize-admin-content .personalize-admin-content {
   border: none;
 }
 
@@ -32,7 +35,8 @@
 
 .personalize-admin-content-title {
   display: inline-block;
-  font-size: 1.2em;
+  font-size: 1.4em;
+  margin-right: 0.4em; /* LTR */
 }
 
 .personalize-content-set-item-title {
@@ -62,8 +66,22 @@
   margin-left: 1em; /* LTR */
 }
 
-.personalize-collapse-trigger {
-  float: right; /* LTR */
+.personalize-admin-content.personalize-collapsed:hover .personalize-collapse-edit,
+.personalize-admin-content.personalize-collapsed:active .personalize-collapse-edit,
+.personalize-admin-section .personalize-collapse-edit {
+  background-image: url("../images/edit_active.png");
+  background-image: url("../images/edit_active.svg"), none; /* Displays SVG with PNG fallback */
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  text-indent: -999px;
+  cursor: pointer;
+  margin-right: 5px; /* LTR */
+}
+
+.personalize-admin-section .personalize-collapsed .personalize-collapse-edit {
+  background-image: url("../images/edit.png");
+  background-image: url("../images/edit.svg"), none;
 }
 
 .personalize-admin-content-title-secondary {
@@ -72,11 +90,16 @@
 }
 
 .personalize-admin-content-collapsed-wrapper {
-  margin: 0 0 2em 1em;
+  margin: 0 0 2em 0;
 }
 
 .personalize-admin-content-collapsed-wrapper:first-child {
   margin-top: 1em;
+}
+
+.personalize-admin-content-content,
+.personalize-admin-content-collapsed {
+  padding-left: 3em; /* LTR */
 }
 
 .personalize-admin-content-collapsed {
@@ -85,51 +108,10 @@
 
 .personalize-collapsed .personalize-admin-content-collapsed {
   display: block;
-
 }
 
-/* Variant counter display */
-.personalize-admin-content .personalize-variant {
-  display: inline-block;
-  height: 30px;
-  width: 30px;
-  line-height: 30px;
-  -moz-border-radius: 15px; /* or 50% */
-  border-radius: 15px; /* or 50% */
-  background-color: #0074BD;
-  color: white;
-  text-align: center;
+.personalize-admin-content-collapsed .personalize-admin-enumerated-item {
   font-size: 1.2em;
-  margin-right: 10px;
-  border: solid 1px #ccc;
-}
-
-/**
- * Indent admin content within a variation count block
- */
-.personalize-admin-content .personalize-variant ~ .personalize-admin-content-content {
-  padding-left: 45px;
-}
-
-.personalize-content-variation-stopped {
-  color: #999;
-}
-
-.personalize-content-variation .form-type-radio {
-  float: right;
-}
-
-.personalize-content-variation .form-type-radio label {
-  color: #000;
-  margin-right: 5px;
-  vertical-align: bottom;
-  display: inline;
-  font-weight: normal;
-}
-
-.personalize-content-variation-winner .form-type-radio label {
-  color: #0074BD;
-  font-weight: bold;
 }
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown,
@@ -140,4 +122,11 @@
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown {
   margin-right: 15px;
+}
+#personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper {
+  position: relative;
+  display: inline-block;
+}
+#personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper .ctools-dropdown-container {
+  left: -5em;
 }

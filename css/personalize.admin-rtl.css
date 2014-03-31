@@ -11,15 +11,20 @@
   margin-left: 1em; /* RTL */
 }
 
-.personalize-variation-count {
-  margin-right: 1em; /* RTL */
-  margin-left: auto; /* RTL */
-}
-
-.personalize-collapse-trigger {
-  float: left; /* RTL */
+.personalize-admin-content-title {
+  margin-left: 0.4em; /* RTL */
 }
 
 .personalize-admin-optional-trigger {
   margin-right: 0.4em; /* RTL */
 }
+
+.personalize-admin-section .personalize-collapse-edit {
+  margin-left: 5px; /* RTL */
+}
+
+.personalize-admin-content-content,
+.personalize-admin-content-collapsed {
+  padding-right: 3em; /* RTL */
+}
+

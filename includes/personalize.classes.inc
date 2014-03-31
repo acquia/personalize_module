@@ -140,7 +140,7 @@ interface PersonalizeAgentReportInterface {
    * @param null $date_to
    *   The end date for the report.
    * @return string
-   *   A string of text / markup containing the stats.
+   *   An array of stats to display.
    */
   public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL);
 

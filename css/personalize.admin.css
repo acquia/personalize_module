@@ -4,22 +4,10 @@
  */
 
 /**
- * Arrange the campaign context configuration options in columns.
+ * Arrange the goals configuration options in columns.
  */
 .personalize-goals-wrapper {
   margin-bottom: 1.4em;
-}
-
-.personalize-goal {
-  padding: 1em 0;
-  border-collapse: collapse;
-  border-top: .1em solid #ccc;
-}
-.personalize-goal:first-child {
-  border-top: none;
-}
-.personalize-goal:last-child {
-  border-bottom: .1em solid #ccc;
 }
 
 .personalize-goal .form-item {
@@ -37,21 +25,29 @@
   margin-bottom: 9px;
 }
 
-/* Add a goal button should appear as an action link
-* @todo would much rather use action-link style from theme instead
+/* For submit buttons to appear as add action link.
+* @todo would much rather use action-link style from theme instead but it is
+* specific to "ul.action-links a" selector in Ember and we need a submit button.
 */
-input.personalize-add-goal.form-submit {
-  background: transparent url(../images/add.png) no-repeat 0 center;
+input[type="submit"].personalize-add-link {
+  background: transparent;
   border: none;
   color: #0074BD;
-  font-size: 1em;
-  padding: 0 0 0 15px;
-  margin: 0;
+  font-size: .75em;
+  padding: 0;
+  margin: 0 0 0 0.3em;
   line-height: 30px;
 }
-
-input.personalize-add-goal:hover {
+input[type="submit"].personalize-add-link:hover {
   text-decoration: underline;
+  background: transparent;
+  color: #0074BD;
+}
+/* The + before the Add Goals button */
+#personalize-agent-goals-form .personalize-admin-content-header:not(input) {
+  color: #0074BD;
+  font-size: 1.3em;
+  display: inline-block;
 }
 
 /**
@@ -73,28 +69,112 @@ input.personalize-add-goal:hover {
   }
 }
 
+/**
+ * Content variation tabular layout
+ */
+.personalize-content-variation:first-child {
+  border-top: #ccc 1px solid;
+}
 .personalize-content-variation {
-  padding: 1em 0;
-  border-collapse: collapse;
-  border-bottom: .1em solid #ccc;
+  border-bottom: #ccc 1px solid;
+  margin: 1em 0;
+  padding: 1em 0 .4em 0;
+}
+/** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
+#personalize-agent-option-sets-form fieldset.personalize-option-set {
+  min-width: 0;
+  display: table-cell;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set,
+#personalize-agent-option-sets-form fieldset.personalize-option-set legend,
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend{
+  width: 100%;
+  display: block;
+}
+#personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend,
+#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend {
+  background-position: .5em .5em;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
+  display: none;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend span.summary {
+  float: right;
+  margin-right: 2.5em;
+  font-weight: normal;
+  display: inline-block;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary div {
+  display: inline;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item,
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-stat {
+  border-right: 1px solid;
+  margin-right: .5em;
+  padding-right: .5em;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
+  border-right: none;
+}
+.personalize-variation-row {
+  clear: both;
+  margin-bottom: 1em;
+  width: 100%;
+}
+.personalize-variation-row div {
+  float: left;
+}
+.personalize-variation-row div.personalize-variation-col1 {
+  width: 60%
+}
+.personalize-variation-row div.personalize-variation-col2,
+.personalize-variation-row div.personalize-variation-col3 {
+  width: 15%;
+  text-align: center;
+}
+.personalize-variation-row div.personalize-variation-col4 {
+  width: 10%;
+  text-align: center;
 }
 
-.personalize-content-variation .personalize-variation-label:before,
-.personalize-content-variation .personalize-variation-label:after {
-  content: '"';
+.personalize-variation-row input.personalize-variation-control,
+.personalize-variation-row input.personalize-variation-winner {
+  display: inline-block;
+  visibility: hidden;
 }
-.personalize-content-variation .personalize-variation-label {
-  width: 75%;
+.personalize-variation-row input.personalize-variation-winner.personalize-edit {
+  visibility: visible;
+}
+.personalize-variation-row div.personalize-variation-selected-control,
+.personalize-variation-row div.personalize-variation-selected-winner {
+  background-image: url('../images/check_8AC340.png');
+  background-image: url('../images/check_8AC340.svg'), none;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  background-size: contain;
+  height: 1.2em;
+}
+
+/* Truncate content variation title */
+.personalize-content-variation .personalize-admin-enumerated-item {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: inline-block;
-  vertical-align: bottom;
+  width: 60%;
+  max-width: 60%;
 }
 
+/*
+ * Collapsible content
+ */
 html.js .personalize-collapsed .personalize-admin-content-content {
   height: 0;
   overflow: hidden;
+}
+
+.personalize-admin-content-content .personalize-admin-content-title .personalize-admin-enumerated-item,
+.personalize-admin-content-content fieldset .fieldset-title .personalize-admin-enumerated-item {
+  display: inline;
 }
 
 #personalize-agent-page-messages .personalize-alert {
@@ -107,4 +187,15 @@ html.js .personalize-collapsed .personalize-admin-content-content {
 }
 .personalize-admin-optional-trigger {
   margin-left: 0.4em;
+}
+
+.personalize-admin-content-title {
+  cursor: pointer;
+}
+
+.personalize-admin-content-title-suffix,
+.personalize-admin-content-title-suffix div,
+#personalize-agent-form #personalize-status-toggle-form,
+#personalize-agent-form #personalize-status-toggle-form div{
+  display: inline;
 }

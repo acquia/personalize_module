@@ -69,7 +69,6 @@ function theme_personalize_options_callback_wrapper($variables) {
  *
  * @param $variables
  *   Associative array of information to display about the status alert.
- *   - status_message: The main status message indicating campaign status.
  *   - option_message: A message to show to introduce the winning options.
  *   - option_sets: An associative array of options sets within this campaign.
  *     - label: The label of the option set
@@ -79,11 +78,10 @@ function theme_personalize_options_callback_wrapper($variables) {
  *     - alert: Additional alert to show the end user regarding change.
  */
 function theme_personalize_campaign_status_update($variables) {
-  $status_message = $variables['status_message'];
   $option_message = $variables['option_message'];
   $option_sets = $variables['option_sets'];
 
-  $update_message = $status_message;
+  $update_message = '';
   if (!empty($option_sets)) {
     if (!empty($option_message)) {
       $update_message .= ' ' . $option_message;
@@ -110,11 +108,35 @@ function theme_personalize_campaign_status_update($variables) {
 }
 
 /**
+ * Theme function to display the title of an enumerated list.
+ *
+ * @param $variables
+ *   Associative array of enumerated list item details
+ *   - enum: The enumeration text; e.g., Set 1, Goal 2, etc.
+ *   - title: The title of the list item.
+ *   - title_prefix: An optional prefix for the title.
+ *   - title_suffix: An optional suffix for the title.
+ */
+function theme_personalize_admin_enumerated_item($variables) {
+  $variables['attributes']['class'][] = 'personalize-admin-enumerated-item';
+  $text = '<div' . drupal_attributes($variables['attributes']) . '><strong>' . $variables['enum'] . '</strong> ';
+  if (!empty($variables['title_prefix'])) {
+    $text .= $variables['title_prefix'];
+  }
+  $text .= $variables['title'];
+  if (!empty($variables['title_suffix'])) {
+    $text .= $variables['title_suffix'];
+  }
+  $text .= '</div>';
+  return $text;
+}
+
+/**
  * Theme function to output a report for an Option Set.
  *
  * @param $variables
  *   An associative array of variables with a single 'report' key that
- *   holds the report.
+ *   holds an array of reporting statistics.
  * @return string
  *   The themed output.
  */
@@ -122,7 +144,35 @@ function theme_personalize_option_set_report($variables) {
   if (empty($variables['report'])) {
     return '';
   }
-  $output = '<div class="personalize-option-set-report">' . $variables['report'] . '</div>';
+  $output = '<div class="personalize-option-set-report">';
+  foreach($variables['report'] as $stat) {
+    $output .= '<span class="personalize-stat">' . $stat . '</span>';
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to output header information for an option set.
+ *
+ * @param $variables
+ *   An associative array of variables.
+ *   - variation_count: the number of variations within the option set.
+ *   - report: an array of reporting statistics for this option set.
+ *   - report_link: the link to the report for this option set.
+ * @return string
+ *   The themed output.
+ */
+function theme_personalize_option_set_header($variables) {
+  $output = '<span class="personalize-option-header-item">';
+  $output .= format_plural($variables['variation_count'], '1 variation', '@count variations');
+  $output .= '</span>';
+  if (!empty($variables['report'])) {
+    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
+  }
+  if (!empty($variables['report_link'])) {
+    $output .= '<span class="personalize-option-header-report-link">' . $variables['report_link'] . '</span>';
+  }
   return $output;
 }
 
@@ -156,21 +206,11 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   // Move elements to the template variables.
   $variables['title'] = $variables['element']['#title'];
   $variables['collapsible'] = $variables['element']['#collapsible'];
+  $variables['collapsed'] = isset($variables['element']['#collapsed']) ? $variables['element']['#collapsed'] : TRUE;
 
   // Add general classes.
   $variables['title_attributes_array']['class'][] = 'personalize-admin-content-title';
   $variables['content_attributes_array']['class'][] = 'personalize-admin-content-content';
-
-  // Add content numbering to the title prefix
-  if (isset($variables['element']['#content_number'])) {
-    $variables['title_prefix']['content_number'] = array(
-      '#theme_wrappers' => array('container'),
-      '#markup' => $variables['element']['#content_number'],
-      '#attributes' => array(
-        'class' => array('personalize-variant'),
-      ),
-    );
-  }
 
   // Add the variation count to the title suffix.
   if (isset($variables['element']['#variation_count'])) {
@@ -186,14 +226,19 @@ function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
   // Add needed pieces for collapsing content.
   if ($variables['collapsible']) {
     $variables['classes_array'][] = 'personalize-collapsible';
-    $variables['classes_array'][] = 'personalize-collapsed';
-    $variables['title_suffix']['collapse-trigger'] = array(
+    if ($variables['collapsed']) {
+      $variables['classes_array'][] = 'personalize-collapsed';
+    }
+    $variables['title_prefix']['collapse-trigger'] = array(
       '#type' => 'link',
-      '#title' => isset($variables['element']['#title_reveal']) ? $variables['element']['#title_reveal'] : t('Show all'),
+      '#title' => t('edit'),
       '#href' => '',
-      '#attributes' => array('class' => array('personalize-collapse-trigger')),
-      '#weight' => 20,
+      '#attributes' => array('class' => array('personalize-collapse-edit')),
     );
+    // Get the collapsed content and add into the
+    if (isset($variables['element']['#collapsed_content'])) {
+      $variables['collapsed_content'] = $variables['element']['#collapsed_content'];
+    }
   }
 }
 

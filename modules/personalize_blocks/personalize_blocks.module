@@ -316,10 +316,13 @@ function personalize_blocks_personalize_option_values_for_admin($option_set) {
     return array();
   }
   $option_values = array();
-  $personalized_block = new PersonalizedBlock($option_set->options);
   foreach($option_set->options as &$option) {
-    $block = $personalized_block->buildBlock($option['bid'], FALSE);
-    $option_values[$option['option_id']] = !empty($block->title) ? $block->title : $option['bid'];
+    list($module, $delta) = PersonalizedBlock::extractBlockId($option['bid']);
+    $block = block_load($module, $delta);
+    if (empty($block->title)) {
+      $custom_block = block_custom_block_get($delta);
+    }
+    $option_values[$option['option_id']] = empty($block->title) ? $custom_block['info'] : $block->title;
   }
   return $option_values;
 }

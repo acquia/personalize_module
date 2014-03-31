@@ -637,9 +637,8 @@ class PersonalizeTest extends DrupalWebTestCase {
     // Confirm that the existing MVT is listed with the two option set names.
     $option_set_2 = personalize_option_set_load(2, TRUE);
     $os_names = array($option_set_2->label, $option_set_3->label);
-    $existing_mvt_listing = $mvt_label . ': ' . implode('/', $os_names) . ' - ' . l('edit', "admin/structure/personalize/mvt/manage/{$mvt_machine_name}/edit");
+    $existing_mvt_listing = l('edit', "admin/structure/personalize/mvt/manage/{$mvt_machine_name}/edit");
     $this->assertRaw($existing_mvt_listing);
-
     // Now go to the edit page for this MVT and add another Option Set
     $edit = array(
       'mvt_basic_info[option_sets][]' => array(2,3,4)
@@ -1131,7 +1130,7 @@ class PersonalizeTest extends DrupalWebTestCase {
   }
 
   function testCampaignContextAjaxCallbacks() {
-    $admin_user = $this->drupalCreateUser(array('manage personalized content'));
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
     $this->drupalLogin($admin_user);
 
     // Create a new agent via the UI.
@@ -1267,13 +1266,13 @@ class PersonalizeTest extends DrupalWebTestCase {
   protected function getButton($type = '') {
     switch ($type) {
       case 'agent':
-        return t('Save Campaign settings');
+        return t('Save campaign settings');
       case 'goal':
-        return t('Save Goals');
+        return t('Save goals');
       case 'option':
-        return t('Save content variations');
+        return t('Save variation sets');
       case 'mvt':
-        return t('Save MVT');
+        return t('Save test');
       case 'delete':
         return t('Delete');
       case 'config':
