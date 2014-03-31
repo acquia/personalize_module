@@ -1,5 +1,5 @@
 name = Personalize Target
 description = Provides an agent type for doing purely explicit targeting based personalization.
 dependencies[] = personalize
-package = Personalize
+package = Personalization
 core = 7.x

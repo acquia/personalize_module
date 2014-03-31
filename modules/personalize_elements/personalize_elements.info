@@ -1,7 +1,7 @@
 name = Personalize Elements
 description = Allows personalization of any element on a page, specified by selector.
 dependencies[] = personalize
-package = Personalize
+package = Personalization
 core = 7.x
 
 files[] = tests/personalize_elements.test
