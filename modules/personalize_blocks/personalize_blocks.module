@@ -311,7 +311,7 @@ function personalize_blocks_personalize_create_new_links() {
 /**
  * Implements hook_personalize_edit_link().
  */
-function personalize_block_personalize_edit_link($option_set) {
+function personalize_blocks_personalize_edit_link($option_set) {
   if ($option_set->plugin != 'block') {
     return '';
   }
@@ -321,7 +321,7 @@ function personalize_block_personalize_edit_link($option_set) {
 /**
  * Implements hook_personalize_delete_link().
  */
-function personalize_block_personalize_delete_link($option_set) {
+function personalize_blocks_personalize_delete_link($option_set) {
   if ($option_set->plugin != 'block') {
     return '';
   }
