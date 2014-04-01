@@ -173,7 +173,9 @@
       var offsetTop = offset.top + 100; // scroll to just above the new goal
       $('html, body').animate({
         scrollTop: offsetTop
-      }, 1000);
+      }, 1000, function() {
+        $newGoal.find('select').first().focus();
+      });
     }
   };
 
