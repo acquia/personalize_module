@@ -1101,7 +1101,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       }
       else {
         $classes[] = 'personalize-content-variation-stopped';
-        if (!empty($option_set->winner) && $option_set->winner == $option['option_id']) {
+        // The winner is either previously selected, or the first option.
+        if ((!empty($option_set->winner) && $option_set->winner == $option['option_id']) ||
+          (empty($option_set->winner) && $variant_number == 1)) {
           $is_winner = TRUE;
           $classes[] = 'personalize-content-variation-winner';
         }
@@ -1122,7 +1124,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       );
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
-        'title' => check_plain($option_label),
+        'title' => filter_xss($option_label),
         'title_prefix' => '"',
         'title_suffix' => '"',
         'attributes' => array(
