@@ -910,6 +910,8 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
 
   $agent = personalize_agent_load_agent($agent_data->machine_name);
+  $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
+
   // Targeting is only supported when a campaign is running.  Also, winners are
   // only shown when the campaign is stopped.
   $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
@@ -989,7 +991,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     ),
   );
   $form['variations']['primary']['option_sets']['header']['add'] = array(
-    '#markup' => personalize_get_create_new_links_dropbutton("admin/structure/personalize/manage/{$agent_data->machine_name}/edit"),
+    '#markup' => personalize_get_create_new_links_dropbutton($campaign_page),
   );
 
   $section = &$form['variations']['primary']['option_sets'];
@@ -1020,8 +1022,8 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         'variation_count' => count($option_set->options),
         'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
         'report_link' => $agent instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
-        'edit_link' => !empty($edit_link) ? l('edit', $edit_link) : '',
-        'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => current_path()))) : '',
+        'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
+        'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
       '#theme_wrappers' => array('container'),
       '#attributes' => array(
