@@ -295,7 +295,7 @@ function personalize_page_build(&$page) {
       }
       $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
-        'label' => check_plain($agent->label),
+        'label' => filter_xss($agent->label),
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
