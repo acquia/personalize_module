@@ -87,22 +87,39 @@ input[type="submit"].personalize-add-link:hover {
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set,
 #personalize-agent-option-sets-form fieldset.personalize-option-set legend,
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend{
+#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
   width: 100%;
   display: block;
 }
+
+#personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend {
+  min-height: 1em;
+  position: relative;
+}
+
 #personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend,
 #personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend {
   background-position: .5em .5em;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title {
+  display: inline-block;
+  width: 60%;
+  position: absolute;
+}
+#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
   display: none;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend span.summary {
-  float: right;
-  margin-right: 2.5em;
   font-weight: normal;
   display: inline-block;
+  position: absolute;
+  right: 1em;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary div {
   display: inline;
