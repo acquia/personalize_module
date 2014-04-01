@@ -1265,12 +1265,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     // @todo Once we want to provide support for using the same decision name across
     //   option sets we'll need to allow setting the decision name here, but it must
     //   be a machine name.
-    /*$form['option_sets']['option_set_' . $option_set->osid]['decision_name'] = array(
+    $section['option_set_' . $option_set->osid]['advanced']['decision_name'] = array(
       '#type' => 'textfield',
       '#title' => 'Decision Name',
-      '#description' => 'By default, this decision will be named after the Option Set id. You can use this if you want to make one conceptual decision across multiple fields such as a special offer which manifests in different places on the site',
+      '#description' => 'By default, this decision will be named after the content variation ID. You can use this if you want to make one conceptual decision across multiple content variations such as a special offer which manifests in different places on the site',
       '#default_value' => isset($option_set->decision_name) ? $option_set->decision_name : '',
-    );*/
+    );
     $section['option_set_' . $option_set->osid]['advanced']['stateful'] = array(
       '#type' => 'checkbox',
       '#title' => t('Shareable'),
@@ -1603,7 +1603,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       if ($values['winner']) {
         $option_set->winner = $values['winner'];
       }
-
+      if (isset($values['advanced']['decision_name'])) {
+        $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);
+      }
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
         continue;

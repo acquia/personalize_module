@@ -692,6 +692,15 @@ function personalize_agent_set_status($agent_name, $status) {
   return TRUE;
 }
 
+function personalize_verify_campaign($agent_name) {
+  // Do a check before setting the status to running.
+  $agent_instance = personalize_agent_load_agent($agent_name);
+  if (!$agent_instance->verify()) {
+    drupal_set_message(t('There is a problem with this agent and it cannot be run at this time.'), 'error');
+    return FALSE;
+  }
+}
+
 /**
  * Returns the current status of the specified agent.
  *
@@ -1355,7 +1364,7 @@ function personalize_agent_machine_name_exists($machine_name) {
 }
 
 /**
- * Generates a machine-readable agent name based on the passed in name.
+ * Generates a machine-readable name based on the passed in name.
  *
  * @param $name
  *   The human-readable name of the agent.

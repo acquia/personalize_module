@@ -1296,7 +1296,7 @@ class PersonalizeTest extends DrupalWebTestCase {
    * @see personalize_generate_machine_name()
    * @see testSaveAgent()
    */
-  protected function createTestAgent($data = array(), $cleanQueue = TRUE) {
+  protected function createTestAgent($data = array()) {
     $data += array(
       'name' => $this->randomName(),
     );
@@ -1314,5 +1314,24 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
 
     return $agent;
+  }
+
+  protected function createOptionSet($index, $option_set) {
+    if (!isset($option_set['label'])) {
+      $option_set['label'] = 'Option Set ' . ($index + 1);
+    }
+
+    foreach ($option_set['options'] as $i => &$option) {
+      if (!isset($option['option_id'])) {
+        $option['option_id'] = personalize_generate_option_id($i);
+      }
+      if (!isset($option['option_label'])) {
+        $option['option_label'] = personalize_generate_option_label($i);
+      }
+    }
+
+    $option_set = (object) $option_set;
+    personalize_option_set_save($option_set);
+    return $option_set;
   }
 }
