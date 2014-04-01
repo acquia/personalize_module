@@ -1197,6 +1197,60 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertTrue($settings['personalize']['cacheVisitorContext']);
   }
 
+  public function testOptionSetDecisionName() {
+    $admin_user = $this->drupalCreateUser(array('manage personalized content', 'access administration pages', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    // Create two block-based option sets.
+    $option_sets = array();
+    $block_ids = array('comment_delta_recent', 'system_delta_powered-by', 'user_delta_online', 'user_delta_new');
+    for ($i = 0; $i < 2; $i++) {
+      // Each option set will have 2 options.
+      $options = array(
+        array('bid' => array_shift($block_ids)),
+        array('bid' => array_shift($block_ids)),
+      );
+      $option_sets[] = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => $agent->getMachineName(), 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    }
+    // We're going to make the second option set have the same decision name as the
+    // first, which will tie them together conceptually as one decision.
+    $decision_name = personalize_get_decision_name_for_option_set($option_sets[0]);
+    $edit = array(
+      "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $decision_name
+    );
+    $this->drupalPost("admin/structure/personalize/manage/{$agent->getMachineName()}/edit", $edit, $this->getButton('option'));
+    $second_os = personalize_option_set_load($option_sets[1]->osid, TRUE);
+    $this->assertEqual(PERSONALIZE_OPTION_SET_PREFIX . $option_sets[0]->osid, $second_os->decision_name);
+
+    // Now let's place the blocks in a region and make sure the correct js settings
+    // show up when they're rendered.
+    $edit = array();
+    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $edit['blocks[personalize_blocks_2][region]'] = 'sidebar_first';
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $option_set_settings = $settings['personalize']['option_sets'];
+    // Assert that both blocks have the same decision name.
+    $this->assertEqual($option_set_settings['osid-1']['decision_name'], $option_set_settings['osid-2']['decision_name']);
+
+    // Change both decision names to something else. The string should be converted
+    // to a machine name.
+    $new_name = 'Some non-machine-readable %name';
+    $edit = array(
+      "option_sets[option_set_{$option_sets[0]->osid}][advanced][decision_name]" => $new_name,
+      "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $new_name
+    );
+    $this->drupalPost("admin/structure/personalize/manage/{$agent->getMachineName()}/edit", $edit, $this->getButton('option'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $option_set_settings = $settings['personalize']['option_sets'];
+    // Assert that the name was sanitized.
+    $this->assertEqual('some-non-machine-readable-name', $option_set_settings['osid-1']['decision_name']);
+    // Assert that both blocks have the same decision name.
+    $this->assertEqual($option_set_settings['osid-1']['decision_name'], $option_set_settings['osid-2']['decision_name']);
+  }
+
   /**
    * Asserts that a wrapper div for the specified Option Set has been output.
    *
