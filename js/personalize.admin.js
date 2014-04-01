@@ -144,7 +144,7 @@
           hideText = Drupal.t('hide');
         $('.fieldset-wrapper .personalize-option-set-edit-trigger', fieldset).bind('click', function(e) {
           e.preventDefault();
-          $('input.personalize-variation-winner', fieldset).toggleClass('personalize-edit');
+          $('div.personalize-variation-winner', fieldset).toggleClass('personalize-edit');
           var currentText = $(this).text();
           $(this).text(currentText == editText ? hideText : editText);
         });

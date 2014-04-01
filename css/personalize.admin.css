@@ -142,7 +142,7 @@ input[type="submit"].personalize-add-link:hover {
   display: inline-block;
   visibility: hidden;
 }
-.personalize-variation-row input.personalize-variation-winner.personalize-edit {
+.personalize-variation-row div.personalize-variation-winner.personalize-edit input.personalize-variation-winner {
   visibility: visible;
 }
 .personalize-variation-row div.personalize-variation-selected-control,
@@ -153,6 +153,10 @@ input[type="submit"].personalize-add-link:hover {
   background-repeat: no-repeat;
   background-size: contain;
   height: 1.2em;
+}
+
+.personalize-variation-row div.personalize-variation-selected-winner.personalize-edit {
+  background: none;
 }
 
 /* Truncate content variation title */
