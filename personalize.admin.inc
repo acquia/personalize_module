@@ -738,7 +738,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // goals by one.
   $num_goals = count($goals);
   if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
-    $goals[] = array('action' => '', 'value' => 1);
+    $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
   }
   $form_state['num_goals'] = count($goals);
 
@@ -826,14 +826,18 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   );
 
   foreach ($goals as $delta => $goal) {
+    $goal_fieldset_classes = array('personalize-admin-collapsed-content', 'personalize-goal');
+    if (isset($goal['classes']) && is_array($goal['classes'])) {
+      $goal_fieldset_classes = array_merge($goal_fieldset_classes, $goal['classes']);
+    }
     $section['goals'][$delta] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#collapsed' => isset($goal['collapsed']) ? $goal['collapsed'] : TRUE,
       '#title' => $goal_labels[$delta],
       '#tree' => TRUE,
       '#attributes' => array(
-        'class' => array('personalize-admin-collapsed-content', 'personalize-goal'),
+        'class' => $goal_fieldset_classes,
         'id' => "personalize-goal-$delta"
       )
     );
@@ -906,6 +910,8 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
 
   $agent = personalize_agent_load_agent($agent_data->machine_name);
+  $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
+
   // Targeting is only supported when a campaign is running.  Also, winners are
   // only shown when the campaign is stopped.
   $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
@@ -985,7 +991,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     ),
   );
   $form['variations']['primary']['option_sets']['header']['add'] = array(
-    '#markup' => personalize_get_create_new_links_dropbutton("admin/structure/personalize/manage/{$agent_data->machine_name}/edit"),
+    '#markup' => personalize_get_create_new_links_dropbutton($campaign_page),
   );
 
   $section = &$form['variations']['primary']['option_sets'];
@@ -996,6 +1002,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   }
 
   foreach ($option_sets as $option_set) {
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
@@ -1007,12 +1014,16 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       ),
     );
     // Header information to be shown in the fieldset summary.
+    $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
+    $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
     $section['option_set_' . $option_set->osid]['summary'] = array(
       '#type' => 'markup',
       '#markup' => theme('personalize_option_set_header', array(
         'variation_count' => count($option_set->options),
         'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
         'report_link' => $agent instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
+        'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
+        'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
       '#theme_wrappers' => array('container'),
       '#attributes' => array(
@@ -1086,8 +1097,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     );
 
     $variant_number = 1;
-    $plugin = personalize_get_option_set_type($option_set->plugin);
-    $option_values = module_invoke($plugin['module'], 'personalize_option_values_for_admin', $option_set);
+    $option_values = module_invoke($option_set_plugin['module'], 'personalize_option_values_for_admin', $option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       // Determine container classes based on campaign status and winner.
@@ -1097,7 +1107,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       }
       else {
         $classes[] = 'personalize-content-variation-stopped';
-        if (!empty($option_set->winner) && $option_set->winner == $option['option_id']) {
+        // The winner is either previously selected, or the first option.
+        if ((!empty($option_set->winner) && $option_set->winner == $option['option_id']) ||
+          (empty($option_set->winner) && $variant_number == 1)) {
           $is_winner = TRUE;
           $classes[] = 'personalize-content-variation-winner';
         }
@@ -1118,7 +1130,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       );
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
-        'title' => check_plain($option_label),
+        'title' => filter_xss($option_label),
         'title_prefix' => '"',
         'title_suffix' => '"',
         'attributes' => array(
@@ -1269,7 +1281,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     );
     // Display options to select the executor if supported.
     $executors = personalize_get_executors();
-    $supported_executors = module_invoke($plugin['module'], 'personalize_get_executor_options');
+    $supported_executors = module_invoke($option_set_plugin['module'], 'personalize_get_executor_options');
     if (count($supported_executors) == 1) {
       $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
         '#type' => 'value',

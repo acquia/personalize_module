@@ -627,6 +627,32 @@ function personalize_fields_personalize_create_new_links() {
   return $links;
 }
 
+/**
+ * Implements hook_personalize_edit_link().
+ */
+function personalize_fields_personalize_edit_link($option_set) {
+  if ($option_set->plugin != 'fields') {
+    return '';
+  }
+  if ($entity_link = _personalize_fields_get_entity_link_from_option_set($option_set)) {
+    return $entity_link . '/edit';
+  }
+  return '';
+}
+
+/**
+ * Implements hook_personalize_delete_link().
+ */
+function personalize_fields_personalize_delete_link($option_set) {
+  if ($option_set->plugin != 'fields') {
+    return '';
+  }
+  if ($entity_link = _personalize_fields_get_entity_link_from_option_set($option_set)) {
+    return $entity_link . '/delete';
+  }
+  return '';
+}
+
 /*
  * Extract an entity object from a form array.
  *
@@ -694,4 +720,19 @@ function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, 
 function _personalize_fields_get_field_info_from_option_set($osid) {
   $record = db_query("SELECT entity_type, entity_id, field_name FROM {personalize_fields_option_sets} WHERE osid = :osid", array(':osid' => $osid))->fetchAssoc();
   return empty($record) ? array() : $record;
+}
+
+/**
+ * Helper function to get the base entity link for an option set.
+ *
+ * @param stdClass $option_set
+ *   The option set to get the link for.
+ */
+function _personalize_fields_get_entity_link_from_option_set($option_set) {
+  if ($entity_info = _personalize_fields_get_field_info_from_option_set($option_set->osid)) {
+    $entities = entity_load($entity_info['entity_type'], array($entity_info['entity_id']));
+    $entity_link = entity_uri($entity_info['entity_type'], $entities[$entity_info['entity_id']]);
+    return $entity_link['path'];
+  }
+  return '';
 }

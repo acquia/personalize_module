@@ -15,7 +15,7 @@
 
 .personalize-admin-content.personalize-collapsed {
   background-color: inherit;
-  border: none;
+  border: 1px solid transparent;
 }
 .personalize-admin-content.personalize-collapsed:hover,
 .personalize-admin-content.personalize-collapsed:active {
