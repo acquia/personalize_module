@@ -160,4 +160,21 @@
     }
   };
 
+  /**
+   * Scroll to a new goal that has just been added to the admin page.
+   */
+  Drupal.behaviors.personalizeGoalAdded = {
+    attach: function (context, settings) {
+      var $newGoal = $('#personalize-agent-goals-form .personalize-goal-add', context).last();
+      if ($newGoal.length == 0) {
+        return;
+      }
+      var offset = $newGoal.offset();
+      var offsetTop = offset.top + 100; // scroll to just above the new goal
+      $('html, body').animate({
+        scrollTop: offsetTop
+      }, 1000);
+    }
+  };
+
 })(jQuery);

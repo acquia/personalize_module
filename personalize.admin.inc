@@ -738,7 +738,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // goals by one.
   $num_goals = count($goals);
   if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
-    $goals[] = array('action' => '', 'value' => 1);
+    $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
   }
   $form_state['num_goals'] = count($goals);
 
@@ -826,14 +826,18 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   );
 
   foreach ($goals as $delta => $goal) {
+    $goal_fieldset_classes = array('personalize-admin-collapsed-content', 'personalize-goal');
+    if (isset($goal['classes']) && is_array($goal['classes'])) {
+      $goal_fieldset_classes = array_merge($goal_fieldset_classes, $goal['classes']);
+    }
     $section['goals'][$delta] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#collapsed' => isset($goal['collapsed']) ? $goal['collapsed'] : TRUE,
       '#title' => $goal_labels[$delta],
       '#tree' => TRUE,
       '#attributes' => array(
-        'class' => array('personalize-admin-collapsed-content', 'personalize-goal'),
+        'class' => $goal_fieldset_classes,
         'id' => "personalize-goal-$delta"
       )
     );
