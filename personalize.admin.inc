@@ -1211,11 +1211,14 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           // Add radio buttons so the user can select how multiple features for an option
           // should be treated.
           $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategies']['strategy'] = array(
-            '#type' => 'radios',
-            '#description' => t('Choose how multiple features should be applied to options. Choose "Or" if the rule should apply if the user has any features. Choose "And" if the rule should apply only the user has all features.'),
+            '#type' => 'select',
+            '#multiple' => FALSE,
+            '#field_prefix' => t('Visitor must have '),
+            '#field_suffix' => t(' of the specified contexts'),
+            '#description' => t('Choose how multiple contexts should be applied to options. Choose "any" if the rule should apply if the user has any of the contexts. Choose "all" if the rule should apply only if the user has all of the contexts.'),
             '#options' => array(
-              'OR' => 'OR',
-              'AND' => 'AND'
+              'OR' => 'any',
+              'AND' => 'all'
             ),
             '#default_value' => isset($option['fixed_targeting_strategy']) ? $option['fixed_targeting_strategy'] : 'OR',
             '#states' => array(
@@ -1231,19 +1234,14 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
           case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
               '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple features for an option, then the user must have all specified features for the rule to apply.')
+              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the visitor must have all specified contexts for the rule to apply.')
+
             );
             break;
           case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
             $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
               '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple features for an option, then the rule will apply if the user has any of the specified features.')
-            );
-            break;
-          default:
-            $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
-              '#type' => 'markup',
-              '#markup' => t('Explicit targeting is not available for this content variation.')
+              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the rule will apply if the visitor has any of the specified contexts.')
             );
             break;
         }
