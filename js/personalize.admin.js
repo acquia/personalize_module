@@ -13,10 +13,6 @@
    */
   Drupal.personalize.admin.toggleClickHandler = function (event) {
     var $container = [];
-    // Ignore any clicks from the links in the title suffix.
-    if ($(event.target).parents('.personalize-admin-content-title-suffix').length > 0) {
-      return;
-    }
     if ($(event.target).hasClass('personalize-collapsible')) {
       $container = $(event.target);
     } else {
@@ -25,7 +21,13 @@
     if ($container.length == 0) {
       return;
     }
-    Drupal.personalize.admin.togglePersonalizeCollapse($container);
+    // Any clicks from links in the title suffix will expand the container.
+    if ($(event.target).parents('.personalize-admin-content-title-suffix').length > 0) {
+      Drupal.personalize.admin.togglePersonalizeCollapse($container, true);
+    } else {
+      // Otherwise just toggle.
+      Drupal.personalize.admin.togglePersonalizeCollapse($container);
+    }
     event.preventDefault();
     event.stopImmediatePropagation();
   };
@@ -35,11 +37,17 @@
    *
    * @param $container
    *   The jQuery container to toggle.
+   * @param open
+   *   (Optional) boolean indicating if the container should become open.
    */
-  Drupal.personalize.admin.togglePersonalizeCollapse = function ($container) {
+  Drupal.personalize.admin.togglePersonalizeCollapse = function ($container, open) {
     var closedText = Drupal.t('edit'),
       openText = Drupal.t('close'),
       label = $container.hasClass('personalize-collapsed') ? openText : closedText;
+    if (open === true && !$container.hasClass('personalize-collapsed')) {
+      // The container is already open.
+      return;
+    }
     $container.toggleClass('personalize-collapsed');
     $container.children('personalize-collapse-edit').text(label);
     if ($container.hasClass('personalize-collapsed')) {
