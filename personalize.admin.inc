@@ -1000,6 +1000,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   }
 
   foreach ($option_sets as $option_set) {
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
@@ -1011,12 +1012,16 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       ),
     );
     // Header information to be shown in the fieldset summary.
+    $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
+    $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
     $section['option_set_' . $option_set->osid]['summary'] = array(
       '#type' => 'markup',
       '#markup' => theme('personalize_option_set_header', array(
         'variation_count' => count($option_set->options),
         'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
         'report_link' => $agent instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
+        'edit_link' => !empty($edit_link) ? l('edit', $edit_link) : '',
+        'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => current_path()))) : '',
       )),
       '#theme_wrappers' => array('container'),
       '#attributes' => array(
@@ -1090,8 +1095,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     );
 
     $variant_number = 1;
-    $plugin = personalize_get_option_set_type($option_set->plugin);
-    $option_values = module_invoke($plugin['module'], 'personalize_option_values_for_admin', $option_set);
+    $option_values = module_invoke($option_set_plugin['module'], 'personalize_option_values_for_admin', $option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       // Determine container classes based on campaign status and winner.
@@ -1275,7 +1279,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     );
     // Display options to select the executor if supported.
     $executors = personalize_get_executors();
-    $supported_executors = module_invoke($plugin['module'], 'personalize_get_executor_options');
+    $supported_executors = module_invoke($option_set_plugin['module'], 'personalize_get_executor_options');
     if (count($supported_executors) == 1) {
       $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
         '#type' => 'value',

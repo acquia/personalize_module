@@ -230,6 +230,36 @@ function hook_personalize_create_new_links() {
 }
 
 /**
+ * Returns link to edit the option set.
+ *
+ * This hook is implemented by modules that provide an Option Set type, and
+ * returns the path to edit an option set.
+ *
+ * @param stdClass $option_set
+ *   The option set to edit.
+ *
+ * @return string
+ *   The path to the edit the option set.
+ */
+function hook_personalize_edit_link($option_set) {
+}
+
+/**
+ * Returns link to delete the option set.
+ *
+ * This hook is implemented by modules that provide an Option Set type, and
+ * returns the path to delete an option set.
+ *
+ * @param stdClass $option_set
+ *   The option set to delete.
+ *
+ * @return string
+ *   The path to the delete the option set.
+ */
+function hook_personalize_delete_link($option_set) {
+}
+
+/**
  * Returns option values to show in the admin UI.
  *
  * This hook must be implemented by modules providing Option Set type

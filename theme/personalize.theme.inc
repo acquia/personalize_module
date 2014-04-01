@@ -160,6 +160,8 @@ function theme_personalize_option_set_report($variables) {
  *   - variation_count: the number of variations within the option set.
  *   - report: an array of reporting statistics for this option set.
  *   - report_link: the link to the report for this option set.
+ *   - edit_link: the link to edit the option set.
+ *   - delete_link: the link to delete the option set.
  * @return string
  *   The themed output.
  */
@@ -171,7 +173,13 @@ function theme_personalize_option_set_header($variables) {
     $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
   }
   if (!empty($variables['report_link'])) {
-    $output .= '<span class="personalize-option-header-report-link">' . $variables['report_link'] . '</span>';
+    $output .= '<span class="personalize-option-header-item">' . $variables['report_link'] . '</span>';
+  }
+  if (!empty($variables['edit_link'])) {
+    $output .= '<span class="personalize-option-header-item">' . $variables['edit_link'] . '</span>';
+  }
+  if (!empty($variables['delete_link'])) {
+    $output .= '<span class="personalize-option-header-item">' . $variables['delete_link'] . '</span>';
   }
   return $output;
 }

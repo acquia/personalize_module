@@ -149,6 +149,26 @@ function personalize_elements_personalize_create_new_links() {
 }
 
 /**
+ * Implements hook_personalize_edit_link().
+ */
+function personalize_elements_personalize_edit_link($option_set) {
+  if ($option_set->plugin != 'elements') {
+    return '';
+  }
+  return "admin/structure/personalize-elements/manage/{$option_set->osid}/edit";
+}
+
+/**
+ * Implements hook_personalize_edit_link().
+ */
+function personalize_elements_personalize_delete_link($option_set) {
+  if ($option_set->plugin != 'elements') {
+    return '';
+  }
+  return "admin/structure/personalize-elements/manage/{$option_set->osid}/delete";
+}
+
+/**
  * Implements hook_personalize_option_values_for_admin().
  */
 function personalize_elements_personalize_option_values_for_admin($option_set) {
