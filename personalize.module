@@ -283,6 +283,9 @@ function personalize_page_build(&$page) {
     }
   }
   if (user_access('manage personalized content')) {
+    // Provide the status constants
+    $settings['status'] = personalize_get_agent_status_map();
+
     // We need to provide information about all configured campaigns
     // and goals for the control UI.
     $actions = visitor_actions_get_actions();
@@ -296,6 +299,7 @@ function personalize_page_build(&$page) {
       $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
+        'status' => $agent->status,
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',

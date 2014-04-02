@@ -540,6 +540,20 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
     $form_div_id = 'personalize-agent-form';
   }
 
+  // Update the current agent status.
+  if (!empty($agent_data)) {
+    $settings = array(
+      'personalize' => array(
+        'campaigns' => array(
+          $agent_data->machine_name => array(
+            'status' => $agent_data->status,
+          ),
+        ),
+      ),
+    );
+    $commands[] = ajax_command_settings($settings, TRUE);
+  }
+
   // Show status messages relative to the personalize page.
   $commands[] = ajax_command_replace('#personalize-agent-page-messages', '<div id="personalize-agent-page-messages">' . theme('status_messages') . '</div>');
 
