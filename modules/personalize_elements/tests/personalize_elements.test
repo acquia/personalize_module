@@ -185,7 +185,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $settings = $this->drupalGetSettings();
     $personalize_elements_settings = $settings['personalize_elements'];
     $this->assertEqual(PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID, $personalize_elements_settings['controlOptionName']);
-    $js_id = $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+    $js_id = $js_id = personalize_stringify_osid($option_set->osid);
     $expected = array(
       $js_id => array(
         'selector' => $selector,

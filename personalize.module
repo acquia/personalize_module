@@ -254,9 +254,9 @@ function personalize_page_build(&$page) {
   if (isset($_GET[PERSONALIZE_PRESELECTION_PARAM])) {
     $preselected = explode(',', $_GET[PERSONALIZE_PRESELECTION_PARAM]);
     foreach ($preselected as $option_str) {
-      list($osid, $selection) = explode('--', trim($option_str));
+      list($osid_str, $selection) = explode('--', trim($option_str));
       // Make sure this is a valid option set.
-      if ($option_set = personalize_get_option_set_for_decision($osid)) {
+      if ($osid = personalize_resolve_stringified_osid($osid_str) && $option_set = personalize_option_set_load($osid)) {
         foreach ($option_set->options as $option) {
           if ($option['option_id'] === $selection) {
             $settings['preselected'][$osid] = $option['option_id'];
@@ -672,8 +672,8 @@ function personalize_agent_set_status($agent_name, $status) {
   if ($status == PERSONALIZE_STATUS_RUNNING) {
     // Do a check before setting the status to running.
     $agent_instance = personalize_agent_load_agent($agent_name);
-    if (!$agent_instance->verify()) {
-      drupal_set_message(t('There is a problem with this agent and it cannot be run at this time.'), 'error');
+    if (!personalize_verify_agent($agent_name)) {
+      drupal_set_message(t('There is a problem with this campaign and it cannot be run at this time.'), 'error');
       return FALSE;
     }
     // If we're setting a campaign to the running status for the first time,
@@ -693,6 +693,60 @@ function personalize_agent_set_status($agent_name, $status) {
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
+  return TRUE;
+}
+
+/**
+ * Runs various checks to make sure the agent is good to go.
+ *
+ * @param string $agent_name
+ *   THe name of the agent.
+ *
+ * @return bool
+ *   Whether or not the agent passed all the checks.
+ */
+function personalize_verify_agent($agent_name) {
+  // Check the option sets to make sure they are all valid.
+  $option_sets = personalize_option_set_load_by_agent($agent_name);
+  $decisions = array();
+  foreach ($option_sets as $osid => $option_set) {
+    if (isset($decisions[$option_set->decision_name])) {
+      if (count($decisions[$option_set->decision_name]) != count($option_set->options)) {
+        // Option Sets using the same decision name must have the same number of options.
+        drupal_set_message(t('The Option Set @title has @count options but uses the decision @decision which requires @count2 options', array(
+          '@title' => $option_set->label,
+          '@count' => count($option_set->options),
+          '@decision' => $option_set->decision_name,
+          '@count2' => count($decisions[$option_set->decision_name]))), 'error');
+        return FALSE;
+      }
+      // The option IDs of the Option Sets must also be the same.
+      foreach ($option_set->options as $option) {
+        if (!in_array($option['option_id'], $decisions[$option_set->decision_name])) {
+          drupal_set_message(t('The Option Set @title uses the decision @decision but has different option IDs. Option IDs cannot be changed so you will need to delete the options and recreate them.', array(
+            '@title' => $option_set->label,
+            '@decision' => $option_set->decision_name)), 'error');
+          return FALSE;
+        }
+      }
+    }
+    else {
+      // Store this decision name to check subsequent Option Sets against.
+      $decisions[$option_set->decision_name] = array();
+      foreach ($option_set->options as $option) {
+        $decisions[$option_set->decision_name][] = $option['option_id'];
+      }
+    }
+  }
+  // Now allow the agent to run a check.
+  $agent_instance = personalize_agent_load_agent($agent_name);
+  $errors = $agent_instance->errors();
+  if (!empty($errors)) {
+    foreach ($errors as $error) {
+      drupal_set_message($error, 'error');
+    }
+    return FALSE;
+  }
   return TRUE;
 }
 
@@ -981,14 +1035,37 @@ function personalize_get_option_label_for_decision_and_choice($decision_name, $o
  *   The name of the decision the option belongs to.
  *
  * @return
- *   The option set class or FALSE if none can be found.
+ *   The option set object or NULL if none can be found.
  */
 function personalize_get_option_set_for_decision($decision_name) {
-  if (preg_match("/^osid\-(\d+)$/", $decision_name, $matches) !== FALSE) {
-    $osid = $matches[1];
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $decision_name));
+  if (!empty($option_sets)) {
+    return reset($option_sets);
+  }
+  elseif ($osid = personalize_resolve_stringified_osid($decision_name)) {
     return personalize_option_set_load($osid);
   }
-  return FALSE;
+  return NULL;
+}
+
+/**
+ * Resolves an Option Set ID in the form 'osid-123' to just the numeric ID.
+ *
+ * @param string $osid
+ *   An Option Set ID in the form 'osid-n' where n is the numeric ID.
+ *
+ * @return int
+ *   The numeric part of the ID or NULL if there is none.
+ */
+function personalize_resolve_stringified_osid($osid) {
+  if (is_numeric($osid)) {
+    return (int) $osid;
+  }
+  $prefix = preg_quote(PERSONALIZE_OPTION_SET_PREFIX);
+  if (preg_match("/^$prefix(\d+)$/", $osid, $matches) !== FALSE) {
+    return $matches[1];
+  }
+  return NULL;
 }
 
 /**
@@ -1336,7 +1413,7 @@ function personalize_agent_machine_name_exists($machine_name) {
 }
 
 /**
- * Generates a machine-readable agent name based on the passed in name.
+ * Generates a machine-readable name based on the passed in name.
  *
  * @param $name
  *   The human-readable name of the agent.
@@ -1772,7 +1849,7 @@ function personalize_get_decision_name_for_option_set($option_set) {
     return $option_set->decision_name;
   }
   // Default to a name based on the osid.
-  return _personalize_get_nonnumeric_osid($option_set->osid);
+  return personalize_stringify_osid($option_set->osid);
 }
 
 /**
@@ -2299,7 +2376,7 @@ function _personalize_generate_option_index($index) {
 function _personalize_convert_option_set_to_js_setting($option_set) {
   // We never want to use numeric keys in the JS so convert it to a
   // string using the prefix if it is numeric.
-  $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+  $js_id = personalize_stringify_osid($option_set->osid);
   $os_array = (array) $option_set;
   $os_array['osid'] = $js_id;
   $option_names = array();
@@ -2353,6 +2430,6 @@ function personalize_form_element_add_states($state, &$element) {
  * @param $osid
  * @return string
  */
-function _personalize_get_nonnumeric_osid($osid) {
+function personalize_stringify_osid($osid) {
   return is_numeric($osid) ? PERSONALIZE_OPTION_SET_PREFIX . $osid : $osid;
 }

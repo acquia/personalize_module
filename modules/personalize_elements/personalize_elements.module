@@ -89,7 +89,7 @@ function personalize_elements_page_build(&$page) {
       unset($option_sets[$osid]);
       continue;
     }
-    $js_id = $js_id = _personalize_get_nonnumeric_osid($option_set->osid);
+    $js_id = $js_id = personalize_stringify_osid($option_set->osid);
     $elements[$js_id] = array(
       'selector' => $option_set->data['personalize_elements_selector'],
       'variation_type' => $option_set->data['personalize_elements_type'],
