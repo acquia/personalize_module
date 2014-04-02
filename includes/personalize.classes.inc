@@ -123,9 +123,12 @@ interface PersonalizeAgentInterface {
   /**
    * Checks whether the agent is ready to run.
    *
-   * @return boolean
+   * @return array
+   *   A non-empty array indicates that the agent did not pass the check. Each
+   *   element in the array should be a string providing information about why
+   *   the agent failed the check.
    */
-  public function verify();
+  public function errors();
 }
 
 interface PersonalizeAgentReportInterface {
@@ -288,8 +291,8 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   /**
    * Implements PersonalizeAgentInterface::verify().
    */
-  public function verify() {
-    return TRUE;
+  public function errors() {
+    return array();
   }
 
   /**

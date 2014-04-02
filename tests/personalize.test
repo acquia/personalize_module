@@ -925,7 +925,7 @@ class PersonalizeTest extends DrupalWebTestCase {
     $html_id_first_agent = "personalize-toggle-status-{$first_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
     // No error should have been set.
-    $this->assertNoText('There is a problem with this agent and it cannot be run at this time');
+    $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should now be "running".
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
@@ -954,7 +954,7 @@ class PersonalizeTest extends DrupalWebTestCase {
     $html_id_second_agent = "personalize-toggle-status-{$second_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_second_agent);
     // Its verify() method will have returned false so a message should have been set.
-    $this->assertText('There is a problem with this agent and it cannot be run at this time');
+    $this->assertText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
   }
