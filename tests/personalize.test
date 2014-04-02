@@ -1201,6 +1201,7 @@ class PersonalizeTest extends DrupalWebTestCase {
     $admin_user = $this->drupalCreateUser(array('manage personalized content', 'access administration pages', 'administer blocks'));
     $this->drupalLogin($admin_user);
     $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    $agent_name = $agent->getMachineName();
     // Create two block-based option sets.
     $option_sets = array();
     $block_ids = array('comment_delta_recent', 'system_delta_powered-by', 'user_delta_online', 'user_delta_new');
@@ -1210,7 +1211,7 @@ class PersonalizeTest extends DrupalWebTestCase {
         array('bid' => array_shift($block_ids)),
         array('bid' => array_shift($block_ids)),
       );
-      $option_sets[] = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => $agent->getMachineName(), 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+      $option_sets[] = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
     }
     // We're going to make the second option set have the same decision name as the
     // first, which will tie them together conceptually as one decision.
@@ -1218,7 +1219,7 @@ class PersonalizeTest extends DrupalWebTestCase {
     $edit = array(
       "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $decision_name
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent->getMachineName()}/edit", $edit, $this->getButton('option'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", $edit, $this->getButton('option'));
     $second_os = personalize_option_set_load($option_sets[1]->osid, TRUE);
     $this->assertEqual(PERSONALIZE_OPTION_SET_PREFIX . $option_sets[0]->osid, $second_os->decision_name);
 
@@ -1241,7 +1242,7 @@ class PersonalizeTest extends DrupalWebTestCase {
       "option_sets[option_set_{$option_sets[0]->osid}][advanced][decision_name]" => $new_name,
       "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $new_name
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent->getMachineName()}/edit", $edit, $this->getButton('option'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", $edit, $this->getButton('option'));
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $option_set_settings = $settings['personalize']['option_sets'];
@@ -1249,6 +1250,47 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertEqual('some-non-machine-readable-name', $option_set_settings['osid-1']['decision_name']);
     // Assert that both blocks have the same decision name.
     $this->assertEqual($option_set_settings['osid-1']['decision_name'], $option_set_settings['osid-2']['decision_name']);
+    $set_status = personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING);
+    // Confirm that there was no problem settings this agent's status to Running.
+    $this->assertTrue($set_status);
+
+    // Now change one of the option sets so that the two have different numbers of options.
+    $os = personalize_option_set_load(2, TRUE);
+    $os->options[] = array(
+      'option_id' => 'option-C',
+      'option_label' => 'Option C',
+      'bid' => 'system_delta_powered-by'
+    );
+    personalize_option_set_save($os);
+
+    $status = personalize_agent_get_status($agent_name);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
+
+    // Go to the campaign page and try to set the status to running. We should get an
+    // error about the number of options.
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", array(), t('Resume'));
+    $this->assertText("The Option Set {$second_os->label} has 3 options but uses the decision some-non-machine-readable-name which requires 2 options");
+    // Confirm that the agent is still paused.
+    $status = personalize_agent_get_status($agent_name);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
+
+    // Now add a third option to the other option set but give it a different
+    // option ID.
+    $os = personalize_option_set_load(1, TRUE);
+    $os->options[] = array(
+      'option_id' => 'my-new-option',
+      'option_label' => 'Option C',
+      'bid' => 'user_delta_online'
+    );
+    personalize_option_set_save($os);
+
+    // Go to the campaign page and try to set the status to running. We should get an
+    // error about the option IDs not being the same.
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", array(), t('Resume'));
+    $this->assertText("The Option Set {$second_os->label} uses the decision some-non-machine-readable-name but has different option IDs. Option IDs cannot be changed so you will need to delete the options and recreate them.");
+    // Confirm that the agent is still paused.
+    $status = personalize_agent_get_status($agent_name);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
   }
 
   /**
