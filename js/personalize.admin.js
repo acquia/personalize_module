@@ -90,6 +90,41 @@
   };
 
   /**
+   * Campaign edit form submission handling.
+   *
+   * Adds a confirmation prompt to the user when they are about to make changes
+   * to a running campaign that will result in pausing the campaign.
+   */
+  Drupal.behaviors.personalizeCampaignEditFormHandling = {
+    attach: function (context, settings) {
+      // Add a handler to form submits that trigger campaign status changes.
+      $('#personalize-agent-form input[type="submit"], #personalize-agent-option-sets-form input[type="submit"]').not('.form-reset, input[name="toggle_submit"]').once().each(function() {;
+        var currentCampaign = Drupal.settings.personalize.activeCampaign;
+        if (typeof currentCampaign === 'undefined') {
+          return;
+        }
+        // Overwrite beforeSubmit for each submit button (no cancel).
+        Drupal.ajax[this.id].options.beforeSubmit = function(form_values, $element, options) {
+          var campaign = Drupal.settings.personalize.campaigns[currentCampaign];
+          if (typeof(campaign) === 'undefined') {
+            return;
+          }
+          if (Drupal.settings.personalize.status && Drupal.settings.personalize.status[campaign.status]) {
+            var currentStatus = Drupal.settings.personalize.status[campaign.status];
+            if (currentStatus === Drupal.t('Running')) {
+              if (confirm(Drupal.t('Making these changes will pause the currently running campaign.  Are you sure you want to continue?'))) {
+                return true;
+              } else {
+                return false;
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  /**
    * Add personalize admin content header sections.
    *
    * This is content that should appear inline with the admin content title.
