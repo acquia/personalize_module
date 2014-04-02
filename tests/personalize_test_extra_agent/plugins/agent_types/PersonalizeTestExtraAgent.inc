@@ -47,7 +47,9 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
     return PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH;
   }
 
-  public function verify() {
-    return FALSE;
+  public function errors() {
+    return array(
+      'Agent is not valid.'
+    );
   }
 }
