@@ -111,21 +111,11 @@ function personalize_menu() {
     'title' => 'Report',
     'description' => 'Evaluate your personalization campaign results.',
     'page callback' => 'personalize_campaign_report',
-    'page arguments' => array(4),
+    'page arguments' => array(4, 6),
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'context' => MENU_CONTEXT_PAGE,
-    'file' => 'personalize.admin.inc',
-  );
-  $items['admin/structure/personalize/manage/%personalize_agent/report/%personalize_option_set'] = array(
-    'title' => 'Report',
-    'description' => 'Evaluate your personalization campaign content variation results.',
-    'page callback' => 'personalize_campaign_report',
-    'page arguments' => array(4, 6),
-    'access callback' => 'user_access',
-    'access arguments' => array('manage personalized content'),
-    'type' => MENU_CALLBACK,
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(

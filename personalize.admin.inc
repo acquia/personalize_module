@@ -1708,11 +1708,15 @@ function personalize_mvt_save_from_form_values($form_values) {
  *
  * @param stdClass $agent_data
  *   The campaign class for the report.
- * @param stdClass $option_set
- *   (optional) Content variation set to use for initial display.
+ * @param int $option_set
+ *   (optional) Content variation set id to use for initial display.
  */
-function personalize_campaign_report($agent_data, $option_set = NULL) {
+function personalize_campaign_report($agent_data, $osid = NULL) {
   $plugins = personalize_get_agent_types();
+  $option_set = NULL;
+  if (isset($osid)) {
+    $option_set = personalize_option_set_load($osid);
+  }
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
     $report = module_invoke($module, 'personalize_campaign_report', $agent_data, $option_set);
