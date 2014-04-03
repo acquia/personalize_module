@@ -42,7 +42,7 @@ Drupal.personalize_target = (function() {
   }
 
   return {
-    'getDecision': function(name, visitor_context, choices, decision_point, callback) {
+    'getDecision': function(name, visitor_context, choices, decision_point, fallbacks, callback) {
       if (!initialized) {
         init();
       }
@@ -50,8 +50,9 @@ Drupal.personalize_target = (function() {
       var feature_strings = convertContextToFeatureString(visitor_context);
       for (var j in choices) {
         if (choices.hasOwnProperty(j)) {
-          // Initialize the decision to the first option.
-          decisions[j] = choices[j][0]
+          // Initialize the decision to the fallback option.
+          var fallbackIndex = fallbacks.hasOwnProperty(j) ? fallbacks[j] : 0;
+          decisions[j] = choices[j][fallbackIndex];
           if (decision_points.hasOwnProperty(decision_point) && decision_points[decision_point].hasOwnProperty(j)) {
             // See if any of the visitor context features has an option mapped to it.
             for (var i in feature_strings) {
@@ -71,8 +72,8 @@ Drupal.personalize_target = (function() {
 Drupal.personalize = Drupal.personalize || {};
 Drupal.personalize.agents = Drupal.personalize.agents || {};
 Drupal.personalize.agents.personalize_target = {
-  'getDecisionsForPoint': function(agent_name, visitor_context, choices, decision_point, callback) {
-    Drupal.personalize_target.getDecision(agent_name, visitor_context, choices, decision_point, callback);
+  'getDecisionsForPoint': function(agent_name, visitor_context, choices, decision_point, fallbacks, callback) {
+    Drupal.personalize_target.getDecision(agent_name, visitor_context, choices, decision_point, fallbacks, callback);
   },
   'sendGoalToAgent': function(agent_name, goal_name, value) {
     if (window.console) {

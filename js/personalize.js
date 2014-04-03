@@ -347,7 +347,7 @@
    * Triggers all decisions needing to be made for the current page.
    */
   function triggerDecisions(settings) {
-    var agent_name, agent, point, decisions, callback, key;
+    var agent_name, agent, point, decisions, callback;
 
     // Given a set of callbacks and a selected option for each decision
     // made, calls the callbacks for each decision, passing them the
@@ -417,10 +417,20 @@
                   };
                 })(agent_name, agent, point);
                 var decisionAgent = Drupal.personalize.agents[agent.agentType];
-                if (!decisionAgent) {
+                if (!decisionAgent || typeof decisionAgent.getDecisionsForPoint !== 'function') {
+                  // If for some reason we can't find the agent responsible for this decision,
+                  // just use the fallbacks.
+                  var fallbacks = agent.decisionPoints[point].fallbacks;
+                  decisions = {};
+                  for (var key in fallbacks) {
+                    if (fallbacks.hasOwnProperty(key) && agent.decisionPoints[point].choices.hasOwnProperty(key)) {
+                      decisions[key] = agent.decisionPoints[point].choices[key][fallbacks[key]];
+                    }
+                  }
+                  callCallbacksWithSelection(agent.decisionPoints[point].callbacks, decisions);
                   return;
                 }
-                decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, callback);
+                decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
               }
             }
           }
@@ -498,7 +508,10 @@
     // Mark this Option Set as processed so it doesn't get processed again.
     processedOptionSets.push(option_set.osid);
 
-    var chosenOption = null;
+    var chosenOption = null, fallbackIndex = 0;
+    if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
+      fallbackIndex = option_set.winner;
+    }
     // If we have a pre-selected decision for this option set, just
     // use that.
     if (selection = getPreselection(osid)) {
@@ -507,11 +520,7 @@
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
     else if (adminMode || !agent_info.active) {
-      var chosenIndex = 0;
-      if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
-        chosenIndex = option_set.winner;
-      }
-      chosenOption = choices[chosenIndex];
+      chosenOption = choices[fallbackIndex];
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {
@@ -542,12 +551,17 @@
       decisionPoints: {}
     };
     agents[agent_name].decisionPoints[decision_point] =
-       agents[agent_name].decisionPoints[decision_point] || { choices: {}, callbacks: {}};
+       agents[agent_name].decisionPoints[decision_point] || { choices: {}, callbacks: {}, fallbacks: {}};
 
     if (!agents[agent_name].decisionPoints[decision_point].choices[decision_name]) {
       // The choices for a given decision are the same regardless of the number of
       // different option sets using it.
       agents[agent_name].decisionPoints[decision_point].choices[decision_name] = choices;
+    }
+    if (!agents[agent_name].decisionPoints[decision_point].fallbacks[decision_name]) {
+      // The fallback for a given decision also has to be the same for each option
+      // set using it.
+      agents[agent_name].decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
     }
 
     agents[agent_name].decisionPoints[decision_point].callbacks[decision_name] =
