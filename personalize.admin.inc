@@ -812,7 +812,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     ),
   );
   $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
-    '#prefix' => '+',
+    '#prefix' => '<span class="personalize-add-link-prefix"></span>',
     '#type' => 'submit',
     '#value' => t('Add goal'),
     '#attributes' => array(
@@ -1279,12 +1279,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     // @todo Once we want to provide support for using the same decision name across
     //   option sets we'll need to allow setting the decision name here, but it must
     //   be a machine name.
-    $section['option_set_' . $option_set->osid]['advanced']['decision_name'] = array(
+    /*$form['option_sets']['option_set_' . $option_set->osid]['decision_name'] = array(
       '#type' => 'textfield',
       '#title' => 'Decision Name',
-      '#description' => 'By default, this decision will be named after the content variation ID. You can use this if you want to make one conceptual decision across multiple content variations such as a special offer which manifests in different places on the site',
+      '#description' => 'By default, this decision will be named after the Option Set id. You can use this if you want to make one conceptual decision across multiple fields such as a special offer which manifests in different places on the site',
       '#default_value' => isset($option_set->decision_name) ? $option_set->decision_name : '',
-    );
+    );*/
     $section['option_set_' . $option_set->osid]['advanced']['stateful'] = array(
       '#type' => 'checkbox',
       '#title' => t('Shareable'),
@@ -1617,9 +1617,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       if ($values['winner']) {
         $option_set->winner = $values['winner'];
       }
-      if (isset($values['advanced']['decision_name'])) {
-        $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);
-      }
+
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
         continue;
@@ -1708,15 +1706,11 @@ function personalize_mvt_save_from_form_values($form_values) {
  *
  * @param stdClass $agent_data
  *   The campaign class for the report.
- * @param int $option_set
- *   (optional) Content variation set id to use for initial display.
+ * @param stdClass $option_set
+ *   (optional) Content variation set to use for initial display.
  */
-function personalize_campaign_report($agent_data, $osid = NULL) {
+function personalize_campaign_report($agent_data, $option_set = NULL) {
   $plugins = personalize_get_agent_types();
-  $option_set = NULL;
-  if (isset($osid)) {
-    $option_set = personalize_option_set_load($osid);
-  }
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
     $report = module_invoke($module, 'personalize_campaign_report', $agent_data, $option_set);
