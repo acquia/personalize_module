@@ -6,8 +6,8 @@
   width: 100%;
 }
 
-.personalize-admin-content {
-  margin: 1em 0;
+.personalize-admin-content {  
+  /* margin: 1em 0; remove -KO */
   padding: 1em;
   background-color: #fff;
   border: 1px solid #ccc;
@@ -16,12 +16,23 @@
 .personalize-admin-content.personalize-collapsed {
   background-color: inherit;
   border: 1px solid transparent;
+  -webkit-transition: all .5s ease-in-out; /* added transitions -KO */
+  -moz-transition: all .5s ease-in-out;
+  -o-transition: all .5s ease-in-out;
+  -ms-transition: all .5s ease-in-out;  
+  transition: all .5s ease-in-out;
 }
 .personalize-admin-content.personalize-collapsed:hover,
 .personalize-admin-content.personalize-collapsed:active {
   background-color: #fff;
   border: 1px solid #ccc;
+  -webkit-transition: all .5s ease-in-out; /* added transitions -KO */
+  -moz-transition: all .5s ease-in-out;
+  -o-transition: all .5s ease-in-out;
+  -ms-transition: all .5s ease-in-out;  
+  transition: all .5s ease-in-out;
 }
+
 /* Avoid boxes within boxes */
 .personalize-admin-content fieldset,
 .personalize-admin-content .personalize-admin-content {
@@ -37,10 +48,22 @@
   display: inline-block;
   font-size: 1.4em;
   margin-right: 0.4em; /* LTR */
+  vertical-align: middle; /* added this attribute -KO */
 }
 
 .personalize-content-set-item-title {
   font-size: 1em;
+}
+
+/* smaller button for header -KO */
+#personalize-status-toggle-form #edit-toggle-form--2 {
+  padding-top: .4em;
+  padding-bottom: .4em;
+}
+
+#edit-option-sets-header > a { 
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .personalize-content-set-title {
@@ -77,6 +100,7 @@
   text-indent: -999px;
   cursor: pointer;
   margin-right: 5px; /* LTR */
+  vertical-align: middle; /* added -KO */
 }
 
 .personalize-admin-section .personalize-collapsed .personalize-collapse-edit {
@@ -99,7 +123,7 @@
 
 .personalize-admin-content-content,
 .personalize-admin-content-collapsed {
-  padding-left: 3em; /* LTR */
+  padding-left: 0; 
 }
 
 .personalize-admin-content-collapsed {
@@ -108,6 +132,7 @@
 
 .personalize-collapsed .personalize-admin-content-collapsed {
   display: block;
+  margin-top: 1em;
 }
 
 .personalize-admin-content-collapsed .personalize-admin-enumerated-item {
@@ -117,7 +142,7 @@
 #personalize-agent-option-sets-form .personalize-ctools-dropdown,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-link-wrapper,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper {
-  display: inline;
+  display: inline-block; /* changed to inline block -KO */
 }
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown {
@@ -128,5 +153,51 @@
   display: inline-block;
 }
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper .ctools-dropdown-container {
-  left: -5em;
+  left: -6em;
 }
+
+html.js div.ctools-dropdown div.ctools-dropdown-container {
+  border: 1px solid #ccc;
+  margin: 1em 1px 0 0;
+  padding: .25em;
+  box-shadow: 0px 3px 3px #ddd;
+}
+html.js .ctools-dropdown-hover {
+  background-color: #fff;
+}
+html.js div.ctools-dropdown div.ctools-dropdown-container ul li a {
+  text-decoration: none;
+}
+html.js div.ctools-dropdown div.ctools-dropdown-container ul li a:hover {
+  text-decoration: underline;
+}
+
+
+/* remove c-tools icon -KO */
+html.js div.ctools-dropdown a.ctools-dropdown-text-link {
+  background: none;
+  padding-left: 0px;
+}
+
+/* use Acquia (Ember) link colors for these -KO */
+input[type="submit"].personalize-add-link {
+  text-decoration: none;
+  color: #2fa6e5;
+  font-weight: normal;
+}
+input[type="submit"].personalize-add-link:hover {
+  text-decoration: underline;
+  color: #007ec0;
+}
+#personalize-agent-goals-form .personalize-admin-content-header:not(input) {
+  text-decoration: none;
+  color: #2fa6e5;
+  font-weight: bold; /* made bold */
+}
+
+@media all and (min-width: 699px) {
+  .personalize-admin-content-content, .personalize-admin-content-collapsed {
+    padding-left: 3em; /* LTR */
+  }
+}
+
