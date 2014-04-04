@@ -261,8 +261,8 @@ function personalize_status_toggle_form($form, &$form_state, $agent_name, $curre
  */
 function personalize_status_toggle_form_definition($agent_name, $current_status, $add_handlers = FALSE, $ajax_callback = NULL) {
   $form = array();
-  $form['#prefix'] = !empty($form['#prefix']) ? '<div id="personalize-status-toggle-form">' . $form['#prefix'] : '<div id="personalize-status-toggle-form">';
-  $form['#suffix'] = !empty($form['#suffix']) ? $form['#suffix'] . '</div>' : '</div>';
+  $form['#prefix'] = '<div id="personalize-status-toggle-form">';
+  $form['#suffix'] = '</div>';
 
   switch ($current_status) {
     case PERSONALIZE_STATUS_NOT_STARTED:
@@ -925,30 +925,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
   $agent = personalize_agent_load_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
 
-  // Targeting is only supported when a campaign is running.  Also, winners are
-  // only shown when the campaign is stopped.
   $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
-  $targeting_support = FALSE;
-  if ($agent instanceof PersonalizeExplicitTargetingInterface) {
-    $targeting_support = $agent->explicitTargetingSupportMultiple();
-    // Build up a list of targeting values so we can map options to them.
-    $explicit_targeting_values = array();
-    $data = $agent->getData();
-    if (!empty($data['visitor_context'])) {
-      foreach ($data['visitor_context'] as $name => $contexts) {
-        $selected_context = array_filter($contexts);
-        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-          if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-            $value_options = $plugin->getPossibleValues($agent_data);
-            if (!empty($value_options)) {
-              // This essentially de-dupes our targeting strings.
-              $explicit_targeting_values += $value_options;
-            }
-          }
-        }
-      }
-    }
-  }
 
   $form = array();
   $form['#agent'] = $agent_data;
@@ -1015,6 +992,31 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     return $form;
   }
 
+  $agent = personalize_agent_load_agent($agent_data->machine_name);
+  $targeting_support = FALSE;
+  if ($agent instanceof PersonalizeExplicitTargetingInterface) {
+    $targeting_support = $agent->explicitTargetingSupportMultiple();
+    // Build up a list of targeting values so we can map options to them.
+    $explicit_targeting_values = array();
+    $data = $agent->getData();
+    if (!empty($data['visitor_context'])) {
+      foreach ($data['visitor_context'] as $name => $contexts) {
+        $selected_context = array_filter($contexts);
+        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+          if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+            $value_options = $plugin->getPossibleValues();
+            foreach ($value_options as $key => $info) {
+              $mutex = isset($info['mutex']) && $info['mutex'];
+              foreach ($info['values'] as $value => $label) {
+                $code = $agent->convertContextToFeatureString($key, $value, $mutex);
+                $explicit_targeting_values[$code] = $key . ': ' . $label;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $section['option_set_' . $option_set->osid] = array(
@@ -1044,31 +1046,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
         'class' => array('personalize-summary'),
       ),
     );
-    $agent = personalize_agent_load_agent($agent_data->machine_name);
-    $targeting_support = FALSE;
-    if ($agent instanceof PersonalizeExplicitTargetingInterface) {
-      $targeting_support = $agent->explicitTargetingSupportMultiple();
-      // Build up a list of targeting values so we can map options to them.
-      $explicit_targeting_values = array();
-      $data = $agent->getData();
-      if (!empty($data['visitor_context'])) {
-        foreach ($data['visitor_context'] as $name => $contexts) {
-          $selected_context = array_filter($contexts);
-          if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-            if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-              $value_options = $plugin->getPossibleValues();
-              foreach ($value_options as $key => $info) {
-                $mutex = isset($info['mutex']) && $info['mutex'];
-                foreach ($info['values'] as $value => $label) {
-                  $code = $agent->convertContextToFeatureString($key, $value, $mutex);
-                  $explicit_targeting_values[$code] = $key . ': ' . $label;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
 
     // Table header row for option set basic information.
     $section['option_set_' . $option_set->osid]['header'] = array(
