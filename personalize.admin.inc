@@ -447,7 +447,6 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'personalize_admin_content',
     '#collapsible' => empty($agent_data->machine_name) ? 0 : 1,
-    '#collapsed' => FALSE,
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
   );
@@ -995,6 +994,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     '#tree' => TRUE,
     '#type' => 'personalize_admin_content',
     '#collapsible' => 1,
+    '#collapsed' => FALSE,
     '#title' => t('Content variation sets'),
     '#collapsed_content' => $collapsed,
   );
