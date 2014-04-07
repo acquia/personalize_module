@@ -1007,9 +1007,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
             $value_options = $plugin->getPossibleValues();
             foreach ($value_options as $key => $info) {
               $mutex = isset($info['mutex']) && $info['mutex'];
+              $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
               foreach ($info['values'] as $value => $label) {
                 $code = $agent->convertContextToFeatureString($key, $value, $mutex);
-                $explicit_targeting_values[$code] = $key . ': ' . $label;
+                $explicit_targeting_values[$code] = $key_label . ': ' . $label;
               }
             }
           }
