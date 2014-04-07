@@ -259,7 +259,10 @@ function personalize_fields_form_submit($form, &$form_state) {
       // If the entity already has an ID then the options will be saved on
       // hook_entity_update.  Otherwise we add the info to the entity so that
       // it will be processed on hook_entity_insert.
-      if (!$entity_id) {
+      if ($entity_id && isset($option_set->is_new)) {
+        personalize_fields_option_set_save($option_set, $entity_type, $entity, $key);
+      }
+      else {
         $form_state[$entity_type]->option_sets[$key] = $option_set;
       }
     }
