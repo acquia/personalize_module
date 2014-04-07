@@ -34,7 +34,7 @@ function personalize_admin_form($form, &$form_state) {
   $form['personalize_use_admin_mode'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use admin mode'),
-    '#description' => t('When this box is checked, users with permission to administer Personalize module will not trigger any personalization activity such as requests for decisions or the sending of goals.'),
+    '#description' => t('When this box is checked, users with the "Manage personalized content" permission will not trigger any personalization activity such as requests for decisions or the sending of goals.'),
     '#default_value' => variable_get('personalize_use_admin_mode', TRUE),
   );
   // Add visitor context configuration.
