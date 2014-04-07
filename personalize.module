@@ -922,6 +922,19 @@ function personalize_generate_option_label($index) {
 }
 
 /**
+ * Generates the variation number based on the option label and index.
+ *
+ * @param $label
+ *   The label of the option.
+ * @return
+ *   The option index within the decision.
+ */
+function personalize_generate_variation_number($label) {
+  $index = substr($label, 7);
+  return _personalize_generate_option_variation($index);
+}
+
+/**
  * Returns a set of options with unique IDs.
  *
  * @param array $options
@@ -2352,6 +2365,25 @@ function _personalize_generate_option_index($index) {
     $option = $index + 1;
   }
   return $option;
+}
+
+/**
+ * Returns the number of option based on the index generated.
+ *
+ * @param $index
+ *   The index value that was generated (letter or number).
+ * @return
+ *   The variation number within the set (starting at 1).
+ *
+ * @see _personalize_generate_option_index().
+ */
+function _personalize_generate_option_variation($index) {
+  if (is_numeric($index)) {
+    return $index;
+  }
+  $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $num = strpos($letters, $index);
+  return $num + 1;
 }
 
 /**
