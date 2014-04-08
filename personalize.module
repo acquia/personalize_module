@@ -246,7 +246,11 @@ function personalize_page_build(&$page) {
     foreach ($preselected as $option_str) {
       list($osid_str, $selection) = explode('--', trim($option_str));
       // Make sure this is a valid option set.
-      if ($osid = personalize_resolve_stringified_osid($osid_str) && $option_set = personalize_option_set_load($osid)) {
+      $osid = personalize_resolve_stringified_osid($osid_str);
+      if (!$osid) {
+        continue;
+      }
+      if ($option_set = personalize_option_set_load($osid)) {
         foreach ($option_set->options as $option) {
           if ($option['option_id'] === $selection) {
             $settings['preselected'][$osid] = $option['option_id'];
