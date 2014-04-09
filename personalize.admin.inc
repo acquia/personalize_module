@@ -535,7 +535,8 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
     // Configuration the agent pauses the agent status so toggle and
     // option sets must also be updated.
     $agent_data = personalize_agent_load($form_state['values']['agent_basic_info']['machine_name'], TRUE);
-    $option_sets_form = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
+    $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+    $option_sets_form = drupal_get_form('personalize_agent_option_sets_form', $agent_data, $agent_instance);
     $commands[] = ajax_command_replace('#personalize-agent-option-sets-form', drupal_render($option_sets_form));
     // This could be triggered by the status toggle so enforce reloading the
     // full personalize-agent-form regardless of the submit used.
