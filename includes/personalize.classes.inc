@@ -39,27 +39,6 @@ interface PersonalizeAgentInterface {
 
   public function getType();
 
-
-  /**
-   * Whether to use the client-side goal delivery mechanism.
-   *
-   * @return boolean
-   */
-  public function useClientSideGoalDelivery();
-
-  /**
-   * Sends a goal to an agent.
-   *
-   * Only for server-side goal sending.
-   *
-   * @param string $goal_name
-   *   The name of the goal being sent.
-   * @param int $value
-   *   (optional) The value of the goal being sent.
-   */
-  public function sendGoal($goal_name, $value = NULL);
-
-
   /**
    * Returns an array of assets that can be set as the #attached property
    * of an element in a render array.
@@ -129,6 +108,28 @@ interface PersonalizeAgentInterface {
    *   the agent failed the check.
    */
   public function errors();
+}
+
+interface PersonalizeAgentGoalInterface {
+
+  /**
+   * Whether to use the client-side goal delivery mechanism.
+   *
+   * @return boolean
+   */
+  public function useClientSideGoalDelivery();
+
+  /**
+   * Sends a goal to an agent.
+   *
+   * Only for server-side goal sending.
+   *
+   * @param string $goal_name
+   *   The name of the goal being sent.
+   * @param int $value
+   *   (optional) The value of the goal being sent.
+   */
+  public function sendGoal($goal_name, $value = NULL);
 }
 
 interface PersonalizeAgentReportInterface {

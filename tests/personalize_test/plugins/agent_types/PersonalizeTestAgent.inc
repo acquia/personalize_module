@@ -4,7 +4,7 @@
  * Provides an agent type for testing purposes.
  */
 
-class PersonalizeTestAgent extends PersonalizeAgentBase {
+class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAgentGoalInterface {
 
   public $goals_received = array();
 
@@ -24,16 +24,15 @@ class PersonalizeTestAgent extends PersonalizeAgentBase {
   }
 
   /**
-   * Implements PersonalizeAgentInterface::useClientSideGoalDelivery().
+   * Implements PersonalizeAgentGoalInterface::useClientSideGoalDelivery().
    */
   public function useClientSideGoalDelivery()
   {
     return $this->data['use_client_side_goal_processing'];
   }
 
-
   /**
-   * Implements PersonalizeAgentInterface::sendGoal().
+   * Implements PersonalizeAgentGoalInterface::sendGoal().
    */
   public function sendGoal($goal_name, $value = NULL) {
     // Just print info to the screen.

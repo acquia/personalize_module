@@ -40,22 +40,6 @@ class PersonalizeTarget extends PersonalizeAgentBase implements PersonalizeExpli
   }
 
   /**
-   * Implements PersonalizeAgentInterface::useClientSideGoalDelivery().
-   */
-  public function useClientSideGoalDelivery()
-  {
-    return TRUE;
-  }
-
-  /**
-   * Implements PersonalizeAgentInterface::sendGoal().
-   */
-  public function sendGoal($goal_name, $value = NULL) {
-
-  }
-
-
-  /**
    * Implements PersonalizeAgentInterface::convertContextToFeatureString().
    */
   public static function convertContextToFeatureString($name, $value, $is_mutex = FALSE) {
