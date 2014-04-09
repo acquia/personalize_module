@@ -24,23 +24,6 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   }
 
   /**
-   * Implements PersonalizeAgentInterface::useClientSideGoalDelivery().
-   */
-  public function useClientSideGoalDelivery()
-  {
-    return FALSE;
-  }
-
-
-  /**
-   * Implements PersonalizeAgentInterface::sendGoal().
-   */
-  public function sendGoal($goal_name, $value = NULL) {
-    // Just print info to the screen.
-    print sprintf("The %s goal with value %d was received by the %s agent", $goal_name, $value, $this->getMachineName());
-  }
-
-  /**
    * Implements PersonalizeExplicitTargetingInterface::explicitTargetingSupportMultiple().
    */
   public static function explicitTargetingSupportMultiple() {

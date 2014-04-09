@@ -2107,7 +2107,7 @@ function personalize_process_goals(&$page) {
     $agent_map = $goals_attained = array();
     foreach ($goals as $agent_name => $agent_goals) {
       $agent = personalize_agent_load_agent($agent_name);
-      if (!$agent) {
+      if (!$agent || !($agent instanceof PersonalizeAgentGoalInterface)) {
         continue;
       }
       if (!$agent->useClientSideGoalDelivery()) {

@@ -421,9 +421,12 @@ function personalize_agent_page($agent_data) {
       'id' => 'personalize-agent-page-messages',
     ),
   );
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   $build['agent'] = drupal_get_form('personalize_agent_form', $agent_data);
-  $build['option_sets'] = drupal_get_form('personalize_agent_option_sets_form', $agent_data);
-  $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
+  $build['option_sets'] = drupal_get_form('personalize_agent_option_sets_form', $agent_data, $agent_instance);
+  if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
+    $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
+  }
   $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
   return $build;
 }
@@ -918,13 +921,10 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
 /**
  * Builds a form for editing the Option Sets of an agent.
  */
-function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
+function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $agent_instance) {
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
-
-  $agent = personalize_agent_load_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
-
   $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
 
   $form = array();
@@ -992,24 +992,23 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
     return $form;
   }
 
-  $agent = personalize_agent_load_agent($agent_data->machine_name);
   $targeting_support = FALSE;
-  if ($agent instanceof PersonalizeExplicitTargetingInterface) {
-    $targeting_support = $agent->explicitTargetingSupportMultiple();
+  if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
+    $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
     $explicit_targeting_values = array();
-    $data = $agent->getData();
+    $data = $agent_instance->getData();
     if (!empty($data['visitor_context'])) {
       foreach ($data['visitor_context'] as $name => $contexts) {
         $selected_context = array_filter($contexts);
         if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-          if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+          if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
             $value_options = $plugin->getPossibleValues();
             foreach ($value_options as $key => $info) {
               $mutex = isset($info['mutex']) && $info['mutex'];
               $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
               foreach ($info['values'] as $value => $label) {
-                $code = $agent->convertContextToFeatureString($key, $value, $mutex);
+                $code = $agent_instance->convertContextToFeatureString($key, $value, $mutex);
                 $explicit_targeting_values[$code] = $key_label . ': ' . $label;
               }
             }
@@ -1037,8 +1036,8 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data) {
       '#type' => 'markup',
       '#markup' => theme('personalize_option_set_header', array(
         'variation_count' => count($option_set->options),
-        'report' => $agent instanceof PersonalizeAgentReportInterface ? $agent->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => $agent instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
+        'report' => $agent_instance instanceof PersonalizeAgentReportInterface ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
+        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
         'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
         'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
