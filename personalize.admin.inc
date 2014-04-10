@@ -466,7 +466,12 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (!empty($agent_data->machine_name)) {
     $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
   }
-  $form['agent_form']['agent_fieldset']['agent_basic'] = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
+  $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
+  if ($basic_form === FALSE) {
+    // Campaigns cannot be added or edited at this time.
+    return array();
+  }
+  $form['agent_form']['agent_fieldset']['agent_basic'] = $basic_form;
 
   // Add visitor context items to the form.
   if (!empty($agent_data->machine_name)) {
@@ -633,8 +638,8 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
     }
   }
   if (empty($agent_type_options)) {
-    drupal_set_message(t('You don\'t have any agent types enabled. Please enable the personalize_target module or another module that provides an agent type'), 'error');
-    return array();
+    drupal_set_message(t('You don\'t have any agent types enabled. Please enable the personalize_target module or another module that provides an agent type.'), 'error');
+    return FALSE;
   }
   ksort($agent_type_options);
 

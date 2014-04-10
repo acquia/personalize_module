@@ -5,10 +5,156 @@
  * Tests for Personalize module.
  */
 
-class PersonalizeTest extends DrupalWebTestCase {
+/**
+ * Base testing functionality for all personalize module tests.
+ */
+class PersonalizeBaseTest extends DrupalWebTestCase {
 
   protected $adminUser;
   protected $managerUser;
+
+  /**
+   * Asserts that a wrapper div for the specified Option Set has been output.
+   *
+   * @param int $osid
+   *   The Option Set ID.
+   * @param string $agent_name
+   *   The name of the agent the Option Set belongs to.
+   * @param string $option_names
+   *   A string of comma-separated option IDs, e.g 'option-A,option-B'.
+   */
+  protected function assertOptionSet($osid) {
+    $elements = $this->xpath('//div[@id=:id]', array(':id' => 'personalize-' . $osid));
+    $this->assertEqual(1, count($elements), 'Found one element with the specified id');
+    $this->assertEqual('personalize-option-set',  $elements[0]['class']);
+  }
+
+  /**
+   * Helper to assert the number of Option Sets of a given type.
+   *
+   * @param string $type
+   *   The Option Set type to assert the count of.
+   * @param int $expected_count
+   *   The expected count.
+   */
+  protected function assertOptionSetCountByType($type, $expected_count) {
+    $option_sets_by_type = personalize_option_set_load_by_type($type);
+    $this->assertEqual($expected_count, count($option_sets_by_type));
+  }
+
+  /**
+   * Helper to assert the number of Option Sets of a given agent.
+   *
+   * @param string $agent
+   *   The Option Set agent to assert the count of.
+   * @param int $expected_count
+   *   The expected count.
+   */
+  protected function assertOptionSetCountByAgent($agent, $expected_count) {
+    $option_sets_by_agent = personalize_option_set_load_by_agent($agent);
+    $this->assertEqual($expected_count, count($option_sets_by_agent));
+  }
+
+  protected function assertExplicitTargeting($option_set, $expected) {
+
+    $this->assertEqual(count($expected), count($option_set->options));
+    foreach ($option_set->options as $option) {
+      if (isset($option['fixed_targeting'])) {
+        $this->assertEqual($option['fixed_targeting'], $expected[$option['option_id']]['fixed_targeting']);
+        $this->assertEqual($option['fixed_targeting_strategy'], $expected[$option['option_id']]['fixed_targeting_strategy']);
+      }
+      else {
+        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting']));
+        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_strategy']));
+      }
+    }
+  }
+
+  /**
+   * Helper method to move buttons names to one place to simplify
+   * it's maintaining
+   *
+   * Kind of Page Objects Patterns
+   *
+   * @param $type string
+   * @return string
+   */
+  protected function getButton($type = '') {
+    switch ($type) {
+      case 'agent':
+        return t('Save campaign settings');
+      case 'goal':
+        return t('Save goals');
+      case 'add_goal':
+        return t('Add goal');
+      case 'option':
+        return t('Save variation sets');
+      case 'mvt':
+        return t('Save test');
+      case 'delete':
+        return t('Delete');
+      case 'config':
+        return t('Save configuration');
+      default:
+        return t($type);
+    }
+  }
+
+  /**
+   * Help function to create and test queue creation of Personalize Agent
+   *
+   * @param array $data
+   *  array (
+   *    'name' => Agent title
+   *    'machine_name' => string processed by personalize_generate_machine_name()
+   *  )
+   * @param bool $cleanQueue Clean or not Drupal queue after 'saveAgent' queue testing
+   * @return NULL|PersonalizeAgentInterface
+   *
+   * @see personalize_generate_machine_name()
+   * @see testSaveAgent()
+   */
+  protected function createTestAgent($data = array()) {
+    $data += array(
+      'name' => $this->randomName(),
+    );
+
+    $data += array('machine_name' => personalize_generate_machine_name($data['name'], 'personalize_agent_machine_name_exists'));
+
+    $edit = array(
+      'agent_basic_info[title]' => $data['name'],
+      'agent_basic_info[machine_name]' => $data['machine_name'],
+      'agent_basic_info[agent_type]' => $data['agent_type'],
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+    $agent = personalize_agent_load_agent($data['machine_name'], TRUE);
+    $this->assertTrue($agent instanceof PersonalizeTestAgent);
+
+    return $agent;
+  }
+
+  protected function createOptionSet($index, $option_set) {
+    if (!isset($option_set['label'])) {
+      $option_set['label'] = 'Option Set ' . ($index + 1);
+    }
+
+    foreach ($option_set['options'] as $i => &$option) {
+      if (!isset($option['option_id'])) {
+        $option['option_id'] = personalize_generate_option_id($i);
+      }
+      if (!isset($option['option_label'])) {
+        $option['option_label'] = personalize_generate_option_label($i);
+      }
+    }
+
+    $option_set = (object) $option_set;
+    personalize_option_set_save($option_set);
+    return $option_set;
+  }
+}
+
+class PersonalizeTest extends PersonalizeBaseTest {
 
   public static function getInfo() {
     return array(
@@ -1336,144 +1482,43 @@ class PersonalizeTest extends DrupalWebTestCase {
     $status = personalize_agent_get_status($agent_name);
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
   }
+}
 
-  /**
-   * Asserts that a wrapper div for the specified Option Set has been output.
-   *
-   * @param int $osid
-   *   The Option Set ID.
-   * @param string $agent_name
-   *   The name of the agent the Option Set belongs to.
-   * @param string $option_names
-   *   A string of comma-separated option IDs, e.g 'option-A,option-B'.
-   */
-  protected function assertOptionSet($osid) {
-    $elements = $this->xpath('//div[@id=:id]', array(':id' => 'personalize-' . $osid));
-    $this->assertEqual(1, count($elements), 'Found one element with the specified id');
-    $this->assertEqual('personalize-option-set',  $elements[0]['class']);
-  }
+/**
+ * Tests set requirements for personalization functionality.
+ */
+class PersonalizeRequirementsTest extends PersonalizeBaseTest {
 
-  /**
-   * Helper to assert the number of Option Sets of a given type.
-   *
-   * @param string $type
-   *   The Option Set type to assert the count of.
-   * @param int $expected_count
-   *   The expected count.
-   */
-  protected function assertOptionSetCountByType($type, $expected_count) {
-    $option_sets_by_type = personalize_option_set_load_by_type($type);
-    $this->assertEqual($expected_count, count($option_sets_by_type));
-  }
-
-  /**
-   * Helper to assert the number of Option Sets of a given agent.
-   *
-   * @param string $agent
-   *   The Option Set agent to assert the count of.
-   * @param int $expected_count
-   *   The expected count.
-   */
-  protected function assertOptionSetCountByAgent($agent, $expected_count) {
-    $option_sets_by_agent = personalize_option_set_load_by_agent($agent);
-    $this->assertEqual($expected_count, count($option_sets_by_agent));
-  }
-
-  protected function assertExplicitTargeting($option_set, $expected) {
-
-    $this->assertEqual(count($expected), count($option_set->options));
-    foreach ($option_set->options as $option) {
-      if (isset($option['fixed_targeting'])) {
-        $this->assertEqual($option['fixed_targeting'], $expected[$option['option_id']]['fixed_targeting']);
-        $this->assertEqual($option['fixed_targeting_strategy'], $expected[$option['option_id']]['fixed_targeting_strategy']);
-      }
-      else {
-        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting']));
-        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_strategy']));
-      }
-    }
-  }
-
-  /**
-   * Helper method to move buttons names to one place to simplify
-   * it's maintaining
-   *
-   * Kind of Page Objects Patterns
-   *
-   * @param $type string
-   * @return string
-   */
-  protected function getButton($type = '') {
-    switch ($type) {
-      case 'agent':
-        return t('Save campaign settings');
-      case 'goal':
-        return t('Save goals');
-      case 'add_goal':
-        return t('Add goal');
-      case 'option':
-        return t('Save variation sets');
-      case 'mvt':
-        return t('Save test');
-      case 'delete':
-        return t('Delete');
-      case 'config':
-        return t('Save configuration');
-      default:
-        return t($type);
-    }
-  }
-
-  /**
-   * Help function to create and test queue creation of Personalize Agent
-   *
-   * @param array $data
-   *  array (
-   *    'name' => Agent title
-   *    'machine_name' => string processed by personalize_generate_machine_name()
-   *  )
-   * @param bool $cleanQueue Clean or not Drupal queue after 'saveAgent' queue testing
-   * @return NULL|PersonalizeAgentInterface
-   *
-   * @see personalize_generate_machine_name()
-   * @see testSaveAgent()
-   */
-  protected function createTestAgent($data = array()) {
-    $data += array(
-      'name' => $this->randomName(),
+  public static function getInfo() {
+    return array(
+      'name' => t('Personalize Access Tests'),
+      'description' => t('Tests access to personalize functionality.'),
+      'group' => t('Personalize'),
     );
-
-    $data += array('machine_name' => personalize_generate_machine_name($data['name'], 'personalize_agent_machine_name_exists'));
-
-    $edit = array(
-      'agent_basic_info[title]' => $data['name'],
-      'agent_basic_info[machine_name]' => $data['machine_name'],
-      'agent_basic_info[agent_type]' => $data['agent_type'],
-    );
-
-    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
-    $agent = personalize_agent_load_agent($data['machine_name'], TRUE);
-    $this->assertTrue($agent instanceof PersonalizeTestAgent);
-
-    return $agent;
   }
 
-  protected function createOptionSet($index, $option_set) {
-    if (!isset($option_set['label'])) {
-      $option_set['label'] = 'Option Set ' . ($index + 1);
-    }
+  function setUp() {
+    parent::setUp(array('ctools', 'personalize', 'personalize_blocks'));
+  }
 
-    foreach ($option_set['options'] as $i => &$option) {
-      if (!isset($option['option_id'])) {
-        $option['option_id'] = personalize_generate_option_id($i);
-      }
-      if (!isset($option['option_label'])) {
-        $option['option_label'] = personalize_generate_option_label($i);
-      }
-    }
+  /**
+   * Tests creating a new campaign.
+   */
+  function testCampaignCreate() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
 
-    $option_set = (object) $option_set;
-    personalize_option_set_save($option_set);
-    return $option_set;
+    // Make sure you can't create a campaign without any agents.
+    $this->drupalGet('admin/structure/personalize/add');
+    $this->assertText(t('You don\'t have any agent types enabled.'));
+    $this->assertNoFieldByName('op', $this->getButton('agent'));
+
+    // Enable a test agent and verify that a campaign edit form is presented.
+    module_enable(array('personalize_test'));
+    $agent = personalize_agent_load_agent('test-agent');
+    $this->assertTrue($agent instanceof PersonalizeAgentBase);
+    $this->drupalGet('admin/structure/personalize/add');
+    $this->assertNoText(t('You don\'t have any agent types enabled.'));
+    $this->assertFieldByName('op', $this->getButton('agent'));
   }
 }
