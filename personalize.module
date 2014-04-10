@@ -44,7 +44,7 @@ function personalize_menu() {
   $items = array();
   $items['admin/config/content/personalize'] = array(
     'type' => MENU_NORMAL_ITEM,
-    'title' => 'Personalization Settings',
+    'title' => 'Personalization settings',
     'description' => 'Configuration settings for the Personalization module and related plugins.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_admin_form'),
