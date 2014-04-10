@@ -56,7 +56,7 @@
 }
 
 /* smaller button for header -KO */
-#personalize-status-toggle-form #edit-toggle-form--2 {
+.personalize-admin-content-header input[type="submit"] {
   padding-top: .4em;
   padding-bottom: .4em;
 }
