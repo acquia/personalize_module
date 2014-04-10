@@ -63,6 +63,50 @@ class PersonalizeTest extends DrupalWebTestCase {
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
   }
 
+  function testAgentGoalEdit() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+
+    $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    $agent_name = $agent->getMachineName();
+
+    // Create a new goal
+    $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/edit");
+
+    // There should already be an empty goal form on the page.
+    $this->assertFieldByName('goals[0][action_name]');
+    $edit = array(
+      'goals[0][action_name]' => 'user_login',
+      'goals[0][value]' => 1,
+    );
+    $this->drupalPostAJAX(NULL, $edit, array('op' => $this->getButton('goal')), NULL, array(), array(), 'personalize-agent-goals-form');
+
+    // Verify new goal is on page
+    $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/edit");
+    $this->assertOptionSelected('edit-goals-0-action-name', 'user_login');
+
+    // Add two more goals
+    debug($this->getButton('add_goal'));
+    $this->drupalPostAJAX(NULL, array(), array('op' => $this->getButton('add_goal')), NULL, array(), array(), 'personalize-agent-goals-form');
+    $this->assertFieldByName('goals[1][action_name]');
+
+    $this->drupalPostAJAX(NULL, array(), array('op' => $this->getButton('add_goal')), NULL, array(), array(), 'personalize-agent-goals-form');
+    $this->assertFieldByName('goals[2][action_name]');
+
+    // Save one of them.
+    $edit = array(
+      'goals[2][action_name]' => 'user_register',
+      'goals[2][value]' => 2,
+    );
+    $this->drupalPostAJAX(NULL, $edit, array('op' => $this->getButton('goal')), NULL, array(), array(), 'personalize-agent-goals-form');
+
+    // Verify that we only have two goals saved on the page now.
+    $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/edit");
+    $this->assertOptionSelected('edit-goals-0-action-name', 'user_login');
+    $this->assertOptionSelected('edit-goals-1-action-name', 'user_register');
+    $this->assertNoFieldByName('goals[2][action_name]');
+  }
+
   function testAgentDelete() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
@@ -1365,6 +1409,8 @@ class PersonalizeTest extends DrupalWebTestCase {
         return t('Save campaign settings');
       case 'goal':
         return t('Save goals');
+      case 'add_goal':
+        return t('Add goal');
       case 'option':
         return t('Save variation sets');
       case 'mvt':

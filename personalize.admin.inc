@@ -723,10 +723,12 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   $goals = $exclude = array();
   if (isset($form_state['values']['goals'])) {
     foreach ($form_state['values']['goals'] as $delta => $goal) {
-      $goals[$delta] = array(
-        'action' => $goal['action_name'],
-        'value' => $goal['value']
-      );
+      if (!empty($goal['action_name'])) {
+        $goals[$delta] = array(
+          'action' => $goal['action_name'],
+          'value' => $goal['value']
+        );
+      }
     }
   }
   else {
@@ -751,11 +753,14 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     $goals[] = array('action' => '', 'value' => 1);
   }
 
-  // If the "Add another" button was clicked, we need to increment the number of
-  // goals by one.
+  // If the "Add another" button was clicked, we need to add goals to get up
+  // to the number indicated.
   $num_goals = count($goals);
   if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
-    $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
+    while ($num_goals < $form_state['num_goals']) {
+      $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
+      $num_goals++;
+    }
   }
   $form_state['num_goals'] = count($goals);
 
@@ -792,13 +797,16 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // Determine the collapsed content.
   $collapsed = '';
   $goal_labels = array();
+  // Use a counter variable as the delta is affected by adding/removing goals.
+  $counter = 1;
   foreach($goals as $delta => $goal) {
     // Save the display goal title for use later
     $goal_labels[$delta] = theme('personalize_admin_enumerated_item', array(
-      'enum' => t('Goal @delta', array('@delta' => ($delta + 1))),
+      'enum' => t('Goal @delta', array('@delta' => ($counter))),
       'title' => check_plain($goal['action']),
     ));
     $collapsed .= $goal_labels[$delta];
+    $counter++;
   }
   $form['variations']['primary']['goals_fieldset'] = array(
     '#type' => 'personalize_admin_content',
@@ -831,7 +839,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     '#limit_validation_errors' => array(array('goals')),
   );
 
-  // Now handle the goals display.
+  // Now handle the goals input display.
   $section = &$form['variations']['primary']['goals_fieldset'];
   $section['goals'] = array(
     '#tree' => TRUE,
@@ -1550,6 +1558,9 @@ function personalize_agent_goals_form_submit($form, &$form_state) {
   foreach ($to_delete as $goal_id) {
     personalize_goal_delete($goal_id);
   }
+  // Redraw the form without any additional new goals included.
+  unset($form_state['num_goals']);
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
