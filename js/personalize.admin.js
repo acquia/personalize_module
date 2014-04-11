@@ -122,7 +122,7 @@
         }
       });
     }
-  }
+  };
 
   /**
    * Add personalize admin content header sections.
