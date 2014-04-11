@@ -40,6 +40,11 @@ interface PersonalizeAgentInterface {
   public function getType();
 
   /**
+   * Access for status property.
+   */
+  public function getStarted();
+
+  /**
    * Returns an array of assets that can be set as the #attached property
    * of an element in a render array.
    *
@@ -148,6 +153,19 @@ interface PersonalizeAgentReportInterface {
    */
   public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL);
 
+  /**
+   * Returns an array of reports available for a campaign.
+   *
+   * Each report is returned as a render array.
+   *
+   * @param $decision_name
+   *   A optionally preselected decision to display.
+   * @param $date_from
+   *   The start date of the report, if empty then the start date of the agent.
+   * @param $date_to
+   *   The end date of the report, if empty then current date.
+   */
+  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
 }
 
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
@@ -217,12 +235,17 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    *   The title of the agent.
    * @param array $data
    *   An array of data describing the agent.
+   * @param int $status
+   *   The current status of the agent (running, paused, etc.).
+   * @param int $started
+   *   Unix timestamp when the agent was created.
    */
-  public function __construct($machine_name, $title, $data, $status) {
+  public function __construct($machine_name, $title, $data, $status, $started = NULL) {
     $this->machineName = $machine_name;
     $this->title = $title;
     $this->data = $data;
     $this->status = $status;
+    $this->started = empty($started) ? time() : $started;
   }
 
   /**
@@ -252,6 +275,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    */
   public function getStatus() {
     return $this->status;
+  }
+
+  /**
+   * Implements PersonalizeAgentInterface:getStarted().
+   */
+  public function getStarted() {
+    return $this->started;
   }
 
   /**
