@@ -332,6 +332,18 @@ function personalize_page_build(&$page) {
 }
 
 /**
+ * Implements hook_overlay_child_initialize().
+ */
+function personalize_overlay_child_initialize() {
+  $page = array();
+  personalize_page_build($page);
+  if (!isset($page['page_top']['personalization']['#attached'])) {
+    return;
+  }
+  drupal_process_attached($page['page_top']['personalization']);
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  */
 function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
