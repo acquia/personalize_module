@@ -10,7 +10,7 @@ class PersonalizeTarget extends PersonalizeAgentBase implements PersonalizeExpli
    * Implements PersonalizeAgentInterface::create().
    */
   public static function create($agent_data) {
-    return new self($agent_data->machine_name, $agent_data->label, $agent_data->data, $agent_data->status, $agent_data->started);
+    return new self($agent_data->machine_name, $agent_data->label, $agent_data->data, $agent_data->status, !empty($agent_data->started) ? $agent_data->started : NULL);
   }
 
   /**
