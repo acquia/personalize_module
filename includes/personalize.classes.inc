@@ -164,8 +164,11 @@ interface PersonalizeAgentReportInterface {
    *   The start date of the report, if empty then the start date of the agent.
    * @param $date_to
    *   The end date of the report, if empty then current date.
+   * @param $option_label_callback
+   *   A function name to call that will generate the option label when given
+   *   a decision name and option id.
    */
-  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
+  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL, $option_label_callback = NULL);
 }
 
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
