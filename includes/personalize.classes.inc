@@ -40,9 +40,9 @@ interface PersonalizeAgentInterface {
   public function getType();
 
   /**
-   * Access for status property.
+   * Access for agent start property.
    */
-  public function getStarted();
+  public function getStartTime();
 
   /**
    * Returns an array of assets that can be set as the #attached property
@@ -220,6 +220,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   protected $status;
 
   /**
+   * An integer representing the Unix timestamp when the agent was started.
+   *
+   * @var int
+   */
+  protected $startTime;
+
+  /**
    *
    * @var PersonalizeLoggerInterface
    */
@@ -237,15 +244,15 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    *   An array of data describing the agent.
    * @param int $status
    *   The current status of the agent (running, paused, etc.).
-   * @param int $started
-   *   Unix timestamp when the agent was created.
+   * @param int $startTime
+   *   Unix timestamp when the agent was started.
    */
-  public function __construct($machine_name, $title, $data, $status, $started = NULL) {
+  public function __construct($machine_name, $title, $data, $status, $startTime = NULL) {
     $this->machineName = $machine_name;
     $this->title = $title;
     $this->data = $data;
     $this->status = $status;
-    $this->started = empty($started) ? time() : $started;
+    $this->startTime = empty($startTime) ? time() : $startTime;
   }
 
   /**
@@ -278,10 +285,10 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   }
 
   /**
-   * Implements PersonalizeAgentInterface:getStarted().
+   * Implements PersonalizeAgentInterface:getStartTime().
    */
-  public function getStarted() {
-    return $this->started;
+  public function getStartTime() {
+    return $this->startTime;
   }
 
   /**
