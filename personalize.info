@@ -1,12 +1,12 @@
 name = Personalize
 description = The Personalize module serves as an API for controlling personalization of content on pages based on the user's context.
 configure = admin/config/content/personalize
+package = Personalization
+core = 7.x
+php = 5.3
 
 dependencies[] = ctools
 dependencies[] = visitor_actions
 
 files[] = includes/personalize.classes.inc
 files[] = tests/personalize.test
-
-package = Personalization
-core = 7.x
