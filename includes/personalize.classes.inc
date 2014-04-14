@@ -40,6 +40,11 @@ interface PersonalizeAgentInterface {
   public function getType();
 
   /**
+   * Access for agent start property.
+   */
+  public function getStartTime();
+
+  /**
    * Returns an array of assets that can be set as the #attached property
    * of an element in a render array.
    *
@@ -148,6 +153,19 @@ interface PersonalizeAgentReportInterface {
    */
   public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL);
 
+  /**
+   * Returns an array of reports available for a campaign.
+   *
+   * Each report is returned as a render array.
+   *
+   * @param $decision_name
+   *   A optionally preselected decision to display.
+   * @param $date_from
+   *   The start date of the report, if empty then the start date of the agent.
+   * @param $date_to
+   *   The end date of the report, if empty then current date.
+   */
+  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
 }
 
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
@@ -202,6 +220,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   protected $status;
 
   /**
+   * An integer representing the Unix timestamp when the agent was started.
+   *
+   * @var int
+   */
+  protected $startTime;
+
+  /**
    *
    * @var PersonalizeLoggerInterface
    */
@@ -217,12 +242,17 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    *   The title of the agent.
    * @param array $data
    *   An array of data describing the agent.
+   * @param int $status
+   *   The current status of the agent (running, paused, etc.).
+   * @param int $startTime
+   *   Unix timestamp when the agent was started.
    */
-  public function __construct($machine_name, $title, $data, $status) {
+  public function __construct($machine_name, $title, $data, $status, $startTime = NULL) {
     $this->machineName = $machine_name;
     $this->title = $title;
     $this->data = $data;
     $this->status = $status;
+    $this->startTime = empty($startTime) ? time() : $startTime;
   }
 
   /**
@@ -252,6 +282,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    */
   public function getStatus() {
     return $this->status;
+  }
+
+  /**
+   * Implements PersonalizeAgentInterface:getStartTime().
+   */
+  public function getStartTime() {
+    return $this->startTime;
   }
 
   /**
