@@ -13,7 +13,7 @@
 
       Drupal.personalizeElements.changedOptionLabels = Drupal.personalizeElements.changedOptionLabels || [];
 
-      // Update the appropriate option label when a block is selected so long
+      // Update the appropriate option label when an element is selected so long
       // as the user has not yet changed the label.
       $('.personalize-elements-add-content', context).keyup(function(e) {
         var $optionLabel = $(this).parents('.personalize-elements-option-content-element').prev('.personalize-elements-option-label-element').find('.personalize-elements-add-option-label');
