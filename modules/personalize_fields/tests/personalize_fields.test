@@ -97,7 +97,22 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
 
+    // Restart the agent and confirm that changing the option label also pauses.
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['article_headline[und][0][personalize_fields_option_label]'] = $this->randomName();
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
+    // Restart the agent and confirm that removing an option pauses the agent.
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['article_headline[und][2][value]'] = '';
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
     // Restart the agent and make sure that other changes do not cause pausing.
+    unset($edit['article_headline[und][2][value]']);
     $this->drupalGet('node/1/edit');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     $edit['title'] = $this->randomName(8);
