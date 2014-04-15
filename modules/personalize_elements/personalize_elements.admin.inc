@@ -60,12 +60,16 @@ function personalize_elements_list() {
  * Form for creating a new action.
  */
 function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option_set = NULL) {
+  $path = drupal_get_path('module', 'personalize_elements');
   $form = array(
     '#attached' => array(
       'css' => array(
-        drupal_get_path('module', 'personalize_elements') . '/css/personalize_elements.admin.css'
-       )
-    )
+        $path . '/css/personalize_elements.admin.css',
+       ),
+      'js' => array(
+        $path . '/js/personalize_elements.admin.js',
+      ),
+    ),
   );
 
   if (!$option_set) {
@@ -193,6 +197,10 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#title' => t('Content'),
       '#default_value' => !empty($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '',
     );
+    if (empty($option_set->osid)) {
+      $option_form['option_label']['#attributes']['class'][] = 'personalize-elements-add-option-label';
+      $option_form['personalize_elements_content']['#attributes']['class'][] = 'personalize-elements-add-content';
+    }
     $form['options_wrapper']['options'][$delta] = $option_form;
   }
   $form['options_wrapper']['options'][0]['option_label']['#states'] =
