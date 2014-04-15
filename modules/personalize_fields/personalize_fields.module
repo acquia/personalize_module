@@ -569,43 +569,6 @@ function personalize_fields_personalize_option_set_load(&$option_sets) {
 }
 
 /**
- * Implements hook_personalize_option_values_for_admin().
- */
-function personalize_fields_personalize_option_values_for_admin($option_set) {
-  if ($option_set->plugin != 'fields') {
-    return array();
-  }
-  $field_info = _personalize_fields_get_field_info_from_option_set($option_set->osid);
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', $field_info['entity_type'])
-    ->entityCondition('entity_id', $field_info['entity_id']);
-  $result = $query->execute();
-  if (empty($result)) {
-    return array();
-  }
-  $entity_info = $result[$field_info['entity_type']][$field_info['entity_id']];
-  $bundle = isset($entity_info->type) ? $entity_info->type : $entity_info->bundle;
-  $instance = field_info_instance($field_info['entity_type'], $field_info['field_name'], $bundle);
-  $field_id = $instance['field_id'];
-
-  // Use field_attach_load to populate the field value we're interested in.
-  field_attach_load($field_info['entity_type'], array($field_info['entity_id'] => $entity_info), FIELD_LOAD_CURRENT, array('field_id' => $field_id));
-
-  $items = field_get_items($field_info['entity_type'], $entity_info, $field_info['field_name']);
-  $option_values = array();
-  foreach ($option_set->options as $index => $option) {
-    if (!empty($items[$index]['safe_value'])) {
-      $option_values[$option['option_id']] = $items[$index]['safe_value'];
-    }
-    // For multi-value image fields.
-    else if (!empty($items[$index]['filename'])) {
-      $option_values[$option['option_id']] = $items[$index]['filename'];
-    }
-  }
-  return $option_values;
-}
-
-/**
  * Implements hook_field_attach_view_alter().
  */
 function personalize_fields_field_attach_view_alter(&$output, $context) {
