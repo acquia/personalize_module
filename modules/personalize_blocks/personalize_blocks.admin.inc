@@ -84,6 +84,8 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
     $form += personalize_get_agent_selection_form($current_agent);
   }
 
+  $form['#attached']['js'][] = drupal_get_path('module', 'personalize_blocks') . '/js/personalize_blocks.admin.js';
+
   $form['title'] = array(
     '#title' => t('Title'),
     '#description' => t('This will be the administrative title of the block.'),
@@ -206,12 +208,6 @@ function _personalize_blocks_form(array $block, $pblock) {
     '#size' => '10',
     '#default_value' => isset($block['option_label']) ? $block['option_label'] : '',
   );
-  if (isset($block['option_id'])) {
-    $form['option_id'] = array(
-      '#type' => 'value',
-      '#value' => $block['option_id'],
-    );
-  }
 
   $form['weight'] = array(
     '#type' => 'weight',
@@ -272,6 +268,17 @@ function _personalize_blocks_form(array $block, $pblock) {
     ),
     '#limit_validation_errors' => array(),
   );
+
+  if (isset($block['option_id'])) {
+    $form['option_id'] = array(
+      '#type' => 'value',
+      '#value' => $block['option_id'],
+    );
+  }
+  else {
+    $form['option_label']['#attributes']['class'][] = 'personalize-blocks-add-option-label';
+    $form['bid']['#attributes']['class'][] = 'personalize-blocks-add-block-select';
+  }
 
   return $form;
 }
