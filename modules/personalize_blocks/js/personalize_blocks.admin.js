@@ -13,7 +13,7 @@
 
       // Update the appropriate option label when a block is selected so long
       // as the user has not yet changed the label.
-      $('#personalize-blocks-form .personalize-blocks-add-block-select', context).once().change(function(e) {
+      $('.personalize-blocks-add-block-select', context).once().change(function(e) {
         var $optionLabel = $(this).parents('tr').find('.personalize-blocks-add-option-label');
         if (Drupal.personalizeBlocks.changedOptionLabels.indexOf($optionLabel.attr('id')) >= 0) {
           // The user has already changed the label.
@@ -26,7 +26,7 @@
 
       // Once the user updates the option label it should no longer be changed
       // automatically.
-      $('#personalize-blocks-form .personalize-blocks-add-option-label', context).once().change(function(e) {
+      $('.personalize-blocks-add-option-label', context).once().change(function(e) {
         Drupal.personalizeBlocks.changedOptionLabels.push($(this).attr('id'));
       });
     }
