@@ -153,7 +153,10 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
     // Load the Option Sets if we have an entity id and entity.
     if ($entity_id && ($option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key))) {
       $current_agent = $option_set->agent;
+      // Renumber the options for use in comparison below.
+      $options = array_values($option_set->options);
     }
+
     // Add a field for the option set label to each multivalue field.
     $num = isset($form[$key][$languages[$key]]['#max_delta']) ? $form[$key][$languages[$key]]['#max_delta'] : $form[$key][$languages[$key]]['#file_upload_delta'];
     for ($i=0; $i <= $num; $i++) {
@@ -161,8 +164,8 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
       // Option label previously set.
       if (isset($form_state['values'][$key][$languages[$key]][$i]['personalize_fields_option_label'])) {
         $default_label = $form_state['values'][$key][$languages[$key]][$i]['personalize_fields_option_label'];
-      } else if (!empty($option_set->options[$i]['option_label'])) {
-        $default_label = $option_set->options[$i]['option_label'];
+      } else if (!empty($options[$i]['option_label'])) {
+        $default_label = $options[$i]['option_label'];
       }
       // Use filename as default for image multivalue fields.
       else if (!empty($form[$key][$languages[$key]][$i]['#default_value']['fid']) && (int) $form[$key][$languages[$key]][$i]['#default_value']['fid'] > 0) {
@@ -295,6 +298,7 @@ function personalize_fields_form_submit($form, &$form_state) {
       if (!$loaded_option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key)) {
         $option_set = new stdClass();
         $option_set->is_new = TRUE;
+        $option_set->options = array();
       } else {
         // Changes are made to the option set to reflect the user's changes and
         // compared against the option set for the entity in entity hooks.
@@ -305,10 +309,14 @@ function personalize_fields_form_submit($form, &$form_state) {
         // PHP clone only makes a shallow copy and as a result the options
         // are passed by reference.  Therefore we need to do our own deep copy.
         $option_set = new StdClass();
+        $options = array();
         foreach($loaded_option_set as $prop => $value) {
           if (is_array($value)) {
             $option_set->{$prop} = array();
             foreach($value as $i => $array_value) {
+              if ($prop === 'options') {
+                $options[$array_value['option_id']] = $i;
+              }
               $option_set->{$prop}[] = $array_value;
             }
           }
@@ -319,23 +327,27 @@ function personalize_fields_form_submit($form, &$form_state) {
       }
       $option_set->plugin = 'fields';
       $option_set->agent = $agent_name;
-      $current_deltas = array();
-      foreach($values[$key][LANGUAGE_NONE] as $delta => $option) {
-        if (!empty($option['value'])) {
-          $current_deltas[] = $delta;
-          $option_set->options[$delta]['option_label'] =  !empty($option['personalize_fields_option_label']) ? $option['personalize_fields_option_label'] : _personalize_generate_option_index($delta);
-        }
-        else if (isset($option['fid']) && (int) $option['fid'] > 0) {
-          $current_deltas[] = $delta;
-          $option_set->options[$delta]['option_label'] =  !empty($option['personalize_fields_option_label']) ? $option['personalize_fields_option_label'] : _personalize_generate_option_index($delta);
-        }
-      }
-      // Remove any options that are no longer included.
-      $remove = array_diff_key($option_set->options, $current_deltas);
-      foreach($remove as $delta => $value) {
-        unset($option_set->options[$delta]);
-      }
 
+      // Now update the options based on what the user passed in
+      foreach ($values[$key][LANGUAGE_NONE] as $delta => $option) {
+        if (!empty($option['value']) || (isset($option['fid']) && (int) $option['fid'] > 0)) {
+          $option_label = !empty($option['personalize_fields_option_label']) ? $option['personalize_fields_option_label'] : personalize_generate_option_label($delta);
+          // Update an existing option.
+          if (isset($option_set->options[$delta])) {
+            $option_set->options[$delta]['option_label'] = $option_label;
+          }
+          else {
+            // Adding a new option
+            $option_set->options[$delta]['option_label'] = $option_label;
+          }
+        }
+        else {
+          if (isset($option['value']) || isset($option['fid'])) {
+            // This option is being deleted.
+            unset($option_set->options[$delta]);
+          }
+        }
+      }
       // If the entity already has an ID then the options will be saved on
       // hook_entity_update.  Otherwise we add the info to the entity so that
       // it will be processed on hook_entity_insert.
@@ -480,15 +492,15 @@ function personalize_fields_entity_presave($entity, $type) {
   $entities = entity_load($type, array($entity_id), array(), TRUE);
   $current = $entities[$entity_id];
   foreach($entity->option_sets as $field_name => $option_set) {
-    if (count($option_set->options) != count($current->option_sets[$field_name]->options)) {
+    // Re-index the options so that we can compare.
+    $current_options = array_values($current->option_sets[$field_name]->options);
+    $entity_options = array_values($option_set->options);
+    if (count($entity_options) != count($current_options)) {
       $updates[$field_name] = TRUE;
       continue;
     }
-    foreach($option_set->options as $delta => $option) {
-      if (!isset($current->option_sets[$field_name]->options[$delta])) {
-        $updates[$field_name] = TRUE;
-      }
-      else if ($current->option_sets[$field_name]->options[$delta]['option_label'] != $option['option_label']) {
+    foreach($entity_options as $delta => $option) {
+      if ($current_options[$delta]['option_label'] != $option['option_label']) {
         $updates[$field_name] = TRUE;
       }
     }
