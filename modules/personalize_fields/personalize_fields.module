@@ -296,7 +296,14 @@ function personalize_fields_form_submit($form, &$form_state) {
         $option_set = new stdClass();
         $option_set->is_new = TRUE;
       } else {
-        // Make a copy so that we don't accidentally update the cached options.
+        // Changes are made to the option set to reflect the user's changes and
+        // compared against the option set for the entity in entity hooks.
+        // We need to make a copy of this object so as to not accidentally
+        // update the cached entity option sets which will be pulled for
+        // comparison.
+        // @see personalize_fields_entity_presave()
+        // PHP clone only makes a shallow copy and as a result the options
+        // are passed by reference.  Therefore we need to do our own deep copy.
         $option_set = new StdClass();
         foreach($loaded_option_set as $prop => $value) {
           if (is_array($value)) {
