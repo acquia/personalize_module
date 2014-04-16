@@ -120,6 +120,9 @@ class UserProfileContext extends PersonalizeContextBase {
           }
         }
       }
+      else {
+        $possible_values[$name]['accepted value type'] = 'string';
+      }
     }
     return $possible_values;
   }

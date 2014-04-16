@@ -151,6 +151,42 @@
     $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
+  Drupal.personalize.evaluateContexts = function (visitorContext, featureRules, featureStringToContextCallback) {
+    for (var i in featureRules) {
+      if (featureRules.hasOwnProperty(i)) {
+        var context = featureStringToContextCallback(featureRules[i]);
+        if (visitorContext.hasOwnProperty(context.key) && context.value.indexOf('--') != -1) {
+          // This value uses an operator so it needs to be evaluated.
+          var valueArray = context.value.split('--');
+          var operator = valueArray[0];
+          if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
+            if (Drupal.personalize.targetingOperators[operator](visitorContext[context.key], valueArray[1])) {
+              visitorContext[context.key] = context.value;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  Drupal.personalize.targetingOperators = {
+    'contains': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue) !== -1;
+    },
+    'starts': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue) === 0;
+    },
+    'ends': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue, actualValue.length - matchValue.length) !== -1;
+    },
+    'numgt': function(actualValue, matchValue) {
+      return actualValue > matchValue;
+    },
+    'numlt': function(actualValue, matchValue) {
+      return actualValue < matchValue;
+    }
+  };
+
   /**
    * Executor that executes a callback function to retrieve the chosen
    * option set to display.

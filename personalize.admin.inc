@@ -1014,27 +1014,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
     $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
-    $explicit_targeting_values = array();
-    $data = $agent_instance->getData();
-    if (!empty($data['visitor_context'])) {
-      foreach ($data['visitor_context'] as $name => $contexts) {
-        $selected_context = array_filter($contexts);
-        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-          if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-            $value_options = $plugin->getPossibleValues();
-            foreach ($value_options as $key => $info) {
-              $mutex = isset($info['mutex']) && $info['mutex'];
-              $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
-              foreach ($info['values'] as $value => $label) {
-                $code = $agent_instance->convertContextToFeatureString($key, $value, $mutex);
-                $explicit_targeting_values[$code] = $key_label . ': ' . $label;
-              }
-            }
-          }
-        }
-      }
-    }
+    $targeting_values = personalize_get_targeting_values_for_agent($agent_instance);
   }
+
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $section['option_set_' . $option_set->osid] = array(
@@ -1179,7 +1161,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
         '#attributes' => array('class' => $classes),
         '#theme_wrappers' => array('container'),
       );
-      if ($targeting_support && !empty($explicit_targeting_values)) {
+      if ($targeting_support) {
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
           '#type' => 'container',
           '#attributes' => array(
@@ -1192,76 +1174,32 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           '#default_value' => !empty($option['fixed_targeting']) ? 1 : 0,
           '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
         );
-
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = array(
-          '#tree' => TRUE,
-          '#type' => 'container',
-          '#attributes' => array(
-            'class' => array('personalize-variation-row'),
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
-            ),
+        $states = array(
+          'visible' => array(
+            ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
           ),
         );
-
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['mapping'] = array(
-          '#type' => 'select',
-          '#multiple' => TRUE,
-          '#options' => $explicit_targeting_values,
-          '#title' => t('Always show for: '),
-          '#title_display' => 'invisible',
-          '#default_value' => isset($option['fixed_targeting']) ? $option['fixed_targeting'] : array(),
-        );
-        // And/Or targeting selection.
-        if ($targeting_support == PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH) {
-          $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategies'] = array(
-            '#type' => 'container',
-            '#attributes' => array(
-              'class' => array('personalize-variation-row'),
-            ),
-          );
-          // Add radio buttons so the user can select how multiple features for an option
-          // should be treated.
-          $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting']['strategies']['strategy'] = array(
-            '#type' => 'select',
-            '#multiple' => FALSE,
-            '#field_prefix' => t('Visitor must have '),
-            '#field_suffix' => t(' of the specified contexts'),
-            '#description' => t('Choose how multiple contexts should be applied to options. Choose "any" if the rule should apply if the user has any of the contexts. Choose "all" if the rule should apply only if the user has all of the contexts.'),
-            '#options' => array(
-              'OR' => 'any',
-              'AND' => 'all'
-            ),
-            '#default_value' => isset($option['fixed_targeting_strategy']) ? $option['fixed_targeting_strategy'] : 'OR',
-            '#states' => array(
-              'visible' => array(
-                ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
-              ),
-            ),
-            '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'], 'explicit_targeting', 'strategy'),
-          );
-        }
-        // @todo: This is run for each variation right now, but only applies to the option set as a whole.
-        switch ($targeting_support) {
-          case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
-            $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
-              '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the visitor must have all specified contexts for the rule to apply.')
-
-            );
-            break;
-          case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
-            $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
-              '#type' => 'markup',
-              '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the rule will apply if the visitor has any of the specified contexts.')
-            );
-            break;
-        }
+        $parents = array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id']);
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents);
       }
       $variant_number++;
     } // end of loop through variations.
+
+    switch ($targeting_support) {
+      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
+        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
+          '#type' => 'markup',
+          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the visitor must have all specified contexts for the rule to apply.')
+
+        );
+        break;
+      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
+        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
+          '#type' => 'markup',
+          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the rule will apply if the visitor has any of the specified contexts.')
+        );
+        break;
+    }
 
     // Advanced area per option set.
     $section['option_set_' . $option_set->osid]['advanced'] = array(
@@ -1361,6 +1299,155 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   return $form;
 }
 
+/**
+ * Builds the form elements need for adding explicit targeting to an option.
+ *
+ * @param $option
+ * @param $targeting_values
+ * @param $targeting_support
+ * @param $states
+ * @param $parents
+ * @return array
+ */
+function personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents) {
+  $attributes = array(
+    'class' => array('personalize-variation-row'),
+  );
+  $free_value_contexts = array();
+  foreach ($targeting_values['free'] as $key => $info) {
+    $free_value_contexts[$key] = $info['label'];
+  }
+  $form = array(
+    '#tree' => TRUE,
+    '#type' => 'container',
+    '#attributes' => $attributes,
+    '#states' => $states,
+  );
+
+  $form['predefined'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#options' => $targeting_values['predefined'],
+    '#title' => t('Always show for: '),
+    '#title_display' => 'invisible',
+    '#default_value' => isset($option['fixed_targeting']) ? $option['fixed_targeting'] : array(),
+  );
+  if (!empty($free_value_contexts)) {
+    // Create the form elements for the "free" values
+    $form['free'] = array(
+      '#type' => 'container',
+      '#attributes' => $attributes,
+      '#states' => $states,
+      'new_feature_context' => array(
+        '#type' => 'select',
+        '#title' => t('Context'),
+        '#options' => $free_value_contexts,
+      ),
+      'new_feature_operator' => array(
+        '#type' => 'select',
+        '#title' => t('Operator'),
+        '#options' => array(
+          'contains' => 'Contains',
+        ),
+      ),
+      'new_feature_match' => array(
+        '#type' => 'textfield',
+        '#title' => 'Value to check',
+        '#description' => t('The value to check for using the specified operator')
+      ),
+    );
+  }
+
+  // And/Or targeting selection.
+  if ($targeting_support == PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH) {
+    $form['strategies'] = array(
+      '#type' => 'container',
+      '#attributes' => $attributes,
+      '#states' => $states,
+    );
+    $strategy_parents = $parents;
+    foreach (array('explicit_targeting', 'strategy') as $parent) {
+      $strategy_parents[] = $parent;
+    }
+    // Add radio buttons so the user can select how multiple features for an option
+    // should be treated.
+    $form['strategies']['strategy'] = array(
+      '#type' => 'select',
+      '#multiple' => FALSE,
+      '#field_prefix' => t('Visitor must have '),
+      '#field_suffix' => t(' of the specified contexts'),
+      '#description' => t('Choose how multiple contexts should be applied to options. Choose "any" if the rule should apply if the user has any of the contexts. Choose "all" if the rule should apply only if the user has all of the contexts.'),
+      '#options' => array(
+        'OR' => 'any',
+        'AND' => 'all'
+      ),
+      '#default_value' => isset($option['fixed_targeting_strategy']) ? $option['fixed_targeting_strategy'] : 'OR',
+      '#parents' => $strategy_parents,
+    );
+  }
+  return $form;
+}
+
+/**
+ * Extracts the available targeting values from contexts set up on the agent.
+ *
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent to retrieve available targeting values for.
+ * @return array
+ *   An associate array with keys 'predefined' and 'free', where 'predefined'
+ *   contains an array keyed by feature code with labels as values, and 'free'
+ *   contains an array keyed by context with an associative array containing
+ *   'label' and 'type' as value. The 'type' property here indicates what type
+ *    of value this field can hold and is one of 'string' or number. Here is an
+ *   example:
+ *     array(
+ *       'predefined' => array(
+ *         'some_code::some_value' => 'Some Code: some value',
+ *         'some_code::other_value' => 'Some Code: other value',
+ *       ),
+ *       'free' => array(
+ *         'some_field' => array(
+ *           'label' => 'Some Field',
+ *           'type' => 'string'
+ *          )
+ *        )
+ *      )
+ */
+function personalize_get_targeting_values_for_agent($agent_instance) {
+  $values= array(
+    'predefined' => array(),
+    'free' => array(),
+  );
+  // Predefined values will be options in a multi-select field. For non-predefined
+  // values we need to build form elements allowing new values to be specified
+  // based on certain criteria.
+  $data = $agent_instance->getData();
+  if (!empty($data['visitor_context'])) {
+    foreach ($data['visitor_context'] as $name => $contexts) {
+      $selected_context = array_filter($contexts);
+      if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+        if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
+          $value_options = $plugin->getPossibleValues();
+          foreach ($value_options as $key => $info) {
+            $mutex = isset($info['mutex']) && $info['mutex'];
+            $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
+            foreach ($info['values'] as $value => $label) {
+              $code = $agent_instance->convertContextToFeatureString($key, $value, $mutex);
+              $values['predefined'][$code] = $key_label . ': ' . $label;
+            }
+            if (isset($info['accepted value type'])) {
+              $values['free'][$key] = array(
+                'label' => $key_label,
+                'type' => 'accepted value type',
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+  return $values;
+}
 
 /**
  * Form for creating a MVT for an agent.
@@ -1606,7 +1693,8 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
         if ($option['enable_explicit_targeting'] == 0) {
-          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['mapping'] = array();
+          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['predefined'] =
+          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['free'] = array();
           $need_form_state_cache_clear = TRUE;
         }
       }
@@ -1649,11 +1737,17 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
 
       // Keep track of which explicit targeting features have already been
       // designated as each can only be specified for one option.
+      $agent = personalize_agent_load_agent($agent_name);
       $used_features = $features = array();
       foreach ($values['options'] as $option_id => $settings) {
         $features[$option_id] = array();
         if (isset($settings['explicit_targeting'])) {
-          $feature_values = $settings['explicit_targeting']['mapping'];
+          $feature_values = $settings['explicit_targeting']['predefined'];
+          if (!empty($settings['explicit_targeting']['free']) && !empty($settings['explicit_targeting']['free']['new_feature_match'])) {
+            // Generate a feature code for this free value.
+            $value = personalize_targeting_generate_value_code($settings['explicit_targeting']['free']['new_feature_match'], $settings['explicit_targeting']['free']['new_feature_operator']);
+            $feature_values[] = $agent->convertContextToFeatureString($settings['explicit_targeting']['free']['new_feature_context'], $value);
+          }
           foreach ($feature_values as $feature) {
             if (!in_array($feature, $used_features)) {
               $features[$option_id][] = $feature;
@@ -1669,6 +1763,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       foreach ($option_set->options as &$option) {
         if (isset($features[$option['option_id']])) {
           $option['fixed_targeting'] = $features[$option['option_id']];
+
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
           if (isset($values['options'][$option['option_id']]['explicit_targeting']['strategy'])) {
@@ -2032,4 +2127,23 @@ function personalize_goals_options() {
     $options[$name] = isset($info['label']) ? $info['label'] : $name;
   }
   return $options;
+}
+
+function personalize_targeting_operator_map() {
+  return array(
+    'contains' => 'contains',
+    'starts with' => 'starts',
+    'ends with' => 'ends',
+    'greater than' => 'numgt',
+    'less than' => 'numlt',
+  );
+}
+
+function personalize_targeting_generate_value_code($value_match, $operator) {
+  if ($operator == 'equals') {
+    return $value_match;
+  }
+  $operator_map = personalize_targeting_operator_map();
+  if (!isset($operator_map[$operator]));
+  return $operator_map[$operator] . PERSONALIZE_TARGETING_OP_SEPARATOR . $value_match;
 }

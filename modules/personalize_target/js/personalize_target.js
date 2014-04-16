@@ -31,11 +31,23 @@ Drupal.personalize_target = (function() {
     }
   }
 
-  function convertContextToFeatureString(visitor_context) {
+  function contextToFeatureString(key, value) {
+    return key + '::' + value;
+  }
+
+  function featureStringToContext(featureString) {
+    var contextArray = featureString.split('::');
+    return {
+      'key': contextArray[0],
+      'value': contextArray[1]
+    }
+  }
+
+  function convertContextToFeatureStrings(visitor_context) {
     var feature_strings = [];
     for (var i in visitor_context) {
       if (visitor_context.hasOwnProperty(i)) {
-        feature_strings.push(i + '::' + visitor_context[i]);
+        feature_strings.push(contextToFeatureString(i, visitor_context[i]));
       }
     }
     return feature_strings;
@@ -47,13 +59,23 @@ Drupal.personalize_target = (function() {
         init();
       }
       var decisions = {};
-      var feature_strings = convertContextToFeatureString(visitor_context);
       for (var j in choices) {
         if (choices.hasOwnProperty(j)) {
           // Initialize the decision to the fallback option.
           var fallbackIndex = fallbacks.hasOwnProperty(j) ? fallbacks[j] : 0;
           decisions[j] = choices[j][fallbackIndex];
           if (decision_points.hasOwnProperty(decision_point) && decision_points[decision_point].hasOwnProperty(j)) {
+            var featureRules = []
+            for (var featureRule in decision_points[decision_point][j].mapped_features) {
+              if (decision_points[decision_point][j].mapped_features.hasOwnProperty(featureRule)) {
+                featureRules.push(featureRule);
+              }
+            }
+            // Visitor context needs to be evaluated against mapping rules since some explicit
+            // targeting will be in the form "contains--some-string" where we have to evaluate
+            // whether the actual value *contains* 'some-string'.
+            var visitorContext = Drupal.personalize.evaluateContexts(visitor_context, featureRules, featureStringToContext);
+            var feature_strings = convertContextToFeatureStrings(visitorContext);
             // See if any of the visitor context features has an option mapped to it.
             for (var i in feature_strings) {
               if (feature_strings.hasOwnProperty(i) && decision_points[decision_point][j].mapped_features.hasOwnProperty(feature_strings[i])) {
