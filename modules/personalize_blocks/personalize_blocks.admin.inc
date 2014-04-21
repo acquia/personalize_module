@@ -294,7 +294,7 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
   $draggable = isset($blocks['#draggable']) && $blocks['#draggable'];
   $rows = array();
   $header = array(
-    t('Option'),
+    t('Variation label'),
   );
   if ($draggable) {
     drupal_add_tabledrag('personalize-blocks-table', 'order', 'sibling', 'personalized-blocks-weight');

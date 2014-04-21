@@ -278,7 +278,7 @@ function _personalize_fields_form($delta, $field, $form_state_parents, $values =
   // Add the actual label field.
   $form['personalize_fields_option_label'] = array(
     '#type' => 'text',
-    '#title' => t('Content variation label'),
+    '#title' => t('Variation label'),
     '#default_value' => $default_label,
     '#theme' => 'textfield',
     '#autocomplete_path' => '',
