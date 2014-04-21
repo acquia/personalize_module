@@ -36,7 +36,7 @@ function hook_personalize_agent_type() {
  * CTools plugin hook for defining an Option Set type.
  *
  * An Option Set type plugin provides a mechanism for personalizing
- * a particiular type of thing in Drupal, e.g. a block in the case of
+ * a particular type of thing in Drupal, e.g. a block in the case of
  * the plugin provided by personalize_blocks module. The plugin does
  * not need to provide a class, rather it is expected to act on whatever
  * type of Drupal content it is concerned with personalizing. This will
@@ -44,11 +44,9 @@ function hook_personalize_agent_type() {
  * the time of rendering that content, and it will usually mean adding
  * personalize_options_wrapper as a theme wrapper on the element being
  * rendered. Finally, all modules providing Option Set type plugins are
- * expected to implement hook_personalize_create_new_links() and
- * hook_personalize_option_values_for_admin().
+ * expected to implement hook_personalize_create_new_links().
  *
  * @see hook_personalize_create_new_links()
- * @see hook_personalize_option_values_for_admin()
  * @see modules/personalize_blocks.module
  */
 function hook_personalize_option_set_type() {
@@ -257,20 +255,6 @@ function hook_personalize_edit_link($option_set) {
  *   The path to the delete the option set.
  */
 function hook_personalize_delete_link($option_set) {
-}
-
-/**
- * Returns option values to show in the admin UI.
- *
- * This hook must be implemented by modules providing Option Set type
- * plugins. Its purpose is to return something meaningful to display
- * for each option in the campaign edit UI so that it is clear what the
- * actual content of each option is, short of rendering that content.
- * For example, the 'block' Option Set plugin returns the block title,
- * if one has been set.
- */
-function hook_personalize_option_values_for_admin() {
-
 }
 
 /**
