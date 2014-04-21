@@ -187,7 +187,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#type' => 'textfield',
       '#title' => t('Variation label'),
       '#size' => 20,
-      '#default_value' => !empty($option['option_label']) ? $option['option_label'] : '',
+      '#default_value' => !empty($option['option_label']) ? check_plain($option['option_label']) : '',
     );
     $option_form['personalize_elements_content'] = array(
       '#prefix' => '<div class="personalize-elements-option-content-element">',

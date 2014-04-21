@@ -22,7 +22,7 @@
           return;
         }
         // Limit the text used as the label.
-        var newLabel = $(this).val();
+        var newLabel = $(this).val().replace(/<(?:.|\n)*?>/gm, '');
         var truncateLength = Math.min(maxOptionLabelLength, newLabel.length);
         $optionLabel.val(newLabel.substring(0, truncateLength));
       });
