@@ -9,14 +9,10 @@
  * Admin form for configuring personalization backends.
  */
 function personalize_admin_form($form, &$form_state) {
-  $form['personalize_use_local_caching'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Use localStorage for decision caching if available'),
-    '#default_value' => variable_get('personalize_use_local_caching', TRUE),
-  );
   $form['personalize_local_caching_expiration'] = array(
     '#type' => 'textfield',
     '#title' => t('LocalStorage expiration'),
+    '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.'),
     '#default_value' => variable_get('personalize_local_caching_expiration', 30),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
@@ -480,6 +476,19 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
       $form['agent_form']['agent_fieldset']['visitor_context'] = $context_element;
     }
   }
+  $form['agent_form']['agent_fieldset']['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => FALSE,
+  );
+  $form['agent_form']['agent_fieldset']['advanced']['cache_decisions'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Cache decisions made by this agent?',
+    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
+    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  );
 
   $form['#prefix'] = !empty($form['#prefix']) ? '<div id="personalize-agent-form">' . $form['#prefix'] : '<div id="personalize-agent-form">';
   $form['#suffix'] = !empty($form['#suffix']) ? $form['#suffix'] . '</div>' : '</div>';
@@ -1516,6 +1525,7 @@ function personalize_agent_form_submit($form, &$form_state) {
     $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
   }
   $agent->data['visitor_context'] = $visitor_context;
+  $agent->data['cache_decisions'] = $form_state['values']['cache_decisions'];
   $exists = personalize_agent_load($agent->machine_name);
   if (personalize_agent_save($agent)) {
     drupal_set_message(t('The agent has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
