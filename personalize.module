@@ -230,7 +230,6 @@ function personalize_page_build(&$page) {
   // Add the necessary JavaScript for personalization.
   $path = drupal_get_path('module', 'personalize');
   $settings = array(
-    'caching' => variable_get('personalize_use_local_caching', TRUE) ? 'localStorage' : FALSE,
     'cacheExpiration' => variable_get('personalize_local_caching_expiration', 30),
     'cacheVisitorContext' => variable_get('personalize_cache_visitor_context', FALSE),
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
@@ -615,7 +614,8 @@ function personalize_element_with_option_set(&$element, $option_set) {
             // We just need a boolean indicating whether or not the campaign is
             // currently running.
             'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
-            'enabled_contexts' => $visitor_context
+            'enabled_contexts' => $visitor_context,
+            'cache_decisions' => isset($data['cache_decisions']) && $data['cache_decisions'],
           ),
         ),
         'option_sets' => _personalize_convert_option_set_to_js_setting($option_set)

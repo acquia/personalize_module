@@ -217,7 +217,8 @@ class PersonalizeTest extends PersonalizeBaseTest {
       'test-agent' => array(
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
-        'enabled_contexts' => array()
+        'enabled_contexts' => array(),
+        'cache_decisions' => FALSE,
       )
     );
     $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
@@ -284,12 +285,14 @@ class PersonalizeTest extends PersonalizeBaseTest {
       'test-agent' => array(
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
-        'enabled_contexts' => array()
+        'enabled_contexts' => array(),
+        'cache_decisions' => FALSE,
       ),
       'test-agent-2' => array(
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
-        'enabled_contexts' => array()
+        'enabled_contexts' => array(),
+        'cache_decisions' => FALSE,
       )
     );
     $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
@@ -585,6 +588,58 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $option_set_settings = $settings['personalize']['option_sets'];
     // Assert that index 2 is provided as the winner in the settings.
     $this->assertEqual(2, $option_set_settings['osid-1']['winner']);
+
+  }
+
+
+  /**
+   * Create an agent and confirm that the cache_decisions setting is reflected
+   * in the js settings.
+   */
+  function testCacheDecisions() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    // Create a new agent via the UI.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[machine_name]' => $machine_name,
+      'agent_basic_info[agent_type]' => 'test_agent',
+      'cache_decisions' => FALSE,
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+    $options = array(
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
+    );
+    $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
+    // Now let's place the block in a region and make sure the correct js settings
+    // show up when it's rendered on a page.
+    $edit = array();
+    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+
+    // Assert that the decision caching setting is in the js.
+    $this->assertEqual(0, $settings['personalize']['agent_map'][$machine_name]['cache_decisions']);
+
+    // Now turn on decision caching for this agent.
+    $edit = array('cache_decisions' => TRUE);
+    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/edit", $edit, $this->getButton('agent'));
+
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+
+    // Assert that the decision caching setting is in the js.
+    $this->assertEqual(1, $settings['personalize']['agent_map'][$machine_name]['cache_decisions']);
   }
 
   /**
@@ -1295,18 +1350,11 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
   function testConfigurationSettings() {
     $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
     $this->drupalLogin($admin_user);
-    // Set localStorage for decisions to false.
-    $this->drupalPost('admin/config/content/personalize', array('personalize_use_local_caching' => FALSE), $this->getButton('config'));
+    // Set localStorage expiration to 60
+    $this->drupalPost('admin/config/content/personalize', array( 'personalize_local_caching_expiration' => 60), $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
-    $this->assertFalse($settings['personalize']['caching']);
-    // Set localStorage for decisions to true
-    $this->drupalPost('admin/config/content/personalize', array('personalize_use_local_caching' => TRUE, 'personalize_local_caching_expiration' => 60), $this->getButton('config'));
-    $this->drupalGet('');
-    // Assert the correct setting is in the js.
-    $settings = $this->drupalGetSettings();
-    $this->assertEqual('localStorage', $settings['personalize']['caching']);
     $this->assertEqual(60, $settings['personalize']['cacheExpiration']);
 
     // Set localStorage for visitor context to false.

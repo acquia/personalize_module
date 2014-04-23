@@ -327,16 +327,15 @@
   }
 
   function readDecisionsfromStorage(agent_name, point) {
-    if (!sessionID || Drupal.settings.personalize.caching != 'localStorage') {
+    if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return null;
     }
-    key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-    decisions = Drupal.personalize.localStorage.read(key);
-    return decisions;
+    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
+    return Drupal.personalize.localStorage.read(key);
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
-    if (!sessionID || Drupal.settings.personalize.caching != 'localStorage') {
+    if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
     var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;

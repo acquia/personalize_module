@@ -266,7 +266,6 @@ function personalize_disable() {
  */
 function personalize_uninstall() {
   // Delete variables.
-  variable_del('personalize_use_local_caching');
   variable_del('personalize_local_caching_expiration');
   variable_del('personalize_use_admin_mode');
   variable_del('personalize_visitor_context_disabled');
@@ -355,4 +354,24 @@ function personalize_update_7005() {
       ->fields(array('data' => serialize($data)))
       ->execute();
   }
+}
+
+/**
+ * Add local storage caching setting to all agents and remove the global
+ * setting.
+ */
+function personalize_update_7006() {
+  $cache_decisions = variable_get('personalize_use_local_caching', 1);
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a', array('machine_name', 'data'))
+    ->execute();
+  foreach ($result as $row) {
+    $data = unserialize($row->data);
+    $data['cache_decisions'] = $cache_decisions;
+    db_update('personalize_agent')
+      ->condition('machine_name', $row->machine_name)
+      ->fields(array('data' => serialize($data)))
+      ->execute();
+  }
+  variable_del('personalize_use_local_caching');
 }
