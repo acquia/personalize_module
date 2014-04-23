@@ -1,0 +1,9 @@
+/**
+ * @file
+ * Styles for Personalize Blocks administrative interfaces.
+ */
+
+/* Handle large rows when adding new blocks */
+#personalized-block-variations table tr {
+  vertical-align: top;
+}
