@@ -12,7 +12,7 @@ define('PERSONALIZE_PRESELECTION_PARAM', 'personalize-preselection');
 define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
 define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
-define('PERSONALIZE_TARGETING_OP_SEPARATOR', '--');
+define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-EVAL-');
 
 /**
  * Define constants for campaign status values.
