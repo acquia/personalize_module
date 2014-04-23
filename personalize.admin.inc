@@ -1313,10 +1313,7 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
   $attributes = array(
     'class' => array('personalize-variation-row'),
   );
-  $free_value_contexts = array();
-  foreach ($targeting_values['free'] as $key => $info) {
-    $free_value_contexts[$key] = $info['label'];
-  }
+
   $form = array(
     '#tree' => TRUE,
     '#type' => 'container',
@@ -1324,39 +1321,36 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
     '#states' => $states,
   );
 
-  $form['predefined'] = array(
-    '#type' => 'select',
-    '#multiple' => TRUE,
-    '#options' => $targeting_values['predefined'],
-    '#title' => t('Always show for: '),
-    '#title_display' => 'invisible',
-    '#default_value' => isset($option['fixed_targeting']) ? $option['fixed_targeting'] : array(),
-  );
-  if (!empty($free_value_contexts)) {
-    // Create the form elements for the "free" values
-    $form['free'] = array(
-      '#type' => 'container',
-      '#attributes' => $attributes,
-      '#states' => $states,
-      'new_feature_context' => array(
-        '#type' => 'select',
-        '#title' => t('Context'),
-        '#options' => $free_value_contexts,
-      ),
-      'new_feature_operator' => array(
-        '#type' => 'select',
-        '#title' => t('Operator'),
-        '#options' => array(
-          'contains' => 'Contains',
-        ),
-      ),
-      'new_feature_match' => array(
-        '#type' => 'textfield',
-        '#title' => 'Value to check',
-        '#description' => t('The value to check for using the specified operator')
-      ),
-    );
+  $context_options = array();
+  foreach ($targeting_values as $plugin => $values) {
+    foreach ($values as $key => $info) {
+      $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
+      $context_options[$key] = $key_label;
+    }
   }
+  // Create the form elements for the "free" values
+  $form['mapping'] = array(
+    '#type' => 'container',
+    '#attributes' => $attributes,
+    '#states' => $states,
+    'new_feature_context' => array(
+      '#type' => 'select',
+      '#title' => t('Context'),
+      '#options' => $context_options,
+    ),
+    'new_feature_operator' => array(
+      '#type' => 'select',
+      '#title' => t('Operator'),
+      '#options' => array(
+        'contains' => 'Contains',
+      ),
+    ),
+    'new_feature_match' => array(
+      '#type' => 'textfield',
+      '#title' => 'Value to check',
+      '#description' => t('The value to check for using the specified operator')
+    ),
+  );
 
   // And/Or targeting selection.
   if ($targeting_support == PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH) {
@@ -1414,10 +1408,7 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
  *      )
  */
 function personalize_get_targeting_values_for_agent($agent_instance) {
-  $values= array(
-    'predefined' => array(),
-    'free' => array(),
-  );
+  $value_options = array();
   // Predefined values will be options in a multi-select field. For non-predefined
   // values we need to build form elements allowing new values to be specified
   // based on certain criteria.
@@ -1427,26 +1418,26 @@ function personalize_get_targeting_values_for_agent($agent_instance) {
       $selected_context = array_filter($contexts);
       if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
         if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-          $value_options = $plugin->getPossibleValues();
-          foreach ($value_options as $key => $info) {
+          $value_options[$name] = $plugin->getPossibleValues();
+/*          foreach ($value_options as $key => $info) {
             $mutex = isset($info['mutex']) && $info['mutex'];
             $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
             foreach ($info['values'] as $value => $label) {
               $code = $agent_instance->convertContextToFeatureString($key, $value, $mutex);
               $values['predefined'][$code] = $key_label . ': ' . $label;
             }
-            if (isset($info['accepted value type'])) {
+            if (isset($info['value type'])) {
               $values['free'][$key] = array(
                 'label' => $key_label,
                 'type' => 'accepted value type',
               );
             }
-          }
+          }*/
         }
       }
     }
   }
-  return $values;
+  return $value_options;
 }
 
 /**
