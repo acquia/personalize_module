@@ -312,6 +312,9 @@ function _personalize_blocks_add_block_form(&$form_state) {
     '#maxlength' => 64,
     '#description' => t('A brief description of your block. Used on the <a href="@overview">Blocks administration page</a>.', array('@overview' => url('admin/structure/block'))),
     '#weight' => -18,
+    '#attributes' => array(
+      'class' => array('personalize-blocks-add-block-info'),
+    ),
   );
   $form['body'] = array(
     '#type' => 'text_format',
