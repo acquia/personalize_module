@@ -550,10 +550,8 @@ function personalize_blocks_get_blocks() {
  *
  * @param $form_state
  *   The current form state to read data from.
- * @param $submit
- *   (Optional) If true, then the form is in the submission process
  */
-function _personalize_blocks_convert_form_to_personalized_block($form_state, $submit = FALSE) {
+function _personalize_blocks_convert_form_to_personalized_block($form_state) {
   $formvalues_blocks = array();
   if (!empty($form_state['values']['blocks'])) {
     foreach ($form_state['values']['blocks'] as $i => $block) {
