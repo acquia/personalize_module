@@ -84,6 +84,20 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['agent_select'] = 'test-agent';
     $this->drupalPost(NULL, $edit, t('Save'));
 
+    // Check the options created
+    $option_set = personalize_option_set_load(2);
+    $options = array(
+      array(
+        'option_id' => 'option-a',
+        'option_label' => 'Option A',
+      ),
+      array(
+        'option_id' => 'option-b',
+        'option_label' => 'Option B',
+      ),
+    );
+    $this->assertEqual($options, $option_set->options);
+
     // Load the node edit form and confirm there is no agent dropdown.
     $this->drupalGet('node/1/edit');
     $this->assertFieldByName('article_headline[und][0][value]');
@@ -97,6 +111,64 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
 
+    $option_set = personalize_option_set_load(1, TRUE);
+    $options[] = array(
+      'option_id' => 'option-c',
+      'option_label' => 'Option C',
+    );
+    $this->assertEqual($options, $option_set->options);
+    $all = personalize_option_set_load_by_agent('test-agent', TRUE);
+
+    // Restart the agent and confirm that changing the option label also pauses.
+    $new_label = $this->randomName();
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['article_headline[und][0][personalize_fields_option_label]'] = $new_label;
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
+    $option_set = personalize_option_set_load(1, TRUE);
+    $options[0]['option_label'] = $new_label;
+    $this->assertEqual($options, $option_set->options);
+
+    // Restart the agent and confirm that removing an option pauses the agent.
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['article_headline[und][2][value]'] = '';
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+    unset($edit['article_headline[und][2][value]']);
+
+
+    unset($options[2]);
+    $option_set = personalize_option_set_load(1, TRUE);
+    $this->assertEqual($options, $option_set->options);
+
+    // Now restart the agent and add/remove a field in the same form to
+    // confirm that it is still detected as a change.
+    $new_label = $this->randomName();
+    $this->drupalGet('node/1/edit');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $edit['article_headline[und][1][value]'] = '';
+    $edit['article_headline[und][2][value]'] = $this->randomName();
+    $edit['article_headline[und][2][personalize_fields_option_label]'] = $new_label;
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
+    $edit['article_headline[und][1][value]'] = $edit['article_headline[und][2][value]'];
+    $edit['article_headline[und][1][personalize_fields_option_label]'] = $edit['article_headline[und][2][personalize_fields_option_label]'];
+    unset($edit['article_headline[und][2][value]']);
+    unset($edit['article_headline[und][2][personalize_fields_option_label]']);
+
+    unset($options[1]);
+    $options[] = array(
+      'option_id' => personalize_generate_machine_name($new_label),
+      'option_label' => $new_label,
+    );
+    $options = array_values($options);
+    $option_set = personalize_option_set_load(1, TRUE);
+    $this->assertEqual($options, array_values($option_set->options));
+
     // Restart the agent and make sure that other changes do not cause pausing.
     $this->drupalGet('node/1/edit');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
@@ -105,10 +177,13 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertNoText(t('The campaign has been paused because you have made changes.'));
 
+    $option_set = personalize_option_set_load(1, TRUE);
+    $this->assertEqual($options, array_values($option_set->options));
+
     // Delete the first node and confirm that the option set gets deleted.
     node_delete(1);
     drupal_static_reset();
-    $option_set = personalize_option_set_load(1);
+    $option_set = personalize_option_set_load(1, TRUE);
     $this->assertNull($option_set);
 
     // Confirm that the record has also been deleted from the table
@@ -121,7 +196,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertFalse($result);
 
     // Confirm that the other option set still exists.
-    $option_set = personalize_option_set_load(2);
+    $option_set = personalize_option_set_load(2, TRUE);
     $this->assertEqual('fields', $option_set->plugin);
     $field_info = array(
       'entity_type' => 'node',

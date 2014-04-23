@@ -169,25 +169,6 @@ function personalize_elements_personalize_delete_link($option_set) {
 }
 
 /**
- * Implements hook_personalize_option_values_for_admin().
- */
-function personalize_elements_personalize_option_values_for_admin($option_set) {
-  if ($option_set->plugin != 'elements') {
-    return array();
-  }
-  $option_values = array();
-  foreach($option_set->options as &$option) {
-    if ($option['option_id'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID) {
-      $option_values[$option['option_id']] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
-    }
-    else {
-      $option_values[$option['option_id']] = truncate_utf8($option['personalize_elements_content'], 100, FALSE, TRUE);
-    }
-  }
-  return $option_values;
-}
-
-/**
  * Implements hook_personalize_elements_variation_types().
  */
 function personalize_elements_personalize_elements_variation_types() {

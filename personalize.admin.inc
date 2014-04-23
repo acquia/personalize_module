@@ -1102,7 +1102,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     );
 
     $variant_number = 1;
-    $option_values = module_invoke($option_set_plugin['module'], 'personalize_option_values_for_admin', $option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       // Determine container classes based on campaign status and winner.
@@ -1126,7 +1125,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           'class' => $classes,
         ),
       );
-      $option_label = isset($option_values[$option['option_id']]) ? $option_values[$option['option_id']] : $option['option_label'];
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic'] = array(
         '#type' => 'container',
         '#attributes' => array(
@@ -1135,7 +1133,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       );
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
-        'title' => filter_xss($option_label),
+        'title' => filter_xss($option['option_label']),
         'title_prefix' => '"',
         'title_suffix' => '"',
         'attributes' => array(

@@ -329,25 +329,6 @@ function personalize_blocks_personalize_delete_link($option_set) {
 }
 
 /**
- * Implements hook_personalize_option_values_for_admin().
- */
-function personalize_blocks_personalize_option_values_for_admin($option_set) {
-  if ($option_set->plugin != 'block') {
-    return array();
-  }
-  $option_values = array();
-  foreach($option_set->options as &$option) {
-    list($module, $delta) = PersonalizedBlock::extractBlockId($option['bid']);
-    $block = block_load($module, $delta);
-    if (empty($block->title)) {
-      $custom_block = block_custom_block_get($delta);
-    }
-    $option_values[$option['option_id']] = empty($block->title) ? $custom_block['info'] : $block->title;
-  }
-  return $option_values;
-}
-
-/**
  * Implements hook_personalize_get_executor_options().
  */
 function personalize_blocks_personalize_get_executor_options() {
