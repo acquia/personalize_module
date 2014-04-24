@@ -55,13 +55,13 @@ Drupal.personalize_target = (function() {
         init();
       }
       var decisions = {};
+      var feature_strings = convertContextToFeatureStrings(visitor_context);
       for (var j in choices) {
         if (choices.hasOwnProperty(j)) {
           // Initialize the decision to the fallback option.
           var fallbackIndex = fallbacks.hasOwnProperty(j) ? fallbacks[j] : 0;
           decisions[j] = choices[j][fallbackIndex];
           if (decision_points.hasOwnProperty(decision_point) && decision_points[decision_point].hasOwnProperty(j)) {
-            var feature_strings = convertContextToFeatureStrings(visitor_context);
             // See if any of the visitor context features has an option mapped to it.
             for (var i in feature_strings) {
               if (feature_strings.hasOwnProperty(i) && decision_points[decision_point][j].mapped_features.hasOwnProperty(feature_strings[i])) {

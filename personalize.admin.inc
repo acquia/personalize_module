@@ -1180,7 +1180,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           ),
         );
         $parents = array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id']);
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents);
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents, $form_state);
       }
       $variant_number++;
     } // end of loop through variations.
@@ -1309,7 +1309,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
  * @param $parents
  * @return array
  */
-function personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents) {
+function personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents, &$form_state) {
   $attributes = array(
     'class' => array('personalize-variation-row'),
   );
@@ -1322,11 +1322,11 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
   );
 
   $context_options = array('' => '-- ' . t('Select a context') . ' --');
-  foreach ($targeting_values as $plugin => $values) {
-    foreach ($values as $key => $info) {
-      $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
-      $context_options[$key] = $key_label;
-    }
+  $value_types = array();
+  foreach ($targeting_values as  $key => $info) {
+    $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
+    $context_options[$key] = $key_label;
+    $value_types[$key] = $info['value type'];
   }
   // Create the form elements for the "free" values
   $form['mapping'] = array(
@@ -1334,13 +1334,20 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
     '#attributes' => $attributes,
     '#states' => $states,
   );
-  $mappings = array(
-    array(
-      'context' => key($context_options),
+  $mappings = array();
+  foreach ($option['fixed_targeting'] as $feature) {
+    if (isset($option['fixed_targeting_rules'][$feature])) {
+      $mappings[] = $option['fixed_targeting_rules'][$feature];
+    }
+  }
+  if (empty($mappings)) {
+    $mappings[] = array(
+      'context' => '',
       'operator' => 'contains',
       'match' => '',
-    )
-  );
+    );
+  }
+
   foreach ($mappings as $mapping) {
     $form['mapping'][] = array(
       'context' => array(
@@ -1402,27 +1409,24 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
  * @param PersonalizeAgentInterface $agent_instance
  *   The agent to retrieve available targeting values for.
  * @return array
- *   An associative array keyed by plugin name, where each value is another associative
- *   array keyed by context name, with an array of information about the possible
- *   values for that context. The 'value type' key in this array indicates what type
- *   of value this field can hold and is one of 'predfined', 'string' or 'number'. If
+ *   An associative array keyed by context name, with an array of information about the
+ *   possible values for that context. The 'value type' key in this array indicates what
+ *   type of value this field can hold and is one of 'predfined', 'string' or 'number'. If
  *   the value type is 'predefined', then there must be a 'values' array with the list of
  *   predefined possible values. For example:
  *     array(
- *       'my_plugin' => array(
- *         'some_context' => array(
- *           'label' => 'Some Context',
- *           'type' => 'string'
- *          ),
- *         'some_other_context' => array(
- *           'label' => 'Some Other Context',
- *           'type' => 'predefined',
- *           'values' => array(
- *             'some_value' => 'Some Value',
- *             'some_other_value' => 'Some Other Value',
- *           ),
+ *       'some_context' => array(
+ *         'label' => 'Some Context',
+ *         'type' => 'string'
+ *        ),
+ *       'some_other_context' => array(
+ *         'label' => 'Some Other Context',
+ *         'type' => 'predefined',
+ *         'values' => array(
+ *           'some_value' => 'Some Value',
+ *           'some_other_value' => 'Some Other Value',
  *         ),
- *       )
+ *       ),
  *     )
  */
 function personalize_get_targeting_values_for_agent($agent_instance) {
@@ -1436,7 +1440,7 @@ function personalize_get_targeting_values_for_agent($agent_instance) {
       $selected_context = array_filter($contexts);
       if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
         if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-          $value_options[$name] = $plugin->getPossibleValues();
+          $value_options = array_merge($value_options, $plugin->getPossibleValues());
         }
       }
     }
@@ -1744,23 +1748,22 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             if ($values['context'] == '') {
               continue;
             }
-            // Generate a feature code for this targeting value.
+            // Generate a value code based on the operator used.
             $value = personalize_targeting_generate_value_code($values['match'], $values['operator']);
-            // Create a feature string for this value.
+            // Create a feature string for this context value that can be consumed
+            // by the agent that will be using it.
             $feature_string = $agent->convertContextToFeatureString($values['context'], $value);
             $feature_values[] = $feature_string;
-            if ($values['operator'] != 'equals') {
-              // Save the actual rule information as this is what will be used
-              // for evaluating it.
-              $rules[$feature_string] = $values;
-            }
+            // Save the actual rule information as this is what will be used
+            // for evaluating it.
+            $rules[$feature_string] = $values;
           }
           foreach ($feature_values as $feature) {
             if (!in_array($feature, $designated_features)) {
               $option_features[$option_id][] = $feature;
-              if (isset($rules[$feature])) {
-                $feature_rules[$option_id][$feature] = $rules[$feature];
-              }
+              $feature_rules[$option_id][$feature] = $rules[$feature];
+              // Mark this feature string as already designated to an option so it
+              // cannot be used for another option.
               $designated_features[] = $feature;
             }
             else {
@@ -1773,9 +1776,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       foreach ($option_set->options as &$option) {
         if (isset($option_features[$option['option_id']])) {
           $option['fixed_targeting'] = $option_features[$option['option_id']];
-          if (isset($feature_rules[$option['option_id']])) {
-            $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
-          }
+          $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
 
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
@@ -2154,10 +2155,10 @@ function personalize_goals_options() {
 function personalize_targeting_operator_map() {
   return array(
     'contains' => 'sc',
-    'starts with' => 'ss',
-    'ends with' => 'se',
-    'greater than' => 'ng',
-    'less than' => 'nl',
+    'starts' => 'ss',
+    'ends' => 'se',
+    'numgt' => 'ng',
+    'numlt' => 'nl',
   );
 }
 

@@ -151,6 +151,79 @@
     $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
+  /**
+   * Executor that executes a callback function to retrieve the chosen
+   * option set to display.
+   */
+  Drupal.personalize.executors.callback = {
+  'execute': function($option_set, choice_name, osid) {
+    // Set up such that Drupal ajax handling can be utilized without a trigger.
+    var custom_settings = {};
+    custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
+    custom_settings.event = 'onload';
+    custom_settings.keypress = false;
+    custom_settings.prevent = false;
+    var callback_action = new Drupal.ajax(null, $option_set, custom_settings);
+
+    try {
+        $.ajax(callback_action.options);
+      }
+      catch (err) {
+        // If we can't process the result dynamically, then show the
+        // default option selected within the noscript block.
+        // NOTE: jQuery returns escaped HTML when calling the html property
+        // on a noscript tag.
+        var defaultHtml = $option_set.next('noscript').text();
+        $option_set.html(defaultHtml);
+        $option_set.next('noscript').remove();
+        return false;
+      }
+    }
+  }
+
+  Drupal.personalize.agents = Drupal.personalize.agents || {};
+  /**
+   * Provides a default agent.
+   */
+  Drupal.personalize.agents.default_agent = {
+    'getDecisionsForPoint': function(name, visitor_context, choices, decision_point, callback) {
+      var j, decisions = {};
+      for (j in choices) {
+        if (choices.hasOwnProperty(j)) {
+          decisions[j] = choices[j][0];
+        }
+        callback(decisions);
+      }
+    },
+    'sendGoalToAgent': function(agent_name, goal_name, value) {
+
+    },
+    'featureToContext': function(featureString) {
+      var contextArray = featureString.split('::');
+      return {
+        'key': contextArray[0],
+        'value': contextArray[1]
+      }
+    }
+  };
+
+  /**
+   * Returns an object with key/value pairs for the enabled visitor contexts.
+   */
+  function getVisitorContext(agent_name, agent_type, enabled_context) {
+    var i, j, new_values, visitor_context = Drupal.personalize.visitor_context, context_values = {};
+    for (i in enabled_context) {
+      if (enabled_context.hasOwnProperty(i) && visitor_context.hasOwnProperty(i) && typeof visitor_context[i].getContext === 'function') {
+        new_values = visitor_context[i].getContext(enabled_context[i]);
+        for (j in new_values) {
+          context_values[j] = new_values[j];
+        }
+      }
+    }
+    return Drupal.personalize.evaluateContexts(agent_name, agent_type, context_values);
+  }
+
+
   var fixed_targeting_rules = null;
   Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext) {
     if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
@@ -203,7 +276,7 @@
             // Evaluate the rule and if it returns true, we set the feature string
             // on the visitor context.
             var operator = featureRules[featureName].operator;
-            var match = featureRules[featureName].value;
+            var match = featureRules[featureName].match;
             if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
               if (Drupal.personalize.targetingOperators[operator](visitorContext[key], match)) {
                 var context = Drupal.personalize.agents[agentType].featureToContext(featureName);
@@ -235,71 +308,6 @@
       return actualValue < matchValue;
     }
   };
-
-  /**
-   * Executor that executes a callback function to retrieve the chosen
-   * option set to display.
-   */
-  Drupal.personalize.executors.callback = {
-  'execute': function($option_set, choice_name, osid) {
-    // Set up such that Drupal ajax handling can be utilized without a trigger.
-    var custom_settings = {};
-    custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
-    custom_settings.event = 'onload';
-    custom_settings.keypress = false;
-    custom_settings.prevent = false;
-    var callback_action = new Drupal.ajax(null, $option_set, custom_settings);
-
-    try {
-        $.ajax(callback_action.options);
-      }
-      catch (err) {
-        // If we can't process the result dynamically, then show the
-        // default option selected within the noscript block.
-        // NOTE: jQuery returns escaped HTML when calling the html property
-        // on a noscript tag.
-        var defaultHtml = $option_set.next('noscript').text();
-        $option_set.html(defaultHtml);
-        $option_set.next('noscript').remove();
-        return false;
-      }
-    }
-  }
-
-  Drupal.personalize.agents = Drupal.personalize.agents || {};
-  /**
-   * Provides a default agent.
-   */
-  Drupal.personalize.agents.default_agent = {
-    'getDecisionsForPoint': function(name, visitor_context, choices, decision_point, callback) {
-      var j, decisions = {};
-      for (j in choices) {
-        if (choices.hasOwnProperty(j)) {
-          decisions[j] = choices[j][0];
-        }
-        callback(decisions);
-      }
-    },
-    'sendGoalToAgent': function(agent_name, goal_name, value) {
-
-    }
-  };
-
-  /**
-   * Returns an object with key/value pairs for the enabled visitor contexts.
-   */
-  function getVisitorContext(agent_name, agent_type, enabled_context) {
-    var i, j, new_values, visitor_context = Drupal.personalize.visitor_context, context_values = {};
-    for (i in enabled_context) {
-      if (enabled_context.hasOwnProperty(i) && visitor_context.hasOwnProperty(i) && typeof visitor_context[i].getContext === 'function') {
-        new_values = visitor_context[i].getContext(enabled_context[i]);
-        for (j in new_values) {
-          context_values[j] = new_values[j];
-        }
-      }
-    }
-    return Drupal.personalize.evaluateContexts(agent_name, agent_type, context_values);
-  }
 
   /**
    * User Context object.
