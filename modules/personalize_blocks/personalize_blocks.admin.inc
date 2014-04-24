@@ -84,7 +84,9 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
     $form += personalize_get_agent_selection_form($current_agent);
   }
 
-  $form['#attached']['js'][] = drupal_get_path('module', 'personalize_blocks') . '/js/personalize_blocks.admin.js';
+  $path = drupal_get_path('module', 'personalize_blocks');
+  $form['#attached']['js'][] = $path . '/js/personalize_blocks.admin.js';
+  $form['#attached']['css'][] = $path . '/css/personalize_blocks.admin.css';
 
   $form['title'] = array(
     '#title' => t('Title'),
@@ -208,7 +210,6 @@ function _personalize_blocks_form(array $block, $pblock) {
     '#size' => '10',
     '#default_value' => isset($block['option_label']) ? $block['option_label'] : '',
   );
-
   $form['weight'] = array(
     '#type' => 'weight',
     '#default_value' => isset($block['weight']) ? $block['weight'] : $delta-100,
@@ -222,27 +223,33 @@ function _personalize_blocks_form(array $block, $pblock) {
     $default = 'block_delta_' . $_GET['personalize_blocks_new_block'];
     unset($_GET['personalize_blocks_new_block']);
   }
-  // @see personalize_blocks_drupal_goto_alter().
-  $query = drupal_get_query_parameters();
-  $query['personalize_add_block'] = 1;
 
-  // Use hardcoded urls instead of just current path to avoid
-  // invalid destination url after form ajax replacing of table items
-  $destination_url = isset($pblock->osid) ? 'admin/structure/personalize-blocks/manage/' . $pblock->osid . '/edit' :
-    'admin/structure/personalize-blocks/add';
-
-  $link_options['query'] = array(
-    'destination' => $destination_url . '?' . drupal_http_build_query($query)
+  $form['block'] = array(
+    '#type' => 'container',
   );
 
-  $form['bid'] = array(
+  $bid_id = "personalize_blocks_{$delta}_bid";
+  $form['block']['bid'] = array(
     '#type' => 'select',
-    '#options' => array('' => t('Select a block...')) + personalize_blocks_get_blocks(),
+    '#options' => array('' => t('Select a block...')) + personalize_blocks_get_blocks() + array('add' => t('Add a new block')),
     '#default_value' => $default,
     '#title' => t('Select a block'),
     '#title_display' => 'invisible',
-    '#suffix' => t('Or !addnewblock', array('!addnewblock' => l(t('add a new one'), 'admin/structure/block/add', $link_options))),
+    '#attributes' => array(
+      'id' => $bid_id,
+    ),
   );
+
+  $form['block']['add'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add a new block'),
+    '#states' => array(
+      'visible' => array(
+        '#' . $bid_id => array('value' => 'add'),
+      ),
+    ),
+  );
+  $form['block']['add'] += _personalize_blocks_add_block_form($form_state);
 
   $form['remove'] = array(
     '#type' => 'submit',
@@ -268,7 +275,6 @@ function _personalize_blocks_form(array $block, $pblock) {
     ),
     '#limit_validation_errors' => array(),
   );
-
   if (isset($block['option_id'])) {
     $form['option_id'] = array(
       '#type' => 'value',
@@ -277,9 +283,46 @@ function _personalize_blocks_form(array $block, $pblock) {
   }
   else {
     $form['option_label']['#attributes']['class'][] = 'personalize-blocks-add-option-label';
-    $form['bid']['#attributes']['class'][] = 'personalize-blocks-add-block-select';
+    $form['block']['bid']['#attributes']['class'][] = 'personalize-blocks-add-block-select';
   }
+  return $form;
+}
 
+/**
+ * Attaches a form to add a new block.
+ */
+function _personalize_blocks_add_block_form(&$form_state) {
+  $form = array();
+
+  // Recreating only the relevant portions of the custom block form.
+  // Make the info and body fields "look" required, but don't actually make
+  // them required or all add block forms will cause validation to fail (even
+  // when an existing block is selected to use).
+  // @see personalize_blocks_form_validate().
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block title'),
+    '#maxlength' => 64,
+    '#description' => t('The title of the block as shown to the user.'),
+    '#weight' => -19,
+  );
+  $form['info'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Block description') . ' <span class="form-required" title="This field is required.">*</span>',
+    '#maxlength' => 64,
+    '#description' => t('A brief description of your block. Used on the <a href="@overview">Blocks administration page</a>.', array('@overview' => url('admin/structure/block'))),
+    '#weight' => -18,
+    '#attributes' => array(
+      'class' => array('personalize-blocks-add-block-info'),
+    ),
+  );
+  $form['body'] = array(
+    '#type' => 'text_format',
+    '#title' => t('Block body') . ' <span class="form-required" title="This field is required.">*</span>',
+    '#rows' => 15,
+    '#description' => t('The content of the block as shown to the user.'),
+    '#weight' => -17,
+  );
   return $form;
 }
 
@@ -319,7 +362,7 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
       $fields[] = array('data' => drupal_render($block['weight']), 'class' => array('personalized-blocks-weight'));
     }
     $fields = array_merge($fields, array(
-      array('data' => drupal_render($block['bid']), 'class' => array('personalized-block-block')),
+      array('data' => drupal_render($block['block']), 'class' => array('personalized-block-block')),
       array('data' => drupal_render($block['remove']), 'class' => array('personalize-block-remove'))
     ));
 
@@ -397,7 +440,21 @@ function personalize_blocks_form_validate($form, &$form_state) {
       if (empty($block['option_label'])) {
         form_set_error('blocks][' . $j . '][option_label', t('A label is required for each block option.'));
       }
-      if (!empty($block['bid'])) {
+      if ($block['block']['bid'] === 'add') {
+        if (empty($block['block']['add']['info'])) {
+          form_set_error('blocks][' . $j . '][block][add][info', t('A block description is required when creating a new block.'));
+        }
+        if (empty($block['block']['add']['body']['value'])) {
+          form_set_error('blocks][' . $j . '][block][add][body', t('The block body is required when creating a new block.'));
+        }
+        // @see block_add_block_form_validate().
+        $custom_block_exists = (bool) db_query_range('SELECT 1 FROM {block_custom} WHERE info = :info', 0, 1, array(':info' => $block['block']['add']['info']))->fetchField();
+
+        if ($custom_block_exists) {
+          form_set_error('blocks][' . $j . '][block][add][info', t('Ensure that each block description is unique.'));
+        }
+      }
+      if (!empty($block['block']['bid'])) {
         $num_blocks++;
       }
     }
@@ -421,6 +478,12 @@ function personalize_blocks_form_validate($form, &$form_state) {
  */
 function personalize_blocks_form_submit($form, &$form_state) {
   if ($form_state['clicked_button']['#id'] == 'edit-submit-form') {
+    // Create any new blocks
+    foreach($form_state['values']['blocks'] as &$block) {
+      if ($block['block']['bid'] === 'add') {
+        $block['block']['bid'] = _personalize_blocks_add_custom_block($block['block']['add']);
+      }
+    }
     $pblock = _personalize_blocks_convert_form_to_personalized_block($form_state);
     // @todo This section should really be the responsibility of personalize module, figure
     //   out a way to not have to add this to every submit callback of a form that uses
@@ -484,6 +547,9 @@ function personalize_blocks_get_blocks() {
 
 /**
  * Helper function to convert the data on admin form into personalized_block presentation.
+ *
+ * @param $form_state
+ *   The current form state to read data from.
  */
 function _personalize_blocks_convert_form_to_personalized_block($form_state) {
   $formvalues_blocks = array();
@@ -496,10 +562,14 @@ function _personalize_blocks_convert_form_to_personalized_block($form_state) {
   }
   $options = array();
   foreach ($formvalues_blocks as $block) {
-    if (empty($block['bid'])) {
+    if (empty($block['block']['bid'])) {
       continue;
     }
-    $options[] = array_intersect_key($block, array('option_id' => '', 'option_label' => '', 'bid' => ''));
+    $options[] = array(
+      'option_id' => isset($block['option_id']) ? $block['option_id'] : '',
+      'option_label' => $block['option_label'],
+      'bid' => $block['block']['bid'],
+    );
   }
   $pblock = new stdClass();
   $pblock->plugin = 'block';
@@ -513,4 +583,48 @@ function _personalize_blocks_convert_form_to_personalized_block($form_state) {
   }
 
   return $pblock;
+}
+
+/**
+ * Creates a new block for use within a personalized block.
+ *
+ * @param $block_values
+ *   The values for this particular block from the form_state.
+ *   These should include:
+ *   - body: An array with body and format fields
+ *   - info: The block description
+ *   - title: The block title.
+ * @return string
+ *   The bid for the newly created block.
+ */
+function _personalize_blocks_add_custom_block($block_values) {
+  // Create a new custom block.
+  // @see block_add_form_submit().
+  $delta = db_insert('block_custom')
+    ->fields(array(
+      'body' => $block_values['body']['value'],
+      'info' => $block_values['info'],
+      'format' => $block_values['body']['format'],
+    ))
+    ->execute();
+  // Add the custom block for each theme.
+  $query = db_insert('block')->fields(array('visibility', 'pages', 'custom', 'title', 'module', 'theme', 'status', 'weight', 'delta', 'cache'));
+  foreach (list_themes() as $key => $theme) {
+    if ($theme->status) {
+      $query->values(array(
+        'visibility' => 0,
+        'pages' => '',
+        'custom' => 0,
+        'title' => $block_values['title'],
+        'module' => 'block',
+        'theme' => $theme->name,
+        'status' => 0,
+        'weight' => 0,
+        'delta' => $delta,
+        'cache' => DRUPAL_NO_CACHE,
+      ));
+    }
+  }
+  $query->execute();
+  return 'block_delta_' . $delta;
 }
