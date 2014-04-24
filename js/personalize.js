@@ -151,18 +151,56 @@
     $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
-  Drupal.personalize.evaluateContexts = function (decision_name, visitorContext, featureRules) {
-    var settings = Drupal.settings.personalize.option_sets;
-    for (var i in featureRules) {
-      if (featureRules.hasOwnProperty(i)) {
-        var context = featureStringToContextCallback(featureRules[i]);
-        if (visitorContext.hasOwnProperty(context.key) && context.value.indexOf('--') != -1) {
-          // This value uses an operator so it needs to be evaluated.
-          var valueArray = context.value.split('--');
-          var operator = valueArray[0];
-          if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
-            if (Drupal.personalize.targetingOperators[operator](visitorContext[context.key], valueArray[1])) {
-              visitorContext[context.key] = context.value;
+  var fixed_targeting_rules = null;
+  Drupal.personalize.evaluateContexts = function (decisionPoint, decisionName, visitorContext, featureToContextCallback) {
+    // If we haven't already gone through all the explicit targeting rules, we need to
+    // do that first to find the rule for each feature string, if one exists.
+    if (fixed_targeting_rules === null) {
+      fixed_targeting_rules = {};
+      var settings = Drupal.settings.personalize.option_sets;
+      for (var i in settings) {
+        if (settings.hasOwnProperty(i)) {
+          var option_set = settings[i];
+          var decision_point = option_set.decision_point;
+          var decision_name = option_set.decision_name;
+          for (var j in option_set.options) {
+            if (option_set.options.hasOwnProperty(j) && option_set.options[j].hasOwnProperty('fixed_targeting')) {
+              fixed_targeting_rules[decision_point] = fixed_targeting_rules[decision_point] || {};
+              fixed_targeting_rules[decision_point][decision_name] = fixed_targeting_rules[decision_point][decision_name] || {};
+              // Loop through all features specified for an option and see if there's a rule
+              // associated with them.
+              for (var k in option_set.options[j].fixed_targeting) {
+                if (option_set.options[j].fixed_targeting.hasOwnProperty(k)) {
+                  var feature_name = option_set.options[j].fixed_targeting[k];
+                  if (option_set.options[j].hasOwnProperty('fixed_targeting_rules') && option_set.options[j].fixed_targeting_rules.hasOwnProperty(feature_name)) {
+                    fixed_targeting_rules[decision_point][decision_name][feature_name] = option_set.options[j].fixed_targeting_rules[feature_name];
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Use the rules to set values on the visitor context whcih can then be used
+    // for explicit targeting. It is up to the agent how exactly the explicit
+    // targeting is done.
+    if (fixed_targeting_rules.hasOwnProperty(decisionPoint) && fixed_targeting_rules[decisionPoint].hasOwnProperty(decisionName)) {
+      var featureRules = fixed_targeting_rules[decisionPoint][decisionName];
+      for (var featureName in featureRules) {
+        if (featureRules.hasOwnProperty(featureName)) {
+          var key = featureRules[featureName].context;
+          if (visitorContext.hasOwnProperty(key)) {
+            // Evaluate the rule and if it returns true, we set the feature string
+            // on the visitor context.
+            var operator = featureRules[featureName].operator;
+            var match = featureRules[featureName].value;
+            if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
+              if (Drupal.personalize.targetingOperators[operator](visitorContext[key], match)) {
+                var context = featureToContextCallback(featureName);
+                visitorContext[context.key] = context.value;
+              }
             }
           }
         }
