@@ -252,7 +252,7 @@ function personalize_page_build(&$page) {
       if ($option_set = personalize_option_set_load($osid)) {
         foreach ($option_set->options as $option) {
           if ($option['option_id'] === $selection) {
-            $settings['preselected'][$osid] = $option['option_id'];
+            $settings['preselected'][$osid_str] = $option['option_id'];
             break;
           }
         }
@@ -1583,6 +1583,7 @@ function personalize_option_set_save($option_set) {
     'options' => serialize($option_set->options),
     'winner' => isset($option_set->winner) ? $option_set->winner : NULL,
     'data' => serialize($option_set->data),
+    'preview_link' => isset($option_set->preview_link) ? $option_set->preview_link : NULL,
   );
 
   if (isset($option_set->osid)) {

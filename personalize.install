@@ -149,6 +149,12 @@ function personalize_schema() {
         'serialize' => TRUE,
         'description' => 'A serialized array of additional data.',
       ),
+      'preview_link' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'description' => 'The path to a local preview page for the option set.',
+      ),
     ),
     'primary key' => array('osid'),
     'foreign keys' => array(
@@ -374,4 +380,16 @@ function personalize_update_7006() {
       ->execute();
   }
   variable_del('personalize_use_local_caching');
+}
+
+/**
+ * Add a preview link to the option sets table.
+ */
+function personalize_update_7007() {
+  db_add_field('personalize_option_sets', 'preview_link', array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'description' => 'The path to a local preview page for the option set.',
+  ));
 }
