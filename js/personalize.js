@@ -151,7 +151,8 @@
     $(document).trigger('personalizeOptionChange', [$option_set, option_name, osid]);
   };
 
-  Drupal.personalize.evaluateContexts = function (visitorContext, featureRules, featureStringToContextCallback) {
+  Drupal.personalize.evaluateContexts = function (decision_name, visitorContext, featureRules) {
+    var settings = Drupal.settings.personalize.option_sets;
     for (var i in featureRules) {
       if (featureRules.hasOwnProperty(i)) {
         var context = featureStringToContextCallback(featureRules[i]);

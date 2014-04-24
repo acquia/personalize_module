@@ -74,7 +74,7 @@ Drupal.personalize_target = (function() {
             // Visitor context needs to be evaluated against mapping rules since some explicit
             // targeting will be in the form "contains--some-string" where we have to evaluate
             // whether the actual value *contains* 'some-string'.
-            var visitorContext = Drupal.personalize.evaluateContexts(visitor_context, featureRules, featureStringToContext);
+            var visitorContext = Drupal.personalize.evaluateContexts(j, visitor_context, featureRules);
             var feature_strings = convertContextToFeatureStrings(visitorContext);
             // See if any of the visitor context features has an option mapped to it.
             for (var i in feature_strings) {

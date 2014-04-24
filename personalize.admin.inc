@@ -1733,24 +1733,32 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // Keep track of which explicit targeting features have already been
       // designated as each can only be specified for one option.
       $agent = personalize_agent_load_agent($agent_name);
-      $used_features = $features = array();
+      $used_features = $features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
         $features[$option_id] = array();
-        $feature_values = array();
+        $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
-          dpm($settings['explicit_targeting']['mapping']);
           foreach ($settings['explicit_targeting']['mapping'] as $delta => $values) {
             if ($values['context'] == '') {
               continue;
             }
             // Generate a feature code for this targeting value.
             $value = personalize_targeting_generate_value_code($values['match'], $values['operator']);
-            $feature_values[] = $agent->convertContextToFeatureString($values['context'], $value);
+            // Create a feature string for this value.
+            $feature_string = $agent->convertContextToFeatureString($values['context'], $value);
+            $feature_values[] = $feature_string;
+            if ($values['operator'] != 'equals') {
+              // Save the actual rule information as this is what will be used
+              // for evaluating it.
+              $rules[$feature_string] = $values;
+            }
           }
           foreach ($feature_values as $feature) {
             if (!in_array($feature, $used_features)) {
               $features[$option_id][] = $feature;
-              $used_features[] = $feature;
+              if (isset($rules[$feature])) {
+                $feature_rules[$option_id][$feature] = $rules[$feature];
+              }
             }
             else {
               drupal_set_message(t('You have attempted to set the same targeting feature for more than one option. Only the first option was saved with this feature.'), 'warning');
@@ -1762,6 +1770,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       foreach ($option_set->options as &$option) {
         if (isset($features[$option['option_id']])) {
           $option['fixed_targeting'] = $features[$option['option_id']];
+          if (isset($feature_rules[$option['option_id']])) {
+            $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
+          }
 
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
@@ -2128,13 +2139,22 @@ function personalize_goals_options() {
   return $options;
 }
 
+/**
+ * Maps operators onto 2-digit codes.
+ *
+ * These are only used to differentiate a string that needs to be
+ * evaluated from a string holding a value to be matched exactly.
+ *
+ * @return array
+ *
+ */
 function personalize_targeting_operator_map() {
   return array(
-    'contains' => 'cont',
-    'starts with' => 'start',
-    'ends with' => 'end',
-    'greater than' => 'numgt',
-    'less than' => 'numlt',
+    'contains' => 'sc',
+    'starts with' => 'ss',
+    'ends with' => 'se',
+    'greater than' => 'ng',
+    'less than' => 'nl',
   );
 }
 
@@ -2143,6 +2163,8 @@ function personalize_targeting_generate_value_code($value_match, $operator) {
     return $value_match;
   }
   $operator_map = personalize_targeting_operator_map();
-  if (!isset($operator_map[$operator]));
+  if (!isset($operator_map[$operator])) {
+    return $value_match;
+  }
   return $operator_map[$operator] . PERSONALIZE_TARGETING_OP_SEPARATOR . $value_match;
 }
