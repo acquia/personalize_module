@@ -1688,8 +1688,7 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
         if ($option['enable_explicit_targeting'] == 0) {
-          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['predefined'] =
-          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['free'] = array();
+          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['mapping'] = array();
           $need_form_state_cache_clear = TRUE;
         }
       }
@@ -1733,9 +1732,12 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // Keep track of which explicit targeting features have already been
       // designated as each can only be specified for one option.
       $agent = personalize_agent_load_agent($agent_name);
-      $used_features = $features = $feature_rules = array();
+      // Keep track of feature strings that have already been designated to options,
+      // which options they have been designated to, and whether there's a rule
+      // assocatiated with each feature.
+      $designated_features = $option_features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
-        $features[$option_id] = array();
+        $option_features[$option_id] = array();
         $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
           foreach ($settings['explicit_targeting']['mapping'] as $delta => $values) {
@@ -1754,11 +1756,12 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             }
           }
           foreach ($feature_values as $feature) {
-            if (!in_array($feature, $used_features)) {
-              $features[$option_id][] = $feature;
+            if (!in_array($feature, $designated_features)) {
+              $option_features[$option_id][] = $feature;
               if (isset($rules[$feature])) {
                 $feature_rules[$option_id][$feature] = $rules[$feature];
               }
+              $designated_features[] = $feature;
             }
             else {
               drupal_set_message(t('You have attempted to set the same targeting feature for more than one option. Only the first option was saved with this feature.'), 'warning');
@@ -1768,8 +1771,8 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       }
       // Now add the features to the option set's options array.
       foreach ($option_set->options as &$option) {
-        if (isset($features[$option['option_id']])) {
-          $option['fixed_targeting'] = $features[$option['option_id']];
+        if (isset($option_features[$option['option_id']])) {
+          $option['fixed_targeting'] = $option_features[$option['option_id']];
           if (isset($feature_rules[$option['option_id']])) {
             $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
           }

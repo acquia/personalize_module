@@ -35,19 +35,15 @@ Drupal.personalize_target = (function() {
     return key + '::' + value;
   }
 
-  function featureStringToContext(featureString) {
-    var contextArray = featureString.split('::');
-    return {
-      'key': contextArray[0],
-      'value': contextArray[1]
-    }
-  }
-
   function convertContextToFeatureStrings(visitor_context) {
-    var feature_strings = [];
-    for (var i in visitor_context) {
+    var i, j, feature_strings = [];
+    for (i in visitor_context) {
       if (visitor_context.hasOwnProperty(i)) {
-        feature_strings.push(contextToFeatureString(i, visitor_context[i]));
+        for (j in visitor_context[i]) {
+          if (visitor_context[i].hasOwnProperty(j)) {
+            feature_strings.push(contextToFeatureString(i, visitor_context[i][j]));
+          }
+        }
       }
     }
     return feature_strings;
@@ -65,17 +61,7 @@ Drupal.personalize_target = (function() {
           var fallbackIndex = fallbacks.hasOwnProperty(j) ? fallbacks[j] : 0;
           decisions[j] = choices[j][fallbackIndex];
           if (decision_points.hasOwnProperty(decision_point) && decision_points[decision_point].hasOwnProperty(j)) {
-            var featureRules = []
-            for (var featureRule in decision_points[decision_point][j].mapped_features) {
-              if (decision_points[decision_point][j].mapped_features.hasOwnProperty(featureRule)) {
-                featureRules.push(featureRule);
-              }
-            }
-            // Visitor context needs to be evaluated against mapping rules since some explicit
-            // targeting will be in the form "contains--some-string" where we have to evaluate
-            // whether the actual value *contains* 'some-string'.
-            var visitorContext = Drupal.personalize.evaluateContexts(decision_point, j, visitor_context, featureStringToContext);
-            var feature_strings = convertContextToFeatureStrings(visitorContext);
+            var feature_strings = convertContextToFeatureStrings(visitor_context);
             // See if any of the visitor context features has an option mapped to it.
             for (var i in feature_strings) {
               if (feature_strings.hasOwnProperty(i) && decision_points[decision_point][j].mapped_features.hasOwnProperty(feature_strings[i])) {
@@ -100,6 +86,13 @@ Drupal.personalize.agents.personalize_target = {
   'sendGoalToAgent': function(agent_name, goal_name, value) {
     if (window.console) {
       console.log('Sending goal ' + goal_name + ' to agent ' + agent_name + ' with value ' + value);
+    }
+  },
+  'featureToContext': function(featureString) {
+    var contextArray = featureString.split('::');
+    return {
+      'key': contextArray[0],
+      'value': contextArray[1]
     }
   }
 };
