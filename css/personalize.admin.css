@@ -43,18 +43,20 @@
 input[type="submit"].personalize-add-link { /* moved color to theme.css -KO */
   background: transparent;
   border: none;
-  font-size: .75em;
   padding: 0;
-  margin: 0 0 0 0.3em;
-  line-height: 30px;
+  margin: 0;
+  height: 2em;
+  line-height: 2em;
 }
 input[type="submit"].personalize-add-link:hover { /* moved color and text decoration to theme.css -KO */
   background: transparent;
 }
 /* The + before the Add Goals button */
-#personalize-agent-goals-form .personalize-admin-content-header:not(input) { /* moved color to theme.css -KO */
-  font-size: 1.3em;
-  display: inline-block;
+/* Link look alike styling for add a goal button */
+.personalize-add-link-prefix:after {
+  font-weight: bold;
+  font-size: 1.5em;
+  margin-right: .2em;
 }
 /* smaller to align with text fields.
  * @todo would much rather have these simply be "x" icons -KO. 

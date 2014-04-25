@@ -180,7 +180,19 @@ html.js div.ctools-dropdown a.ctools-dropdown-text-link {
   padding-left: 0px;
 }
 
-/* use Acquia (Ember) link colors for these -KO */
+/* use Acquia Ember link colors for all header links and link look-alikes. */
+.personalize-admin-content-header a {
+  color: #2fa6e5;
+}
+.personalize-admin-content-header a:hover,
+.personalize-admin-content-header a:active {
+  color: #007ec0;
+}
+/* Link look alike styling for add a goal button */
+.personalize-add-link-prefix:after {
+  content: '+';
+  color: #2fa6e5;
+}
 input[type="submit"].personalize-add-link {
   text-decoration: none;
   color: #2fa6e5;
@@ -189,11 +201,6 @@ input[type="submit"].personalize-add-link {
 input[type="submit"].personalize-add-link:hover {
   text-decoration: underline;
   color: #007ec0;
-}
-#personalize-agent-goals-form .personalize-admin-content-header:not(input) {
-  text-decoration: none;
-  color: #2fa6e5;
-  font-weight: bold; /* made bold */
 }
 
 @media all and (min-width: 699px) {
