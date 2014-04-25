@@ -548,21 +548,27 @@ class PersonalizeTest extends PersonalizeBaseTest {
             'option_label' => 'Option A',
             'option_id' => 'option-A',
             'weight' => 0,
-            'bid' => 'comment_delta_recent',
+            'block' => array(
+              'bid' => 'comment_delta_recent',
+            ),
             'remove' => 'remove_0',
           ),
           array(
             'option_label' => 'Option B',
             'option_id' => 'option-B',
             'weight' => 1,
-            'bid' => 'system_delta_powered-by',
+            'block' => array(
+              'bid' => 'system_delta_powered-by',
+            ),
             'remove' => 'remove_1',
           ),
           array(
             'option_label' => 'Option C',
             'option_id' => 'option-C',
             'weight' => 2,
-            'bid' => 'user_delta_online',
+            'block' => array(
+              'bid' => 'user_delta_online',
+            ),
             'remove' => 'remove_2',
           ),
         ),
@@ -672,21 +678,27 @@ class PersonalizeTest extends PersonalizeBaseTest {
             'option_label' => 'Option A',
             'option_id' => 'option-A',
             'weight' => 0,
-            'bid' => 'comment_delta_recent',
+            'block' => array(
+              'bid' => 'comment_delta_recent',
+            ),
             'remove' => 'remove_0',
           ),
           array(
             'option_label' => 'Option B',
             'option_id' => 'option-B',
             'weight' => 1,
-            'bid' => 'system_delta_powered-by',
+            'block' => array(
+              'bid' => 'system_delta_powered-by',
+            ),
             'remove' => 'remove_1',
           ),
           array(
             'option_label' => 'Option C',
             'option_id' => 'option-C',
             'weight' => 2,
-            'bid' => 'user_delta_online',
+            'block' => array(
+              'bid' => 'user_delta_online',
+            ),
             'remove' => 'remove_2',
           ),
         ),
