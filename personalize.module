@@ -708,9 +708,8 @@ function personalize_agent_set_status($agent_name, $status) {
     return TRUE;
   }
 
-  $fields = array(
-    'status' => $status
-  );
+  $agent = personalize_agent_load($agent_name);
+  $agent->status = $status;
   if ($status == PERSONALIZE_STATUS_RUNNING) {
     // Do a check before setting the status to running.
     $agent_instance = personalize_agent_load_agent($agent_name);
@@ -721,17 +720,12 @@ function personalize_agent_set_status($agent_name, $status) {
     // If we're setting a campaign to the running status for the first time,
     // record the current time as the "started" property of the agent.
     if ($old_status == PERSONALIZE_STATUS_NOT_STARTED) {
-      $fields['started'] = time();
+      $agent->started = time();
     }
   }
 
-  db_update('personalize_agent')
-    ->fields($fields)
-    ->condition('machine_name', $agent_name)
-    ->execute();
-
-  // Clear the agent cache for this agent.
-  personalize_agent_load($agent_name, TRUE);
+  // Save the agent (which handles clearing the cache).
+  personalize_agent_save($agent);
 
   // Clear the visitor context cache settings for running campaigns.
   personalize_visitor_context_expiration_clear();
@@ -804,8 +798,8 @@ function personalize_verify_agent($agent_name) {
  *   An integer representing the status of the agebtn.
  */
 function personalize_agent_get_status($agent_name) {
-  $status = db_query('SELECT status FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name))->fetchField();
-  return $status;
+  $agent = personalize_agent_load($agent_name);
+  return $agent->status;
 }
 
 /**
@@ -1456,8 +1450,8 @@ function personalize_agent_load_agent($agent_name, $reset = FALSE) {
  * @return boolean
  */
 function personalize_agent_machine_name_exists($machine_name) {
-  $agent_exists = db_query_range('SELECT 1 FROM {personalize_agent} WHERE machine_name = :name', 0, 1, array(':name' => $machine_name))->fetchField();
-  return $agent_exists;
+  $match = personalize_agent_load($machine_name);
+  return !empty($match);
 }
 
 /**
