@@ -10,7 +10,7 @@
 function personalize_blocks_list() {
   $header = array(
     array('data' => t('Block')),
-    array('data' => t('Operations'), 'colspan' => 4),
+    array('data' => t('Operations'), 'colspan' => 3),
   );
   $rows = array();
 
@@ -18,7 +18,6 @@ function personalize_blocks_list() {
     $tablerow = array(
       array('data' => check_plain($personalized_block->data['block_title'])),
       array('data' => l(t('Edit'), 'admin/structure/personalize-blocks/manage/'. $personalized_block->osid .'/edit')),
-      array('data' => l(t('Export'), 'admin/structure/personalize-blocks/manage/'. $personalized_block->osid .'/export')),
       array('data' => l(t('Clone'), 'admin/structure/personalize-blocks/manage/'. $personalized_block->osid .'/clone')),
       array('data' => l(t('Delete'), 'admin/structure/personalize-blocks/manage/'. $personalized_block->osid .'/delete')),
     );
@@ -26,7 +25,7 @@ function personalize_blocks_list() {
   }
 
   if (empty($rows)) {
-    $rows[] = array(array('data' => t('No personalize_blocks instances available.'), 'colspan' => 5));
+    $rows[] = array(array('data' => t('No personalize_blocks instances available.'), 'colspan' => 4));
   }
 
   $build = array(
