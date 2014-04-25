@@ -104,7 +104,6 @@ class UserProfileContext extends PersonalizeContextBase {
       $possible_values[$name] = array();
       $field_name = 'field_' . $name;
       $field = field_info_field($field_name);
-      dpm($field);
       $instance = field_info_instance('user', $field_name, 'user');
       // We can only support fields that have predefined options since for
       // other fields we have no idea what the possible values are.

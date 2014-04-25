@@ -1180,7 +1180,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           ),
         );
         $parents = array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id']);
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents, $form_state);
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option_set, $option, $targeting_values, $targeting_support, $states, $parents, $form_state);
       }
       $variant_number++;
     } // end of loop through variations.
@@ -1309,11 +1309,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
  * @param $parents
  * @return array
  */
-function personalize_targeting_support_form_elements($option, $targeting_values, $targeting_support, $states, $parents, &$form_state) {
+function personalize_targeting_support_form_elements($option_set, $option, $targeting_values, $targeting_support, $states, $parents, &$form_state) {
   $attributes = array(
     'class' => array('personalize-variation-row'),
   );
 
+  $osid = $option_set->osid;
   $form = array(
     '#tree' => TRUE,
     '#type' => 'container',
@@ -1323,6 +1324,19 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
 
   $context_options = array('' => '-- ' . t('Select a context') . ' --');
   $value_types = array();
+  $operator_options = array(
+    'string' => array(
+      'equals' => t('equals'),
+      'contains' => t('contains'),
+      'starts' => t('starts with'),
+      'ends' => t('ends with')
+    ),
+    'number' => array(
+      'equals' => t('equals'),
+      'numgt' => t('greater than'),
+      'numlt' => t('less than')
+    )
+  );
   foreach ($targeting_values as  $key => $info) {
     $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
     $context_options[$key] = $key_label;
@@ -1347,30 +1361,59 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
       'match' => '',
     );
   }
+  $values = array();
+  if (isset($form_state['values'])) {
+    $values = $form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting'];
+  }
 
-  foreach ($mappings as $mapping) {
-    $form['mapping'][] = array(
+  foreach ($mappings as $delta => $mapping) {
+    $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
+    $selected_context = isset($values['mapping'][$delta]['context']) ? $values['mapping'][$delta]['context'] : $mapping['context'];
+    $form['mapping'][$delta] = array(
       'context' => array(
         '#type' => 'select',
         '#title' => t('Context'),
         '#options' => $context_options,
-        '#default_value' => $mapping['context']
-      ),
-      'operator' => array(
+        '#default_value' => empty($selected_context) ? '' : $selected_context,
+        '#ajax' => array(
+          'event' => 'change',
+          'callback' => 'personalize_explicit_targeting_context_callback',
+          'wrapper' => $wrapper_id,
+        ),
+      )
+    );
+    $form['mapping'][$delta]['replace'] = array(
+      '#tree' => FALSE,
+      '#prefix' => '<div id="' . $wrapper_id. '">',
+      '#suffix' => '</div>'
+    );
+    $value_type = isset($value_types[$selected_context]) ? $value_types[$selected_context] : 'string';
+    if ($value_type == 'predefined') {
+      $form['mapping'][$delta]['replace']['operator'] = array(
+        '#type' => 'value',
+        '#value' => 'equals',
+      );
+      $form['mapping'][$delta]['replace']['match'] = array(
+        '#type' => 'select',
+        '#options' => $targeting_values[$selected_context]['values'],
+        '#title' => 'Value',
+        '#default_value' => isset($values['mapping'][$delta]['match']) ? $values['mapping'][$delta]['match'] : $mapping['match'],
+      );
+    }
+    else {
+      $form['mapping'][$delta]['replace']['operator'] = array(
         '#type' => 'select',
         '#title' => t('Operator'),
-        '#options' => array(
-          'contains' => 'Contains',
-        ),
+        '#options' => $operator_options[$value_type],
         '#default_value' => $mapping['operator']
-      ),
-      'match' => array(
+      );
+      $form['mapping'][$delta]['replace']['match'] = array(
         '#type' => 'textfield',
         '#title' => 'Value to check',
         '#description' => t('The value to check for using the specified operator'),
-        '#default_value' => $mapping['match']
-      ),
-    );
+        '#default_value' => isset($values['mapping'][$delta]['match']) ? $values['mapping'][$delta]['match'] : $mapping['match'],
+      );
+    }
   }
 
   // And/Or targeting selection.
@@ -1403,6 +1446,18 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
   return $form;
 }
 
+function personalize_explicit_targeting_context_callback($form, $form_state) {
+  // We need to return the section of the form corresponding to one level up from
+  // the dropdown that triggered the ajax, so use the array parents to find that
+  // section.
+  $parents = $form_state['triggering_element']['#array_parents'];
+  $section = $form;
+  for ($i = 0; $i < count($parents) -1; $i++) {
+    $section = $section[$parents[$i]];
+  }
+  return $section['replace'];
+}
+
 /**
  * Extracts the available targeting values from contexts set up on the agent.
  *
@@ -1430,6 +1485,7 @@ function personalize_targeting_support_form_elements($option, $targeting_values,
  *     )
  */
 function personalize_get_targeting_values_for_agent($agent_instance) {
+  ctools_include('plugins');
   $value_options = array();
   // Predefined values will be options in a multi-select field. For non-predefined
   // values we need to build form elements allowing new values to be specified
