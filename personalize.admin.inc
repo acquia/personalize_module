@@ -1597,7 +1597,7 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
 
   foreach ($form_values as $option_set_id => $values) {
     if (!empty($form_values[$option_set_id]['advanced']['preview_link'])) {
-      if (drupal_lookup_path('source', $form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
+      if (url_is_external($form_values[$option_set_id]['advanced']['preview_link']) || drupal_valid_path($form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
         form_set_error('option_sets][' . $option_set_id . '][advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
           '@option_set' => $form_values[$option_set_id]['advanced']['label'],
         )));
