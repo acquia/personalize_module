@@ -193,7 +193,15 @@ function personalize_agent_list() {
   );
   $rows = array();
 
-  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE) as $agent) {
+  // Sort campaigns by name.
+  $campaigns = personalize_agent_load_multiple(array(), array(), FALSE, TRUE);
+  usort($campaigns, function($a, $b) {
+    if ($a->label == $b->label) {
+      return 0;
+    }
+    return ($a->label > $b->label) ? 1 : -1;
+  });
+  foreach ($campaigns as $agent) {
     // The ability to delete depends on the storage type and on whether the campaign has started
     // or contains option sets.
     $can_delete = personalize_delete_agent_access($agent);
