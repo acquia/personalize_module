@@ -1378,11 +1378,14 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   );
 
   $mappings = array();
-  foreach ($option['fixed_targeting'] as $feature) {
-    if (isset($option['fixed_targeting_rules'][$feature])) {
-      $mappings[] = $option['fixed_targeting_rules'][$feature];
+  if (isset($option['fixed_targeting'])) {
+    foreach ($option['fixed_targeting'] as $feature) {
+      if (isset($option['fixed_targeting_rules'][$feature])) {
+        $mappings[] = $option['fixed_targeting_rules'][$feature];
+      }
     }
   }
+
   // If the "Remove" button was clicked for a context, we need to remove that context
   // from the form.
   if (isset($form_state['to_remove']['option_set_' . $osid][$option['option_id']])) {
