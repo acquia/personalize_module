@@ -2323,7 +2323,7 @@ function personalize_goals_options() {
 }
 
 /**
- * Maps operators onto 2-digit codes.
+ * Maps operators onto 2-character codes.
  *
  * These are only used to differentiate a string that needs to be
  * evaluated from a string holding a value to be matched exactly.
@@ -2341,6 +2341,17 @@ function personalize_targeting_operator_map() {
   );
 }
 
+/**
+ * Generates the 'value' string to be used when creating the feature
+ * string for explicit targeting.
+ *
+ * If an operator other than 'equals' is passed in, the value is prefixed
+ * with a string representing the operator.
+ *
+ * @param $value_match
+ * @param $operator
+ * @return string
+ */
 function personalize_targeting_generate_value_code($value_match, $operator) {
   if ($operator == 'equals') {
     return $value_match;

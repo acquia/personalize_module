@@ -230,7 +230,7 @@
       return;
     }
     // If we haven't already gone through all the explicit targeting rules, we need to
-    // do that first to find the rule for each feature string, if one exists.
+    // do that first to find the rule for each feature string.
     if (fixed_targeting_rules === null) {
       fixed_targeting_rules = {};
       var settings = Drupal.settings.personalize.option_sets;
@@ -241,8 +241,8 @@
           for (var j in option_set.options) {
             if (option_set.options.hasOwnProperty(j) && option_set.options[j].hasOwnProperty('fixed_targeting')) {
               fixed_targeting_rules[agent] = fixed_targeting_rules[agent] || {};
-              // Loop through all features specified for an option and see if there's a rule
-              // associated with them.
+              // Loop through all features specified for an option and grab the rule
+              // associated with it.
               for (var k in option_set.options[j].fixed_targeting) {
                 if (option_set.options[j].fixed_targeting.hasOwnProperty(k)) {
                   var feature_name = option_set.options[j].fixed_targeting[k];
@@ -257,7 +257,15 @@
       }
     }
     // The new visitor context object will hold an array of values for each
-    // key.
+    // key, rather than just a single value. This is because in addition to
+    // having a string representing key and actual value, for each rule that
+    // is satisfied we'll also need a string indicating that that rule is
+    // satisfied. For example, if we have a targeting rule that says show this
+    // option if the visitor's "interests" field contains "submarines", and the
+    // value of this field for the current visitor is "ships and submarines",
+    // then our visitor context for key "interests" should be ["ships and submarines",
+    // "sc-submarines"], where sc- is just the prefix added to codify "string
+    // contains".
     var newVisitorContext = {};
     for (var contextKey in visitorContext) {
       if (visitorContext.hasOwnProperty(contextKey)) {
@@ -279,6 +287,9 @@
             var match = featureRules[featureName].match;
             if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
               if (Drupal.personalize.targetingOperators[operator](visitorContext[key], match)) {
+                // The feature string was created by the agent responsible for consuming
+                // it, so only that agent knows how to split it up into its key and
+                // value components.
                 var context = Drupal.personalize.agents[agentType].featureToContext(featureName);
                 // Now add the value that reflects this matched rule.
                 newVisitorContext[key].push(context.value);
@@ -291,6 +302,10 @@
     return newVisitorContext;
   };
 
+  /**
+   * Defines the various operations that can be performed to evaluate
+   * explicit targeting rules.
+   */
   Drupal.personalize.targetingOperators = {
     'contains': function(actualValue, matchValue) {
       return actualValue.indexOf(matchValue) !== -1;
