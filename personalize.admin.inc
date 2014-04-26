@@ -1300,8 +1300,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
 }
 
 /**
- * Builds the form elements need for adding explicit targeting to an option.
+ * Builds the form elements needed for adding explicit targeting to an option.
  *
+ * @param $option_set
  * @param $option
  * @param $targeting_values
  * @param $targeting_support
@@ -1342,34 +1343,88 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     $context_options[$key] = $key_label;
     $value_types[$key] = $info['value type'];
   }
-  // Create the form elements for the "free" values
-  $form['mapping'] = array(
-    '#type' => 'container',
-    '#attributes' => $attributes,
-    '#states' => $states,
+
+  // This is the portion of the form that will be replace when the "add new" or "remove
+  // context" links are clicked.
+  $main_wrapper_id = 'personalize-targeting-osid-' . $osid . '-' . $option['option_id'];
+  // Create an "add new context" link.
+  $form['add_new'] = array(
+    '#prefix' => '<span class="personalize-add-link-prefix"></span>',
+    '#type' => 'submit',
+    '#value' => t('Add context'),
+    '#attributes' => array(
+      'class' => array('personalize-add-link'),
+      'title' => t('Click here to add more contexts.')
+    ),
+    '#submit' => array('personalize_targeting_add_context_submit'),
+    '#ajax' => array(
+      'callback' => 'personalize_targeting_context_ajax_callback',
+      'wrapper' => $main_wrapper_id,
+      'effect' => 'fade',
+    ),
   );
+  $form['mapping'] = array(
+    '#tree' => TRUE,
+    '#theme_wrappers' => array('container'),
+    '#attributes' => $attributes,
+  );
+  // Create the form elements for the "free" values
+  $form['mapping']['contexts'] = array(
+    '#type' => 'container',
+    '#states' => $states,
+    '#attributes' => array(
+      'id' => $main_wrapper_id,
+    ),
+  );
+
   $mappings = array();
   foreach ($option['fixed_targeting'] as $feature) {
     if (isset($option['fixed_targeting_rules'][$feature])) {
       $mappings[] = $option['fixed_targeting_rules'][$feature];
     }
   }
+  // If the "Remove" button was clicked for a context, we need to remove that context
+  // from the form.
+  if (isset($form_state['to_remove']['option_set_' . $osid][$option['option_id']])) {
+    unset($mappings[$form_state['to_remove']['option_set_' . $osid][$option['option_id']]]);
+    unset($form_state['to_remove']['option_set_' . $osid][$option['option_id']]);
+    $form_state['num_contexts']['option_set_' . $osid][$option['option_id']]--;
+  }
+
   if (empty($mappings)) {
     $mappings[] = array(
       'context' => '',
-      'operator' => 'contains',
+      'operator' => 'equals',
       'match' => '',
     );
   }
-  $values = array();
-  if (isset($form_state['values'])) {
-    $values = $form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting'];
+  // If the "Add another" button was clicked, we need to add contexts to get up
+  // to the number indicated.
+  $num_contexts = count($mappings);
+  if (isset($form_state['num_contexts']['option_set_' . $osid][$option['option_id']]) && $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] > $num_contexts) {
+    while ($num_contexts < $form_state['num_contexts']['option_set_' . $osid][$option['option_id']]) {
+      $mappings[] = array(
+        'context' => '',
+        'operator' => 'equals',
+        'match' => '',
+      );
+      $num_contexts++;
+    }
   }
 
+  $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] = count($mappings);
+  $values = array();
+  if (isset($form_state['values'])) {
+    $values = $form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping'];
+  }
   foreach ($mappings as $delta => $mapping) {
     $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
-    $selected_context = isset($values['mapping'][$delta]['context']) ? $values['mapping'][$delta]['context'] : $mapping['context'];
-    $form['mapping'][$delta] = array(
+    $selected_context = isset($values['contexts'][$delta]['context']) ? $values['contexts'][$delta]['context'] : $mapping['context'];
+    $selected_operator = isset($values['contexts'][$delta]['operator']) ? $values['contexts'][$delta]['operator'] : $mapping['operator'];
+    $selected_match = isset($values['contexts'][$delta]['match']) ? $values['contexts'][$delta]['match'] : $mapping['match'];
+    $form['mapping']['contexts'][$delta] = array(
+      '#prefix' => '<div class="personalize-target-wrapper">',
+      '#suffix' => '</div>',
       'context' => array(
         '#type' => 'select',
         '#title' => t('Context'),
@@ -1380,40 +1435,66 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
           'callback' => 'personalize_explicit_targeting_context_callback',
           'wrapper' => $wrapper_id,
         ),
-      )
+        '#attributes' => array(
+          'class' => array('personalize-targeting-context'),
+        ),
+      ),
     );
-    $form['mapping'][$delta]['replace'] = array(
-      '#tree' => FALSE,
+    $form['mapping']['contexts'][$delta]['value'] = array(
+      '#tree' => TRUE,
       '#prefix' => '<div id="' . $wrapper_id. '">',
       '#suffix' => '</div>'
     );
     $value_type = isset($value_types[$selected_context]) ? $value_types[$selected_context] : 'string';
+    // We use different form elements depending on whether there is a predefined list
+    // of possible values or not.
     if ($value_type == 'predefined') {
-      $form['mapping'][$delta]['replace']['operator'] = array(
+      $form['mapping']['contexts'][$delta]['value']['operator'] = array(
         '#type' => 'value',
         '#value' => 'equals',
       );
-      $form['mapping'][$delta]['replace']['match'] = array(
+      $form['mapping']['contexts'][$delta]['value']['match'] = array(
         '#type' => 'select',
         '#options' => $targeting_values[$selected_context]['values'],
         '#title' => 'Value',
-        '#default_value' => isset($values['mapping'][$delta]['match']) ? $values['mapping'][$delta]['match'] : $mapping['match'],
+        '#default_value' => $selected_match,
       );
     }
     else {
-      $form['mapping'][$delta]['replace']['operator'] = array(
+      $form['mapping']['contexts'][$delta]['value']['operator'] = array(
         '#type' => 'select',
         '#title' => t('Operator'),
         '#options' => $operator_options[$value_type],
-        '#default_value' => $mapping['operator']
+        '#default_value' => $selected_operator
       );
-      $form['mapping'][$delta]['replace']['match'] = array(
+      $form['mapping']['contexts'][$delta]['value']['match'] = array(
         '#type' => 'textfield',
-        '#title' => 'Value to check',
-        '#description' => t('The value to check for using the specified operator'),
-        '#default_value' => isset($values['mapping'][$delta]['match']) ? $values['mapping'][$delta]['match'] : $mapping['match'],
+        '#title' => 'Value',
+        '#default_value' => $selected_match,
       );
     }
+
+    // Add a "remove" button for this context.
+    $form['mapping']['contexts'][$delta]['remove'] = array(
+      '#prefix' => '<div class="personalize-remove-context">',
+      '#suffix' => '</div>',
+      '#type' => 'submit',
+      '#tag' => 'button',
+      '#text' => t('Remove'),
+      '#value' => 'remove_' . $osid . '_' . $option['option_id'] . '_' . $delta,
+      '#theme_wrappers' => array('personalize_html_tag'),
+      '#attributes' => array(
+        'id' => 'edit-option-sets-option_set_' . $osid. '-options-' . $option['option_id'] . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
+        'class' => array('personalize-delete-context', 'form-submit',),
+        'title' => t('Delete this context.'),
+      ),
+      '#submit' => array('personalize_targeting_remove_context_submit'),
+      '#ajax' => array(
+        'callback' => 'personalize_targeting_context_ajax_callback',
+        'wrapper' => $main_wrapper_id,
+        'effect' => 'fade',
+      ),
+    );
   }
 
   // And/Or targeting selection.
@@ -1446,7 +1527,43 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   return $form;
 }
 
-function personalize_explicit_targeting_context_callback($form, $form_state) {
+/**
+ * Ajax callback for the add context and remove context buttons.
+ */
+function personalize_targeting_context_ajax_callback($form, $form_state) {
+  $parents = $form_state['triggering_element']['#array_parents'];
+  $section = $form;
+  for ($i = 0; $i < count($parents) -1; $i++) {
+    $section = $section[$parents[$i]];
+  }
+  return $section['mapping']['contexts'];
+}
+
+/**
+ * Submit handler for the "Add Context" button.
+ */
+function personalize_targeting_add_context_submit($form, &$form_state) {
+  $parents = $form_state['clicked_button']['#parents'];
+  $option_set = $parents[1];
+  $option_id = $parents[3];
+  // Increment the number of goal elements to be rendered.
+  $form_state['num_contexts'][$option_set][$option_id]++;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Submit handler for the "Remove Context" button.
+ */
+function personalize_targeting_remove_context_submit($form, &$form_state) {
+  $parents = $form_state['clicked_button']['#parents'];
+  $option_set = $parents[1];
+  $option_id = $parents[3];
+  $delta = $parents[7];
+  $form_state['to_remove'][$option_set][$option_id] = $delta;
+  $form_state['rebuild'] = TRUE;
+}
+
+function personalize_explicit_targeting_context_callback($form, &$form_state) {
   // We need to return the section of the form corresponding to one level up from
   // the dropdown that triggered the ajax, so use the array parents to find that
   // section.
@@ -1455,7 +1572,7 @@ function personalize_explicit_targeting_context_callback($form, $form_state) {
   for ($i = 0; $i < count($parents) -1; $i++) {
     $section = $section[$parents[$i]];
   }
-  return $section['replace'];
+  return $section['value'];
 }
 
 /**
@@ -1800,10 +1917,13 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
         $option_features[$option_id] = array();
         $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
-          foreach ($settings['explicit_targeting']['mapping'] as $delta => $values) {
+          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $values) {
             if ($values['context'] == '') {
               continue;
             }
+            $values['match'] = $values['value']['match'];
+            $values['operator'] = $values['value']['operator'];
+            unset($values['value']);
             // Generate a value code based on the operator used.
             $value = personalize_targeting_generate_value_code($values['match'], $values['operator']);
             // Create a feature string for this context value that can be consumed
