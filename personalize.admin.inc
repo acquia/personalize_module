@@ -1500,6 +1500,10 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     );
   }
 
+  $strategy_parents = $parents;
+  foreach (array('explicit_targeting', 'strategy') as $parent) {
+    $strategy_parents[] = $parent;
+  }
   // And/Or targeting selection.
   if ($targeting_support == PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH) {
     $form['strategies'] = array(
@@ -1507,10 +1511,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#attributes' => $attributes,
       '#states' => $states,
     );
-    $strategy_parents = $parents;
-    foreach (array('explicit_targeting', 'strategy') as $parent) {
-      $strategy_parents[] = $parent;
-    }
+
     // Add radio buttons so the user can select how multiple features for an option
     // should be treated.
     $form['strategies']['strategy'] = array(
@@ -1524,6 +1525,15 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         'AND' => 'all'
       ),
       '#default_value' => isset($option['fixed_targeting_strategy']) ? $option['fixed_targeting_strategy'] : 'OR',
+      '#parents' => $strategy_parents,
+    );
+  }
+  else {
+    // Send the strategy as a value so it can be used when checking for features
+    // that have been assigned to multiple options.
+    $form['strategy'] = array(
+      '#type' => 'value',
+      '#value' => PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR ? 'OR' : 'AND',
       '#parents' => $strategy_parents,
     );
   }
@@ -1917,40 +1927,41 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // assocatiated with each feature.
       $designated_features = $option_features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
-        $option_features[$option_id] = array();
+        $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
-          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $values) {
-            if ($values['context'] == '') {
+          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $context_values) {
+            if ($context_values['context'] == '') {
               continue;
             }
-            $values['match'] = $values['value']['match'];
-            $values['operator'] = $values['value']['operator'];
-            unset($values['value'], $values['remove']);
+            $context_values['match'] = $context_values['value']['match'];
+            $context_values['operator'] = $context_values['value']['operator'];
+            unset($context_values['value'], $context_values['remove']);
             // Generate a value code based on the operator used.
-            $value = personalize_targeting_generate_value_code($values['match'], $values['operator']);
+            $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
             // Create a feature string for this context value that can be consumed
             // by the agent that will be using it.
-            $feature_string = $agent->convertContextToFeatureString($values['context'], $value);
+            $feature_string = $agent->convertContextToFeatureString($context_values['context'], $value);
             $feature_values[] = $feature_string;
             // Save the actual rule information as this is what will be used
             // for evaluating it.
-            $rules[$feature_string] = $values;
+            $rules[$feature_string] = $context_values;
           }
           foreach ($feature_values as $feature) {
+            $option_features[$option_id][] = $feature;
+            $feature_rules[$option_id][$feature] = $rules[$feature];
+            // Mark this feature string as already designated.
             if (!in_array($feature, $designated_features)) {
-              $option_features[$option_id][] = $feature;
-              $feature_rules[$option_id][$feature] = $rules[$feature];
-              // Mark this feature string as already designated to an option so it
-              // cannot be used for another option.
               $designated_features[] = $feature;
             }
             else {
-              drupal_set_message(t('You have attempted to set the same targeting feature for more than one option. Only the first option was saved with this feature.'), 'warning');
+              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produced the desired effect.'), 'warning');
             }
+
           }
         }
       }
+
       // Now add the features to the option set's options array.
       foreach ($option_set->options as &$option) {
         if (isset($option_features[$option['option_id']])) {
