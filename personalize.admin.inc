@@ -1347,22 +1347,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   // This is the portion of the form that will be replace when the "add new" or "remove
   // context" links are clicked.
   $main_wrapper_id = 'personalize-targeting-osid-' . $osid . '-' . $option['option_id'];
-  // Create an "add new context" link.
-  $form['add_new'] = array(
-    '#prefix' => '<span class="personalize-add-link-prefix"></span>',
-    '#type' => 'submit',
-    '#value' => t('Add context'),
-    '#attributes' => array(
-      'class' => array('personalize-add-link'),
-      'title' => t('Click here to add more contexts.')
-    ),
-    '#submit' => array('personalize_targeting_add_context_submit'),
-    '#ajax' => array(
-      'callback' => 'personalize_targeting_context_ajax_callback',
-      'wrapper' => $main_wrapper_id,
-      'effect' => 'fade',
-    ),
-  );
+
   $form['mapping'] = array(
     '#tree' => TRUE,
     '#theme_wrappers' => array('container'),
@@ -1482,10 +1467,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#prefix' => '<div class="personalize-remove-context">',
       '#suffix' => '</div>',
       '#type' => 'submit',
-      '#tag' => 'button',
-      '#text' => t('Remove'),
-      '#value' => 'remove_' . $osid . '_' . $option['option_id'] . '_' . $delta,
-      '#theme_wrappers' => array('personalize_html_tag'),
+      '#value' => t('Remove'),
       '#attributes' => array(
         'id' => 'edit-option-sets-option_set_' . $osid. '-options-' . $option['option_id'] . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
         'class' => array('personalize-delete-context', 'form-submit',),
@@ -1499,7 +1481,23 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       ),
     );
   }
-
+  // Create an "add new context" link.
+  $form['add_new'] = array(
+    '#prefix' => '<span class="personalize-add-link-prefix"></span>',
+    '#type' => 'submit',
+    '#value' => t('Add context'),
+    '#attributes' => array(
+      'class' => array('personalize-add-link'),
+      'title' => t('Click here to add more contexts.')
+    ),
+    '#submit' => array('personalize_targeting_add_context_submit'),
+    '#ajax' => array(
+      'callback' => 'personalize_targeting_context_ajax_callback',
+      'wrapper' => $main_wrapper_id,
+      'effect' => 'fade',
+    ),
+    '#parents' => $parents,
+  );
   $strategy_parents = $parents;
   foreach (array('explicit_targeting', 'strategy') as $parent) {
     $strategy_parents[] = $parent;
