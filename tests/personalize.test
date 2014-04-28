@@ -1484,6 +1484,58 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
   }
 
   /**
+   * Tests the option set preview functionality.
+   */
+  function testOptionSetPreview() {
+    // Create a new test campaign with an option set in it.
+    $admin_user = $this->drupalCreateUser(array('manage personalized content', 'access administration pages', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    $agent_name = $agent->getMachineName();
+
+    // Create block-based option set.
+    $option_sets = array();
+    // Each option set will have 2 options.
+    $options = array(
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
+    );
+    $option_sets[] = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
+    // First verify that no preview links appear when the preview link option
+    // is empty.
+    $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/edit");
+    $this->assertNoLink(t('Preview'));
+
+    // Try adding a link to an external page.
+    $edit = array(
+      'option_sets[option_set_1][advanced][preview_link]' => 'http://google.com',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('option'));
+    $this->assertText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
+
+    // Try adding a link to a page that does not exist.
+    $edit = array(
+      'option_sets[option_set_1][advanced][preview_link]' => 'node/12345',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('option'));
+    $this->assertText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
+
+    // Add a good preview link and verify that preview links are added.
+    $edit = array(
+      'option_sets[option_set_1][advanced][preview_link]' => '<front>',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('option'));
+    $this->assertNoText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
+
+    // In the preview link page, test that the option is pre-selected in the
+    // settings passed to JavaScript.
+    $this->clickLink(t('Preview'), 1);
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['preselected']['osid-1'], 'option-B');
+  }
+
+  /**
    * Tests that explicit targeting options are properly created and saved.
    */
   function testExplicitTargeting() {

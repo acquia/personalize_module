@@ -1135,11 +1135,18 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           'class' => array('personalize-variation-row'),
         ),
       );
+      $preview_link = '';
+      if (!empty($option_set->preview_link)) {
+        $preview_link = l('Preview', $option_set->preview_link, array(
+          'attributes' => array('target' => 'preview'),
+          'query' => array(PERSONALIZE_PRESELECTION_PARAM => personalize_stringify_osid($option_set->osid) . '--' . $option['option_id']),
+        ));
+      }
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
         'title' => filter_xss($option['option_label']),
         'title_prefix' => '"',
-        'title_suffix' => '"',
+        'title_suffix' => !empty($preview_link) ? '" ' . $preview_link : '"',
         'attributes' => array(
           'class' => array('personalize-variation-col1'),
         ),
@@ -1283,6 +1290,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       '#title' => t('Shareable'),
       '#description' => 'Will display what the original visitor saw, not another variation.',
       '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
+    );
+    $section['option_set_' . $option_set->osid]['advanced']['preview_link'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Preview link',
+      '#description' => t('Enter the internal Drupal path on your site to a page containing this content variation set. Enter &lt;front&gt; to link to the front page.'),
+      '#default_value' => !empty($option_set->preview_link) ? $option_set->preview_link : '',
     );
     // Display options to select the executor if supported.
     $executors = personalize_get_executors();
@@ -1572,8 +1585,10 @@ function personalize_agent_goals_form_submit($form, &$form_state) {
 }
 
 /**
- * Custom validation callback for Option sets form
- * Clean Explicit targeting if "Enable explicit targeting" is unchecked
+ * Custom validation callback for Option sets form.
+ *
+ * Clean Explicit targeting if "Enable explicit targeting" is unchecked.
+ * Ensure that preview links are internal and valid.
  */
 function personalize_agent_option_sets_form_validate($form, &$form_state) {
   $form_values = &$form_state['values']['option_sets'];
@@ -1581,6 +1596,13 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
   $need_form_state_cache_clear = FALSE;
 
   foreach ($form_values as $option_set_id => $values) {
+    if (!empty($form_values[$option_set_id]['advanced']['preview_link'])) {
+      if (url_is_external($form_values[$option_set_id]['advanced']['preview_link']) || drupal_valid_path($form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
+        form_set_error('option_sets][' . $option_set_id . '][advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
+          '@option_set' => $form_values[$option_set_id]['advanced']['label'],
+        )));
+      }
+    }
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
         if ($option['enable_explicit_targeting'] == 0) {
@@ -1616,6 +1638,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       }
       if (isset($values['advanced']['decision_name'])) {
         $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);
+      }
+      if (isset($values['advanced']['preview_link'])) {
+        $option_set->preview_link = $values['advanced']['preview_link'];
       }
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
