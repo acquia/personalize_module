@@ -377,12 +377,25 @@ function personalize_update_7006() {
 }
 
 /**
+ * Add a preview link to the option sets table.
+ */
+function personalize_update_7007() {
+  db_add_field('personalize_option_sets', 'preview_link', array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'description' => 'The path to a local preview page for the option set.',
+  ));
+}
+
+
+/**
  * Add fixed targeting rules for all existing fixed targeting feature strings.
  *
  * In addition to storing the feature string used for fixed targeting,
  * we now also store the rule used to evaluate it.
  */
-function personalize_update_7007() {
+function personalize_update_7008() {
   $result = db_select('personalize_option_sets', 'o')
     ->fields('o', array('osid', 'options'))
     ->execute();
@@ -455,15 +468,4 @@ function _personalize_convert_feature_string_to_context($feature_string) {
     'key' => $context[0],
     'value' => $context[1]
   );
-}
-/**
- * Add a preview link to the option sets table.
- */
-function personalize_update_7007() {
-  db_add_field('personalize_option_sets', 'preview_link', array(
-    'type' => 'varchar',
-    'length' => 255,
-    'not null' => FALSE,
-    'description' => 'The path to a local preview page for the option set.',
-  ));
 }
