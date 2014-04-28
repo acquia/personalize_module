@@ -120,7 +120,12 @@ class UserProfileContext extends PersonalizeContextBase {
         }
       }
       else {
-        $possible_values[$name]['value type'] = 'string';
+        if (strpos($field['type'], 'number_') === 0) {
+          $possible_values[$name]['value type'] = 'number';
+        }
+        else {
+          $possible_values[$name]['value type'] = 'string';
+        }
       }
     }
     return $possible_values;

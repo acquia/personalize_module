@@ -1926,7 +1926,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             }
             $values['match'] = $values['value']['match'];
             $values['operator'] = $values['value']['operator'];
-            unset($values['value']);
+            unset($values['value'], $values['remove']);
             // Generate a value code based on the operator used.
             $value = personalize_targeting_generate_value_code($values['match'], $values['operator']);
             // Create a feature string for this context value that can be consumed
