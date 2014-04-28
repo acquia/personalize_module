@@ -1385,7 +1385,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
     }
     $time_before = time();
-    // THe status of each agent should now be "not started"
+    // The status of each agent should now be "not started".
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($first_agent_machine_name));
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
     // Click the "start" button for the first agent.

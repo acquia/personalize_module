@@ -28,6 +28,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
   function testPersonalizeFields() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
     $this->drupalLogin($admin_user);
+    personalize_agent_load('test-agent', TRUE);
     // Add personalizable field to the article node type.
     $field = array(
       'type' => 'text',
@@ -99,12 +100,14 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertEqual($options, $option_set->options);
 
     // Load the node edit form and confirm there is no agent dropdown.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $test = personalize_agent_load('test-agent');
+    debug($test, 'saved from testing personalize_fields.test:109');
     $this->drupalGet('node/1/edit');
     $this->assertFieldByName('article_headline[und][0][value]');
     $this->assertNoFieldByName('agent_select');
 
     // Add another personalized field and confirm that the agent is paused.
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     unset($edit['agent_select']);
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $edit['article_headline[und][2][value]'] = 'third option';

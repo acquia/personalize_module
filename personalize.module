@@ -693,22 +693,26 @@ function personalize_agent_set_status($agent_name, $status) {
     PERSONALIZE_STATUS_COMPLETED,
   );
   if (!in_array($status, $allowed_status)) {
+    debug($allowed_status, 'invalid new status ' . $status . ' personalize:660');
     watchdog('personalize', 'Attempt to set an agent to an invalid status');
     return FALSE;
   }
   $old_status = personalize_agent_get_status($agent_name);
   if (!$old_status) {
+    debug('failure retrieving old status', 'personalize:666');
     return FALSE;
   }
   // The status of a completed agent cannot be changed.
   if ($old_status & PERSONALIZE_STATUS_COMPLETED) {
+    debug('complete old status', 'personalize:671');
     return FALSE;
   }
   if ($old_status == $status) {
+    debug('agent status already set to ' . $old_status, 'personalize:675');
     return TRUE;
   }
 
-  $agent = personalize_agent_load($agent_name);
+  $agent = personalize_agent_load($agent_name, TRUE);
   $agent->status = $status;
   if ($status == PERSONALIZE_STATUS_RUNNING) {
     // Do a check before setting the status to running.
@@ -723,7 +727,7 @@ function personalize_agent_set_status($agent_name, $status) {
       $agent->started = time();
     }
   }
-
+  debug($agent, 'saving for new status: ' . $status . ' personalize:694');
   // Save the agent (which handles clearing the cache).
   personalize_agent_save($agent);
 
@@ -795,10 +799,18 @@ function personalize_verify_agent($agent_name) {
  * @param $agent_name
  *   The name of the agent to return status for.
  * @return mixed
- *   An integer representing the status of the agebtn.
+ *   An integer representing the status of the agent.
  */
 function personalize_agent_get_status($agent_name) {
   $agent = personalize_agent_load($agent_name);
+  $callers=debug_backtrace();
+  debug($callers[1]['function'], 'calling function of personalize_agent_get_status');
+  debug($agent, 'agent at get status (cached) personalize:767');
+//  $agent = personalize_agent_load($agent_name, TRUE);
+//  debug($agent, 'agent at get status (nocache) personalize:769');
+  if (empty($agent)) {
+    return FALSE;
+  }
   return $agent->status;
 }
 
@@ -834,6 +846,7 @@ function personalize_warn_if_running($agent_name) {
  */
 function personalize_pause_if_running($agent_name) {
   $status = personalize_agent_get_status($agent_name);
+  debug($status, 'current status during pause if running check personalize:805');
   if ($status & PERSONALIZE_STATUS_RUNNING) {
     personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
     $campaign_url = "admin/structure/personalize/manage/{$agent_name}/edit";
@@ -1490,6 +1503,7 @@ function personalize_generate_machine_name($name, $exists_callback = NULL) {
  * Saves an agent to the database.
  */
 function personalize_agent_save($agent) {
+  debug($agent, 'Saving initial data');
   $prior_values = personalize_agent_load($agent->machine_name);
   if ($prior_values) {
     // Make sure we don't clobber any values that may have been saved during
@@ -1511,17 +1525,30 @@ function personalize_agent_save($agent) {
   else {
     $agent->status = PERSONALIZE_STATUS_NOT_STARTED;
   }
+  $fields = array(
+    'plugin' => $agent->plugin,
+    'label' => $agent->label,
+    'status' => $agent->status,
+    'data' => serialize($agent->data),
+  );
+  if (isset($agent->started) && $agent->started > 0) {
+    $fields['started'] = $agent->started;
+  }
+  debug($fields, 'dbmerge fields');
   db_merge('personalize_agent')
     ->key(array('machine_name' => $agent->machine_name))
-    ->fields(array(
-      'plugin' => $agent->plugin,
-      'label' => $agent->label,
-      'status' => $agent->status,
-      'data' => serialize($agent->data),
-    ))
+    ->fields($fields)
     ->execute();
+
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a')
+    ->condition('machine_name', $agent->machine_name,'=')
+    ->execute()
+    ->fetchAssoc();
+  debug($result, 'select after update');
   // Make sure the static cache for this agent is reset.
-  personalize_agent_load($agent->machine_name, TRUE);
+  $agent = personalize_agent_load($agent->machine_name, TRUE);
+  debug($agent, 'agent after saving personalize:1495');
   // Call the save callback of the agent type.
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
@@ -1568,6 +1595,7 @@ function personalize_option_set_save($option_set) {
   if (!isset($option_set->plugin) || !isset($option_set->agent) || !isset($option_set->options) || !is_array($option_set->options)) {
     throw new Exception('An Option Set must have a type, an agent and an array of options');
   }
+
   if (isset($option_set->osid)) {
     $prior_values = personalize_option_set_load($option_set->osid, TRUE);
     if ($prior_values) {
@@ -1642,7 +1670,6 @@ function personalize_option_set_save($option_set) {
 
   // Make sure the static cache is reset for this option set.
   personalize_option_set_load($option_set->osid, TRUE);
-
   // Pause the campaign because changes have been made.
   personalize_pause_if_running($option_set->agent);
   // Set the active campaign to the one this option set was created for.
