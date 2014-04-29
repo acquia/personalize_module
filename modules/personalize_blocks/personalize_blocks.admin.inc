@@ -564,11 +564,14 @@ function _personalize_blocks_convert_form_to_personalized_block($form_state) {
     if (empty($block['block']['bid'])) {
       continue;
     }
-    $options[] = array(
-      'option_id' => isset($block['option_id']) ? $block['option_id'] : '',
+    $option = array(
       'option_label' => $block['option_label'],
       'bid' => $block['block']['bid'],
     );
+    if (isset($block['option_id'])) {
+      $option['option_id'] = $block['option_id'];
+    }
+    $options[] = $option;
   }
   $pblock = new stdClass();
   $pblock->plugin = 'block';
