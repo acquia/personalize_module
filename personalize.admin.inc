@@ -1458,6 +1458,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       $form['mapping']['contexts'][$delta]['value']['match'] = array(
         '#type' => 'textfield',
         '#title' => 'Value',
+        '#size' => $value_type == 'number' ? 6 : 30,
         '#default_value' => $selected_match,
       );
     }
@@ -1467,9 +1468,11 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#prefix' => '<div class="personalize-remove-context">',
       '#suffix' => '</div>',
       '#type' => 'submit',
-      '#value' => t('Remove'),
+      '#tag' => 'button',
+      '#text' => t('Remove'),
+      '#value' => 'remove_' . $osid . '_' . $option['option_id'] . '_' . $delta,
+      '#theme_wrappers' => array('personalize_html_tag'),
       '#attributes' => array(
-        'id' => 'edit-option-sets-option_set_' . $osid. '-options-' . $option['option_id'] . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
         'class' => array('personalize-delete-context', 'form-submit',),
         'title' => t('Delete this context.'),
       ),
@@ -1485,7 +1488,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $form['add_new'] = array(
     '#prefix' => '<span class="personalize-add-link-prefix"></span>',
     '#type' => 'submit',
-    '#value' => t('Add context'),
+    '#value' => t('Add context to ' . $option['option_id']),
     '#attributes' => array(
       'class' => array('personalize-add-link'),
       'title' => t('Click here to add more contexts.')
@@ -1544,7 +1547,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
 function personalize_targeting_context_ajax_callback($form, $form_state) {
   $parents = $form_state['triggering_element']['#array_parents'];
   $section = $form;
-  for ($i = 0; $i < count($parents) -1; $i++) {
+  $pos = array_search('explicit_targeting', $parents);
+  for ($i = 0; $i <= $pos; $i++) {
     $section = $section[$parents[$i]];
   }
   return $section['mapping']['contexts'];

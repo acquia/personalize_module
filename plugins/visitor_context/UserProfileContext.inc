@@ -101,10 +101,13 @@ class UserProfileContext extends PersonalizeContextBase {
     $entity = new stdClass();
     $form = $form_state = array();
     foreach ($this->selectedContext as $name) {
-      $possible_values[$name] = array();
+
       $field_name = 'field_' . $name;
       $field = field_info_field($field_name);
       $instance = field_info_instance('user', $field_name, 'user');
+      $possible_values[$name] = array(
+        'friendly name' => $instance['label']
+      );
       // We can only support fields that have predefined options since for
       // other fields we have no idea what the possible values are.
       if ($instance['widget']['module'] == 'options') {
