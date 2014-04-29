@@ -323,6 +323,7 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    * Implements PersonalizeAgentInterface::convertContextToFeatureString().
    */
   public static function convertContextToFeatureString($name, $value, $is_mutex = FALSE) {
+    $value = self::cleanFeatureValue($value);
     return $name . '--' . $value;
   }
 
@@ -353,6 +354,11 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
     $this->logger = $logger;
   }
 
+  protected static function cleanFeatureValue($string) {
+    $string = preg_replace('/[^A-Za-z0-9_-]/', '-', $string);
+    // Get rid of instances of multiple '-' characters after replacement.
+    return preg_replace('/\-{2,}/', '-', $string);
+  }
 
 }
 

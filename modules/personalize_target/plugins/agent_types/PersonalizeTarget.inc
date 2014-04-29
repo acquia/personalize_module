@@ -43,6 +43,7 @@ class PersonalizeTarget extends PersonalizeAgentBase implements PersonalizeExpli
    * Implements PersonalizeAgentInterface::convertContextToFeatureString().
    */
   public static function convertContextToFeatureString($name, $value, $is_mutex = FALSE) {
+    $value = self::cleanFeatureValue($value);
     return $name . '::' . $value;
   }
 
