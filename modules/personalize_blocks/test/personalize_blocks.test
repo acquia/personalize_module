@@ -131,6 +131,11 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
     $this->assertEqual($option_set->options[0]['bid'], 'block_delta_2');
     $this->assertEqual($option_set->options[1]['bid'], 'block_delta_1');
 
+    // Make sure the option ids were generated based on the option labels.
+    foreach ($option_set->options as $option) {
+      $this->assertEqual($option['option_id'], personalize_generate_machine_name($option['option_label']));
+    }
+
     // Delete the personalized block.
     personalize_option_set_delete($option_set->osid);
 
@@ -294,6 +299,11 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
       $this->assertRaw($edit['blocks[1][option_label]']);
       $this->assertRaw('<option value="' . $edit['blocks[0][block][bid]'] . '" selected="selected">');
       $this->assertRaw('<option value="' . $edit['blocks[1][block][bid]'] . '" selected="selected">');
+
+      // Make sure the option ids were generated based on the option labels.
+      foreach ($pblock->options as $option) {
+        $this->assertEqual($option['option_id'], personalize_generate_machine_name($option['option_label']));
+      }
     }
 
     return $pblock;
