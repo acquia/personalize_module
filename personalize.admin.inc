@@ -1585,9 +1585,16 @@ function personalize_targeting_add_context_submit($form, &$form_state) {
  */
 function personalize_targeting_remove_context_submit($form, &$form_state) {
   $parents = $form_state['clicked_button']['#parents'];
-  $option_set = $parents[1];
-  $option_id = $parents[3];
-  $delta = $parents[7];
+  // The parents are option_sets, option_set_[osid], options, [option_id],
+  // explicit_targeting, mapping, contexts, [delta]. At least if we only depend
+  // on the position of the immediate parent of each element we need, that makes
+  // this a little less vulnerable to future chnages made to the form structure.
+  $option_set_pos = array_search('option_sets', $parents) + 1;
+  $option_id_pos = array_search('options', $parents) + 1;
+  $delta_pos = array_search('contexts', $parents) + 1;
+  $option_set = $parents[$option_set_pos];
+  $option_id = $parents[$option_id_pos];
+  $delta = $parents[$delta_pos];
   $form_state['to_remove'][$option_set][$option_id] = $delta;
   $form_state['rebuild'] = TRUE;
 }
