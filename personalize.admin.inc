@@ -1303,12 +1303,21 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
  * Builds the form elements needed for adding explicit targeting to an option.
  *
  * @param $option_set
+ *   The option set this explicit targeting config is for.
  * @param $option
+ *   The individual option this explicit targeting config is for.
  * @param $targeting_values
+ *   The available context values.
  * @param $targeting_support
+ *   How multiple targeting features can be handled, i.e. using AND, OR or either
+ *   of these, in which case a dropdown is provided for the user to select.
  * @param $states
+ *   An array to use as the states property for these elements.
  * @param $parents
+ *   The array of parents of these elements within the larger form
+ *
  * @return array
+ *   An array representing the explicit targeting portion of the form.
  */
 function personalize_targeting_support_form_elements($option_set, $option, $targeting_values, $targeting_support, $states, $parents, &$form_state) {
   $attributes = array(
@@ -1353,7 +1362,6 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     '#theme_wrappers' => array('container'),
     '#attributes' => $attributes,
   );
-  // Create the form elements for the "free" values
   $form['mapping']['contexts'] = array(
     '#type' => 'container',
     '#states' => $states,
@@ -1365,7 +1373,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   // Load from the existing form if passed first, otherwise, load from option
   // set.
   $mappings = array();
-  if (isset($form_state['values'])) {
+  if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
       // Important: preserve the delta passed through the form as it is used
       // to determine the item to delete when "remove" is clicked.
@@ -1599,6 +1607,12 @@ function personalize_targeting_remove_context_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
+/**
+ * Ajax callback for the explicit targeting context dropdown.
+ *
+ * Returns the operator and value portion of the form, which are different
+ * depending on what was selected in the context dropdown.
+ */
 function personalize_explicit_targeting_context_callback($form, &$form_state) {
   // We need to return the section of the form corresponding to one level up from
   // the dropdown that triggered the ajax, so use the array parents to find that
@@ -1619,7 +1633,7 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  * @return array
  *   An associative array keyed by context name, with an array of information about the
  *   possible values for that context. The 'value type' key in this array indicates what
- *   type of value this field can hold and is one of 'predfined', 'string' or 'number'. If
+ *   type of value this field can hold and is one of 'predefined', 'string' or 'number'. If
  *   the value type is 'predefined', then there must be a 'values' array with the list of
  *   predefined possible values. For example:
  *     array(

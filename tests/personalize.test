@@ -1651,7 +1651,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $edit['option_sets[option_set_1][options][option-C][explicit_targeting][mapping][contexts][0][value][match]'] = 'second value';
     $edit['option_sets[option_set_1][options][option-C][explicit_targeting][mapping][contexts][0][value][operator]'] = 'contains';
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
-    $this->assertText('You have set the same targeting feature for more than one option');
+    $this->assertText(t('You have set the same targeting feature for more than one option'));
     $this->resetAll();
     $option_set = personalize_option_set_load(1);
 

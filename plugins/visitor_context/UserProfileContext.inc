@@ -108,8 +108,6 @@ class UserProfileContext extends PersonalizeContextBase {
       $possible_values[$name] = array(
         'friendly name' => $instance['label']
       );
-      // We can only support fields that have predefined options since for
-      // other fields we have no idea what the possible values are.
       if ($instance['widget']['module'] == 'options') {
         $possible_values[$name]['value type'] = 'predefined';
         // Build the form element that would be used to display the field

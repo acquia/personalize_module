@@ -105,6 +105,7 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
         continue;
       }
       $expected_values[$name] = array(
+        'value type' => 'predefined',
         'values' => array()
       );
       foreach ($values as $value) {

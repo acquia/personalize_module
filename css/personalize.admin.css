@@ -70,7 +70,7 @@ button.personalize-delete-goal, button.personalize-delete-context {
 
 /* Make the remove context buttons line up with the form elements */
 div.personalize-variation-row div.personalize-remove-context {
-    padding-top: 24px;
+    padding-top: 2em;
 }
 
 /**
