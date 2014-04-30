@@ -1362,8 +1362,21 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     ),
   );
 
+  // Load from the existing form if passed first, otherwise, load from option
+  // set.
   $mappings = array();
-  if (isset($option['fixed_targeting'])) {
+  if (isset($form_state['values'])) {
+    foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
+      // Important: preserve the delta passed through the form as it is used
+      // to determine the item to delete when "remove" is clicked.
+      $mappings[$delta] = array(
+        'context' => $context['context'],
+        'operator' => $context['value']['operator'],
+        'match' => $context['value']['match'],
+      );
+    }
+  }
+  else if (isset($option['fixed_targeting'])) {
     foreach ($option['fixed_targeting'] as $feature) {
       if (isset($option['fixed_targeting_rules'][$feature])) {
         $mappings[] = $option['fixed_targeting_rules'][$feature];
@@ -1379,6 +1392,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     $form_state['num_contexts']['option_set_' . $osid][$option['option_id']]--;
   }
 
+  // Make sure there is at least an empty context.
   if (empty($mappings)) {
     $mappings[] = array(
       'context' => '',
@@ -1386,6 +1400,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       'match' => '',
     );
   }
+
   // If the "Add another" button was clicked, we need to add contexts to get up
   // to the number indicated.
   $num_contexts = count($mappings);
@@ -1401,15 +1416,11 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   }
 
   $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] = count($mappings);
-  $values = array();
-  if (isset($form_state['values'])) {
-    $values = $form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping'];
-  }
   foreach ($mappings as $delta => $mapping) {
     $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
-    $selected_context = isset($values['contexts'][$delta]['context']) ? $values['contexts'][$delta]['context'] : $mapping['context'];
-    $selected_operator = isset($values['contexts'][$delta]['operator']) ? $values['contexts'][$delta]['operator'] : $mapping['operator'];
-    $selected_match = isset($values['contexts'][$delta]['match']) ? $values['contexts'][$delta]['match'] : $mapping['match'];
+    $selected_context = $mapping['context'];
+    $selected_operator = $mapping['operator'];
+    $selected_match = $mapping['match'];
     $form['mapping']['contexts'][$delta] = array(
       '#prefix' => '<div class="personalize-target-wrapper">',
       '#suffix' => '</div>',
@@ -1464,6 +1475,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     }
 
     // Add a "remove" button for this context.
+    // NOTE: ajax.js expects the ID of the element to match the element's name
+    // even when a different selector is passed.
     $form['mapping']['contexts'][$delta]['remove'] = array(
       '#prefix' => '<div class="personalize-remove-context">',
       '#suffix' => '</div>',
@@ -1475,6 +1488,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#attributes' => array(
         'class' => array('personalize-delete-context', 'form-submit',),
         'title' => t('Delete this context.'),
+        'id' => 'edit-option-sets-option-set-' . $osid . '-options-' . $option['option_id'] . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
       ),
       '#submit' => array('personalize_targeting_remove_context_submit'),
       '#ajax' => array(
