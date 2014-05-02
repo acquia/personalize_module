@@ -1510,8 +1510,12 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $form['add_new'] = array(
     '#prefix' => '<span class="personalize-add-link-prefix"></span>',
     '#type' => 'submit',
-    '#value' => t('Add context to ' . $option['option_id']),
+    '#tag' => 'button',
+    '#text' => t('Add context'),
+    '#value' => 'add_context_' . $osid . '_' . $option['option_id'],
+    '#theme_wrappers' => array('personalize_html_tag'),
     '#attributes' => array(
+      'id' => 'edit-option-sets-option-set-' . $osid . '-options-' . $option['option_id'] . '-explicit-targeting-add-new',
       'class' => array('personalize-add-link'),
       'title' => t('Click here to add more contexts.')
     ),
@@ -1521,7 +1525,6 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       'wrapper' => $main_wrapper_id,
       'effect' => 'fade',
     ),
-    '#parents' => $parents,
   );
   $strategy_parents = $parents;
   foreach (array('explicit_targeting', 'strategy') as $parent) {
