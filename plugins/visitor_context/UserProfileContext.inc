@@ -101,15 +101,15 @@ class UserProfileContext extends PersonalizeContextBase {
     $entity = new stdClass();
     $form = $form_state = array();
     foreach ($this->selectedContext as $name) {
-      $possible_values[$name] = array(
-        'values' => array()
-      );
+
       $field_name = 'field_' . $name;
       $field = field_info_field($field_name);
       $instance = field_info_instance('user', $field_name, 'user');
-      // We can only support fields that have predefined options since for
-      // other fields we have no idea what the possible values are.
+      $possible_values[$name] = array(
+        'friendly name' => $instance['label']
+      );
       if ($instance['widget']['module'] == 'options') {
+        $possible_values[$name]['value type'] = 'predefined';
         // Build the form element that would be used to display the field
         // for editing and pull the options list out of it. (There is no API
         // function for getting the list of possible values from a field.)
@@ -118,6 +118,14 @@ class UserProfileContext extends PersonalizeContextBase {
           if ($key != '_none') {
             $possible_values[$name]['values'][$key] = $label;
           }
+        }
+      }
+      else {
+        if (strpos($field['type'], 'number_') === 0) {
+          $possible_values[$name]['value type'] = 'number';
+        }
+        else {
+          $possible_values[$name]['value type'] = 'string';
         }
       }
     }

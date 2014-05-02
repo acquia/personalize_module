@@ -31,11 +31,19 @@ Drupal.personalize_target = (function() {
     }
   }
 
-  function convertContextToFeatureString(visitor_context) {
-    var feature_strings = [];
-    for (var i in visitor_context) {
+  function contextToFeatureString(key, value) {
+    return key + '::' + value;
+  }
+
+  function convertContextToFeatureStrings(visitor_context) {
+    var i, j, feature_strings = [];
+    for (i in visitor_context) {
       if (visitor_context.hasOwnProperty(i)) {
-        feature_strings.push(i + '::' + visitor_context[i]);
+        for (j in visitor_context[i]) {
+          if (visitor_context[i].hasOwnProperty(j)) {
+            feature_strings.push(contextToFeatureString(i, visitor_context[i][j]));
+          }
+        }
       }
     }
     return feature_strings;
@@ -47,7 +55,7 @@ Drupal.personalize_target = (function() {
         init();
       }
       var decisions = {};
-      var feature_strings = convertContextToFeatureString(visitor_context);
+      var feature_strings = convertContextToFeatureStrings(visitor_context);
       for (var j in choices) {
         if (choices.hasOwnProperty(j)) {
           // Initialize the decision to the fallback option.
@@ -78,6 +86,13 @@ Drupal.personalize.agents.personalize_target = {
   'sendGoalToAgent': function(agent_name, goal_name, value) {
     if (window.console) {
       console.log('Sending goal ' + goal_name + ' to agent ' + agent_name + ' with value ' + value);
+    }
+  },
+  'featureToContext': function(featureString) {
+    var contextArray = featureString.split('::');
+    return {
+      'key': contextArray[0],
+      'value': contextArray[1]
     }
   }
 };

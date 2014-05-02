@@ -49,6 +49,7 @@ class QuerystringContext extends PersonalizeContextBase {
     $param_values = variable_get('personalize_url_querystring_contexts', array());
     foreach ($this->selectedContext as $name) {
       $possible_values[$name] = array(
+        'value type' => 'predefined',
         'values' => array(),
       );
       foreach ($param_values[$name] as $param_value) {

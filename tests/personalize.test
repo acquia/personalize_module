@@ -71,10 +71,12 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
       if (isset($option['fixed_targeting'])) {
         $this->assertEqual($option['fixed_targeting'], $expected[$option['option_id']]['fixed_targeting']);
         $this->assertEqual($option['fixed_targeting_strategy'], $expected[$option['option_id']]['fixed_targeting_strategy']);
+        $this->assertEqual($option['fixed_targeting_rules'], $expected[$option['option_id']]['fixed_targeting_rules']);
       }
       else {
         $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting']));
         $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_strategy']));
+        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_rules']));
       }
     }
   }
@@ -1545,12 +1547,9 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->resetAll();
     // Create a user profile field that we can use for explicit targeting
     $field = array(
-      'type' => 'list_text',
+      'type' => 'text',
       'field_name' => 'field_test_user_field',
       'cardinality' => 1,
-      'settings' => array(
-        'allowed_values' => array('first_value' => 'First Value', 'second_value' => 'Second value', 'third_value' => 'Third value'),
-      ),
     );
     field_create_field($field);
     $instance = array(
@@ -1562,12 +1561,9 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       'settings' => array(
         'user_register_form' => FALSE,
       ),
-      'widget' => array(
-        'type' => 'options_select',
-      ),
     );
     field_create_instance($instance);
-    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
     $this->drupalLogin($admin_user);
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
@@ -1582,101 +1578,211 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     $edit = array('visitor_context[]' => array('user_profile_context__test_user_field' => 'user_profile_context__test_user_field'));
     $this->drupalPost('admin/structure/personalize/manage/' . $machine_name . '/edit', $edit, $this->getButton('agent'));
-    // Add a couple of option sets to the agent.
-    $option_set_values = array(
-      array('agent' => $machine_name, 'plugin' => 'type1', 'num_options' => 3),
-      array('agent' => $machine_name, 'plugin' => 'type2', 'num_options' => 2),
-    );
-    foreach ($option_set_values as $i => $values) {
-      $option_set = array(
-        'plugin' => $values['plugin'],
-        'label' => 'Option Set ' . ($i + 1),
-        'agent' => $values['agent'],
+
+    // Create two block-based option sets.
+    $option_sets = array();
+    $block_ids = array('comment_delta_recent', 'system_delta_powered-by', 'user_delta_online', 'user_delta_new');
+    for ($i = 0; $i < 2; $i++) {
+      // Each option set will have 2 options.
+      $options = array(
+        array('bid' => array_shift($block_ids)),
+        array('bid' => array_shift($block_ids)),
       );
-      $options = array();
-      for ($j = 0; $j < $values['num_options']; $j++) {
-        $options[$j] = array(
-          'option_id' => personalize_generate_option_id($j),
-          'option_label' => personalize_generate_option_label($j),
-        );
-      }
-      $option_set['options'] = $options;
-      personalize_option_set_save((object) $option_set);
+    $option_sets[] = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
     }
+    // We are extremely limited in what we can test using the form, as we can't make simple
+    // test use the "Add context" buttons since we're rendering them as buttons instead of
+    // submit input elements.
     $edit = array(
       'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][]' => array('test_user_field--first_value'),
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'test_user_field',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
       'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
       'option_sets[option_set_1][options][option-B][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][]' => array('test_user_field--second_value'),
+      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][context]' => 'test_user_field',
+      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][operator]' => 'contains',
+      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][match]' => 'second value',
       'option_sets[option_set_1][options][option-B][explicit_targeting][strategy]' => 'OR',
-      'option_sets[option_set_1][options][option-C][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-C][explicit_targeting][mapping][]' => array('test_user_field--third_value'),
-      'option_sets[option_set_1][options][option-C][explicit_targeting][strategy]' => 'OR',
     );
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
     $option_set = personalize_option_set_load(1);
     $expected_targeting = array(
       'option-A' => array(
-        'fixed_targeting' => array('test_user_field--first_value'),
+        'fixed_targeting' => array('test_user_field--ss-first-value'),
+        'fixed_targeting_rules' => array(
+          'test_user_field--ss-first-value' => array(
+            'context' => 'test_user_field',
+            'match' => 'first value',
+            'operator' => 'starts',
+          ),
+        ),
         'fixed_targeting_strategy' => 'OR'
       ),
       'option-B' => array(
-        'fixed_targeting' => array('test_user_field--second_value'),
-        'fixed_targeting_strategy' => 'OR'
-      ),
-      'option-C' => array(
-        'fixed_targeting' => array('test_user_field--third_value'),
+        'fixed_targeting' => array('test_user_field--sc-second-value'),
+        'fixed_targeting_rules' => array(
+          'test_user_field--sc-second-value' => array(
+            'context' => 'test_user_field',
+            'match' => 'second value',
+            'operator' => 'contains',
+          ),
+        ),
         'fixed_targeting_strategy' => 'OR'
       ),
     );
     $this->assertExplicitTargeting($option_set, $expected_targeting);
     // Now try assigning the same feature to more than one option
-    $edit['option_sets[option_set_1][options][option-C][explicit_targeting][mapping][]'] = array('test_user_field--second_value');
+    $edit['option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][match]'] = 'first value';
+    $edit['option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][operator]'] = 'starts';
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
+    $this->assertText(t('You have set the same targeting feature for more than one option'));
     $this->resetAll();
     $option_set = personalize_option_set_load(1);
-    $expected_targeting = array(
-      'option-A' => array(
-        'fixed_targeting' => array('test_user_field--first_value'),
-        'fixed_targeting_strategy' => 'OR'
-      ),
-      'option-B' => array(
-        'fixed_targeting' => array('test_user_field--second_value'),
-        'fixed_targeting_strategy' => 'OR'
-      ),
-      'option-C' => array(
-        'fixed_targeting' => array(),
-        'fixed_targeting_strategy' => 'OR'
+
+    // Although it issues a warning, it should still allow the feature to be mapped
+    // to different options.
+    $expected_targeting['option-B']['fixed_targeting'] = array('test_user_field--ss-first-value');
+    $expected_targeting['option-B']['fixed_targeting_rules'] = array(
+      'test_user_field--ss-first-value' => array(
+        'context' => 'test_user_field',
+        'match' => 'first value',
+        'operator' => 'starts',
       ),
     );
+
     $this->assertExplicitTargeting($option_set, $expected_targeting);
 
-    // Now let's uncheck "enable_explicit_targeting" for first option
+    // Now let's uncheck "enable_explicit_targeting" for first option and put the third option
+    // back to using "third_value".
     $edit['option_sets[option_set_1][options][option-A][enable_explicit_targeting]'] = FALSE;
-    $edit['option_sets[option_set_1][options][option-C][explicit_targeting][mapping][]'] =  array('test_user_field--third_value');
-    $edit['option_sets[option_set_1][options][option-C][explicit_targeting][strategy]'] =  'OR';
 
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
-
     $this->resetAll();
     $option_set = personalize_option_set_load(1);
-    $expected_targeting = array(
+
+    $expected_targeting['option-A']['fixed_targeting'] = $expected_targeting['option-A']['fixed_targeting_rules'] = array();
+    $expected_targeting['option-A']['fixed_targeting_strategy'] = 'OR';
+
+    $this->assertExplicitTargeting($option_set, $expected_targeting);
+
+    // Since we couldn't test much using the form, let's mock some form values getting
+    // sent to the submit function and assert the correct explicit targeting settings.
+    module_load_include('inc', 'personalize', 'personalize.admin');
+    $form_state = array(
+      'values' => array(
+        'agent' => $machine_name,
+        'option_sets' => array(
+          'option_set_2' => array(
+            'winner' => 'option-A',
+            'advanced' => array(
+              'label' => $this->randomName(),
+              'stateful' => 0,
+            ),
+            'options' => array(
+              'option-A' => array(
+                'explicit_targeting' => array(
+                  'mapping' => array(
+                    'contexts' => array(
+                      array(
+                        'context' => 'test_user_field',
+                        'value' => array('match' => 'some value', 'operator' => 'contains'),
+                      ),
+                      array(
+                        'context' => 'test_user_field',
+                        'value' => array('match' => 'other value', 'operator' => 'starts'),
+                      )
+                    )
+                  ),
+                  'strategy' => 'OR',
+                )
+              ),
+              'option-B' => array(
+                'explicit_targeting' => array(
+                  'mapping' => array(
+                    'contexts' => array(
+                      array(
+                        'context' => 'test_user_field',
+                        'value' => array('match' => 'ohai', 'operator' => 'starts'),
+                      ),
+                      array(
+                        'context' => 'test_user_field',
+                        'value' => array('match' => 'kthxbai', 'operator' => 'ends'),
+                      )
+                    )
+                  ),
+                  'strategy' => 'AND',
+                )
+              ),
+            )
+          )
+        )
+      )
+    );
+    personalize_agent_option_sets_form_submit(array(), $form_state);
+    $option_set = personalize_option_set_load(2, TRUE);
+    $expected_targeting_osid2 = array(
       'option-A' => array(
-        'fixed_targeting' => array(),
+        'fixed_targeting' => array('test_user_field--sc-some-value', 'test_user_field--ss-other-value'),
+        'fixed_targeting_rules' => array(
+          'test_user_field--sc-some-value' => array(
+            'context' => 'test_user_field',
+            'match' => 'some value',
+            'operator' => 'contains',
+          ),
+          'test_user_field--ss-other-value' => array(
+            'context' => 'test_user_field',
+            'match' => 'other value',
+            'operator' => 'starts',
+          ),
+        ),
         'fixed_targeting_strategy' => 'OR'
       ),
       'option-B' => array(
-        'fixed_targeting' => array('test_user_field--second_value'),
-        'fixed_targeting_strategy' => 'OR'
-      ),
-      'option-C' => array(
-        'fixed_targeting' => array('test_user_field--third_value'),
-        'fixed_targeting_strategy' => 'OR'
+        'fixed_targeting' => array('test_user_field--ss-ohai', 'test_user_field--se-kthxbai'),
+        'fixed_targeting_rules' => array(
+          'test_user_field--ss-ohai' => array(
+            'context' => 'test_user_field',
+            'match' => 'ohai',
+            'operator' => 'starts',
+          ),
+          'test_user_field--se-kthxbai' => array(
+            'context' => 'test_user_field',
+            'match' => 'kthxbai',
+            'operator' => 'ends',
+          ),
+        ),
+        'fixed_targeting_strategy' => 'AND'
       ),
     );
-    $this->assertExplicitTargeting($option_set, $expected_targeting);
+    $this->assertExplicitTargeting($option_set, $expected_targeting_osid2);
+
+    // Now let's place the blocks in a region and make sure the correct js settings
+    // show up when they're rendered.
+    $edit = array();
+    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $edit['blocks[personalize_blocks_2][region]'] = 'sidebar_first';
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $option_set_settings = $settings['personalize']['option_sets'];
+    // CHeck the fixed targeting on the first option set.
+    $this->assertEqual(array(), $option_set_settings['osid-1']['options'][0]['fixed_targeting']);
+    $this->assertEqual(array(), $option_set_settings['osid-1']['options'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting['option-B']['fixed_targeting'], $option_set_settings['osid-1']['options'][1]['fixed_targeting']);
+    $this->assertEqual($expected_targeting['option-B']['fixed_targeting_rules'], $option_set_settings['osid-1']['options'][1]['fixed_targeting_rules']);
+
+    // Now check the fixed targeting on the set that was submitted directly
+    // to the submit function, which has multiple features per option.
+    $this->assertEqual($expected_targeting_osid2['option-A']['fixed_targeting'], $option_set_settings['osid-2']['options'][0]['fixed_targeting']);
+    $this->assertEqual($expected_targeting_osid2['option-A']['fixed_targeting_rules'], $option_set_settings['osid-2']['options'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting_osid2['option-A']['fixed_targeting_strategy'], $option_set_settings['osid-2']['options'][0]['fixed_targeting_strategy']);
+
+    $this->assertEqual($expected_targeting_osid2['option-B']['fixed_targeting'], $option_set_settings['osid-2']['options'][1]['fixed_targeting']);
+    $this->assertEqual($expected_targeting_osid2['option-B']['fixed_targeting_rules'], $option_set_settings['osid-2']['options'][1]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting_osid2['option-B']['fixed_targeting_strategy'], $option_set_settings['osid-2']['options'][1]['fixed_targeting_strategy']);
   }
 }
 

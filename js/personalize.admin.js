@@ -98,7 +98,7 @@
   Drupal.behaviors.personalizeCampaignEditFormHandling = {
     attach: function (context, settings) {
       // Add a handler to form submits that trigger campaign status changes.
-      $('#personalize-agent-form input[type="submit"], #personalize-agent-option-sets-form input[type="submit"]').not('.form-reset, input[name="toggle_submit"]').once().each(function() {
+      $('#personalize-agent-form input[type="submit"], #personalize-agent-option-sets-form input[type="submit"]').not('.form-reset, .personalize-add-link, .personalize-delete-context, input[name="toggle_submit"]').once().each(function() {
         var currentCampaign = Drupal.settings.personalize.activeCampaign;
         if (typeof currentCampaign === 'undefined') {
           return;
