@@ -197,13 +197,20 @@
     },
     'sendGoalToAgent': function(agent_name, goal_name, value) {
 
+    },
+    'featureToContext': function(featureString) {
+      var contextArray = featureString.split('::');
+      return {
+        'key': contextArray[0],
+        'value': contextArray[1]
+      }
     }
   };
 
   /**
    * Returns an object with key/value pairs for the enabled visitor contexts.
    */
-  function getVisitorContext(enabled_context) {
+  function getVisitorContext(agent_name, agent_type, enabled_context) {
     var i, j, new_values, visitor_context = Drupal.personalize.visitor_context, context_values = {};
     for (i in enabled_context) {
       if (enabled_context.hasOwnProperty(i) && visitor_context.hasOwnProperty(i) && typeof visitor_context[i].getContext === 'function') {
@@ -213,8 +220,111 @@
         }
       }
     }
-    return context_values;
+    return Drupal.personalize.evaluateContexts(agent_name, agent_type, context_values);
   }
+
+
+  var fixed_targeting_rules = null;
+  Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext) {
+    if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
+      return;
+    }
+    // If we haven't already gone through all the explicit targeting rules, we need to
+    // do that first to find the rule for each feature string.
+    if (fixed_targeting_rules === null) {
+      fixed_targeting_rules = {};
+      var settings = Drupal.settings.personalize.option_sets;
+      for (var i in settings) {
+        if (settings.hasOwnProperty(i)) {
+          var option_set = settings[i];
+          var agent = option_set.agent;
+          for (var j in option_set.options) {
+            if (option_set.options.hasOwnProperty(j) && option_set.options[j].hasOwnProperty('fixed_targeting')) {
+              fixed_targeting_rules[agent] = fixed_targeting_rules[agent] || {};
+              // Loop through all features specified for an option and grab the rule
+              // associated with it.
+              for (var k in option_set.options[j].fixed_targeting) {
+                if (option_set.options[j].fixed_targeting.hasOwnProperty(k)) {
+                  var feature_name = option_set.options[j].fixed_targeting[k];
+                  if (option_set.options[j].hasOwnProperty('fixed_targeting_rules') && option_set.options[j].fixed_targeting_rules.hasOwnProperty(feature_name)) {
+                    fixed_targeting_rules[agent][feature_name] = option_set.options[j].fixed_targeting_rules[feature_name];
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    // The new visitor context object will hold an array of values for each
+    // key, rather than just a single value. This is because in addition to
+    // having a string representing key and actual value, for each rule that
+    // is satisfied we'll also need a string indicating that that rule is
+    // satisfied. For example, if we have a targeting rule that says show this
+    // option if the visitor's "interests" field contains "submarines", and the
+    // value of this field for the current visitor is "ships and submarines",
+    // then our visitor context for key "interests" should be ["ships and submarines",
+    // "sc-submarines"], where sc- is just the prefix added to codify "string
+    // contains".
+    var newVisitorContext = {};
+    for (var contextKey in visitorContext) {
+      if (visitorContext.hasOwnProperty(contextKey)) {
+        newVisitorContext[contextKey] = [visitorContext[contextKey]];
+      }
+    }
+    // Use the rules to set values on the visitor context which can then be used
+    // for explicit targeting. It is up to the agent how exactly the explicit
+    // targeting is done.
+    if (fixed_targeting_rules.hasOwnProperty(agentName)) {
+      var featureRules = fixed_targeting_rules[agentName];
+      for (var featureName in featureRules) {
+        if (featureRules.hasOwnProperty(featureName)) {
+          var key = featureRules[featureName].context;
+          if (visitorContext.hasOwnProperty(key)) {
+            // Evaluate the rule and if it returns true, we set the feature string
+            // on the visitor context.
+            var operator = featureRules[featureName].operator;
+            var match = featureRules[featureName].match;
+            if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
+              if (Drupal.personalize.targetingOperators[operator](visitorContext[key], match)) {
+                // The feature string was created by the agent responsible for consuming
+                // it, so only that agent knows how to split it up into its key and
+                // value components.
+                var context = Drupal.personalize.agents[agentType].featureToContext(featureName);
+                // Now add the value that reflects this matched rule.
+                newVisitorContext[key].push(context.value);
+              }
+            }
+          }
+        }
+      }
+    }
+    return newVisitorContext;
+  };
+
+  /**
+   * Defines the various operations that can be performed to evaluate
+   * explicit targeting rules.
+   */
+  Drupal.personalize.targetingOperators = {
+    'contains': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue) !== -1;
+    },
+    'starts': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue) === 0;
+    },
+    'ends': function(actualValue, matchValue) {
+      return actualValue.indexOf(matchValue, actualValue.length - matchValue.length) !== -1;
+    },
+    'numgt': function(actualValue, matchValue) {
+      if (isNaN(actualValue) || isNaN(matchValue)) return false;
+      return actualValue > matchValue;
+    },
+    'numlt': function(actualValue, matchValue) {
+      if (isNaN(actualValue) || isNaN(matchValue)) return false;
+      return actualValue < matchValue;
+    }
+  };
 
   /**
    * User Context object.
@@ -541,7 +651,7 @@
       agent_type = 'default_agent';
     }
 
-    var visitor_context = getVisitorContext(agent_info.enabled_contexts);
+    var visitor_context = getVisitorContext(agent_name, agent_type, agent_info.enabled_contexts);
 
     // Build up the agent data, organized into decision points and decisions.
     agents[agent_name] = agents[agent_name] || {
