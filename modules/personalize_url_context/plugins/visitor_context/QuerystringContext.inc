@@ -20,7 +20,7 @@ class QuerystringContext extends PersonalizeContextBase {
   public static function getOptions() {
     $params = variable_get('personalize_url_querystring_contexts', array());
     $options = array();
-    foreach ($params as $name => $values) {
+    foreach ($params as $name) {
       $options[$name] = array(
         'name' => $name,
         'group' => 'Querystring Params'
@@ -46,18 +46,10 @@ class QuerystringContext extends PersonalizeContextBase {
    */
   public function getPossibleValues() {
     $possible_values = array();
-    $param_values = variable_get('personalize_url_querystring_contexts', array());
     foreach ($this->selectedContext as $name) {
       $possible_values[$name] = array(
-        'value type' => 'predefined',
-        'values' => array(),
+        'value type' => 'string',
       );
-      foreach ($param_values[$name] as $param_value) {
-        // The 'values' array has the actual value as the key and the label or
-        // friendly name as the value, but in this case we don't have a label
-        // so just use the $param_value as both key and value.
-        $possible_values[$name]['values'][$param_value] = $param_value;
-      }
     }
     return $possible_values;
   }
