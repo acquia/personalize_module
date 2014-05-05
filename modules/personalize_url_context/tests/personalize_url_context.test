@@ -26,58 +26,30 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
     $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
     $this->drupalLogin($admin_user);
 
-    $this->drupalPost('admin/config/content/personalize/url_context', array('contexts[0][name]' => 'some-param', 'contexts[0][values]' => "some-val\r\nother-val"), t('Save'));
+    $this->drupalPost('admin/config/content/personalize/url_context', array(), t('Save'));
     $params = variable_get('personalize_url_querystring_contexts', array());
     $expected = array(
-      'some-param' => array(
-        'some-val',
-        'other-val'
-      )
+      'utm_campaign',
+      'utm_source',
+      'utm_medium',
+      'utm_content',
+      'utm_term',
+    );
+    $this->assertEqual($expected, $params);
+    $this->drupalPost('admin/config/content/personalize/url_context', array('contexts' => "some-param"), t('Save'));
+    $params = variable_get('personalize_url_querystring_contexts', array());
+    $expected = array(
+      'some-param'
     );
     $this->assertEqual($expected, $params);
 
-    // There should be two options specified initially.
-    $this->drupalGet('admin/config/content/personalize/url_context');
-    $this->assertFieldByName('contexts[0][name]', 'some-param');
-    $this->assertFieldByName('contexts[0][values]');
-
-    // Add another option
-    $this->drupalPost(NULL, array(), t('Add another'));
-    $this->assertFieldByName('contexts[1][name]', '');
-    $this->assertFieldByName('contexts[1][values]', '');
-
-    // Add third option
-    $this->drupalPost(NULL, array(), t('Add another'));
-    $this->assertFieldByName('contexts[2][name]', '');
-    $this->assertFieldByName('contexts[2][values]', '');
-
     // Submit them all
     $edit = array(
-      'contexts[0][name]' => 'some-param',
-      'contexts[0][values]' => "some-val\r\nother-val",
-      'contexts[1][name]' => 'param2',
-      'contexts[1][values]' => "param2-val1\r\nparam2-val2\r\nparam2-val3",
-      'contexts[2][name]' => 'param3',
-      'contexts[2][values]' => "param3-val1\r\nparam3-val2\r\nparam3-val3",
+      'contexts' => "some-param\r\nparam2 \r\nparam3",
     );
     $this->drupalPost(NULL, $edit, t('Save'));
     $params = variable_get('personalize_url_querystring_contexts', array());
-    $expected = array(
-      'some-param' => array(
-        'some-val',
-        'other-val'
-      ),
-      'param2' => array(
-        'param2-val1',
-        'param2-val2',
-        'param2-val3',
-      ),
-      'param3' => array(
-        'param3-val1',
-        'param3-val2',
-        'param3-val3',
-      ),
-    );
+    $expected = array('some-param', 'param2', 'param3');
     $this->assertEqual($expected, $params);
     $this->resetAll();
     ctools_include('plugins');
@@ -92,6 +64,9 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
         'group' => 'Querystring Params',
       );
     }
+    $expected_param_names['referrer_url'] = array(
+      'name' => t('Referrer URL')
+    );
     $this->assertEqual($expected_param_names, $options);
 
     // Test that getPossibleValues returns the right values. For this we
@@ -99,19 +74,15 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
     $agent = personalize_agent_load_agent('test-agent');
     $context_plugin = call_user_func_array(array($class, 'create'), array($agent, array('param2', 'param3')));
     $expected_values = array();
-    foreach ($expected as $name => $values) {
-      if ($name == 'some-param') {
-        // We didn't add the some-param context
-        continue;
-      }
+    foreach (array('param2', 'param3') as $name) {
       $expected_values[$name] = array(
-        'value type' => 'predefined',
-        'values' => array()
+        'value type' => 'string'
       );
-      foreach ($values as $value) {
-        $expected_values[$name]['values'][$value] = $value;
-      }
     }
+    $expected_values['referrer_url'] = array(
+      'value type' => 'string',
+      'friendly name' => t('Referrer URL')
+    );
     $possible_values = $context_plugin->getPossibleValues();
     $this->assertEqual($expected_values, $possible_values);
   }

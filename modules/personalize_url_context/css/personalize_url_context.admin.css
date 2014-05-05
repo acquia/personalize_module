@@ -3,16 +3,6 @@
  * Styles for Personalize URL Context administration page.
  */
 
-div.personalize-url-context-name-element {
-    clear: both;
-    width: 350px;
-    float: left;
-}
-
-div.personalize-url-context-values-element {
-    margin-left: 350px;
-}
-
-div.personalize-url-context-values-element .form-textarea-wrapper {
+div.personalize-url-context-textarea .form-textarea-wrapper {
     width: 400px;
 }

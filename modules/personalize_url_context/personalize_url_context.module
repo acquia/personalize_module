@@ -50,14 +50,20 @@ function personalize_url_context_ctools_plugin_api($owner, $api) {
  * Implements hook_page_build().
  */
 function personalize_url_context_page_build(&$page) {
-  $all_params = drupal_get_query_parameters();
-  $contexts = variable_get('personalize_url_querystring_contexts', array());
-  $params = array_intersect_key($all_params, $contexts);
-  foreach ($params as $key => &$value) {
-    $value = check_plain($value);
+  $contexts = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
+  $params = array();
+  // Filter the list of actual querystring parameters to just those defined
+  // in our config.
+  foreach (drupal_get_query_parameters() as $key => $value) {
+    if (in_array($key, $contexts)) {
+      $params[$key] = check_plain($value);
+    }
   }
+  // We need the base url for comparison against the referrer in our js.
+  global $base_url;
   $settings = array(
     'querystring_params' => $params,
+    'base_url' => $base_url,
   );
 
   $page['page_top']['personalize_url_context'] = array(
@@ -89,75 +95,15 @@ function personalize_url_context_admin_form($form, &$form_state) {
       )
     )
   );
-  $contexts = array();
-  if (isset($form_state['contexts'])) {
-    $contexts = $form_state['contexts'];
-  }
-  else {
-    $query_string_contexts = variable_get('personalize_url_querystring_contexts', array());
-    foreach ($query_string_contexts as $name => $values) {
-      $contexts[] = array('name' => $name, 'values' => implode("\n", $values));
-    }
-  }
-
-  // Add a wrapper for the blocks and Add Another Tab button.
-  $form['context_wrapper'] = array(
-    '#tree' => FALSE,
-    '#title' => t('Contexts'),
+  $query_string_contexts = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
+  $form['contexts'] = array(
+    '#prefix' => '<div class="personalize-url-context-textarea">',
+    '#suffix' => '</div>',
+    '#description' => t('List here all of the querystring parameters you might want to use for targeting purposes in your campaigns. Put each parameter on its own line.'),
+    '#type' => 'textarea',
+    '#title' => t('Querystring contexts'),
+    '#default_value' => !empty($query_string_contexts) ? implode("\r\n", $query_string_contexts) : '',
   );
-
-  $form['context_wrapper']['contexts'] = array(
-    '#tree' => TRUE,
-    '#theme_wrappers' => array('container'),
-    '#attributes' => array('id' => 'personalize-url-contexts'),
-  );
-
-  $form['context_wrapper']['contexts_more'] = array(
-    '#type' => 'submit',
-    '#value' => t('Add another'),
-    '#attributes' => array('class' => array('personalize-contexts-add-context'), 'title' => t('Click here to add more contexts.')),
-    '#weight' => 1,
-    '#submit' => array('personalize_url_context_more_submit'),
-    '#ajax' => array(
-      'callback' => 'personalize_url_context_ajax_callback',
-      'wrapper' => 'personalize-url-contexts',
-      'effect' => 'fade',
-    ),
-    '#limit_validation_errors' => array(),
-  );
-
-  // If the "Add another" button was clicked, we need to increment the number of
-  // contexts by one.
-  $num_contexts = count($contexts);
-  if (empty($contexts) || (isset($form_state['num_contexts']) && $form_state['num_contexts'] > $num_contexts)) {
-    $contexts[] = array(
-      'name' => '',
-      'values' => '',
-    );
-  }
-  $form_state['num_contexts'] = count($contexts);
-  $form_state['contexts'] = $contexts;
-  // Add current tabs to the form.
-  foreach ($contexts as $delta => $context) {
-    $context_form = array(
-      '#tree' => TRUE,
-    );
-    $context_form['name'] = array(
-      '#prefix' => '<div class="personalize-url-context-name-element">',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-      '#title' => t('Querystring parameter'),
-      '#default_value' => !empty($context['name']) ? $context['name'] : '',
-    );
-    $context_form['values'] = array(
-      '#prefix' => '<div class="personalize-url-context-values-element">',
-      '#suffix' => '</div>',
-      '#type' => 'textarea',
-      '#title' => t('Possible values'),
-      '#default_value' => !empty($context['values']) ? $context['values'] : '',
-    );
-    $form['context_wrapper']['contexts'][$delta] = $context_form;
-  }
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit_form'] = array(
@@ -168,34 +114,31 @@ function personalize_url_context_admin_form($form, &$form_state) {
 }
 
 /**
+ * Returns the list of UTM parameter names.
+ *
+ * @return array
+ *   An array of strings representing parameter names.
+ */
+function _personalize_url_context_get_utm_parameter_names() {
+  return array(
+    'utm_campaign',
+    'utm_source',
+    'utm_medium',
+    'utm_content',
+    'utm_term',
+  );
+}
+
+/**
  * Submit callback for the configuration form.
  */
 function personalize_url_context_admin_form_submit($form, &$form_state) {
-  if($form_state['clicked_button']['#id'] == 'edit-submit-form') {
-    $contexts = array();
-    foreach ($form_state['values']['contexts'] as $context) {
-      if (!empty($context['name']) && !empty($context['values'])) {
-        $name = $context['name'];
-        $values = explode("\r\n", $context['values']);
-        $contexts[$name] = $values;
-      }
+  $contexts = array();
+  if ($form_state['values']['contexts']) {
+    $new_contexts = explode("\r\n", $form_state['values']['contexts']);
+    foreach ($new_contexts as $context) {
+      $contexts[] = trim($context);
     }
-    variable_set('personalize_url_querystring_contexts', $contexts);
   }
-}
-
-/**
- * Ajax callback for the "Add another" button.
- */
-function personalize_url_context_ajax_callback($form, &$form_state) {
-  return $form['context_wrapper']['contexts'];
-}
-
-/**
- * Submit handler for the "Add another" button.
- */
-function personalize_url_context_more_submit($form, &$form_state) {
-  // Increment the number of context element sets to be rendered.
-  $form_state['num_contexts']++;
-  $form_state['rebuild'] = TRUE;
+  variable_set('personalize_url_querystring_contexts', $contexts);
 }
