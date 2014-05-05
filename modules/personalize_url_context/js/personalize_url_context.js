@@ -8,6 +8,10 @@
         Drupal.personalize.visitor_context_write(name, Drupal.settings.personalize_url_context.querystring_params[name]);
       }
     }
+    var baseUrl = Drupal.settings.personalize_url_context.base_url, referrer = document.referrer;
+    if (referrer && referrer.indexOf(baseUrl) == -1) {
+      Drupal.personalize.visitor_context_write('referrer_url', referrer);
+    }
     initialized = true;
   }
 

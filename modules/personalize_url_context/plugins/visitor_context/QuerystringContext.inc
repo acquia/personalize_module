@@ -26,6 +26,11 @@ class QuerystringContext extends PersonalizeContextBase {
         'group' => 'Querystring Params'
       );
     }
+    // Add the referrer URL context. This will get lumped into the
+    // "Miscellaneous" group.
+    $options['referrer_url'] = array(
+      'name' => t('Referrer URL')
+    );
 
     return $options;
   }
@@ -51,6 +56,11 @@ class QuerystringContext extends PersonalizeContextBase {
         'value type' => 'string',
       );
     }
+    // Also add the possible values for the Referrer URL context.
+    $possible_values['referrer_url'] = array(
+      'value type' => 'string',
+      'friendly name' => t('Referrer URL')
+    );
     return $possible_values;
   }
 }

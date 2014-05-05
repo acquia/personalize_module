@@ -50,15 +50,17 @@ function personalize_url_context_ctools_plugin_api($owner, $api) {
  * Implements hook_page_build().
  */
 function personalize_url_context_page_build(&$page) {
-  $contexts = variable_get('personalize_url_querystring_contexts', array());
+  $contexts = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
   $params = array();
   foreach (drupal_get_query_parameters() as $key => $value) {
     if (in_array($key, $contexts)) {
       $params[$key] = check_plain($value);
     }
   }
+  global $base_url;
   $settings = array(
     'querystring_params' => $params,
+    'base_url' => $base_url,
   );
 
   $page['page_top']['personalize_url_context'] = array(
@@ -90,10 +92,11 @@ function personalize_url_context_admin_form($form, &$form_state) {
       )
     )
   );
-  $query_string_contexts = variable_get('personalize_url_querystring_contexts', array());
+  $query_string_contexts = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
   $form['contexts'] = array(
     '#prefix' => '<div class="personalize-url-context-textarea">',
     '#suffix' => '</div>',
+    '#description' => t('List here all of the querystring parameters you might want to use for targeting purposes in your campaigns.'),
     '#type' => 'textarea',
     '#title' => t('Querystring contexts'),
     '#default_value' => !empty($query_string_contexts) ? implode("\r\n", $query_string_contexts) : '',
@@ -105,6 +108,16 @@ function personalize_url_context_admin_form($form, &$form_state) {
     '#value' => t('Save'),
   );
   return $form;
+}
+
+function _personalize_url_context_get_utm_parameter_names() {
+  return array(
+    'utm_campaign',
+    'utm_source',
+    'utm_medium',
+    'utm_content',
+    'utm_term',
+  );
 }
 
 /**
