@@ -110,18 +110,14 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#default_value' => isset($option_set->label) ? $option_set->label : '',
   );
 
-  $form['selector'] = array(
-    '#title' => t('Selector'),
-    '#description' => t('The selector to find the element to personalize.'),
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
-  );
-
   $variation_type_options = array();
+  $selector_states = array();
   $variation_types = module_invoke_all('personalize_elements_variation_types');
-  foreach ($variation_types as $type => $label) {
-    $variation_type_options[$type] = $label;
+  foreach ($variation_types as $type => $info) {
+    $variation_type_options[$type] = $info['label'];
+    if ($info['needs_selector']) {
+      $selector_states[] = array('select[name="variation_type"]' => array("value" => $type));
+    }
   }
 
   $form['variation_type'] = array(
@@ -130,6 +126,19 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#options' => array('' => t('Select a variation type...')) + $variation_type_options,
     '#default_value' => isset($option_set->data['personalize_elements_type']) ? $option_set->data['personalize_elements_type'] : '',
   );
+
+  if (!empty($selector_states)) {
+    $form['selector'] = array(
+      '#title' => t('Selector'),
+      '#description' => t('The selector to find the element to personalize.'),
+      '#type' => 'textfield',
+      '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
+    );
+    $form['selector']['#states'] = array(
+      'visible' => $selector_states,
+      'required' => $selector_states,
+    );
+  }
 
   // If the "Add another" button was clicked, we need to increment the number of
   // options by one.

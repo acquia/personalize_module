@@ -173,10 +173,26 @@ function personalize_elements_personalize_delete_link($option_set) {
  */
 function personalize_elements_personalize_elements_variation_types() {
   return array(
-    'replaceHtml' => t('Replace the html'),
-    'addClass' => t('Add a class'),
-    'appendHtml' => t('Append HTML'),
-    'prependHtml' => t('Prepend HTML'),
+    'replaceHtml' => array(
+      'label' => t('Replace the html'),
+      'needs_selector' => TRUE,
+    ),
+    'addClass' => array(
+      'label' => t('Add a class'),
+      'needs_selector' => TRUE,
+    ),
+    'appendHtml' => array(
+      'label' => t('Append HTML'),
+      'needs_selector' => TRUE,
+    ),
+    'prependHtml' => array(
+      'label' => t('Prepend HTML'),
+      'needs_selector' => TRUE,
+    ),
+    'runJS' => array(
+      'label' => t('Run JavaScript code'),
+      'needs_selector' => FALSE,
+    ),
   );
 }
 
