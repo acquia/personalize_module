@@ -52,11 +52,14 @@ function personalize_url_context_ctools_plugin_api($owner, $api) {
 function personalize_url_context_page_build(&$page) {
   $contexts = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
   $params = array();
+  // Filter the list of actual querystring parameters to just those defined
+  // in our config.
   foreach (drupal_get_query_parameters() as $key => $value) {
     if (in_array($key, $contexts)) {
       $params[$key] = check_plain($value);
     }
   }
+  // We need the base url for comparison against the referrer in our js.
   global $base_url;
   $settings = array(
     'querystring_params' => $params,
@@ -110,6 +113,12 @@ function personalize_url_context_admin_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Returns the list of UTM parameter names.
+ *
+ * @return array
+ *   An array of strings representing parameter names.
+ */
 function _personalize_url_context_get_utm_parameter_names() {
   return array(
     'utm_campaign',
@@ -126,7 +135,10 @@ function _personalize_url_context_get_utm_parameter_names() {
 function personalize_url_context_admin_form_submit($form, &$form_state) {
   $contexts = array();
   if ($form_state['values']['contexts']) {
-    $contexts = explode("\r\n", $form_state['values']['contexts']);
+    $new_contexts = explode("\r\n", $form_state['values']['contexts']);
+    foreach ($new_contexts as $context) {
+      $contexts[] = trim($context);
+    }
   }
   variable_set('personalize_url_querystring_contexts', $contexts);
 }

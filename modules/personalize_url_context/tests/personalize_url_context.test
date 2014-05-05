@@ -45,7 +45,7 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
 
     // Submit them all
     $edit = array(
-      'contexts' => "some-param\r\nparam2\r\nparam3",
+      'contexts' => "some-param\r\nparam2 \r\nparam3",
     );
     $this->drupalPost(NULL, $edit, t('Save'));
     $params = variable_get('personalize_url_querystring_contexts', array());
