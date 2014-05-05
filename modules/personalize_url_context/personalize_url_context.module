@@ -99,7 +99,7 @@ function personalize_url_context_admin_form($form, &$form_state) {
   $form['contexts'] = array(
     '#prefix' => '<div class="personalize-url-context-textarea">',
     '#suffix' => '</div>',
-    '#description' => t('List here all of the querystring parameters you might want to use for targeting purposes in your campaigns.'),
+    '#description' => t('List here all of the querystring parameters you might want to use for targeting purposes in your campaigns. Put each parameter on its own line.'),
     '#type' => 'textarea',
     '#title' => t('Querystring contexts'),
     '#default_value' => !empty($query_string_contexts) ? implode("\r\n", $query_string_contexts) : '',
