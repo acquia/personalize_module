@@ -26,6 +26,16 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
     $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
     $this->drupalLogin($admin_user);
 
+    $this->drupalPost('admin/config/content/personalize/url_context', array(), t('Save'));
+    $params = variable_get('personalize_url_querystring_contexts', array());
+    $expected = array(
+      'utm_campaign',
+      'utm_source',
+      'utm_medium',
+      'utm_content',
+      'utm_term',
+    );
+    $this->assertEqual($expected, $params);
     $this->drupalPost('admin/config/content/personalize/url_context', array('contexts' => "some-param"), t('Save'));
     $params = variable_get('personalize_url_querystring_contexts', array());
     $expected = array(
@@ -54,6 +64,9 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
         'group' => 'Querystring Params',
       );
     }
+    $expected_param_names['referrer_url'] = array(
+      'name' => t('Referrer URL')
+    );
     $this->assertEqual($expected_param_names, $options);
 
     // Test that getPossibleValues returns the right values. For this we
@@ -66,6 +79,10 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
         'value type' => 'string'
       );
     }
+    $expected_values['referrer_url'] = array(
+      'value type' => 'string',
+      'friendly name' => t('Referrer URL')
+    );
     $possible_values = $context_plugin->getPossibleValues();
     $this->assertEqual($expected_values, $possible_values);
   }

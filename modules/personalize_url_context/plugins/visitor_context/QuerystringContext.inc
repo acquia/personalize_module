@@ -18,7 +18,7 @@ class QuerystringContext extends PersonalizeContextBase {
    * Implements PersonalizeContextInterface::getOptions().
    */
   public static function getOptions() {
-    $params = variable_get('personalize_url_querystring_contexts', array());
+    $params = variable_get('personalize_url_querystring_contexts', _personalize_url_context_get_utm_parameter_names());
     $options = array();
     foreach ($params as $name) {
       $options[$name] = array(
