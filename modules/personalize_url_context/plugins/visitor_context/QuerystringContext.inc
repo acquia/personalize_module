@@ -23,7 +23,8 @@ class QuerystringContext extends PersonalizeContextBase {
     foreach ($params as $name) {
       $options[$name] = array(
         'name' => $name,
-        'group' => 'Querystring Params'
+        'group' => 'Querystring Params',
+        'cache_type' => 'session',
       );
     }
     // Add the referrer URL context. This will get lumped into the

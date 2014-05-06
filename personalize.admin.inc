@@ -14,29 +14,26 @@ function personalize_admin_form($form, &$form_state) {
     '#title' => t('Cache settings'),
     '#tree' => FALSE,
   );
+  $form['cache']['personalize_cache_decision_storage'] = array(
+    '#type' => 'select',
+    '#title' => t('Campaign cache storage'),
+    '#description' => t("For campaigns that cache decisions, select session to clear the cache at the end of the visitor's session or persist to save for a specific amount of time across all sessions."),
+    '#options' => array(
+      'session' => t('Session'),
+      'local' => t('Persist'),
+    ),
+    '#default_value' => variable_get('personalize_cache_decision_storage', 'session'),
+  );
   $form['cache']['personalize_cache_decision_expiration'] = array(
     '#type' => 'textfield',
-    '#title' => t('Decision agent cache expiration'),
-    '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.  Enter 0 to cache only for user session'),
-    '#default_value' => variable_get('personalize_cache_decision_expiration', 0),
-    '#field_suffix' => t('minutes'),
-    '#size' => 5,
-  );
-  $form['cache']['personalize_cache_visitor_context'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cache visitor context in local storage, if available.'),
-    '#default_value' => variable_get('personalize_cache_visitor_context', FALSE),
-  );
-  $form['cache']['personalize_cache_visitor_context_expiration'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Visitor context cache expiration'),
-    '#description' => t('The amount of time to cache visitor context.  Enter 0 to cache only for the user session.'),
-    '#default_value' => variable_get('personalize_cache_visitor_context_expiration', 30),
+    '#title' => t('Campaign cache expiration'),
+    '#description' => t("For campaigns that cache decisions, the amount of time to keep decisions in the visitor's local cache."),
+    '#default_value' => variable_get('personalize_cache_decision_expiration', 30),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
     '#states' => array(
       'visible' => array(
-        ':input[name="personalize_cache_visitor_context"]' => array('checked' => TRUE),
+        ':input[name="personalize_cache_decision_storage"]' => array('value' => 'local'),
       ),
     ),
   );

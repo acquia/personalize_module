@@ -231,18 +231,30 @@ function personalize_page_build(&$page) {
   // Add the necessary JavaScript for personalization.
   $path = drupal_get_path('module', 'personalize');
   $settings = array(
-    'cacheVisitorContext' => variable_get('personalize_cache_visitor_context', FALSE),
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
   );
   // cacheExpiration keys should match web storage bucket names.
   // @see js/personalize.js
   $settings['cacheExpiration'] = array(
-    'decisions' => variable_get('personalize_cache_decision_expiration', 0),
+    'decisions' => variable_get('personalize_cache_decision_storage', 'session') == 'session' ? 'session' : variable_get('personalize_cache_decision_expiration', 30),
   );
-  if ($settings['cacheVisitorContext']) {
-    // If visitor contexts have different expirations, set the bucket expiration
-    // values for each separately here.
-    $settings['cacheExpiration']['visitor_context'] = variable_get('personalize_cache_visitor_context_expiration', 30);
+  // Get the cache settings for visitor contexts.
+  // NOTE: This is not limited to those of the active campaign as to prevent
+  // additional looping through contexts that could be applied to each decision.
+  $contexts = personalize_get_visitor_contexts();
+  foreach ($contexts as $plugin_name => $plugin_info) {
+    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+      $context_options = call_user_func(array($class, 'getOptions'));
+      $disallowed = variable_get('personalize_visitor_context_disabled', array());
+      foreach ($context_options as $code => $info) {
+        if (isset($disallowed[$plugin_name][$code])) {
+          continue;
+        }
+        if (!empty($info['cache_type']) && $info['cache_type'] != 'none') {
+          $settings['cacheExpiration']['visitor_context:' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
+        }
+      }
+    }
   }
 
   $options = array(

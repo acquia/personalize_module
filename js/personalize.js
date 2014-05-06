@@ -361,10 +361,8 @@
    *   if not configured to store visitor context in localStorage.
    */
   Drupal.personalize.visitor_context_read = function(key) {
-    if (!Drupal.settings.personalize.cacheVisitorContext) {
-      return null;
-    }
-    var bucket = Drupal.personalize.storage.utilities.getBucket('visitor_context');
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
     return bucket.read(key);
   };
 
@@ -380,10 +378,8 @@
    *   The value of the context item to store.
    */
   Drupal.personalize.visitor_context_write = function(key, value) {
-    if (!Drupal.settings.personalize.cacheVisitorContext) {
-      return;
-    }
-    var bucket = Drupal.personalize.storage.utilities.getBucket('visitor_context');
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
     return bucket.write(key, value);
   };
 
@@ -443,7 +439,7 @@
    *   The name of the agent for decisions.
    * @param point
    *   The decision point name.
-   * @returns {string}
+   * @returns string
    *   The formatted key name to be used in persistent storage.
    */
   function generateDecisionStorageKey(agent_name, point) {
@@ -749,6 +745,21 @@
     cacheSeparator: ':',
 
     /**
+     * Generates a visitor context bucket for a particular key.
+     *
+     * Each visitor context option can have it's own cache expiration and
+     * therefore it's own bucket.
+     *
+     * @param key
+     *   The key to store.
+     * @returns string
+     *   The standardized bucket name.
+     */
+    generateVisitorContextBucketName: function (key) {
+      return 'visitor_context' + this.cacheSeparator + key;
+    },
+
+    /**
      * Gets the expiration for a bucket based on the type of bucket.
      *
      * If a bucket specific expiration cannot be found, then keys are stored
@@ -756,15 +767,23 @@
      *
      * @param bucketName
      *   The name of the bucket, i.e., visitor_context.
-     * @returns {number}
-     *   The number of milliseconds until items should be expired.
+     * @returns number
+     *   - If local storage then the expiration in number of milliseconds
+     *   - If session storage then 0
+     *   - If no storage configured then -1
      */
     getBucketExpiration: function (bucketName) {
       if (Drupal.settings.personalize.cacheExpiration.hasOwnProperty(bucketName)) {
-        var expiration_minutes = Drupal.settings.personalize.cacheExpiration[bucketName];
-        return (expiration_minutes * 60 * 1000);
+        var expirationSetting = Drupal.settings.personalize.cacheExpiration[bucketName];
+        if (expirationSetting == 'session') {
+          return 0;
+        } else {
+          return (expirationSetting * 60 * 1000);
+        }
       }
-      return 0;
+      // No expiration settings available for this bucket means that caching
+      // is not available for the requested bucket.
+      return -1;
     },
 
     /**
@@ -778,7 +797,12 @@
     getBucket: function (bucketName) {
       if (!Drupal.personalize.storage.buckets.hasOwnProperty(bucketName)) {
         var expiration = this.getBucketExpiration(bucketName);
-        Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expiration);
+        if (expiration < 0) {
+          // No cache mechanisms configured for this bucket.
+          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.nullBucket(bucketName);
+        } else {
+          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expiration);
+        }
       }
       return Drupal.personalize.storage.buckets[bucketName];
     },
@@ -835,6 +859,24 @@
   };
 
   /**
+   * Returns an invalid storage mechanism bucket in a null object pattern.
+   *
+   * This bucket follows the publicly available methods for the
+   * Drupal.personalize.storage.bucket in order to allow reads and writes to
+   * fail gracefully when storage is not configured.
+   */
+  Drupal.personalize.storage.nullBucket = function(bucketName) {
+    return {
+      read: function (key) {
+        return null;
+      },
+      write: function (key, value) {
+        return;
+      }
+    }
+  }
+
+  /**
    * Returns a bucket for reading from and writing to HTML5 web storage.
    *
    * @param bucketName
@@ -871,7 +913,7 @@
      *
      * @param key
      *   The key string for the key within the current bucket.
-     * @returns {string}
+     * @returns string
      *   A fully namespaced key to prevent overwriting.
      */
     function generateKey(key) {
@@ -883,7 +925,7 @@
      *
      * @param value
      *   The key's value to be written.
-     * @returns {string}
+     * @returns string
      *   A standardized stringified object that includes the keys:
      *   - ts:  the timestamp that this item was created
      *   - val: the original submitted value to store.
