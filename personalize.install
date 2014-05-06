@@ -266,7 +266,9 @@ function personalize_disable() {
  */
 function personalize_uninstall() {
   // Delete variables.
-  variable_del('personalize_local_caching_expiration');
+  variable_del('personalize_cache_decision_expiration');
+  variable_del('personalize_cache_visitor_context');
+  variable_del('personalize_cache_visitor_context_expiration');
   variable_del('personalize_use_admin_mode');
   variable_del('personalize_visitor_context_disabled');
 }

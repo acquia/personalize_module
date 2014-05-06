@@ -231,10 +231,17 @@ function personalize_page_build(&$page) {
   // Add the necessary JavaScript for personalization.
   $path = drupal_get_path('module', 'personalize');
   $settings = array(
-    'cacheExpiration' => variable_get('personalize_local_caching_expiration', 30),
     'cacheVisitorContext' => variable_get('personalize_cache_visitor_context', FALSE),
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
   );
+  // cacheExpiration keys should match web storage bucket names.
+  // @see js/personalize.js
+  $settings['cacheExpiration'] = array(
+    'decisions' => variable_get('personalize_cache_decision_expiration', 30),
+  );
+  if ($settings['cacheVisitorContext']) {
+    $settings['cacheExpiration']['visitor_context'] = variable_get('personalize_cache_visitor_context_expiration', 30);
+  }
 
   $options = array(
     'scope' => 'footer',

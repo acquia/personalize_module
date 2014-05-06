@@ -1365,11 +1365,11 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
     $this->drupalLogin($admin_user);
     // Set localStorage expiration to 60
-    $this->drupalPost('admin/config/content/personalize', array( 'personalize_local_caching_expiration' => 60), $this->getButton('config'));
+    $this->drupalPost('admin/config/content/personalize', array( 'personalize_cache_decision_expiration' => 60), $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
-    $this->assertEqual(60, $settings['personalize']['cacheExpiration']);
+    $this->assertEqual(60, $settings['personalize']['cacheExpiration']['decisions']);
 
     // Set localStorage for visitor context to false.
     $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => FALSE), $this->getButton('config'));
@@ -1377,12 +1377,14 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
     $this->assertFalse($settings['personalize']['cacheVisitorContext']);
+    $this->assertTrue(empty($settings['personalize']['cacheExpiration']['visitor_context']));
     // Set localStorage for visitor context to true
-    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => TRUE), $this->getButton('config'));
+    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => TRUE, 'personalize_cache_visitor_context_expiration' => 60), $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
     $this->assertTrue($settings['personalize']['cacheVisitorContext']);
+    $this->assertEqual(60, $settings['personalize']['cacheExpiration']['visitor_context']);
   }
 
   /**

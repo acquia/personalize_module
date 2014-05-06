@@ -736,15 +736,20 @@
     /**
      * Gets the expiration for a bucket based on the type of bucket.
      *
+     * If a bucket specific expiration cannot be found, then keys are stored
+     * in session only.
+     *
      * @param bucketName
      *   The name of the bucket, i.e., visitor_context.
      * @returns {number}
-     *   The number of milliseconds until items should be expired or -1 if no
-     *   match found.
+     *   The number of milliseconds until items should be expired.
      */
     getBucketExpiration: function (bucketName) {
-      // @todo: Split out logic to read different expirations here.
-      return Drupal.settings.personalize.cacheExpiration * 60 * 1000;
+      if (Drupal.settings.personalize.cacheExpiration.hasOwnProperty(bucketName)) {
+        var expiration_minutes = Drupal.settings.personalize.cacheExpiration[bucketName];
+        return (expiration_minutes * 60 * 1000);
+      }
+      return 0;
     },
 
     /**
@@ -809,14 +814,13 @@
           var expiration = expirations.hasOwnProperty(bucketName) ? expirations[bucketName] : this.getBucketExpiration(bucketName);
           // Store back for fast retrieval.
           expirations[bucketName] = expiration;
-          // If the expiration is unknown, then move on.
-          if (expiration < 0) {
-            continue;
-          }
+          // Expire the content if past expiration time or if the expiration is
+          // unknown or invalid.
           var stored = localStorage.getItem(key);
           if (stored) {
             var record = JSON.parse(stored);
-            if (record.ts && (record.ts + expiration) < currentTime) {
+            var isExpired = record.ts && (record.ts + expiration) < currentTime;
+            if (expiration <= 0 || isExpired) {
               localStorage.removeItem(key);
             }
           }

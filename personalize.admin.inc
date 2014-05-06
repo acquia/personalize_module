@@ -9,18 +9,36 @@
  * Admin form for configuring personalization backends.
  */
 function personalize_admin_form($form, &$form_state) {
-  $form['personalize_local_caching_expiration'] = array(
+  $form['cache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Cache settings'),
+    '#tree' => FALSE,
+  );
+  $form['cache']['personalize_cache_decision_expiration'] = array(
     '#type' => 'textfield',
-    '#title' => t('LocalStorage expiration'),
-    '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.'),
-    '#default_value' => variable_get('personalize_local_caching_expiration', 30),
+    '#title' => t('Decision agent cache expiration'),
+    '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.  Enter 0 to cache only for user session'),
+    '#default_value' => variable_get('personalize_cache_decision_expiration', 30),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
   );
-  $form['personalize_cache_visitor_context'] = array(
+  $form['cache']['personalize_cache_visitor_context'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Cache visitor context in localStorage if available'),
+    '#title' => t('Cache visitor context in local storage, if available.'),
     '#default_value' => variable_get('personalize_cache_visitor_context', FALSE),
+  );
+  $form['cache']['personalize_cache_visitor_context_expiration'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Visitor context cache expiration'),
+    '#description' => t('The amount of time to cache visitor context.  Enter 0 to cache only for the user session.'),
+    '#default_value' => variable_get('personalize_cache_visitor_context_expiration', 30),
+    '#field_suffix' => t('minutes'),
+    '#size' => 5,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="personalize_cache_visitor_context"]' => array('checked' => TRUE),
+      ),
+    ),
   );
   $form['personalize_use_admin_mode'] = array(
     '#type' => 'checkbox',
