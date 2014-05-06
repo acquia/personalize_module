@@ -239,15 +239,20 @@ function personalize_page_build(&$page) {
     'decisions' => variable_get('personalize_cache_decision_storage', 'session') == 'session' ? 'session' : variable_get('personalize_cache_decision_expiration', 30),
   );
   // Get the cache settings for visitor contexts.
-  // NOTE: This is not limited to those of the active campaign as to prevent
-  // additional looping through contexts that could be applied to each decision.
-  $contexts = personalize_get_visitor_contexts();
-  foreach ($contexts as $plugin_name => $plugin_info) {
+  // Limit this to only those contexts for currently running campaigns.
+  $current_campaigns = personalize_agent_load_multiple(array(), array('status' => PERSONALIZE_STATUS_RUNNING));
+  $current_campaign_contexts = array();
+  // Get the visitor context for each of the currently running campaigns.
+  foreach ($current_campaigns as $campaign) {
+    $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+  }
+  // Now loop over those contexts and add the option cache expiration data.
+  $disallowed = variable_get('personalize_visitor_context_disabled', array());
+  foreach ($current_campaign_contexts as $plugin_name => $selected_contexts) {
     if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
       $context_options = call_user_func(array($class, 'getOptions'));
-      $disallowed = variable_get('personalize_visitor_context_disabled', array());
       foreach ($context_options as $code => $info) {
-        if (isset($disallowed[$plugin_name][$code])) {
+        if (isset($disallowed[$plugin_name][$code]) || !in_array($code, $selected_contexts)) {
           continue;
         }
         if (!empty($info['cache_type']) && $info['cache_type'] != 'none') {
