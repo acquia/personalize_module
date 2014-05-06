@@ -237,9 +237,11 @@ function personalize_page_build(&$page) {
   // cacheExpiration keys should match web storage bucket names.
   // @see js/personalize.js
   $settings['cacheExpiration'] = array(
-    'decisions' => variable_get('personalize_cache_decision_expiration', 30),
+    'decisions' => variable_get('personalize_cache_decision_expiration', 0),
   );
   if ($settings['cacheVisitorContext']) {
+    // If visitor contexts have different expirations, set the bucket expiration
+    // values for each separately here.
     $settings['cacheExpiration']['visitor_context'] = variable_get('personalize_cache_visitor_context_expiration', 30);
   }
 

@@ -18,7 +18,7 @@ function personalize_admin_form($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Decision agent cache expiration'),
     '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.  Enter 0 to cache only for user session'),
-    '#default_value' => variable_get('personalize_cache_decision_expiration', 30),
+    '#default_value' => variable_get('personalize_cache_decision_expiration', 0),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
   );
