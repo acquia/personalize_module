@@ -61,7 +61,7 @@
       }
 
       // Clear out any expired local storage.
-      Drupal.personalize.localStorage.maintain('Drupal.personalize:');
+      Drupal.personalize.storage.utilities.maintain();
 
       // First process MVTs if there are any.
       processMVTs(settings);
@@ -364,9 +364,8 @@
     if (!Drupal.settings.personalize.cacheVisitorContext) {
       return null;
     }
-
-    var full_key = 'Drupal.personalize:visitor_context:' + key;
-    return Drupal.personalize.localStorage.read(full_key);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('visitor_context');
+    return bucket.read(key);
   };
 
   /**
@@ -384,8 +383,8 @@
     if (!Drupal.settings.personalize.cacheVisitorContext) {
       return;
     }
-    var full_key = 'Drupal.personalize:visitor_context:' + key;
-    Drupal.personalize.localStorage.write(full_key, value);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('visitor_context');
+    return bucket.write(key, value);
   };
 
   /**
@@ -437,19 +436,19 @@
   }
 
   function readDecisionsfromStorage(agent_name, point) {
-    if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
+    if (!Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return null;
     }
-    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-    return Drupal.personalize.localStorage.read(key);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(Drupal.personalize.storage.utilities.getDecisionBucketName(agent_name));
+    return bucket.read(point);
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
     if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
-    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-    Drupal.personalize.localStorage.write(key, decisions);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(Drupal.personalize.storage.utilities.getDecisionBucketName(agent_name));
+    bucket.write(point, decisions);
   }
 
   /**
@@ -725,66 +724,219 @@
     }
   }
 
-/**
- * Returns an object for reading from and writing to localStorage.
- */
-Drupal.personalize.localStorage = (function() {
-  var supportsHtmlLocalStorage;
-  var wasMaintained = false;
+  /*
+   * W . E . B   S . T . O . R . A . G . E
+   */
+  Drupal.personalize.storage = Drupal.personalize.storage || {};
+  Drupal.personalize.storage.buckets = Drupal.personalize.storage.buckets || {};
+  Drupal.personalize.storage.utilities = {
+    cachePrefix: 'Drupal.personalize',
+    cacheSeparator: ':',
 
-  function supportsLocalStorage() {
-    if (supportsHtmlLocalStorage != undefined) {
-      return supportsHtmlLocalStorage;
-    }
-    try {
-      supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
-    } catch (e) {
-      supportsHtmlLocalStorage = false;
-    }
-    return supportsHtmlLocalStorage;
-  };
+    /**
+     * Gets the expiration for a bucket based on the type of bucket.
+     *
+     * @param bucketName
+     *   The name of the bucket, i.e., visitor_context.
+     * @returns {number}
+     *   The number of milliseconds until items should be expired or -1 if no
+     *   match found.
+     */
+    getBucketExpiration: function (bucketName) {
+      // @todo: Split out logic to read different expirations here.
+      return Drupal.settings.personalize.cacheExpiration * 60 * 1000;
+    },
 
-  return {
-    read: function(key) {
-      if (!supportsLocalStorage()) { return null; }
-      var store = localStorage;
-      var stored = store.getItem(key);
-      if (stored) {
-        var record = JSON.parse(stored);
-        if (record.val) {
-          return record.val;
-        }
+    /**
+     * Gets the name for an agent's decision bucket.
+     *
+     * @param agent
+     *   The agent to store the decisions for.
+     * @returns {string}
+     *   A formatted bucket name.
+     */
+    getDecisionBucketName: function (agent) {
+      return 'decisions' + this.cacheSeparator + agent;
+    },
+
+    /**
+     * A factory method to create/retrieve a storage bucket.
+     *
+     * @param bucketName
+     *   The name of the bucket to retrieve.
+     * @returns {Drupal.personalize.storage.bucket}
+     *   The bucket instance.
+     */
+    getBucket: function (bucketName) {
+      if (!Drupal.personalize.storage.buckets.hasOwnProperty(bucketName)) {
+        var expiration = this.getBucketExpiration(bucketName);
+        Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expiration);
       }
-      return null;
+      return Drupal.personalize.storage.buckets[bucketName];
     },
-    write: function(key, value) {
-      if (!supportsLocalStorage()) { return; }
-      var store = localStorage;
-      var record = {ts:new Date().getTime(), val:value};
-      store.setItem(key, JSON.stringify(record));
+
+    /**
+     * Determine if the current browser supports web storage.
+     */
+    supportsLocalStorage: function() {
+      if (this.supportsHtmlLocalStorage != undefined) {
+        return this.supportsHtmlLocalStorage;
+      }
+      try {
+        this.supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
+      } catch (e) {
+        this.supportsHtmlLocalStorage = false;
+      }
+      return this.supportsHtmlLocalStorage;
     },
-    maintain: function(str) {
-      if (!supportsLocalStorage()) { return; }
-      if (wasMaintained) { return; }
-      var store = localStorage;
-      // Cache expiration stored in minutes.
-      var cachingMaxAge = Drupal.settings.personalize.cacheExpiration * 60 * 1000;
-      for (var i = 0; i < store.length; i++) {
-        var key = store.key(i);
-        if (key.indexOf(str) == 0) {
-          var stored = store.getItem(key);
+
+    /**
+     * Purges the storage of any expired cache items.
+     */
+    maintain: function () {
+      if (!this.supportsLocalStorage()) { return; }
+      if (this.wasMaintained != undefined) { return; }
+      var currentTime = new Date().getTime();
+      var num = localStorage.length;
+      var expirations = {};
+
+      for (var i = 0; i < num; i++) {
+        var key = localStorage.key(i);
+        if (key.indexOf(this.cachePrefix) == 0) {
+          // Key names are in the format cachePrefix:bucketName:otherArguments
+          var keyParts = key.split(this.cacheSeparator);
+          var bucketName = keyParts.length >= 2 ? keyParts[1] : '';
+          var expiration = expirations.hasOwnProperty(bucketName) ? expirations[bucketName] : this.getBucketExpiration(bucketName);
+          // Store back for fast retrieval.
+          expirations[bucketName] = expiration;
+          // If the expiration is unknown, then move on.
+          if (expiration < 0) {
+            continue;
+          }
+          var stored = localStorage.getItem(key);
           if (stored) {
             var record = JSON.parse(stored);
-            if (record.ts && (record.ts + cachingMaxAge) < new Date().getTime()) {
-              store.removeItem(key);
+            if (record.ts && (record.ts + expiration) < currentTime) {
+              localStorage.removeItem(key);
             }
           }
         }
       }
-      wasMaintained = true;
+      this.wasMaintained = true;
     }
+
   };
 
-})();
+  /**
+   * Returns a bucket for reading from and writing to HTML5 web storage.
+   *
+   * @param bucketName
+   *   The name of this bucket of stored items.
+   * @param expiration
+   *   The expiration in minutes for items in this bucket (0 if session based).
+   */
+  Drupal.personalize.storage.bucket = function(bucketName, expiration) {
+    this.bucketName = bucketName;
+    this.expiration = expiration;
+  }
+
+  /**
+   * Bucket functions.
+   */
+  Drupal.personalize.storage.bucket.prototype = (function() {
+    /**
+     * Returns the right kind of storage mechanism for this bucket.
+     * @returns {Storage}
+     */
+    function getStore() {
+      return this.expiration > 0 ? localStorage : sessionStorage;
+    }
+
+    /**
+     * Gets a bucket-specific prefix for a key.
+     */
+    function getBucketPrefix() {
+      return Drupal.personalize.storage.utilities.cachePrefix + Drupal.personalize.storage.utilities.cacheSeparator + this.bucketName;
+    }
+
+    /**
+     * Generates a standardized key name.
+     *
+     * @param key
+     *   The key string for the key within the current bucket.
+     * @returns {string}
+     *   A fully namespaced key to prevent overwriting.
+     */
+    function generateKey(key) {
+      return getBucketPrefix.call(this) + Drupal.personalize.storage.utilities.cacheSeparator + key;
+    }
+
+    /**
+     * Generates a standardized value to be stored.
+     *
+     * @param value
+     *   The key's value to be written.
+     * @returns {string}
+     *   A standardized stringified object that includes the keys:
+     *   - ts:  the timestamp that this item was created
+     *   - val: the original submitted value to store.
+     */
+    function generateRecord(value) {
+      var now = new Date().getTime();
+      var record =  {
+        ts: now,
+        val: value
+      };
+
+      return JSON.stringify(record);
+    }
+
+    return {
+      /**
+       * Reads an item from the bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to lookup the item.
+       * @returns
+       *   The value set for the key or null if not available.
+       */
+      read: function (key) {
+        if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return null; }
+        var stored = getStore.call(this).getItem(generateKey.call(this,key));
+        if (stored) {
+          var record = JSON.parse(stored);
+          if (record.val) {
+            return record.val;
+          }
+        }
+        return null;
+      },
+
+      /**
+       * Writes an item to the bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to store the item.
+       * @param value
+       *   The value to store.
+       */
+      write: function (key, value) {
+        if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return; }
+        var store = getStore.call(this);
+        var fullKey = generateKey.call(this, key);
+        var record = generateRecord.call(this, value);
+        // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
+        store.removeItem(fullKey);
+        try {
+          store.setItem(fullKey, record);
+        } catch (e) {
+          // @todo Add handling that removes records from storage based on age.
+          //if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          // For now just carry on without the additional stored values.
+          return;
+        }
+      }
+    }
+  })();
 
 })(jQuery);
