@@ -435,20 +435,35 @@
     }
   }
 
+  /**
+   * Generates a standardized key format for a decision point to use for
+   * persisted storage.
+   *
+   * @param agent_name
+   *   The name of the agent for decisions.
+   * @param point
+   *   The decision point name.
+   * @returns {string}
+   *   The formatted key name to be used in persistent storage.
+   */
+  function generateDecisionStorageKey(agent_name, point) {
+    return agent_name + Drupal.personalize.storage.utilities.cacheSeparator + point;
+  }
+
   function readDecisionsfromStorage(agent_name, point) {
     if (!Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return null;
     }
-    var bucket = Drupal.personalize.storage.utilities.getBucket(Drupal.personalize.storage.utilities.getDecisionBucketName(agent_name));
-    return bucket.read(point);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
+    return bucket.read(generateDecisionStorageKey(agent_name, point));
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
     if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
-    var bucket = Drupal.personalize.storage.utilities.getBucket(Drupal.personalize.storage.utilities.getDecisionBucketName(agent_name));
-    bucket.write(point, decisions);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
+    bucket.write(generateDecisionStorageKey(agent_name, point), decisions);
   }
 
   /**
@@ -750,18 +765,6 @@
         return (expiration_minutes * 60 * 1000);
       }
       return 0;
-    },
-
-    /**
-     * Gets the name for an agent's decision bucket.
-     *
-     * @param agent
-     *   The agent to store the decisions for.
-     * @returns {string}
-     *   A formatted bucket name.
-     */
-    getDecisionBucketName: function (agent) {
-      return 'decisions' + this.cacheSeparator + agent;
     },
 
     /**
