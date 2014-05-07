@@ -4,6 +4,8 @@
  * Implements hook_schema().
  */
 function personalize_schema() {
+  module_load_include('module', 'personalize');
+
   $schema = array();
 
   $schema['personalize_agent'] = array(
