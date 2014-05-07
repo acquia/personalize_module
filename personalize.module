@@ -244,7 +244,9 @@ function personalize_page_build(&$page) {
   $current_campaign_contexts = array();
   // Get the visitor context for each of the currently running campaigns.
   foreach ($current_campaigns as $campaign) {
-    $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+    if (!empty($campaign->data['visitor_context'])) {
+      $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+    }
   }
   // Now loop over those contexts and add the option cache expiration data.
   $disallowed = variable_get('personalize_visitor_context_disabled', array());
