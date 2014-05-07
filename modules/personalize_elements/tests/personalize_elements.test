@@ -19,10 +19,50 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     parent::setUp(array('personalize_elements', 'personalize_test'));
   }
 
+  function testPersonalizeElementsPermissions() {
+    // Log in as a user with permission to do personalization but without the permission
+    // to use the advanced Personalize Elements stuff.
+    $marketer = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
+    $this->drupalLogin($marketer);
+    $this->drupalGet('admin/config/content/personalize/personalize-elements');
+    $this->assertResponse(403);
+    $this->drupalGet('admin/structure/personalize-elements/add');
+    // Find the "Variation type" select list and confirm that 'runJS' is not one of
+    // the options.
+    $elements = $this->xpath('//select[@id=:id]', array(':id' => 'edit-variation-type'));
+    $options = array();
+    foreach ($elements as $field) {
+      $items = $this->getAllOptions($field);
+      foreach ($items as $item) {
+        $options[] = $item['value'];
+      }
+    }
+    $this->assertFalse(in_array('runJS', $options));
+
+    // Now log in as a user who does have permission to do the advanced Personalize Elements
+    // stuff.
+    $this->drupalLogout();
+    $advanced_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content', 'use advanced personalize elements features'));
+    $this->drupalLogin($advanced_user);
+    $this->drupalGet('admin/config/content/personalize/personalize-elements');
+    $this->assertResponse(200);
+    $this->drupalGet('admin/structure/personalize-elements/add');
+    $elements = $this->xpath('//select[@id=:id]', array(':id' => 'edit-variation-type'));
+
+    $options = array();
+    foreach ($elements as $field) {
+      $items = $this->getAllOptions($field);
+      foreach ($items as $item) {
+        $options[] = $item['value'];
+      }
+    }
+    $this->assertTrue(in_array('runJS', $options));
+  }
+
   /**
    * Tests adding and editing Personalize Elements Option Sets.
    */
-  function testPersonalizeElementsConfiguration() {
+  function testPersonalizeElementsAdmin() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     $edit = array(
@@ -40,9 +80,9 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalPost(NULL, array(), t('Add another'));
     $this->assertFieldByName('options[1][option_label]', personalize_generate_option_label(1));
     $edit['options[0][option_label]'] = 'first-option';
-    $edit['options[0][personalize_elements_content]'] = 'some content';
+    $edit['options[0][personalize_elements_content]'] = '<p>some content</p>';
     $edit['options[1][option_label]'] = 'second-option';
-    $edit['options[1][personalize_elements_content]'] = 'other content';
+    $edit['options[1][personalize_elements_content]'] = '<div>other content</div>';
     $this->drupalPost(NULL, $edit, t('Save'));
 
     $option_set = personalize_option_set_load(1);
@@ -54,12 +94,11 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual(3, count($option_set->options));
 
-    // Add another element and assert that all the options have the expected
-    // settings.
+    // Add another element with a script tag.
     $this->drupalGet('admin/structure/personalize-elements/manage/1/edit');
     $this->drupalPost(NULL, array(), t('Add another'));
     $edit = array();
-    $edit['options[3][personalize_elements_content]'] = 'moar content';
+    $edit['options[3][personalize_elements_content]'] = '<script type="text/javascript">alert("xss");</script>';
     $this->drupalPost(NULL, $edit, t('Save'));
     $option_set = personalize_option_set_load(1, TRUE);
     $control_option = array(
@@ -72,17 +111,17 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       1 => array(
         'option_id' => 'first-option',
         'option_label' => 'first-option',
-        'personalize_elements_content' => 'some content',
+        'personalize_elements_content' => '<p>some content</p>',
       ),
       2 => array(
         'option_id' => 'second-option',
         'option_label' => 'second-option',
-        'personalize_elements_content' => 'other content',
+        'personalize_elements_content' => '<div>other content</div>',
       ),
       3 => array(
         'option_id' => 'option-c',
         'option_label' => 'Option C',
-        'personalize_elements_content' => 'moar content',
+        'personalize_elements_content' => 'alert("xss");',
       ),
     );
     $this->assertEqual(count($expected), count($option_set->options));
@@ -168,6 +207,24 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1);
     $this->assertEqual(2, count($option_set->options));
     $this->assertEqual($machine_name, $option_set->agent);
+  }
+
+  function testPersonalizeElementsConfig() {
+    $advanced_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content', 'use advanced personalize elements features'));
+    $this->drupalLogin($advanced_user);
+    $option_set = $this->createPersonalizedElement(array('options[0][personalize_elements_content]' => '<div class="stuff">ohai</div>', 'options[1][personalize_elements_content]' => '<a href="/">kthxbai</a>'), FALSE);
+    $this->assertEqual('<div class="stuff">ohai</div>', $option_set->options[0]['personalize_elements_content']);
+    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[1]['personalize_elements_content']);
+    // Now change the configuration to restrict the allowed tags.
+    $this->drupalPost('admin/config/content/personalize/personalize-elements', array('personalize_elements_allowed_html' => '<a> <em>'), t('Save configuration'));
+    $allowed_tags = variable_get('personalize_elements_allowed_html', array());
+    $this->assertEqual('<a> <em>', $allowed_tags);
+
+    // Resave the personalized element and confirm that disallowed tags are stripped out.
+    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', array(), t('Save'));
+    $option_set = personalize_option_set_load(1, TRUE);
+    $this->assertEqual('ohai', $option_set->options[0]['personalize_elements_content']);
+    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[1]['personalize_elements_content']);
   }
 
   /**
