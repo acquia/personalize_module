@@ -424,7 +424,7 @@ function personalize_elements_element_delete_submit($form, &$form_state) {
  * Menu callback for the configuration form.
  */
 function personalize_elements_configuration_form($form, &$form_state) {
-  $form['contexts'] = array(
+  $form['personalize_elements_allowed_html'] = array(
     '#title' => t('Allowed HTML tags'),
     '#description' => t('Some Personalize Elements operations involve replacing existing HTML with new HTML, or appending/prepending HTML. Tags other than those included here will be filtered out.'),
     '#type' => 'textarea',

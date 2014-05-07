@@ -14,7 +14,7 @@
         // is the control option.
         var isControl = choice_name == Drupal.settings.personalize_elements.controlOptionName;
         var selectedContent = choices[choiceIndex]['personalize_elements_content'];
-        if ($option_set.length == 0 || element.variation_type == 'runJS') {
+        if ($option_set.length == 0 && element.variation_type != 'runJS') {
           // Only the runJS can do something with an empty Option Set.
           return;
         }
