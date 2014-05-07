@@ -391,7 +391,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
     'executor' => 'personalizeElements',
     'options' => $options,
     'data' => array(
-      'personalize_elements_selector' => $values['selector'],
+      'personalize_elements_selector' => isset($values['selector']) ? $values['selector'] : '',
       'personalize_elements_type' => $values['variation_type'],
       'pages' => $values['pages'],
     )
