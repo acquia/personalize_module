@@ -376,10 +376,20 @@
    *   The name of the context item to store.
    * @param value
    *   The value of the context item to store.
+   * @param overwrite
+   *   True to overwrite existing values, false not to overwrite; default true.
    */
-  Drupal.personalize.visitor_context_write = function(key, value) {
+  Drupal.personalize.visitor_context_write = function(key, value, overwrite) {
     var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
     var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
+    if (typeof overwrite === false) {
+      var current = bucket.read(key);
+      if (current !== null) {
+        // A value already exists and we are not allowed to overwrite.
+        return;
+      }
+    }
+
     return bucket.write(key, value);
   };
 
@@ -773,17 +783,22 @@
      *   - If no storage configured then -1
      */
     getBucketExpiration: function (bucketName) {
+      var data = {};
       if (Drupal.settings.personalize.cacheExpiration.hasOwnProperty(bucketName)) {
         var expirationSetting = Drupal.settings.personalize.cacheExpiration[bucketName];
         if (expirationSetting == 'session') {
-          return 0;
+          data.bucketType = 'session';
+          data.expires = 0;
         } else {
-          return (expirationSetting * 60 * 1000);
+          data.bucketType = 'local';
+          if (expirationSetting === 'none') {
+            data.expires = NaN;
+          } else {
+            data.expires = expirationSetting * 60 * 1000;
+          }
         }
       }
-      // No expiration settings available for this bucket means that caching
-      // is not available for the requested bucket.
-      return -1;
+      return data;
     },
 
     /**
@@ -796,12 +811,12 @@
      */
     getBucket: function (bucketName) {
       if (!Drupal.personalize.storage.buckets.hasOwnProperty(bucketName)) {
-        var expiration = this.getBucketExpiration(bucketName);
-        if (expiration < 0) {
+        var expirationData = this.getBucketExpiration(bucketName);
+        if (expirationData.hasOwnProperty('bucketType')) {
+          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expirationData.bucketType, expirationData.expires);
+        } else {
           // No cache mechanisms configured for this bucket.
           Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.nullBucket(bucketName);
-        } else {
-          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expiration);
         }
       }
       return Drupal.personalize.storage.buckets[bucketName];
@@ -841,21 +856,21 @@
           var expiration = expirations.hasOwnProperty(bucketName) ? expirations[bucketName] : this.getBucketExpiration(bucketName);
           // Store back for fast retrieval.
           expirations[bucketName] = expiration;
-          // Expire the content if past expiration time or if the expiration is
-          // unknown or invalid.
-          var stored = localStorage.getItem(key);
-          if (stored) {
-            var record = JSON.parse(stored);
-            var isExpired = record.ts && (record.ts + expiration) < currentTime;
-            if (expiration <= 0 || isExpired) {
-              localStorage.removeItem(key);
+          // Make sure the bucket content should expire.
+          if (expiration.bucketType === 'local' && !isNaN(expiration.expires)) {
+            var stored = localStorage.getItem(key);
+            if (stored) {
+              var record = JSON.parse(stored);
+              // Expire the content if past expiration time.
+              if (record.ts && (record.ts + expiration.expires) < currentTime) {
+                localStorage.removeItem(key);
+              }
             }
           }
         }
       }
       this.wasMaintained = true;
     }
-
   };
 
   /**
@@ -881,26 +896,22 @@
    *
    * @param bucketName
    *   The name of this bucket of stored items.
+   * @param bucketType
+   *   The webstorage to use (either local or session).
    * @param expiration
-   *   The expiration in minutes for items in this bucket (0 if session based).
+   *   The expiration in minutes for items in this bucket.  NaN for none.
    */
-  Drupal.personalize.storage.bucket = function(bucketName, expiration) {
+  Drupal.personalize.storage.bucket = function(bucketName, bucketType, expiration) {
     this.bucketName = bucketName;
+    this.store = bucketType === 'session' ? sessionStorage : localStorage;
     this.expiration = expiration;
+
   }
 
   /**
    * Bucket functions.
    */
   Drupal.personalize.storage.bucket.prototype = (function() {
-    /**
-     * Returns the right kind of storage mechanism for this bucket.
-     * @returns {Storage}
-     */
-    function getStore() {
-      return this.expiration > 0 ? localStorage : sessionStorage;
-    }
-
     /**
      * Gets a bucket-specific prefix for a key.
      */
@@ -951,7 +962,7 @@
        */
       read: function (key) {
         if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return null; }
-        var stored = getStore.call(this).getItem(generateKey.call(this,key));
+        var stored = this.store.getItem(generateKey.call(this,key));
         if (stored) {
           var record = JSON.parse(stored);
           if (record.val) {
@@ -971,19 +982,30 @@
        */
       write: function (key, value) {
         if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return; }
-        var store = getStore.call(this);
         var fullKey = generateKey.call(this, key);
         var record = generateRecord.call(this, value);
         // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
-        store.removeItem(fullKey);
+        this.store.removeItem(fullKey);
         try {
-          store.setItem(fullKey, record);
+          this.store.setItem(fullKey, record);
         } catch (e) {
           // @todo Add handling that removes records from storage based on age.
           //if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
           // For now just carry on without the additional stored values.
           return;
         }
+      },
+
+      /**
+       * Removes an item from a bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to remove the item.
+       */
+      removeItem: function (key) {
+        if (!Drupal.personalize.storage.utilities.supportsHtmlLocalStorage()) { return; }
+        var fullKey = generateKey.call(this, key);
+        this.store.removeItem(fullKey);
       }
     }
   })();

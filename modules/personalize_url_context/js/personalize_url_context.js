@@ -11,6 +11,7 @@
     var baseUrl = Drupal.settings.personalize_url_context.base_url, referrer = document.referrer;
     if (referrer && referrer.indexOf(baseUrl) == -1) {
       Drupal.personalize.visitor_context_write('referrer_url', referrer);
+      Drupal.personalize.visitor_context_write('original_referrer_url', referrer, false);
     }
     initialized = true;
   }

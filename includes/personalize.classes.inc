@@ -388,7 +388,8 @@ interface PersonalizeContextInterface {
    *   - (optional) cache_type: indicates the type of web storage caching (if
    *     available); one of "session", "local", "none" (default).
    *   - (optional) cache_expiration:  the number of minutes that this option
-   *     should remain in the cache.  Only valid when cache_type = "local".
+   *     should remain in the cache or none to keep indefinitely.  Only valid
+   *     when cache_type = "local".
    */
   public static function getOptions();
 
