@@ -263,7 +263,7 @@ function personalize_elements_add_option_ajax_callback($form, &$form_state) {
  * Validation callback for the element creation/edit form.
  */
 function personalize_elements_form_validate($form, &$form_state) {
-  $values = $form_state['values'];
+  $values = &$form_state['values'];
   if ($values['op'] == t('Save')) {
     if (empty($values['variation_type'])) {
       form_set_error('variation_type', t('You must choose a variation type'));
@@ -285,7 +285,13 @@ function personalize_elements_form_validate($form, &$form_state) {
     // If an option has an empty label and empty content, it will be removed so
     // we need to count how many non-empty options there are.
     $non_empty_options = 0;
-    foreach ($values['options'] as $i => $option) {
+
+    $allowed_html = variable_get('personalize_elements_allowed_html', _personalize_elements_get_default_allowed_tags());
+    $allowed_tags = preg_split('/\s+|<|>/', $allowed_html, -1, PREG_SPLIT_NO_EMPTY);
+    // Remove empty options.
+    foreach ($values['options'] as $i => &$option) {
+      // First, filter out any disallowed html tags.
+      $option['personalize_elements_content'] = filter_xss($option['personalize_elements_content'], $allowed_tags);
       if (!empty($option['option_label']) || !empty($option['personalize_elements_content'])) {
         $non_empty_options++;
         if (empty($option['option_label'])) {
@@ -360,6 +366,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
       unset($options[$i]);
     }
   }
+  // Re-key the array in case some items were removed.
   $options = array_values($options);
   if ($options[0]['option_label'] === PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
     // This will get added back on if needed, after the other options have
@@ -411,4 +418,24 @@ function personalize_elements_element_delete_submit($form, &$form_state) {
   personalize_option_set_delete($form_state['values']['osid']);
   drupal_set_message(t('The personalized element %name has been removed.', array('%name' => $form_state['values']['title'])));
   $form_state['redirect'] = 'admin/structure/personalize-elements';
+}
+
+/**
+ * Menu callback for the configuration form.
+ */
+function personalize_elements_configuration_form($form, &$form_state) {
+  $form['contexts'] = array(
+    '#title' => t('Allowed HTML tags'),
+    '#description' => t('Some Personalize Elements operations involve replacing existing HTML with new HTML, or appending/prepending HTML. Tags other than those included here will be filtered out.'),
+    '#type' => 'textarea',
+    '#default_value' => variable_get('personalize_elements_allowed_html', _personalize_elements_get_default_allowed_tags()),
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Returns the HTML tags that are enabled by default.
+ */
+function _personalize_elements_get_default_allowed_tags() {
+  return '<p> <div> <img> <a> <br> <caption> <col> <em> <strong> <cite> <blockquote> <code> <ul> <ol> <li> <dl> <dt> <dd> <h1> <h2> <h3> <h4> <h5> <h6> <pre> <span> <table> <tbody> <th> <tr>';
 }

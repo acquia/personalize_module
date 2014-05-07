@@ -53,7 +53,30 @@ function personalize_elements_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_elements.admin.inc',
   );
+  $items['admin/config/content/personalize/personalize-elements'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Personalize Elements',
+    'description' => 'Configuration settings for Personalize Elements module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_configuration_form'),
+    'access arguments' => array('use advanced personalize elements features'),
+    'file' => 'personalize_elements.admin.inc',
+  );
   return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function personalize_elements_permission() {
+  $permissions = array(
+    'use advanced personalize elements features' => array(
+      'title' => t('Use advanced Personalize Elements features'),
+      'description' => t('Write the JavaScript to be run for Option Sets whose options involve executing different pieces of JavaScript.'),
+    ),
+  );
+
+  return $permissions;
 }
 
 /**
@@ -171,8 +194,8 @@ function personalize_elements_personalize_delete_link($option_set) {
 /**
  * Implements hook_personalize_elements_variation_types().
  */
-function personalize_elements_personalize_elements_variation_types() {
-  return array(
+function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE) {
+  $types = array(
     'replaceHtml' => array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
@@ -189,11 +212,14 @@ function personalize_elements_personalize_elements_variation_types() {
       'label' => t('Prepend HTML'),
       'needs_selector' => TRUE,
     ),
-    'runJS' => array(
+  );
+  if (user_access('use advanced personalize elements features') || !$filter_by_perms) {
+    $types['runJS'] = array(
       'label' => t('Run JavaScript code'),
       'needs_selector' => FALSE,
-    ),
-  );
+    );
+  }
+  return $types;
 }
 
 /**
