@@ -163,6 +163,10 @@
     custom_settings.event = 'onload';
     custom_settings.keypress = false;
     custom_settings.prevent = false;
+    custom_settings.progress = {
+      message: '',
+      type: 'throbber'
+    };
     var callback_action = new Drupal.ajax(null, $option_set, custom_settings);
 
     try {
