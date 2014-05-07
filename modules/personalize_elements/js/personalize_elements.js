@@ -14,6 +14,10 @@
         // is the control option.
         var isControl = choice_name == Drupal.settings.personalize_elements.controlOptionName;
         var selectedContent = choices[choiceIndex]['personalize_elements_content'];
+        if ($option_set.length == 0 || element.variation_type == 'runJS') {
+          // Only the runJS can do something with an empty Option Set.
+          return;
+        }
         Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid, preview);
         Drupal.personalize.executorCompleted($option_set, choice_name, osid);
       }
@@ -21,6 +25,17 @@
   };
 
   Drupal.personalizeElements = {};
+
+  Drupal.personalizeElements.runJS = {
+    execute : function ($selector, selectedContent, isControl, osid) {
+      if (!isControl) {
+        // The contents of the selectedContent variable were written by someone
+        // who was explicitly given permission to write JavaScript to be executed
+        // on this site. Mitigating the evil of the eval.
+        eval(selectedContent);
+      }
+    }
+  };
 
   Drupal.personalizeElements.replaceHtml = {
     controlContent : {},
