@@ -110,8 +110,8 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
     );
     $agent->status = PERSONALIZE_STATUS_RUNNING;
     personalize_agent_save($agent);
-    $agent = personalize_agent_load('test-agent');
 
+    $this->resetAll();
     // Load a page and verify cache settings.
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();

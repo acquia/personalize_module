@@ -254,10 +254,10 @@ function personalize_page_build(&$page) {
     if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
       $context_options = call_user_func(array($class, 'getOptions'));
       foreach ($context_options as $code => $info) {
-        if (isset($disallowed[$plugin_name][$code]) || !in_array($code, $selected_contexts)) {
+        if (isset($disallowed[$plugin_name][$code]) || !array_key_exists($code, $selected_contexts)) {
           continue;
         }
-        if (!empty($info['cache_type']) && $info['cache_type'] != 'none') {
+        if (!empty($info['cache_type'])) {
           $settings['cacheExpiration']['visitor_context:' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
         }
       }
