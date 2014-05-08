@@ -3,7 +3,8 @@
   Drupal.personalize = Drupal.personalize || {};
   Drupal.personalize.executors = Drupal.personalize.executors || {};
   Drupal.personalize.executors.personalizeElements = {
-    execute: function($option_set, choice_name, osid) {
+    execute: function($option_set, choice_name, osid, preview) {
+      if (typeof preview === 'undefined') { preview = false };
       var element = Drupal.settings.personalize_elements.elements[osid];
       if (element == undefined) return;
       if (Drupal.personalizeElements.hasOwnProperty(element.variation_type) && typeof Drupal.personalizeElements[element.variation_type].execute === 'function') {
@@ -13,7 +14,7 @@
         // is the control option.
         var isControl = choice_name == Drupal.settings.personalize_elements.controlOptionName;
         var selectedContent = choices[choiceIndex]['personalize_elements_content'];
-        Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
+        Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid, preview);
         Drupal.personalize.executorCompleted($option_set, choice_name, osid);
       }
     }
@@ -23,9 +24,12 @@
 
   Drupal.personalizeElements.replaceHtml = {
     controlContent : {},
-    execute : function($selector, selectedContent, isControl, osid) {
+    execute : function($selector, selectedContent, isControl, osid, preview) {
+      if (typeof preview === 'undefined') { preview = false };
       // We need to keep track of how we've changed the element, if only
-      // to support previewing different options.
+      // to support previewing different options.  NOTE: preview flag is only
+      // set when the call is made from preview.  The initial page load will
+      // not be in preview, even if in admin mode.
       if (!this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.html();
       }
@@ -41,9 +45,12 @@
 
   Drupal.personalizeElements.addClass = {
     addedClasses : {},
-    execute : function($selector, selectedContent, isControl, osid) {
+    execute : function($selector, selectedContent, isControl, osid, preview) {
+      if (typeof preview === 'undefined') { preview = false };
       // We need to keep track of how we've changed the element, if only
-      // to support previewing different options.
+      // to support previewing different options.  NOTE: preview flag is only
+      // set when the call is made from preview.  The initial page load will
+      // not be in preview, even if in admin mode.
       if (!this.addedClasses.hasOwnProperty(osid)) {
         this.addedClasses[osid] = [];
       }
@@ -60,7 +67,8 @@
   };
 
   Drupal.personalizeElements.appendHtml = {
-    execute : function($selector, selectedContent, isControl, osid) {
+    execute : function($selector, selectedContent, isControl, osid, preview) {
+      if (typeof preview === 'undefined') { preview = false };
       var id = 'personalize-elements-append-' + osid;
       $('#' + id).remove();
       if (!isControl) {
@@ -70,7 +78,8 @@
   };
 
   Drupal.personalizeElements.prependHtml = {
-    execute : function($selector, selectedContent, isControl, osid) {
+    execute : function($selector, selectedContent, isControl, osid, preview) {
+      if (typeof preview === 'undefined') { preview = false };
       var id = 'personalize-elements-prepend-' + osid;
       $('#' + id).remove();
       if (!isControl) {
