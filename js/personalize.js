@@ -635,7 +635,7 @@
    *   An object representing an option sett.
    */
   function processOptionSet(option_set) {
-    // Bail if this option set has already been processeed.
+    // Bail if this option set has already been processed.
     for (var i in processedOptionSets) {
       if (option_set.osid == processedOptionSets[i]) {
         return;
