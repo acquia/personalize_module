@@ -168,6 +168,10 @@ interface PersonalizeAgentReportInterface {
   public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
 }
 
+/**
+ * An interface to implement when an agent supports explicit targeting for
+ * content variations.
+ */
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
 
   const EXPLICIT_TARGETING_MULTIPLE_OR = 1;
@@ -176,12 +180,20 @@ interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterfac
 
   /**
    * Returns how this agent supports explicit targeting
-   * with muliple features.
+   * with multiple features.
    *
    * @return int
    *   Returns one of the above constants.
    */
   public static function explicitTargetingSupportMultiple();
+
+}
+
+/**
+ * An interface to implement when an agent supports automatic targeting of
+ * results based on campaign-specific targeting options.
+ */
+interface PersonalizeAutoTargetingInterface extends PersonalizeAgentInterface {
 
 }
 

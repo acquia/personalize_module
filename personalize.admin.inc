@@ -145,7 +145,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
   }
   $element = array(
     '#type' => 'select',
-    '#title' => t('Visitor contexts'),
+    '#title' => t('Visitor contexts to use for automatic targeting'),
     '#options' => $groups,
     '#multiple' => TRUE,
     '#default_value' => $selected,
@@ -655,11 +655,15 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   }
   $form['agent_form']['agent_fieldset']['agent_basic'] = $basic_form;
 
-  // Add visitor context items to the form.
+  // Add visitor context items to the form for agents that support automatic
+  // targeting.
   if (!empty($agent_data->machine_name)) {
-    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
-    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
-      $form['agent_form']['agent_fieldset']['visitor_context'] = $context_element;
+    $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+    if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
+      $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
+      if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
+        $form['agent_form']['agent_fieldset']['visitor_context'] = $context_element;
+      }
     }
   }
   $form['agent_form']['agent_fieldset']['advanced'] = array(
