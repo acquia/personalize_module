@@ -288,10 +288,15 @@ function personalize_elements_form_validate($form, &$form_state) {
 
     $allowed_html = variable_get('personalize_elements_allowed_html', _personalize_elements_get_default_allowed_tags());
     $allowed_tags = preg_split('/\s+|<|>/', $allowed_html, -1, PREG_SPLIT_NO_EMPTY);
+    $changed = 0;
     // Remove empty options.
     foreach ($values['options'] as $i => &$option) {
       // First, filter out any disallowed html tags.
-      $option['personalize_elements_content'] = filter_xss($option['personalize_elements_content'], $allowed_tags);
+      $filtered = filter_xss($option['personalize_elements_content'], $allowed_tags);
+      if ($filtered !== $option['personalize_elements_content']) {
+        $changed++;
+      }
+      $option['personalize_elements_content'] = $filtered;
       if (!empty($option['option_label']) || !empty($option['personalize_elements_content'])) {
         $non_empty_options++;
         if (empty($option['option_label'])) {
@@ -304,6 +309,9 @@ function personalize_elements_form_validate($form, &$form_state) {
     }
     if ($non_empty_options < $num_required) {
       form_set_error('', t('You must have at least 2 options for an option set'));
+    }
+    if ($changed) {
+      drupal_set_message(t('Disallowed HTML tags were removed from @variations.', array('@variations' => format_plural($changed, '1 variation', '@count variations', array('@count' => $changed)))), 'warning');
     }
   }
 }

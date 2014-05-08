@@ -100,6 +100,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['options[3][personalize_elements_content]'] = '<script type="text/javascript">alert("xss");</script>';
     $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText(t('Disallowed HTML tags were removed from 1 variation.'));
     $option_set = personalize_option_set_load(1, TRUE);
     $control_option = array(
       'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
