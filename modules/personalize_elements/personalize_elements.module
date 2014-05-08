@@ -72,7 +72,7 @@ function personalize_elements_permission() {
   $permissions = array(
     'use advanced personalize elements features' => array(
       'title' => t('Use advanced Personalize Elements features'),
-      'description' => t('Write the JavaScript to be run for Option Sets whose options involve executing different pieces of JavaScript.'),
+      'description' => t('Includes permission to write JavaScript to be executed for content variations and modifying the set of allowed HTML tags.'),
     ),
   );
 
