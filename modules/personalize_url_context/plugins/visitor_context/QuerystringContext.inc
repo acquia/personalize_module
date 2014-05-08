@@ -60,7 +60,8 @@ class QuerystringContext extends PersonalizeContextBase {
    */
   public function getPossibleValues() {
     $possible_values = array();
-    foreach ($this->selectedContext as $name) {
+    $options = $this->getOptions();
+    foreach ($options as $name => $info) {
       $possible_values[$name] = array(
         'value type' => 'string',
       );

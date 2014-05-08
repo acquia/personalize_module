@@ -100,7 +100,8 @@ class UserProfileContext extends PersonalizeContextBase {
     $possible_values = array();
     $entity = new stdClass();
     $form = $form_state = array();
-    foreach ($this->selectedContext as $name) {
+    $options = $this->getOptions();
+    foreach ($options as $name => $info) {
 
       $field_name = 'field_' . $name;
       $field = field_info_field($field_name);
