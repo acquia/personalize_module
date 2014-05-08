@@ -112,10 +112,11 @@
    * chosen one.
    */
   Drupal.personalize.executors.show = {
-    'execute': function ($option_set, choice_name, osid) {
+    'execute': function ($option_set, choice_name, osid, preview) {
       var $option_source = $('script[type="text/template"]', $option_set);
       var element = $option_source.get(0);
       var json = element.innerText;
+      if (typeof preview === 'undefined') { preview = false; };
       if (json === undefined || json.length == 0) {
         json = element.text;
       }
@@ -156,17 +157,20 @@
    * option set to display.
    */
   Drupal.personalize.executors.callback = {
-  'execute': function($option_set, choice_name, osid) {
+  'execute': function($option_set, choice_name, osid, preview) {
     // Set up such that Drupal ajax handling can be utilized without a trigger.
     var custom_settings = {};
     custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
     custom_settings.event = 'onload';
     custom_settings.keypress = false;
     custom_settings.prevent = false;
-    custom_settings.progress = {
-      message: '',
-      type: 'none'
-    };
+    // Only show the throbber and wait message in preview mode.
+    if (preview !== true) {
+      custom_settings.progress = {
+        message: '',
+        type: 'none'
+      };
+    }
     var callback_action = new Drupal.ajax(null, $option_set, custom_settings);
 
     try {
