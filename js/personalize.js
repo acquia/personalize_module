@@ -113,6 +113,9 @@
    */
   Drupal.personalize.executors.show = {
     'execute': function ($option_set, choice_name, osid, preview) {
+      if ($option_set.length == 0 ) {
+        return;
+      }
       var $option_source = $('script[type="text/template"]', $option_set);
       var element = $option_source.get(0);
       var json = element.innerText;
@@ -158,6 +161,9 @@
    */
   Drupal.personalize.executors.callback = {
   'execute': function($option_set, choice_name, osid, preview) {
+    if ($option_set.length == 0 ) {
+      return;
+    }
     // Set up such that Drupal ajax handling can be utilized without a trigger.
     var custom_settings = {};
     custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
@@ -641,13 +647,9 @@
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {
-      // We need the check for $option_set.length because the Option Set isn't
-      // necessarily in the DOM - it could be part of an MVT where not all Option
-      // Sets are present on the page.
-      if ($option_set.length > 0 && Drupal.personalize.executors.hasOwnProperty(executor)) {
+      if (Drupal.personalize.executors.hasOwnProperty(executor)) {
         Drupal.personalize.executors[executor].execute($option_set, chosenOption, osid);
       }
-      // Either way, no further processing should take place.
       return;
     }
 
@@ -684,18 +686,12 @@
     agents[agent_name].decisionPoints[decision_point].callbacks[decision_name] =
       agents[agent_name].decisionPoints[decision_point].callbacks[decision_name] || [];
     // Add a callback for this option set to the decision point.
-    if ($option_set.length > 0) {
-      agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {
-        Drupal.personalize.executors[executor].execute($option_set, decision, osid);
-        // Fire an event so other code can respond to the decision.
-        $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
-      });
-    }
-    else {
-      // If it's a phantom Option Set, i.e. one that hasn't actually been rendered on
-      // the page, just pass an empty callback function.
-      agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {});
-    }
+    agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {
+      Drupal.personalize.executors[executor].execute($option_set, decision, osid);
+      // Fire an event so other code can respond to the decision.
+      $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
+    });
+
   }
 
   // Keeps track of processed listeners so we don't subscribe them more than once.

@@ -53,7 +53,30 @@ function personalize_elements_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_elements.admin.inc',
   );
+  $items['admin/config/content/personalize/personalize-elements'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Personalize Elements',
+    'description' => 'Configuration settings for Personalize Elements module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_configuration_form'),
+    'access arguments' => array('use advanced personalize elements features'),
+    'file' => 'personalize_elements.admin.inc',
+  );
   return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function personalize_elements_permission() {
+  $permissions = array(
+    'use advanced personalize elements features' => array(
+      'title' => t('Use advanced Personalize Elements features'),
+      'description' => t('Includes permission to write JavaScript to be executed for content variations and modifying the set of allowed HTML tags.'),
+    ),
+  );
+
+  return $permissions;
 }
 
 /**
@@ -93,6 +116,8 @@ function personalize_elements_page_build(&$page) {
     $elements[$js_id] = array(
       'selector' => $option_set->data['personalize_elements_selector'],
       'variation_type' => $option_set->data['personalize_elements_type'],
+      // The 'runJS' variation type cannot be previewed in the normal way.
+      'previewable' => $option_set->data['personalize_elements_type'] !== 'runJS',
     );
   }
   if (empty($elements)) {
@@ -171,13 +196,32 @@ function personalize_elements_personalize_delete_link($option_set) {
 /**
  * Implements hook_personalize_elements_variation_types().
  */
-function personalize_elements_personalize_elements_variation_types() {
-  return array(
-    'replaceHtml' => t('Replace the html'),
-    'addClass' => t('Add a class'),
-    'appendHtml' => t('Append HTML'),
-    'prependHtml' => t('Prepend HTML'),
+function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE) {
+  $types = array(
+    'replaceHtml' => array(
+      'label' => t('Replace the html'),
+      'needs_selector' => TRUE,
+    ),
+    'addClass' => array(
+      'label' => t('Add a class'),
+      'needs_selector' => TRUE,
+    ),
+    'appendHtml' => array(
+      'label' => t('Append HTML'),
+      'needs_selector' => TRUE,
+    ),
+    'prependHtml' => array(
+      'label' => t('Prepend HTML'),
+      'needs_selector' => TRUE,
+    ),
   );
+  if (user_access('use advanced personalize elements features') || !$filter_by_perms) {
+    $types['runJS'] = array(
+      'label' => t('Run JavaScript code'),
+      'needs_selector' => FALSE,
+    );
+  }
+  return $types;
 }
 
 /**
