@@ -67,6 +67,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#attached' => array(
       'css' => array(
         $path . '/css/personalize_elements.admin.css',
+        $path . '/css/personalize_elements.admin.theme.css',
        ),
       'js' => array(
         $path . '/js/personalize_elements.admin.js',
@@ -202,8 +203,16 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
 
   $form['details']['options_wrapper']['options_more'] = array(
     '#type' => 'submit',
+    '#prefix' => '<span class="personalize-elements-add-link-prefix"></span>',
     '#value' => t('Add variation'),
-    '#attributes' => array('class' => array('personalize-elements-add-option'), 'title' => t('Click here to add more options.')),
+    '#attributes' => array(
+      'class' => array('personalize-add-link'),
+      'title' => t('Click here to add more goals.')
+    ),
+    '#attributes' => array(
+      'class' => array('personalize-elements-add-option'),
+      'title' => t('Click here to add more variations.')
+    ),
     '#weight' => 1,
     '#submit' => array('personalize_elements_add_option_submit'),
     '#ajax' => array(
