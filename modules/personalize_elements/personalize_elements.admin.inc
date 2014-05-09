@@ -60,6 +60,8 @@ function personalize_elements_list() {
  * Form for creating a new action.
  */
 function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option_set = NULL) {
+  global $base_url;
+
   $path = drupal_get_path('module', 'personalize_elements');
   $form = array(
     '#attached' => array(
@@ -103,19 +105,11 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   }
 
   $form['title'] = array(
-    '#title' => t('Title'),
-    '#description' => t('The administrative title of this Option Set.'),
+    '#title' => t('Variation set name'),
+    '#description' => t('The administrative title of this Content Variation Set.'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => isset($option_set->label) ? $option_set->label : '',
-  );
-
-  $form['selector'] = array(
-    '#title' => t('Selector'),
-    '#description' => t('The selector to find the element to personalize.'),
-    '#type' => 'textfield',
-    '#required' => TRUE,
-    '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
   );
 
   $variation_type_options = array();
@@ -125,10 +119,30 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   }
 
   $form['variation_type'] = array(
-    '#title' => t('Variation Type'),
+    '#title' => t('Operation'),
     '#type' => 'select',
-    '#options' => array('' => t('Select a variation type...')) + $variation_type_options,
+    '#options' => array('' => t('-- Select operation --')) + $variation_type_options,
     '#default_value' => isset($option_set->data['personalize_elements_type']) ? $option_set->data['personalize_elements_type'] : '',
+  );
+
+  $form['details'] = array(
+    '#type' => 'container',
+    '#tree' => FALSE,
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="variation_type"]' => array('value' => ''),
+      ),
+    ),
+  );
+  $form['details']['selector'] = array(
+    '#prefix' => '<div class="form-item-help-link">',
+    '#suffix' => '</div>',
+    '#title' => t('Element') . ' ' . '<span class="secondary">' . t('(selector)' . '</span>'),
+    '#field_prefix' => t('What should I put here?'),
+    '#description' => t('The selector to find the element to personalize.'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
   );
 
   // If the "Add another" button was clicked, we need to increment the number of
@@ -139,32 +153,47 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     $options[] = array(
       'option_label' => personalize_generate_option_label($index),
       'content' => '',
+      'is_new' => TRUE,
     );
+  }
+  $show_control = TRUE;
+  // If we are currently in a form process where the user has deselected the
+  // add control checkbox, then don't show it.
+  if (isset($form_state['values']) && empty($form_state['values']['add_control_option'])) {
+    $show_control = FALSE;
+  }
+  // If this is an edit form and there is no control in the options loaded,
+  // then don't show the control.
+  else if (isset($option_set->osid) && $options[0]['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+    $show_control = FALSE;
+  }
+  // If the first option is not already the control, and then add a control
+  // option.  This option is always available to show on the display in response
+  // to the add control option checkbox.
+  if (count($options) == 0 || $options[0]['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+    array_unshift($options, array(
+      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'personalize_elements_content' => '',
+    ));
   }
   $form_state['num_options'] = count($options);
   $form_state['options'] = $options;
 
-  $form['add_control_option'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Use a control "do nothing" option'),
-    '#default_value' => $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL ? 1 : 0,
-  );
-
   // Add a wrapper for the options and Add another option button.
-  $form['options_wrapper'] = array(
+  $form['details']['options_wrapper'] = array(
     '#tree' => FALSE,
     '#title' => t('Options'),
   );
 
-  $form['options_wrapper']['options'] = array(
+  $form['details']['options_wrapper']['options'] = array(
     '#tree' => TRUE,
     '#theme_wrappers' => array('container'),
     '#attributes' => array('id' => 'personalize-elements-options'),
   );
 
-  $form['options_wrapper']['options_more'] = array(
+  $form['details']['options_wrapper']['options_more'] = array(
     '#type' => 'submit',
-    '#value' => t('Add another'),
+    '#value' => t('Add variation'),
     '#attributes' => array('class' => array('personalize-elements-add-option'), 'title' => t('Click here to add more options.')),
     '#weight' => 1,
     '#submit' => array('personalize_elements_add_option_submit'),
@@ -176,10 +205,11 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#limit_validation_errors' => array(),
   );
 
-  // Add current tabs to the form.
+  // Add current variations to the form.
   foreach ($options as $delta => $option) {
     $option_form = array(
       '#tree' => TRUE,
+      '#type' => 'container',
     );
     $option_form['option_label'] = array(
       '#prefix' => '<div class="personalize-elements-option-label-element">',
@@ -195,38 +225,84 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#type' => 'textarea',
       '#rows' => 2,
       '#title' => t('Content'),
+      '#title_display' => 'invisible',
       '#default_value' => !empty($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '',
     );
-    if (empty($option_set->osid)) {
+    // Add markup to differentiate a control.
+    if ($option['option_label'] === PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+      // If the form is re-submitted via Ajax (e.g., Add another) then the
+      // control option will appear even if the add checkbox has been unchecked.
+      // Adding the "element-hidden" class will hide the element, but still allow
+      // it to show in response to state changes which use jQuery show()/hide().
+      if (!$show_control) {
+        $option_form['#attributes']['class'][] = 'element-hidden';
+      }
+      $option_form['#attributes']['class'][] = 'personalize-elements-control';
+      $option_form['option_label']['#attributes']['disabled'] = 'disabled';
+      $option_form['personalize_elements_content']['#attributes']['disabled'] = 'disabled';
+      $option_form['#states'] = array(
+        'visible' => array(
+          ':input[name="add_control_option"]' => array('checked' => TRUE),
+        ),
+      );
+    }
+    // Add markup to differentiate newly created options.
+    if (empty($option_set->osid) || (isset($option['is_new']) && $option['is_new'] === TRUE)) {
       $option_form['option_label']['#attributes']['class'][] = 'personalize-elements-add-option-label';
       $option_form['personalize_elements_content']['#attributes']['class'][] = 'personalize-elements-add-content';
     }
-    $form['options_wrapper']['options'][$delta] = $option_form;
+    $form['details']['options_wrapper']['options'][$delta] = $option_form;
   }
-  $form['options_wrapper']['options'][0]['option_label']['#states'] =
-  $form['options_wrapper']['options'][0]['personalize_elements_content']['#states'] = array(
-    'disabled' => array(
-      ':input[name="options[0][option_label]"]' => array('value' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL)
+
+  $form['details']['pages_all'] = array(
+    '#type' => 'radios',
+    '#title' => t('Execute on'),
+    '#options' => array(
+      '0' => t('Selected pages'),
+      '1' => t('All pages'),
+    ),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+    '#default_value' => isset($option_set->data['pages']) && empty($option_set->data['pages']) ? 1 : 0,
+  );
+
+  $form['details']['pages'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Pages'),
+    '#title_display' => 'invisible',
+    '#field_prefix' => $base_url . base_path(),
+    '#default_value' => isset($_GET['path']) ? urldecode($_GET['path']) : (isset($option_set->data['pages']) ? $option_set->data['pages'] : ''),
+    '#description' => t("Specify pages by using their paths or leave blank to apply to all pages. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
+    '#states' => array(
+      'disabled' => array(
+        ':input=[name="pages_all"]' => array('value' => '1'),
+      )
     )
   );
 
-  $form['advanced'] = array(
+  $form['details']['advanced'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Advanced Options'),
+    '#title' => t('Advanced options'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#tree' => FALSE,
   );
-  $form['advanced']['pages'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Pages'),
-    '#default_value' => isset($_GET['path']) ? urldecode($_GET['path']) : (isset($option_set->data['pages']) ? $option_set->data['pages'] : ''),
-    '#description' => t("Specify pages by using their paths or leave blank to apply to all pages. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
+
+  $form['details']['advanced']['add_control_option'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use the original, or unpersonalized content as the control variation.'),
+    '#default_value' => $show_control,
   );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit_form'] = array(
     '#type' => 'submit',
     '#value' => t('Save'),
+    '#states' => array(
+      'disabled' => array(
+        ':input[name="variation_type"]' => array('value' => ''),
+      ),
+    ),
   );
 
   $form_state['isAjax'] = $isAjax;
@@ -247,7 +323,7 @@ function personalize_elements_add_option_submit($form, &$form_state) {
  * Ajax callback for the "Add another" button.
  */
 function personalize_elements_add_option_ajax_callback($form, &$form_state) {
-  return $form['options_wrapper']['options'];
+  return $form['details']['options_wrapper']['options'];
 }
 
 /**
@@ -257,7 +333,7 @@ function personalize_elements_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   if ($values['op'] == t('Save')) {
     if (empty($values['variation_type'])) {
-      form_set_error('variation_type', t('You must choose a variation type'));
+      form_set_error('variation_type', t('You must choose an operation'));
     }
     $needs_control_option = isset($values['add_control_option']) && $values['add_control_option'];
     $has_control_option = $values['options'][0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
@@ -288,7 +364,7 @@ function personalize_elements_form_validate($form, &$form_state) {
       }
     }
     if ($non_empty_options < $num_required) {
-      form_set_error('', t('You must have at least 2 options for an option set'));
+      form_set_error('', t('You must have at least 2 variations for a content variation set.'));
     }
   }
 }
@@ -377,7 +453,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
     'data' => array(
       'personalize_elements_selector' => $values['selector'],
       'personalize_elements_type' => $values['variation_type'],
-      'pages' => $values['pages'],
+      'pages' => $values['pages_all'] == 1 ? '' : $values['pages'],
     )
   );
   if (isset($values['osid'])) {

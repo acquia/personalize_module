@@ -434,6 +434,32 @@ function personalize_update_7008() {
 }
 
 /**
+ * Rename control option label field.
+ */
+function personalize_update_7009() {
+  // Update the option label for any control options in personalize elements
+  // option sets from the old "Control Option" label to the current label.
+  $result = db_select('personalize_option_sets', 'o')
+    ->condition('executor', 'personalizeElements')
+    ->fields('o', array('osid', 'options'))
+    ->execute();
+  foreach ($result as $row) {
+    $options = unserialize($row->options);
+    if ($options[0]['option_label'] === 'Control Option') {
+      $options[0]['option_label'] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
+    }
+    if ($options[0]['option_id'] === 'control-option') {
+      $options[0]['option_id'] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID;
+    }
+    db_update('personalize_option_sets')
+      ->condition('osid', $row->osid)
+      ->fields(array('options' => serialize($options)))
+      ->execute();
+  }
+}
+
+
+/**
  * Converts a feature string to an array with 'key' and 'value' elements.
  *
  * It is not really possible to reliably convert a feature string to a context,
