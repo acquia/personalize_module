@@ -935,7 +935,7 @@ function personalize_generate_option_id($index) {
  *   The option name to be used.
  */
 function personalize_generate_option_label($index) {
-  return 'Variation ' . _personalize_generate_option_index($index);
+  return 'Option ' . _personalize_generate_option_index($index);
 }
 
 /**
