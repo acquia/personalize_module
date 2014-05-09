@@ -5,8 +5,8 @@
  * Provides an option set plugin for personalizing ALL THE THINGS.
  */
 
-define('PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID', 'control-option');
-define('PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL', 'Control Option');
+define('PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID', 'control-variation');
+define('PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL', 'Control variation');
 
 /**
  * Implements hook_menu().
