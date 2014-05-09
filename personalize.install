@@ -434,11 +434,11 @@ function personalize_update_7008() {
 }
 
 /**
- * Rename control option label field.
+ * Rename personalize element control fields.
  */
 function personalize_update_7009() {
-  // Update the option label for any control options in personalize elements
-  // option sets from the old "Control Option" label to the current label.
+  // Update the option id and label for any control options in personalize
+  // elements option sets.
   $result = db_select('personalize_option_sets', 'o')
     ->condition('executor', 'personalizeElements')
     ->fields('o', array('osid', 'options'))

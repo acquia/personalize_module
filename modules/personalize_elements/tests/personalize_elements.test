@@ -284,6 +284,14 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     return $option_set;
   }
 
+  /**
+   * Helper function to retrieve the text of a form submit button.
+   *
+   * @param $type
+   *   The type of button to retrieve.
+   * @return string
+   *   The text of the button
+   */
   protected function getButton($type) {
     switch ($type) {
       case 'add_another':

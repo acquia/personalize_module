@@ -30,3 +30,25 @@ label span.secondary {
   margin-bottom: 0;
   padding-bottom: 0;
 }
+
+/* Add another variation button */
+.personalize-elements-add-option {
+
+}
+input[type="submit"].personalize-elements-add-option { /* moved color to theme.css -KO */
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  height: 2em;
+  line-height: 2em;
+}
+input[type="submit"].personalize-elements-add-option:hover { /* moved color and text decoration to theme.css -KO */
+  background: transparent;
+}
+/* The + before the Add variation button */
+.personalize-elements-add-link-prefix:after {
+  font-weight: bold;
+  font-size: 1.5em;
+  margin-right: .2em;
+}
