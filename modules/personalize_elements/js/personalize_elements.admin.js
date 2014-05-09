@@ -9,8 +9,6 @@
    * forcing the user to adjust this for each content variation.
    */
   Drupal.behaviors.personalizeElementsOptionLabel = {
-    changedOptionlabels: [],
-
     attach: function(context, settings) {
       var maxOptionLabelLength = 20;
 
