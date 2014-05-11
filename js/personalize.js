@@ -747,6 +747,8 @@
 
   /*
    * W . E . B   S . T . O . R . A . G . E
+   *
+   * Inspired by https://github.com/pamelafox/lscache.
    */
   Drupal.personalize.storage = Drupal.personalize.storage || {};
   Drupal.personalize.storage.buckets = Drupal.personalize.storage.buckets || {};
@@ -794,6 +796,7 @@
           if (expirationSetting === 'none') {
             data.expires = NaN;
           } else {
+            // Expiration is set in minutes but used in milliseconds.
             data.expires = expirationSetting * 60 * 1000;
           }
         }
