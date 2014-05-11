@@ -651,6 +651,64 @@ class PersonalizeTest extends PersonalizeBaseTest {
   }
 
   /**
+   * Tests that the visitor context expiration cache is properly set and
+   * cleared as needed.
+   */
+  function testVisitorContextExpirationCache() {
+    // Create an agent.
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks', 'administer personalize configuration'));
+    $this->drupalLogin($admin_user);
+
+    $agent = personalize_agent_load('test-agent');
+    $agent->data['visitor_context']['personalize_test_visitor_context'] = array(
+      'test_session' => 'test_session',
+      'test_local_30' => 'test_local_30',
+      'test_local_none' => 'test_local_none',
+      'test_nocache' => 'test_nocache',
+    );
+    $agent->status = PERSONALIZE_STATUS_RUNNING;
+    personalize_agent_save($agent);
+    $this->resetAll();
+
+    // Load a page and verify cache settings.
+    $this->drupalGet('');
+
+    // Verify the cache settings are in the Drupal settings.
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_session'], 'session');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_local_30'], '30');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_nocache']));
+
+    // Pause the campaign and verify that the settings are no longer there.
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_local_30']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_local_none']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_nocache']));
+
+    // Restart the agent and verify that they come back.
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_session'], 'session');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_local_30'], '30');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_nocache']));
+
+    // Remove one of the contexts from those allowed and verify it is removed.
+    $edit = array(
+      'personalize_visitor_context_disabled[]' => 'personalize_test_visitor_context__test_session',
+    );
+    $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
+  }
+
+  /**
    * Tests the ajax callback executor available for personalized blocks.
    *
    * This test also tests the setting of the executor setting.

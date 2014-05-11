@@ -48,6 +48,10 @@ function personalize_admin_form($form, &$form_state) {
   $form['personalize_visitor_context_disabled'] = personalize_admin_build_visitor_context_select($settings, FALSE);
   $form['personalize_visitor_context_disabled']['#title'] = t('Disallowed visitor context items');
   $form['personalize_visitor_context_disabled']['#description'] = t('Select which visitor context items should never show up when configuring visitor context for campaigns.');
+
+  // Add our own submit handler to run BEFORE settings form handler.
+  $form['#submit'][] = 'personalize_admin_form_submit';
+
   return system_settings_form($form);
 }
 
@@ -59,6 +63,17 @@ function personalize_admin_form_validate($form, &$form_state) {
   // settings need to be shuffled around.
   if (isset($form_state['values']['personalize_visitor_context_disabled'])) {
     $form_state['values']['personalize_visitor_context_disabled'] = personalize_admin_convert_visitor_context_form_values($form_state['values']['personalize_visitor_context_disabled']);
+  }
+}
+
+/**
+ * Submit callback for settings form.
+ */
+function personalize_admin_form_submit($form, &$form_state) {
+  // Clear the visitor context cache settings if the allowed contexts changed.
+  // This submit callback is called BEFORE the system_settings_form callback.
+  if ($form_state['values']['personalize_visitor_context_disabled'] != variable_get('personalize_visitor_context_disabled')) {
+    personalize_visitor_context_expiration_clear();
   }
 }
 

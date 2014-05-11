@@ -13,6 +13,7 @@ define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
 define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
 define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
+define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
 
 /**
  * Define constants for campaign status values.
@@ -233,36 +234,13 @@ function personalize_page_build(&$page) {
   $settings = array(
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
   );
+
   // cacheExpiration keys should match web storage bucket names.
   // @see js/personalize.js
-  $settings['cacheExpiration'] = array(
-    'decisions' => variable_get('personalize_local_caching_storage', 'session') == 'session' ? 'session' : variable_get('personalize_local_caching_expiration', 30),
-  );
   // Get the cache settings for visitor contexts.
-  // Limit this to only those contexts for currently running campaigns.
-  $current_campaigns = personalize_agent_load_multiple(array(), array('status' => PERSONALIZE_STATUS_RUNNING));
-  $current_campaign_contexts = array();
-  // Get the visitor context for each of the currently running campaigns.
-  foreach ($current_campaigns as $campaign) {
-    if (!empty($campaign->data['visitor_context'])) {
-      $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
-    }
-  }
-  // Now loop over those contexts and add the option cache expiration data.
-  $disallowed = variable_get('personalize_visitor_context_disabled', array());
-  foreach ($current_campaign_contexts as $plugin_name => $selected_contexts) {
-    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
-      $context_options = call_user_func(array($class, 'getOptions'));
-      foreach ($context_options as $code => $info) {
-        if (isset($disallowed[$plugin_name][$code]) || !array_key_exists($code, $selected_contexts)) {
-          continue;
-        }
-        if (!empty($info['cache_type'])) {
-          $settings['cacheExpiration']['visitor_context:' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
-        }
-      }
-    }
-  }
+  $settings['cacheExpiration'] = personalize_visitor_context_expiration_load();
+  // Add in the decision caching expiration settings.
+  $settings['cacheExpiration']['decisions'] = variable_get('personalize_local_caching_storage', 'session') == 'session' ? 'session' : variable_get('personalize_local_caching_expiration', 30);
 
   $options = array(
     'scope' => 'footer',
@@ -725,6 +703,9 @@ function personalize_agent_set_status($agent_name, $status) {
 
   // Clear the agent cache for this agent.
   personalize_agent_load($agent_name, TRUE);
+
+  // Clear the visitor context cache settings for running campaigns.
+  personalize_visitor_context_expiration_clear();
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
@@ -2080,7 +2061,7 @@ function personalize_mvt_load_all_by_agent($agent_name) {
 
 /**
  * =======================================================================
- *  U S E R  C O N T E X T  R E L A T E D
+ *  V I S I T O R  C O N T E X T  R E L A T E D
  * =======================================================================
  */
 
@@ -2098,6 +2079,59 @@ function personalize_personalize_visitor_context() {
     ),
   );
   return $info;
+}
+
+/**
+ * Load the visitor context cache expiration settings.
+ *
+ * These cache expiration settings are cached as they would only change when
+ * either 1) the campaign status changes; or 2) the disallowed contexts change.
+ *
+ * @return array
+ *   An array of visitor context cache expiration settings with keys for each
+ *   option within a context.  Suitable for use with JavaScript.
+ *
+ * @see personalize.js
+ */
+function personalize_visitor_context_expiration_load() {
+  // Load from the cache if available.
+  if ($expiration = cache_get(PERSONALIZE_CONTEXT_EXPIRATION_CACHE)) {
+    return $expiration->data;
+  }
+  // Get all currently running campaigns
+  $current_campaigns = personalize_agent_load_multiple(array(), array('status' => PERSONALIZE_STATUS_RUNNING));
+  $current_campaign_contexts = array();
+  // Get the visitor context for each of the currently running campaigns.
+  foreach ($current_campaigns as $campaign) {
+    if (!empty($campaign->data['visitor_context'])) {
+      $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+    }
+  }
+  // Now loop over those contexts and add the option cache expiration data.
+  $disallowed = variable_get('personalize_visitor_context_disabled', array());
+  foreach ($current_campaign_contexts as $plugin_name => $selected_contexts) {
+    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+      $context_options = call_user_func(array($class, 'getOptions'));
+      foreach ($context_options as $code => $info) {
+        if (isset($disallowed[$plugin_name][$code]) || !array_key_exists($code, $selected_contexts)) {
+          continue;
+        }
+        if (!empty($info['cache_type'])) {
+          $expiration['visitor_context:' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
+        }
+      }
+    }
+  }
+  // Set in the cache for easier future retrieval.
+  cache_set(PERSONALIZE_CONTEXT_EXPIRATION_CACHE, $expiration);
+  return $expiration;
+}
+
+/**
+ * Clear the visitor context expiration cache settings.
+ */
+function personalize_visitor_context_expiration_clear() {
+  cache_clear_all(PERSONALIZE_CONTEXT_EXPIRATION_CACHE, 'cache');
 }
 
 /**
