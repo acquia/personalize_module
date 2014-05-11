@@ -14,7 +14,7 @@ function personalize_admin_form($form, &$form_state) {
     '#title' => t('Cache settings'),
     '#tree' => FALSE,
   );
-  $form['cache']['personalize_cache_decision_storage'] = array(
+  $form['cache']['personalize_local_caching_storage'] = array(
     '#type' => 'select',
     '#title' => t('Campaign cache storage'),
     '#description' => t("For campaigns that cache decisions, select session to clear the cache at the end of the visitor's session or persist to save for a specific amount of time across all sessions."),
@@ -22,18 +22,18 @@ function personalize_admin_form($form, &$form_state) {
       'session' => t('Session'),
       'local' => t('Persist'),
     ),
-    '#default_value' => variable_get('personalize_cache_decision_storage', 'session'),
+    '#default_value' => variable_get('personalize_local_caching_storage', 'session'),
   );
-  $form['cache']['personalize_cache_decision_expiration'] = array(
+  $form['cache']['personalize_local_caching_expiration'] = array(
     '#type' => 'textfield',
     '#title' => t('Campaign cache expiration'),
     '#description' => t("For campaigns that cache decisions, the amount of time to keep decisions in the visitor's local cache."),
-    '#default_value' => variable_get('personalize_cache_decision_expiration', 30),
+    '#default_value' => variable_get('personalize_local_caching_expiration', 30),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
     '#states' => array(
       'visible' => array(
-        ':input[name="personalize_cache_decision_storage"]' => array('value' => 'local'),
+        ':input[name="personalize_local_caching_storage"]' => array('value' => 'local'),
       ),
     ),
   );

@@ -236,7 +236,7 @@ function personalize_page_build(&$page) {
   // cacheExpiration keys should match web storage bucket names.
   // @see js/personalize.js
   $settings['cacheExpiration'] = array(
-    'decisions' => variable_get('personalize_cache_decision_storage', 'session') == 'session' ? 'session' : variable_get('personalize_cache_decision_expiration', 30),
+    'decisions' => variable_get('personalize_local_caching_storage', 'session') == 'session' ? 'session' : variable_get('personalize_local_caching_expiration', 30),
   );
   // Get the cache settings for visitor contexts.
   // Limit this to only those contexts for currently running campaigns.

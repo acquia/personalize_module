@@ -1366,8 +1366,8 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->drupalLogin($admin_user);
     // Set the local storage expiration to 60
     $edit = array(
-      'personalize_cache_decision_expiration' => 60,
-      'personalize_cache_decision_storage' => 'local',
+      'personalize_local_caching_expiration' => 60,
+      'personalize_local_caching_storage' => 'local',
     );
     $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
     $this->drupalGet('');
@@ -1377,7 +1377,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     // Set the local storage to session and leave the expiration to ensure the
     // expiration changes based on storage change only.
-    $edit['personalize_cache_decision_storage'] = 'session';
+    $edit['personalize_local_caching_storage'] = 'session';
     $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
