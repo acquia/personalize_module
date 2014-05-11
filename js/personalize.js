@@ -382,7 +382,7 @@
   Drupal.personalize.visitor_context_write = function(key, value, overwrite) {
     var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
     var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
-    if (typeof overwrite === false) {
+    if (overwrite === false) {
       var current = bucket.read(key);
       if (current !== null) {
         // A value already exists and we are not allowed to overwrite.
