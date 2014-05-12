@@ -248,6 +248,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       $js_id => array(
         'selector' => $selector,
         'variation_type' => $variation_type,
+        'previewable' => TRUE,
       )
     );
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
