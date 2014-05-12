@@ -232,9 +232,12 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
   function testPersonalizeElementsConfig() {
     $advanced_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content', 'use advanced personalize elements features'));
     $this->drupalLogin($advanced_user);
-    $option_set = $this->createPersonalizedElement(array('options[0][personalize_elements_content]' => '<div class="stuff">ohai</div>', 'options[1][personalize_elements_content]' => '<a href="/">kthxbai</a>'), FALSE);
-    $this->assertEqual('<div class="stuff">ohai</div>', $option_set->options[0]['personalize_elements_content']);
-    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[1]['personalize_elements_content']);
+    $option_set = $this->createPersonalizedElement(array(
+      'options[1][personalize_elements_content]' => '<div class="stuff">ohai</div>',
+      'options[2][personalize_elements_content]' => '<a href="/">kthxbai</a>',
+    ), FALSE);
+    $this->assertEqual('<div class="stuff">ohai</div>', $option_set->options[1]['personalize_elements_content']);
+    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[2]['personalize_elements_content']);
     // Now change the configuration to restrict the allowed tags.
     $this->drupalPost('admin/config/content/personalize/personalize-elements', array('personalize_elements_allowed_html' => '<a> <em>'), t('Save configuration'));
     $allowed_tags = variable_get('personalize_elements_allowed_html', array());
@@ -243,8 +246,8 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     // Resave the personalized element and confirm that disallowed tags are stripped out.
     $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', array(), t('Save'));
     $option_set = personalize_option_set_load(1, TRUE);
-    $this->assertEqual('ohai', $option_set->options[0]['personalize_elements_content']);
-    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[1]['personalize_elements_content']);
+    $this->assertEqual('ohai', $option_set->options[1]['personalize_elements_content']);
+    $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[2]['personalize_elements_content']);
   }
 
   /**
@@ -267,6 +270,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       $js_id => array(
         'selector' => $selector,
         'variation_type' => $variation_type,
+        'previewable' => $variation_type != 'runJS',
       )
     );
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
@@ -316,7 +320,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'title' => $this->randomName(),
       'selector' => '#some-id',
       'variation_type' => 'replaceHtml',
-      'add_control_option' => FALSE,
+      'add_control_option' => TRUE,
       'pages' => '',
       'options[1][option_label]' => personalize_generate_option_label(1),
       'options[1][personalize_elements_content]' => $this->randomName(),
