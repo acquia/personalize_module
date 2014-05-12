@@ -139,8 +139,9 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       ),
     ),
   );
+
   if (!empty($selector_states)) {
-    $form['selector'] = array(
+    $form['details']['selector'] = array(
       '#prefix' => '<div class="form-item-help-link">',
       '#suffix' => '</div>',
       '#title' => t('Element') . ' ' . '<span class="secondary">' . t('(selector)' . '</span>'),
@@ -149,7 +150,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#type' => 'textfield',
       '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
     );
-    $form['selector']['#states'] = array(
+    $form['details']['selector']['#states'] = array(
       'visible' => $selector_states,
       'required' => $selector_states,
     );
