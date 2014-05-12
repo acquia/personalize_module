@@ -280,8 +280,6 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '0' => t('Selected pages'),
       '1' => t('All pages'),
     ),
-    '#prefix' => '<div class="container-inline">',
-    '#suffix' => '</div>',
     '#default_value' => isset($option_set->data['pages']) && empty($option_set->data['pages']) ? 1 : 0,
   );
 
