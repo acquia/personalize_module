@@ -23,7 +23,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
   }
 
   /**
-   * Tests adding a personalizeed field to a node and deleting the node.
+   * Tests adding a personalized field to a node and deleting the node.
    */
   function testPersonalizeFields() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
@@ -411,5 +411,54 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     $node = node_load(4);
     $this->assertFalse($node);
+  }
+
+  /**
+   * Test that a personalized indicator is added only to personalized fields.
+   */
+  function testPersonalizedFieldIndicator() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Add non-personalized multi-value field to the article node type.
+    $field = array(
+      'type' => 'text',
+      'field_name' => 'article_headline',
+      'cardinality' => 2,
+      'settings' => array(
+        'personalizable' => 0,
+      ),
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'article_headline',
+      'entity_type' => 'node',
+      'label' => 'Regular Headline',
+      'bundle' => 'article',
+      'required' => FALSE
+    );
+    field_create_instance($instance);
+    $this->drupalGet('node/add/article');
+    $this->assertNoPattern('/class=".*?personalize-fields-personalized.*?"/', 'personalize-fields-personalized class not found');
+
+    // Add personalized multi-value field to the article node type.
+    $field = array(
+      'type' => 'text',
+      'field_name' => 'personalized_article_headline',
+      'cardinality' => 2,
+      'settings' => array(
+        'personalizable' => 1,
+      ),
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'personalized_article_headline',
+      'entity_type' => 'node',
+      'label' => 'Personalized Headline',
+      'bundle' => 'article',
+      'required' => FALSE
+    );
+    field_create_instance($instance);
+    $this->drupalGet('node/add/article');
+    $this->assertPattern('/class=".*?personalize-fields-personalized.*?"/', 'personalize-fields-personalized class found');
   }
 }
