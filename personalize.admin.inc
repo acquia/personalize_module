@@ -1524,9 +1524,10 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     )
   );
   foreach ($targeting_values as  $key => $info) {
+    $option_key = $info['visitor_context'] . '__' . $key;
     $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
-    $context_options[$key] = $key_label;
-    $value_types[$key] = $info['value type'];
+    $context_options[$option_key] = $key_label;
+    $value_types[$option_key] = $info['value type'];
   }
 
   // This is the portion of the form that will be replace when the "add new" or "remove
@@ -1551,10 +1552,12 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $mappings = array();
   if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
+      $split_context = explode('__', $context['context']);
       // Important: preserve the delta passed through the form as it is used
       // to determine the item to delete when "remove" is clicked.
       $mappings[$delta] = array(
-        'context' => $context['context'],
+        'plugin' => $split_context[0],
+        'context' => $split_context[1],
         'operator' => $context['value']['operator'],
         'match' => $context['value']['match'],
       );
@@ -1582,6 +1585,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       'context' => '',
       'operator' => 'equals',
       'match' => '',
+      'plugin' => '',
     );
   }
 
@@ -1594,6 +1598,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         'context' => '',
         'operator' => 'equals',
         'match' => '',
+        'plugin' => '',
       );
       $num_contexts++;
     }
@@ -2221,9 +2226,10 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       $agent = personalize_agent_load_agent($agent_name);
       // Keep track of feature strings that have already been designated to options,
       // which options they have been designated to, and whether there's a rule
-      // assocatiated with each feature.
+      // associated with each feature.
       $designated_features = $option_features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
+        dpm($settings, $option_id);
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {

@@ -691,16 +691,27 @@ function personalize_element_with_option_set(&$element, $option_set) {
   // Add visitor context assets.
   $visitor_context = array();
 
-  if (isset($data['visitor_context'])) {
-    foreach ($data['visitor_context'] as $name => $contexts) {
-      $selected_context = array_filter($contexts);
-      if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-        if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-          // Ensure js assets for visitor_context plugins are loaded.
-          $assets = array_merge_recursive($assets, $plugin->getAssets());
-          // Keep track of which visitor_context plugins are enabled for this agent.
-          $visitor_context[$name] = $selected_context;
-        }
+  // Find the possible visitor context based on the agent (auto-targeting) and
+  // on the selected option set's options (fixed targeting).
+  $all_contexts = !empty($data['visitor_context']) ? $data['visitor_context'] : array();
+  // PROBLEM: How do we get to the context class from the option rules in order
+  // to call the required assets for the context?
+  foreach ($option_set->options as $option) {
+    if (!empty($option['fixed_targeting_rules'])) {
+      foreach($option['fixed_targeting_rules'] as $rule => $details) {
+        $all_contexts[$details['context']] = $rule;
+      }
+    }
+  }
+
+  foreach ($all_contexts as $name => $contexts) {
+    $selected_context = array_filter($contexts);
+    if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+      if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+        // Ensure js assets for visitor_context plugins are loaded.
+        $assets = array_merge_recursive($assets, $plugin->getAssets());
+        // Keep track of which visitor_context plugins are enabled for this agent.
+        $visitor_context[$name] = $selected_context;
       }
     }
   }
