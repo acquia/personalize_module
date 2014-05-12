@@ -6,7 +6,7 @@
  */
 
 /**
- * Implements hook_personalize_visitor_contexts().
+ * Implements hook_personalize_visitor_context().
  */
 function personalize_test_visitor_context_personalize_visitor_context() {
   $info = array();

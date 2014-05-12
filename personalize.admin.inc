@@ -72,7 +72,7 @@ function personalize_admin_form_validate($form, &$form_state) {
 function personalize_admin_form_submit($form, &$form_state) {
   // Clear the visitor context cache settings if the allowed contexts changed.
   // This submit callback is called BEFORE the system_settings_form callback.
-  if ($form_state['values']['personalize_visitor_context_disabled'] != variable_get('personalize_visitor_context_disabled')) {
+  if (isset($form_state['values']['personalize_visitor_context_disabled']) && $form_state['values']['personalize_visitor_context_disabled'] != variable_get('personalize_visitor_context_disabled')) {
     personalize_visitor_context_expiration_clear();
   }
 }
