@@ -2117,7 +2117,7 @@ function personalize_visitor_context_expiration_load() {
           continue;
         }
         if (!empty($info['cache_type'])) {
-          $expiration['visitor_context:' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
+          $expiration['visitor_context:' . $plugin_name . ':' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
         }
       }
     }

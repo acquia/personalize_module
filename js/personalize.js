@@ -356,12 +356,14 @@
    *
    * @param key
    *   The name of the context item to retrieve.
+   * @param context
+   *   The type of visitor context for the key.
    * @returns {*}
    *   The value of the specified context item or null if not found or
    *   if not configured to store visitor context in localStorage.
    */
-  Drupal.personalize.visitor_context_read = function(key) {
-    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
+  Drupal.personalize.visitor_context_read = function(key, context) {
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key, context);
     var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
     return bucket.read(key);
   };
@@ -374,13 +376,15 @@
    *
    * @param key
    *   The name of the context item to store.
+   * @param context
+   *   The type of visitor context for the key.
    * @param value
    *   The value of the context item to store.
    * @param overwrite
    *   True to overwrite existing values, false not to overwrite; default true.
    */
-  Drupal.personalize.visitor_context_write = function(key, value, overwrite) {
-    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key);
+  Drupal.personalize.visitor_context_write = function(key, context, value, overwrite) {
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key, context);
     var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
     if (overwrite === false) {
       var current = bucket.read(key);
@@ -764,11 +768,13 @@
      *
      * @param key
      *   The key to store.
+     * @param context
+     *   The type of visitor context for the key.
      * @returns string
      *   The standardized bucket name.
      */
-    generateVisitorContextBucketName: function (key) {
-      return 'visitor_context' + this.cacheSeparator + key;
+    generateVisitorContextBucketName: function (key, context) {
+      return 'visitor_context' + this.cacheSeparator + context + this.cacheSeparator + key;
     },
 
     /**
