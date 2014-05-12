@@ -23,13 +23,22 @@ class QuerystringContext extends PersonalizeContextBase {
     foreach ($params as $name) {
       $options[$name] = array(
         'name' => $name,
-        'group' => 'Querystring Params'
+        'group' => 'Querystring Params',
+        'cache_type' => 'session',
       );
     }
     // Add the referrer URL context. This will get lumped into the
     // "Miscellaneous" group.
     $options['referrer_url'] = array(
-      'name' => t('Referrer URL')
+      'name' => t('Referrer URL'),
+      'cache_type' => 'session'
+    );
+
+    // Add the original URL referrer to the misc. group.
+    $options['original_referrer_url'] = array(
+      'name' => t('Original referrer URL'),
+      'cache_type' => 'local',
+      'cache_expiration' => 'none',
     );
 
     return $options;

@@ -61,7 +61,7 @@
       }
 
       // Clear out any expired local storage.
-      Drupal.personalize.localStorage.maintain('Drupal.personalize:');
+      Drupal.personalize.storage.utilities.maintain();
 
       // First process MVTs if there are any.
       processMVTs(settings);
@@ -370,17 +370,16 @@
    *
    * @param key
    *   The name of the context item to retrieve.
+   * @param context
+   *   The type of visitor context for the key.
    * @returns {*}
    *   The value of the specified context item or null if not found or
    *   if not configured to store visitor context in localStorage.
    */
-  Drupal.personalize.visitor_context_read = function(key) {
-    if (!Drupal.settings.personalize.cacheVisitorContext) {
-      return null;
-    }
-
-    var full_key = 'Drupal.personalize:visitor_context:' + key;
-    return Drupal.personalize.localStorage.read(full_key);
+  Drupal.personalize.visitor_context_read = function(key, context) {
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key, context);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
+    return bucket.read(key);
   };
 
   /**
@@ -391,15 +390,25 @@
    *
    * @param key
    *   The name of the context item to store.
+   * @param context
+   *   The type of visitor context for the key.
    * @param value
    *   The value of the context item to store.
+   * @param overwrite
+   *   True to overwrite existing values, false not to overwrite; default true.
    */
-  Drupal.personalize.visitor_context_write = function(key, value) {
-    if (!Drupal.settings.personalize.cacheVisitorContext) {
-      return;
+  Drupal.personalize.visitor_context_write = function(key, context, value, overwrite) {
+    var bucketName = Drupal.personalize.storage.utilities.generateVisitorContextBucketName(key, context);
+    var bucket = Drupal.personalize.storage.utilities.getBucket(bucketName);
+    if (overwrite === false) {
+      var current = bucket.read(key);
+      if (current !== null) {
+        // A value already exists and we are not allowed to overwrite.
+        return;
+      }
     }
-    var full_key = 'Drupal.personalize:visitor_context:' + key;
-    Drupal.personalize.localStorage.write(full_key, value);
+
+    return bucket.write(key, value);
   };
 
   /**
@@ -450,20 +459,35 @@
     }
   }
 
+  /**
+   * Generates a standardized key format for a decision point to use for
+   * persisted storage.
+   *
+   * @param agent_name
+   *   The name of the agent for decisions.
+   * @param point
+   *   The decision point name.
+   * @returns string
+   *   The formatted key name to be used in persistent storage.
+   */
+  function generateDecisionStorageKey(agent_name, point) {
+    return agent_name + Drupal.personalize.storage.utilities.cacheSeparator + point;
+  }
+
   function readDecisionsfromStorage(agent_name, point) {
-    if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
+    if (!Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return null;
     }
-    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-    return Drupal.personalize.localStorage.read(key);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
+    return bucket.read(generateDecisionStorageKey(agent_name, point));
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
     if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
-    var key = 'Drupal.personalize:' + agent_name + ':' + sessionID + ':' + point;
-    Drupal.personalize.localStorage.write(key, decisions);
+    var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
+    bucket.write(generateDecisionStorageKey(agent_name, point), decisions);
   }
 
   /**
@@ -729,66 +753,274 @@
     }
   }
 
-/**
- * Returns an object for reading from and writing to localStorage.
- */
-Drupal.personalize.localStorage = (function() {
-  var supportsHtmlLocalStorage;
-  var wasMaintained = false;
+  /*
+   * W . E . B   S . T . O . R . A . G . E
+   *
+   * Inspired by https://github.com/pamelafox/lscache.
+   */
+  Drupal.personalize.storage = Drupal.personalize.storage || {};
+  Drupal.personalize.storage.buckets = Drupal.personalize.storage.buckets || {};
+  Drupal.personalize.storage.utilities = {
+    cachePrefix: 'Drupal.personalize',
+    cacheSeparator: ':',
 
-  function supportsLocalStorage() {
-    if (supportsHtmlLocalStorage != undefined) {
-      return supportsHtmlLocalStorage;
-    }
-    try {
-      supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
-    } catch (e) {
-      supportsHtmlLocalStorage = false;
-    }
-    return supportsHtmlLocalStorage;
-  };
+    /**
+     * Generates a visitor context bucket for a particular key.
+     *
+     * Each visitor context option can have it's own cache expiration and
+     * therefore it's own bucket.
+     *
+     * @param key
+     *   The key to store.
+     * @param context
+     *   The type of visitor context for the key.
+     * @returns string
+     *   The standardized bucket name.
+     */
+    generateVisitorContextBucketName: function (key, context) {
+      return 'visitor_context' + this.cacheSeparator + context + this.cacheSeparator + key;
+    },
 
-  return {
-    read: function(key) {
-      if (!supportsLocalStorage()) { return null; }
-      var store = localStorage;
-      var stored = store.getItem(key);
-      if (stored) {
-        var record = JSON.parse(stored);
-        if (record.val) {
-          return record.val;
+    /**
+     * Gets the expiration for a bucket based on the type of bucket.
+     *
+     * If a bucket specific expiration cannot be found, then keys are stored
+     * in session only.
+     *
+     * @param bucketName
+     *   The name of the bucket, i.e., visitor_context.
+     * @returns number
+     *   - If local storage then the expiration in number of milliseconds
+     *   - If session storage then 0
+     *   - If no storage configured then -1
+     */
+    getBucketExpiration: function (bucketName) {
+      var data = {};
+      if (Drupal.settings.personalize.cacheExpiration.hasOwnProperty(bucketName)) {
+        var expirationSetting = Drupal.settings.personalize.cacheExpiration[bucketName];
+        if (expirationSetting == 'session') {
+          data.bucketType = 'session';
+          data.expires = 0;
+        } else {
+          data.bucketType = 'local';
+          if (expirationSetting === 'none') {
+            data.expires = NaN;
+          } else {
+            // Expiration is set in minutes but used in milliseconds.
+            data.expires = expirationSetting * 60 * 1000;
+          }
         }
       }
-      return null;
+      return data;
     },
-    write: function(key, value) {
-      if (!supportsLocalStorage()) { return; }
-      var store = localStorage;
-      var record = {ts:new Date().getTime(), val:value};
-      store.setItem(key, JSON.stringify(record));
+
+    /**
+     * A factory method to create/retrieve a storage bucket.
+     *
+     * @param bucketName
+     *   The name of the bucket to retrieve.
+     * @returns {Drupal.personalize.storage.bucket}
+     *   The bucket instance.
+     */
+    getBucket: function (bucketName) {
+      if (!Drupal.personalize.storage.buckets.hasOwnProperty(bucketName)) {
+        var expirationData = this.getBucketExpiration(bucketName);
+        if (expirationData.hasOwnProperty('bucketType')) {
+          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.bucket(bucketName, expirationData.bucketType, expirationData.expires);
+        } else {
+          // No cache mechanisms configured for this bucket.
+          Drupal.personalize.storage.buckets[bucketName] = new Drupal.personalize.storage.nullBucket(bucketName);
+        }
+      }
+      return Drupal.personalize.storage.buckets[bucketName];
     },
-    maintain: function(str) {
-      if (!supportsLocalStorage()) { return; }
-      if (wasMaintained) { return; }
-      var store = localStorage;
-      // Cache expiration stored in minutes.
-      var cachingMaxAge = Drupal.settings.personalize.cacheExpiration * 60 * 1000;
-      for (var i = 0; i < store.length; i++) {
-        var key = store.key(i);
-        if (key.indexOf(str) == 0) {
-          var stored = store.getItem(key);
-          if (stored) {
-            var record = JSON.parse(stored);
-            if (record.ts && (record.ts + cachingMaxAge) < new Date().getTime()) {
-              store.removeItem(key);
+
+    /**
+     * Determine if the current browser supports web storage.
+     */
+    supportsLocalStorage: function() {
+      if (this.supportsHtmlLocalStorage != undefined) {
+        return this.supportsHtmlLocalStorage;
+      }
+      try {
+        this.supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
+      } catch (e) {
+        this.supportsHtmlLocalStorage = false;
+      }
+      return this.supportsHtmlLocalStorage;
+    },
+
+    /**
+     * Purges the storage of any expired cache items.
+     */
+    maintain: function () {
+      if (!this.supportsLocalStorage()) { return; }
+      if (this.wasMaintained != undefined) { return; }
+      var currentTime = new Date().getTime();
+      var num = localStorage.length;
+      var expirations = {};
+
+      for (var i = 0; i < num; i++) {
+        var key = localStorage.key(i);
+        if (key.indexOf(this.cachePrefix) == 0) {
+          // Key names are in the format cachePrefix:bucketName:otherArguments
+          var keyParts = key.split(this.cacheSeparator);
+          var bucketName = keyParts.length >= 2 ? keyParts[1] : '';
+          var expiration = expirations.hasOwnProperty(bucketName) ? expirations[bucketName] : this.getBucketExpiration(bucketName);
+          // Store back for fast retrieval.
+          expirations[bucketName] = expiration;
+          // Make sure the bucket content should expire.
+          if (expiration.bucketType === 'local' && !isNaN(expiration.expires)) {
+            var stored = localStorage.getItem(key);
+            if (stored) {
+              var record = JSON.parse(stored);
+              // Expire the content if past expiration time.
+              if (record.ts && (record.ts + expiration.expires) < currentTime) {
+                localStorage.removeItem(key);
+              }
             }
           }
         }
       }
-      wasMaintained = true;
+      this.wasMaintained = true;
     }
   };
 
-})();
+  /**
+   * Returns an invalid storage mechanism bucket in a null object pattern.
+   *
+   * This bucket follows the publicly available methods for the
+   * Drupal.personalize.storage.bucket in order to allow reads and writes to
+   * fail gracefully when storage is not configured.
+   */
+  Drupal.personalize.storage.nullBucket = function(bucketName) {
+    return {
+      read: function (key) {
+        return null;
+      },
+      write: function (key, value) {
+        return;
+      }
+    }
+  }
+
+  /**
+   * Returns a bucket for reading from and writing to HTML5 web storage.
+   *
+   * @param bucketName
+   *   The name of this bucket of stored items.
+   * @param bucketType
+   *   The webstorage to use (either local or session).
+   * @param expiration
+   *   The expiration in minutes for items in this bucket.  NaN for none.
+   */
+  Drupal.personalize.storage.bucket = function(bucketName, bucketType, expiration) {
+    this.bucketName = bucketName;
+    this.store = bucketType === 'session' ? sessionStorage : localStorage;
+    this.expiration = expiration;
+
+  }
+
+  /**
+   * Bucket functions.
+   */
+  Drupal.personalize.storage.bucket.prototype = (function() {
+    /**
+     * Gets a bucket-specific prefix for a key.
+     */
+    function getBucketPrefix() {
+      return Drupal.personalize.storage.utilities.cachePrefix + Drupal.personalize.storage.utilities.cacheSeparator + this.bucketName;
+    }
+
+    /**
+     * Generates a standardized key name.
+     *
+     * @param key
+     *   The key string for the key within the current bucket.
+     * @returns string
+     *   A fully namespaced key to prevent overwriting.
+     */
+    function generateKey(key) {
+      return getBucketPrefix.call(this) + Drupal.personalize.storage.utilities.cacheSeparator + key;
+    }
+
+    /**
+     * Generates a standardized value to be stored.
+     *
+     * @param value
+     *   The key's value to be written.
+     * @returns string
+     *   A standardized stringified object that includes the keys:
+     *   - ts:  the timestamp that this item was created
+     *   - val: the original submitted value to store.
+     */
+    function generateRecord(value) {
+      var now = new Date().getTime();
+      var record =  {
+        ts: now,
+        val: value
+      };
+
+      return JSON.stringify(record);
+    }
+
+    return {
+      /**
+       * Reads an item from the bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to lookup the item.
+       * @returns
+       *   The value set for the key or null if not available.
+       */
+      read: function (key) {
+        if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return null; }
+        var stored = this.store.getItem(generateKey.call(this,key));
+        if (stored) {
+          var record = JSON.parse(stored);
+          if (record.val) {
+            return record.val;
+          }
+        }
+        return null;
+      },
+
+      /**
+       * Writes an item to the bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to store the item.
+       * @param value
+       *   The value to store.
+       */
+      write: function (key, value) {
+        if (!Drupal.personalize.storage.utilities.supportsLocalStorage()) { return; }
+        var fullKey = generateKey.call(this, key);
+        var record = generateRecord.call(this, value);
+        // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
+        this.store.removeItem(fullKey);
+        try {
+          this.store.setItem(fullKey, record);
+        } catch (e) {
+          // @todo Add handling that removes records from storage based on age.
+          //if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+          // For now just carry on without the additional stored values.
+          return;
+        }
+      },
+
+      /**
+       * Removes an item from a bucket.
+       *
+       * @param key
+       *   The bucket-specific key to use to remove the item.
+       */
+      removeItem: function (key) {
+        if (!Drupal.personalize.storage.utilities.supportsHtmlLocalStorage()) { return; }
+        var fullKey = generateKey.call(this, key);
+        this.store.removeItem(fullKey);
+      }
+    }
+  })();
 
 })(jQuery);

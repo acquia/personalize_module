@@ -9,18 +9,33 @@
  * Admin form for configuring personalization backends.
  */
 function personalize_admin_form($form, &$form_state) {
-  $form['personalize_local_caching_expiration'] = array(
+  $form['cache'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Cache settings'),
+    '#tree' => FALSE,
+  );
+  $form['cache']['personalize_local_caching_storage'] = array(
+    '#type' => 'select',
+    '#title' => t('Campaign cache storage'),
+    '#description' => t("For campaigns that cache decisions, select session to clear the cache at the end of the visitor's session or persist to save for a specific amount of time across all sessions."),
+    '#options' => array(
+      'session' => t('Session'),
+      'local' => t('Persist'),
+    ),
+    '#default_value' => variable_get('personalize_local_caching_storage', 'session'),
+  );
+  $form['cache']['personalize_local_caching_expiration'] = array(
     '#type' => 'textfield',
-    '#title' => t('LocalStorage expiration'),
-    '#description' => t('For agents configured to cache decisions in local storage, the amount of time they should be cached for.'),
+    '#title' => t('Campaign cache expiration'),
+    '#description' => t("For campaigns that cache decisions, the amount of time to keep decisions in the visitor's local cache."),
     '#default_value' => variable_get('personalize_local_caching_expiration', 30),
     '#field_suffix' => t('minutes'),
     '#size' => 5,
-  );
-  $form['personalize_cache_visitor_context'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Cache visitor context in localStorage if available'),
-    '#default_value' => variable_get('personalize_cache_visitor_context', FALSE),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="personalize_local_caching_storage"]' => array('value' => 'local'),
+      ),
+    ),
   );
   $form['personalize_use_admin_mode'] = array(
     '#type' => 'checkbox',
@@ -33,6 +48,10 @@ function personalize_admin_form($form, &$form_state) {
   $form['personalize_visitor_context_disabled'] = personalize_admin_build_visitor_context_select($settings, FALSE);
   $form['personalize_visitor_context_disabled']['#title'] = t('Disallowed visitor context items');
   $form['personalize_visitor_context_disabled']['#description'] = t('Select which visitor context items should never show up when configuring visitor context for campaigns.');
+
+  // Add our own submit handler to run BEFORE settings form handler.
+  $form['#submit'][] = 'personalize_admin_form_submit';
+
   return system_settings_form($form);
 }
 
@@ -44,6 +63,17 @@ function personalize_admin_form_validate($form, &$form_state) {
   // settings need to be shuffled around.
   if (isset($form_state['values']['personalize_visitor_context_disabled'])) {
     $form_state['values']['personalize_visitor_context_disabled'] = personalize_admin_convert_visitor_context_form_values($form_state['values']['personalize_visitor_context_disabled']);
+  }
+}
+
+/**
+ * Submit callback for settings form.
+ */
+function personalize_admin_form_submit($form, &$form_state) {
+  // Clear the visitor context cache settings if the allowed contexts changed.
+  // This submit callback is called BEFORE the system_settings_form callback.
+  if (isset($form_state['values']['personalize_visitor_context_disabled']) && $form_state['values']['personalize_visitor_context_disabled'] != variable_get('personalize_visitor_context_disabled')) {
+    personalize_visitor_context_expiration_clear();
   }
 }
 
