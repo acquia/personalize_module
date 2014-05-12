@@ -1216,7 +1216,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
     $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_targeting_options_for_agent($agent_data);
+    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
   }
 
   foreach ($option_sets as $option_set) {
@@ -1805,11 +1805,11 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
 }
 
 /**
- * Extracts targeting values from those set up on the agent or any of its
- * content variations.
+ * Extracts targeting values from those set up on the agent available for fixed
+ * targeting.
  *
- * @param PersonalizeAgentInterface $agent_instance
- *   The agent to retrieve targeting values for.
+ * @param stdClass $agent_data
+ *   The personalize agent plugin data.
  * @return array
  *   An associative array keyed by context name, with an array of information about the
  *   possible values for that context. The 'value type' key in this array indicates what
@@ -1831,35 +1831,33 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  *       ),
  *     )
  */
-function personalize_get_targeting_values_for_agent($agent_data) {
-  $contexts = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
-
-  $options = personalize_option_set_load_by_agent($agent_data->machine_name);
-  dpm($options, 'option sets');
-  /*
-  foreach ($options as $option)
-  ctools_include('plugins');
-  $value_options = array();
-  // Predefined values will be options in a multi-select field. For non-predefined
-  // values we need to build form elements allowing new values to be specified
-  // based on certain criteria.
-  $data = $agent_instance->getData();
-  if (!empty($data['visitor_context'])) {
-    foreach ($data['visitor_context'] as $name => $contexts) {
-      $selected_context = array_filter($contexts);
-      if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-        if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-          $value_options = array_merge($value_options, $plugin->getPossibleValues());
+function personalize_get_fixed_targeting_values_for_agent($agent_data) {
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::explicitTargetingLimitedToAutoTargetingContext()) {
+    ctools_include('plugins');
+    $value_options = array();
+    // Predefined values will be options in a multi-select field. For non-predefined
+    // values we need to build form elements allowing new values to be specified
+    // based on certain criteria.
+    if (!empty($agent_data->data['visitor_context'])) {
+      foreach ($agent_data->data['visitor_context'] as $name => $contexts) {
+        $selected_context = array_filter($contexts);
+        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+          if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
+            $value_options = array_merge($value_options, $plugin->getPossibleValues());
+          }
         }
       }
     }
+    return $value_options;
   }
-  return $value_options;
-  */
+  // Otherwise the targeting values for an agent are the same as the options
+  // available.
+  return personalize_get_targeting_options_for_agent($agent_data);
 }
 
 /**
- * Gets all targeting values that can be selected for an agent.
+ * Gets all targeting options that can be selected for an agent.
  *
  * @param stdClass $agent_data
  *   The personalize agent plugin data.
@@ -1868,7 +1866,7 @@ function personalize_get_targeting_values_for_agent($agent_data) {
  *   about the possible values for that context.  Return array is documented in
  *   personalize_get_targeting_values_for_agent.
  *
- * @see personalize_get_targeting_values_for_agent
+ * @see personalize_get_fixed_targeting_values_for_agent
  */
 function personalize_get_targeting_options_for_agent($agent_data) {
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
