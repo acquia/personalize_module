@@ -1805,11 +1805,18 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
 }
 
 /**
- * Extracts targeting values from those set up on the agent available for fixed
- * targeting.
+ * Helper function to return targeting values for a particular visitor context
+ * plugin and agent.
  *
+ * This function returns the results in an array suitable for fixed targeting.
+ *
+ * @param string $plugin_name
+ *   The name of the plugin to get targeting values from.
  * @param stdClass $agent_data
- *   The personalize agent plugin data.
+ *   The agent data for the current campaign.
+ * @param array $selected_context
+ *   (Optional) An array of pre-selected contexts for the agent in order to
+ *   limit the returned values.  Only pass if limit is desired.
  * @return array
  *   An associative array keyed by context name, with an array of information about the
  *   possible values for that context. The 'value type' key in this array indicates what
@@ -1819,11 +1826,13 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  *     array(
  *       'some_context' => array(
  *         'label' => 'Some Context',
- *         'type' => 'string'
+ *         'type' => 'string',
+ *         'visitor_context' => 'Plugin name',
  *        ),
  *       'some_other_context' => array(
  *         'label' => 'Some Other Context',
  *         'type' => 'predefined',
+ *         'visitor_context' => 'Plugin name',
  *         'values' => array(
  *           'some_value' => 'Some Value',
  *           'some_other_value' => 'Some Other Value',
@@ -1831,21 +1840,52 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  *       ),
  *     )
  */
+function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_context = NULL) {
+  ctools_include('plugins');
+  $values = array();
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  $limit = TRUE;
+  if (!isset($limit_to_context)) {
+    $limit = FALSE;
+    $limit_to_context = array();
+  }
+
+  if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+    // Make sure this agent is allowed to use this context.
+    if (!call_user_func(array($class, 'allowedFromAgent'), $agent_data)) {
+      return $values;
+    }
+    if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($limit_to_context)))) {
+      // Get the values and add in the source visitor context plugin name.
+      $values = $plugin->getPossibleValues($limit);
+
+      array_walk($values, function (&$item, $key, $name) {
+        $item['visitor_context'] = $name;
+      }, $plugin_name);
+    }
+  }
+  return $values;
+}
+
+/**
+ * Extracts targeting values from those set up on the agent available for fixed
+ * targeting.
+ *
+ * @param stdClass $agent_data
+ *   The personalize agent plugin data.
+ * @return array
+ *   An associative array keyed by context name, with an array of information
+ *   about the possible values for that context.
+ */
 function personalize_get_fixed_targeting_values_for_agent($agent_data) {
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::explicitTargetingLimitedToAutoTargetingContext()) {
-    ctools_include('plugins');
     $value_options = array();
-    // Predefined values will be options in a multi-select field. For non-predefined
-    // values we need to build form elements allowing new values to be specified
-    // based on certain criteria.
     if (!empty($agent_data->data['visitor_context'])) {
       foreach ($agent_data->data['visitor_context'] as $name => $contexts) {
         $selected_context = array_filter($contexts);
-        if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-          if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-            $value_options = array_merge($value_options, $plugin->getPossibleValues());
-          }
+        if (!empty($selected_context)) {
+          $value_options = array_merge($value_options, _personalize_get_targeting_values($name, $agent_data, $selected_context));
         }
       }
     }
@@ -1863,24 +1903,13 @@ function personalize_get_fixed_targeting_values_for_agent($agent_data) {
  *   The personalize agent plugin data.
  * @return array
  *   An associative array keyed by context name, with an array of information
- *   about the possible values for that context.  Return array is documented in
- *   personalize_get_targeting_values_for_agent.
- *
- * @see personalize_get_fixed_targeting_values_for_agent
+ *   about the possible values for that context.
  */
 function personalize_get_targeting_options_for_agent($agent_data) {
-  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   $contexts = personalize_get_visitor_contexts();
   $value_options = array();
   foreach ($contexts as $plugin_name => $plugin_info) {
-    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
-      if (!call_user_func(array($class, 'allowedFromAgent'), $agent_data)) {
-        continue;
-      }
-      if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array()))) {
-        $value_options = array_merge($value_options, $plugin->getPossibleValues());
-      }
-    }
+    $value_options = array_merge($value_options, _personalize_get_targeting_values($plugin_name, $agent_data));
   }
   return $value_options;
 }
