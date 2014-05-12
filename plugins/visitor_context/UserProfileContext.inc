@@ -96,7 +96,7 @@ class UserProfileContext extends PersonalizeContextBase {
   /**
    * Implements PersonalizeAgentInterface::getPossibleValues().
    */
-  public function getPossibleValues() {
+  public function getPossibleValues($limit = FALSE) {
     $possible_values = array();
     $entity = new stdClass();
     $form = $form_state = array();
@@ -135,6 +135,9 @@ class UserProfileContext extends PersonalizeContextBase {
           $possible_values[$name]['value type'] = 'string';
         }
       }
+    }
+    if ($limit) {
+      $possible_values = array_intersect_key($possible_values, array_flip($this->selectedContext));
     }
     return $possible_values;
   }

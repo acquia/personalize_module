@@ -428,15 +428,17 @@ interface PersonalizeContextInterface {
    */
   public static function allowedFromAgent(StdClass $agent);
 
-/**
+  /**
    * Returns the possible values that this context plugin could send as
    * feature strings.
-   *
+   * @param $limit
+   *   True if values should be limited by the selected context; false to
+   *   return all possible values regardless of selected context.
    * @return array
    *   An associative array of values with feature strings as keys and
    *   human-readable names as values.
    */
-  public function getPossibleValues();
+  public function getPossibleValues($limit = FALSE);
 
   /**
    * Returns the assets required for this context object to work.
@@ -508,7 +510,7 @@ abstract class PersonalizeContextBase implements PersonalizeContextInterface, Pe
   /**
    * Implements PersonalizeContextInterface::getPossibleValues().
    */
-  public function getPossibleValues() {
+  public function getPossibleValues($limit = FALSE) {
     return array();
   }
 }
