@@ -1075,6 +1075,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     $variant_number = 1;
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
+      $is_control = $variant_number == 1;
       // Determine container classes based on campaign status and winner.
       $classes = array('personalize-admin-content-item', 'personalize-content-variation', 'clearfix');
       if ($is_running) {
@@ -1109,11 +1110,19 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           'query' => array(PERSONALIZE_PRESELECTION_PARAM => personalize_stringify_osid($option_set->osid) . '--' . $option['option_id']),
         ));
       }
+      $suffix = !empty($preview_link) ? '" ' . $preview_link : '"';
+      if ($is_control) {
+        $suffix .= '<span class="personalize-content-variation-control">' . t('Control') . '</span>';
+      }
+      if ($is_winner) {
+        $suffix .= '<span class="personalize-content-variation-winner">' . t('Fallback/Winner') . '</span>';
+      }
+
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
         'title' => filter_xss($option['option_label']),
         'title_prefix' => '"',
-        'title_suffix' => !empty($preview_link) ? '" ' . $preview_link : '"',
+        'title_suffix' => $suffix,
       ));
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
         '#markup' => $heading,

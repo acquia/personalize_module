@@ -130,6 +130,22 @@ div.personalize-variation-row div.personalize-remove-context {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control,
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner {
+  display: inline-block;
+  margin-left: 1.5em;
+  font-weight: normal;
+  background-image: url('../images/check_8AC340.png');
+  background-image: url('../images/check_8AC340.svg'), none;
+  background-position: left bottom;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  padding-left: 22px;
+}
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control:before,
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner:before {
+
+}
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
   margin-left: 1em;
 }
@@ -147,6 +163,13 @@ div.personalize-variation-row div.personalize-remove-context {
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
   border-right: none;
+}
+.personalize-content-variation .personalize-admin-enumerated-item {
+  font-weight: bold;
+  margin-bottom: 1em;
+}
+.personalize-content-variation .personalize-admin-enumerated-item a {
+  font-weight: normal;
 }
 .personalize-variation-row {
   clear: both;

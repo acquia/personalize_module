@@ -188,6 +188,9 @@ html.js div.ctools-dropdown a.ctools-dropdown-text-link {
 .personalize-admin-content-header a:active {
   color: #007ec0;
 }
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item {
+  color: #555;
+}
 /* Link look alike styling for add a goal button */
 .personalize-add-link-prefix:after {
   content: '+';
