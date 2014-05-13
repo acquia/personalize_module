@@ -176,14 +176,14 @@ html.js .personalize-admin-content-title-suffix div.ctools-dropdown a.ctools-dro
   content: '+';
   color: #2fa6e5;
 }
-button.personalize-add-link,
-input[type="submit"].personalize-add-link {
+input[type="submit"].personalize-add-link,
+button.personalize-add-link {
   text-decoration: none;
   color: #2fa6e5;
   font-weight: normal;
 }
-button.personalize-add-link:hover,
-input[type="submit"].personalize-add-link:hover {
+input[type="submit"].personalize-add-link:hover,
+button.personalize-add-link:hover {
   text-decoration: underline;
   color: #007ec0;
 }
