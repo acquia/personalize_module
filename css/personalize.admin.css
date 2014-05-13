@@ -118,40 +118,32 @@ div.personalize-variation-row div.personalize-remove-context {
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
   min-height: 1em;
 }
-
-#personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend,
-#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend {
-  background-position: .5em .5em;
-}
 #personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title {
   display: inline-block;
-  width: 60%;
-  position: absolute;
+}
+#personalize-agent-goals-form fieldset.personalize-goal legend .fieldset-title div.personalize-admin-enumerated-item,
+#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
+  display: inline;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  display: inline-block;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
-  display: none;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend span.summary {
-  font-weight: normal;
-  display: inline-block;
-  position: absolute;
-  right: 1em;
-  font-size: 1rem;
+  margin-left: 1em;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary div {
-  display: inline-block; /* changed to inline-block-KO */
+  display: inline-block;
+  font-weight: normal;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item,
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-stat {
   border-right: 1px solid;
   margin-right: .5em;
   padding-right: .5em;
+  font-weight: normal;
+  text-transform: lowercase;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
   border-right: none;
