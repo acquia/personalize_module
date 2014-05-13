@@ -12,8 +12,9 @@ define('PERSONALIZE_PRESELECTION_PARAM', 'personalize-preselection');
 define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
 define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
-define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
 define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
+define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
+define('PERSONALIZE_TARGETING_ADMIN_SEPARATOR', '__');
 
 /**
  * Define constants for campaign status values.
@@ -694,12 +695,12 @@ function personalize_element_with_option_set(&$element, $option_set) {
   // Find the possible visitor context based on the agent (auto-targeting) and
   // on the selected option set's options (fixed targeting).
   $all_contexts = !empty($data['visitor_context']) ? $data['visitor_context'] : array();
-  // PROBLEM: How do we get to the context class from the option rules in order
-  // to call the required assets for the context?
   foreach ($option_set->options as $option) {
     if (!empty($option['fixed_targeting_rules'])) {
-      foreach($option['fixed_targeting_rules'] as $rule => $details) {
-        $all_contexts[$details['context']] = $rule;
+      foreach($option['fixed_targeting_rules'] as $rule) {
+        // Doesn't matter if we overwrite an existing value as they are all the
+        // same key/value pairs.
+        $all_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
       }
     }
   }

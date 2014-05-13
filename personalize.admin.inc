@@ -109,7 +109,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
         if (isset($disallowed[$plugin_name][$code])) {
           continue;
         }
-        $option_name = $plugin_name . '__' . $code;
+        $option_name = $plugin_name . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $code;
         if (isset($info['group'])) {
           $group = $info['group'];
           if (!isset($groups[$group])) {
@@ -169,7 +169,7 @@ function personalize_admin_convert_visitor_context_form_values($values) {
   $selected = array_filter($values);
   foreach ($selected as $name => $value) {
     // Element names are in the form {$plugin_name}__{$element_name}
-    list($plugin_name, $element_name) = explode('__', $name);
+    list($plugin_name, $element_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $name);
     if (!isset($visitor_context[$plugin_name])) {
       $visitor_context[$plugin_name] = array();
     }
@@ -1524,10 +1524,10 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     )
   );
   foreach ($targeting_values as  $key => $info) {
-    $option_key = $info['visitor_context'] . '__' . $key;
+    $option_key = $info['visitor_context'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $key;
     $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
     $context_options[$option_key] = $key_label;
-    $value_types[$option_key] = $info['value type'];
+    $value_types[$key] = $info['value type'];
   }
 
   // This is the portion of the form that will be replace when the "add new" or "remove
@@ -1552,12 +1552,12 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $mappings = array();
   if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
-      $split_context = explode('__', $context['context']);
+      list($plugin_name, $context_option) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context['context']);
       // Important: preserve the delta passed through the form as it is used
       // to determine the item to delete when "remove" is clicked.
       $mappings[$delta] = array(
-        'plugin' => $split_context[0],
-        'context' => $split_context[1],
+        'plugin' => $plugin_name,
+        'context' => $context_option,
         'operator' => $context['value']['operator'],
         'match' => $context['value']['match'],
       );
@@ -2229,7 +2229,6 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // associated with each feature.
       $designated_features = $option_features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
-        dpm($settings, $option_id);
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
         if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
@@ -2237,6 +2236,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             if ($context_values['context'] == '') {
               continue;
             }
+            list($plugin_name, $context_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context_values['context']);
             $context_values['match'] = $context_values['value']['match'];
             $context_values['operator'] = $context_values['value']['operator'];
             unset($context_values['value'], $context_values['remove']);
@@ -2244,11 +2244,14 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
             // Create a feature string for this context value that can be consumed
             // by the agent that will be using it.
-            $feature_string = $agent->convertContextToFeatureString($context_values['context'], $value);
+            $feature_string = $agent->convertContextToFeatureString($context_name, $value);
             $feature_values[] = $feature_string;
             // Save the actual rule information as this is what will be used
             // for evaluating it.
             $rules[$feature_string] = $context_values;
+            // Override the context to split it into plugin and context parts.
+            $rules[$feature_string]['context'] = $context_name;
+            $rules[$feature_string]['plugin'] = $plugin_name;
           }
           foreach ($feature_values as $feature) {
             $option_features[$option_id][] = $feature;
