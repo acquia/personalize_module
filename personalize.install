@@ -480,6 +480,50 @@ function personalize_update_7010() {
   }
 }
 
+/**
+ * Update fixed targeting rules to reference the origin context plugin.
+ */
+function personalize_update_7010() {
+  // Get all possible targeting values for all context plugins.
+  ctools_include('plugins');
+  $contexts = personalize_get_visitor_contexts();
+  $plugin_options = array();
+  foreach ($contexts as $plugin_name => $info) {
+    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+      $context_options = call_user_func(array($class, 'getOptions'));
+      $plugin_options = array_merge($plugin_options, array_fill_keys(array_keys($context_options), $plugin_name));
+    }
+  }
+  // Add all targeting values from Lift that are allowed for fixed targeting selections.
+  $lift_values_json = '["c-cen","c-geo-c3","c-geo-cont","c-geo-usr","c-geo-wrg","c-time-gwp","c-time-ldp","c-time-lwp","c-time-tz","c-ua-bb","c-ua-mo","c-ua-os","c-usr-tld","c-wea-cw"]';
+  $lift_values = json_decode($lift_values_json);
+  $plugin_options = array_merge($plugin_options, array_fill_keys(array_values($lift_values), 'acquia_lift_context'));
+
+  // Update any existing fixed targeting rules with the plugin name.
+  $result = db_select('personalize_option_sets', 'o')
+    ->fields('o', array('osid', 'options'))
+    ->execute();
+  foreach ($result as $row) {
+    $options = unserialize($row->options);
+    foreach ($options as &$option) {
+      if (!empty($option['fixed_targeting_rules'])) {
+        foreach ($option['fixed_targeting_rules'] as &$rule) {
+          // There is a rule without a plugin defined here.
+          // Update the plugin if it can be found.  If it cannot be found that
+          // indicates a targeting value that is no longer available.
+          if (isset($plugin_options[$rule['context']])) {
+            $rule['plugin'] = $plugin_options[$rule['context']];
+          }
+        }
+      }
+    }
+    // Save the updated options back to the database.
+    db_update('personalize_option_sets')
+      ->condition('osid', $row->osid)
+      ->fields(array('options' => serialize($options)))
+      ->execute();
+  }
+}
 
 /**
  * Converts a feature string to an array with 'key' and 'value' elements.
