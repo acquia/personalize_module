@@ -70,7 +70,7 @@ button.personalize-delete-goal, button.personalize-delete-context {
 
 /* Make the remove context buttons line up with the form elements */
 div.personalize-variation-row div.personalize-remove-context {
-    padding-top: 2em;
+    padding-top: 1.4em;
 }
 
 /**
@@ -166,15 +166,15 @@ div.personalize-variation-row div.personalize-remove-context {
 }
 .personalize-content-variation .personalize-admin-enumerated-item {
   font-weight: bold;
-  margin-bottom: 1em;
 }
 .personalize-content-variation .personalize-admin-enumerated-item a {
   font-weight: normal;
 }
 .personalize-variation-row {
   clear: both;
-  margin-bottom: 1em;
+  margin-bottom: .5em;
   width: 100%;
+  display: inline-block;
 }
 .personalize-variation-row div {
   float: left;
@@ -184,7 +184,7 @@ div.personalize-variation-row div.personalize-remove-context {
     clear: both;
 }
 div.personalize-target-wrapper div.form-item {
-    padding-right: 10px;
+    padding: 0 10px 0 0;
 }
 
 /* Truncate content variation title */
