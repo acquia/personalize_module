@@ -1,0 +1,6 @@
+name = Personalize Visitor Text Context Test
+description = Provides a visitor context plugin for testing purposes.
+dependencies[] = personalize
+package = Testing
+core = 7.x
+hidden = TRUE

@@ -190,7 +190,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
   }
 
   function setUp() {
-    parent::setUp(array('ctools', 'personalize', 'personalize_test', 'personalize_blocks'));
+    parent::setUp(array('ctools', 'personalize', 'personalize_test', 'personalize_blocks', 'personalize_test_visitor_context'));
   }
 
   function testPermissions() {
@@ -648,6 +648,65 @@ class PersonalizeTest extends PersonalizeBaseTest {
 
     // Assert that the decision caching setting is in the js.
     $this->assertEqual(1, $settings['personalize']['agent_map'][$machine_name]['cache_decisions']);
+  }
+
+  /**
+   * Tests that the visitor context expiration cache is properly set and
+   * cleared as needed.
+   */
+  function testVisitorContextExpirationCache() {
+    // Create an agent.
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks', 'administer personalize configuration'));
+    $this->drupalLogin($admin_user);
+
+    $agent = personalize_agent_load('test-agent');
+    $agent->data['visitor_context']['personalize_test_visitor_context'] = array(
+      'test_session' => 'test_session',
+      'test_local_30' => 'test_local_30',
+      'test_local_none' => 'test_local_none',
+      'test_nocache' => 'test_nocache',
+    );
+    $agent->status = PERSONALIZE_STATUS_RUNNING;
+    personalize_agent_save($agent);
+    $this->resetAll();
+
+    // Load a page and verify cache settings.
+    $this->drupalGet('');
+
+    // Verify the cache settings are in the Drupal settings.
+    $settings = $this->drupalGetSettings();
+    debug($settings['personalize']['cacheExpiration']);
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], '30');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
+
+    // Pause the campaign and verify that the settings are no longer there.
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
+
+    // Restart the agent and verify that they come back.
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], '30');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
+
+    // Remove one of the contexts from those allowed and verify it is removed.
+    $edit = array(
+      'personalize_visitor_context_disabled[]' => 'personalize_test_visitor_context__test_session',
+    );
+    $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
   }
 
   /**
@@ -1364,25 +1423,25 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
   function testConfigurationSettings() {
     $admin_user = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages'));
     $this->drupalLogin($admin_user);
-    // Set localStorage expiration to 60
-    $this->drupalPost('admin/config/content/personalize', array( 'personalize_local_caching_expiration' => 60), $this->getButton('config'));
+    // Set the local storage expiration to 60
+    $edit = array(
+      'personalize_local_caching_expiration' => 60,
+      'personalize_local_caching_storage' => 'local',
+    );
+    $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
-    $this->assertEqual(60, $settings['personalize']['cacheExpiration']);
+    $this->assertEqual(60, $settings['personalize']['cacheExpiration']['decisions']);
 
-    // Set localStorage for visitor context to false.
-    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => FALSE), $this->getButton('config'));
+    // Set the local storage to session and leave the expiration to ensure the
+    // expiration changes based on storage change only.
+    $edit['personalize_local_caching_storage'] = 'session';
+    $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
     $this->drupalGet('');
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
-    $this->assertFalse($settings['personalize']['cacheVisitorContext']);
-    // Set localStorage for visitor context to true
-    $this->drupalPost('admin/config/content/personalize', array('personalize_cache_visitor_context' => TRUE), $this->getButton('config'));
-    $this->drupalGet('');
-    // Assert the correct setting is in the js.
-    $settings = $this->drupalGetSettings();
-    $this->assertTrue($settings['personalize']['cacheVisitorContext']);
+    $this->assertEqual('session', $settings['personalize']['cacheExpiration']['decisions']);
   }
 
   /**

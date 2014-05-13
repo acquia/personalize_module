@@ -1,6 +1,7 @@
 (function ($) {
 
   var initialized = false;
+  var context = 'querystring_context';
 
   function init() {
     for (var name in Drupal.settings.personalize_url_context.querystring_params) {
@@ -10,7 +11,8 @@
     }
     var baseUrl = Drupal.settings.personalize_url_context.base_url, referrer = document.referrer;
     if (referrer && referrer.indexOf(baseUrl) == -1) {
-      Drupal.personalize.visitor_context_write('referrer_url', referrer);
+      Drupal.personalize.visitor_context_write('referrer_url', context, referrer);
+      Drupal.personalize.visitor_context_write('original_referrer_url', context, referrer, false);
     }
     initialized = true;
   }
@@ -33,7 +35,7 @@
       var i, context_values = {};
       for (i in enabled) {
         if (enabled.hasOwnProperty(i)) {
-          var val = Drupal.personalize.visitor_context_read(i);
+          var val = Drupal.personalize.visitor_context_read(i, context);
           if (val !== null) {
             context_values[i] = val;
           }

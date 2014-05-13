@@ -252,3 +252,9 @@ html.js .personalize-collapsed .personalize-admin-content-content {
   vertical-align: middle; /* added this attribute -KO */
 }
 
+/* Configuration settings page */
+.personalize-admin-cache-settings .form-item,
+.personalize-admin-cache-settings .form-item label {
+  display: inline-block;
+}
+
