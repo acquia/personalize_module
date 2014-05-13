@@ -182,15 +182,6 @@
         }
         $summary.html($summary_text.html());
         $summary_text.hide();
-
-        var editText = $('.fieldset-wrapper .personalize-option-set-edit-trigger', fieldset).text(),
-          hideText = Drupal.t('hide');
-        $('.fieldset-wrapper .personalize-option-set-edit-trigger', fieldset).bind('click', function(e) {
-          e.preventDefault();
-          $('div.personalize-variation-winner', fieldset).toggleClass('personalize-edit');
-          var currentText = $(this).text();
-          $(this).text(currentText == editText ? hideText : editText);
-        });
       });
     }
   };

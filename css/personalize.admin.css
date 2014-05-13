@@ -163,40 +163,6 @@ div.personalize-variation-row div.personalize-remove-context {
 div.personalize-target-wrapper div.form-item {
     padding-right: 10px;
 }
-.personalize-variation-row div.personalize-variation-col1 {
-  width: 60%
-}
-.personalize-variation-row div.personalize-variation-col2,
-.personalize-variation-row div.personalize-variation-col3 {
-  width: 15%;
-  text-align: center;
-}
-.personalize-variation-row div.personalize-variation-col4 {
-  width: 10%;
-  text-align: center;
-}
-
-.personalize-variation-row input.personalize-variation-control,
-.personalize-variation-row input.personalize-variation-winner {
-  display: inline-block;
-  visibility: hidden;
-}
-.personalize-variation-row div.personalize-variation-winner.personalize-edit input.personalize-variation-winner {
-  visibility: visible;
-}
-.personalize-variation-row div.personalize-variation-selected-control,
-.personalize-variation-row div.personalize-variation-selected-winner {
-  background-image: url('../images/check_8AC340.png');
-  background-image: url('../images/check_8AC340.svg'), none;
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  background-size: contain;
-  height: 1.2em;
-}
-
-.personalize-variation-row div.personalize-variation-selected-winner.personalize-edit {
-  background: none;
-}
 
 /* Truncate content variation title */
 .personalize-content-variation .personalize-admin-enumerated-item {

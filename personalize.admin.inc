@@ -994,12 +994,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     'primary' => array(
       '#theme_wrappers' => array('container'),
     ),
-    /*
-    'secondary' => array(
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array('class' => array('personalize-admin-secondary')),
-    ),
-    */
   );
   // Determine collapsed content.
   $collapsed = '';
@@ -1078,46 +1072,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       ),
     );
 
-    // Table header row for option set basic information.
-    $section['option_set_' . $option_set->osid]['header'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('personalize-variation-row'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col1'] = array(
-      '#type' => 'markup',
-      '#markup' => '&nbsp;', // Creating an empty div.
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col1', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col2'] = array(
-      '#type' => 'markup',
-      '#markup' => t('Control'),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col2', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col3'] = array(
-      '#type' => 'markup',
-      '#markup' => t('Fallback/winner'),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col3', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col4'] = array(
-      '#type' => 'markup',
-      '#markup' => l(t('edit'), 'javascript:void(0);', array('attributes' => array('class' => array('personalize-option-set-edit-trigger')))),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col4', 'personalize-variation-header'),
-      ),
-    );
-
     $variant_number = 1;
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
@@ -1160,37 +1114,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
         'title' => filter_xss($option['option_label']),
         'title_prefix' => '"',
         'title_suffix' => !empty($preview_link) ? '" ' . $preview_link : '"',
-        'attributes' => array(
-          'class' => array('personalize-variation-col1'),
-        ),
       ));
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
         '#markup' => $heading,
-      );
-      $classes = array('personalize-variation-col2', 'personalize-variation-control');
-      if ($variant_number == 1) {
-        $classes[] = 'personalize-variation-selected-control';
-      }
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['control'] = array(
-        '#type' => 'radio',
-        '#return_value' => $option['option_id'],
-        '#default_value' => $variant_number == 1,
-        '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'control'),
-        '#attributes' => array('class' => $classes),
-        '#disabled' => TRUE,
-        '#theme_wrappers' => array('container'),
-      );
-      $classes = array('personalize-variation-col3', 'personalize-variation-winner');
-      if ($is_winner) {
-        $classes[] = 'personalize-variation-selected-winner';
-      }
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['winner'] = array(
-        '#type' => 'radio',
-        '#return_value' => $option['option_id'],
-        '#default_value' => $is_winner,
-        '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'winner'),
-        '#attributes' => array('class' => $classes),
-        '#theme_wrappers' => array('container'),
       );
       if ($targeting_support && !empty($targeting_values)) {
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
@@ -1975,9 +1901,6 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       $option_set->stateful = $values['advanced']['stateful'];
       if (isset($values['advanced']['executor'])) {
         $option_set->executor = $values['advanced']['executor'];
-      }
-      if ($values['winner']) {
-        $option_set->winner = $values['winner'];
       }
       if (isset($values['advanced']['decision_name'])) {
         $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);
