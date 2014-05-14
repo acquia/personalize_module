@@ -207,8 +207,9 @@ function theme_personalize_admin_content($variables) {
   $element = $variables['element'];
   $attrs = drupal_attributes($element['#attributes']);
   $output = '<fieldset id="' . $variables['element']['#id'] . '"' . $attrs . '>';
-  $output .= '<legend><span class="fieldset-legend"><a class="fieldset-title personalize-admin-content-title" href="#"><span class="fieldset-legend-prefix element-invisible">Hide</span> ';
-  $output .= $element['#title'] . '</a>';
+
+  $output .= '<legend><span class="personalize-fieldset-header"><span class="fieldset-legend personalize-admin-content-title">';
+  $output .= $element['#title'] . '</span>';
 
   // Header content to be shown next to the title at all times.
   if (isset($element['#header'])) {

@@ -173,6 +173,9 @@ div.personalize-target-wrapper div.form-item {
   margin-left: 0.4em;
 }
 
+html.js .personalize-admin-content .collapsible .fieldset-legend,
+.personalize-admin-content fieldset legend,
+.personalize-admin-content fieldset .fieldset-legend,
 .personalize-admin-content-title-suffix,
 .personalize-admin-content-title-suffix div,
 #personalize-agent-form #personalize-status-toggle-form,
