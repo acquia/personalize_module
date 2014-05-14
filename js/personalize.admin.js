@@ -34,7 +34,6 @@
           $holder.addClass('personalize-collapsed');
         }
         // When the fieldset title is clicked, then add toggle the collapsed class.
-        console.log('adding click handler');
         $('.fieldset-title.personalize-admin-content-title', $fieldset).on('click', function(e) {
           $holder.toggleClass('personalize-collapsed');
         });
