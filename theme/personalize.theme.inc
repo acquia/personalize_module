@@ -181,6 +181,7 @@ function theme_personalize_option_set_header($variables) {
   if (!empty($variables['delete_link'])) {
     $output .= '<span class="personalize-option-header-item">' . $variables['delete_link'] . '</span>';
   }
+  $output = '<span class="personalize-option-header">' . $output . '</span>';
   return $output;
 }
 
@@ -200,54 +201,40 @@ function theme_personalize_admin_info_details($variables) {
 }
 
 /**
+ * Theme wrapper for administrative section content.
+ */
+function theme_personalize_admin_content($variables) {
+  $element = $variables['element'];
+  $attrs = drupal_attributes($element['#attributes']);
+  $output = '<fieldset id="' . $variables['element']['#id'] . '"' . $attrs . '>';
+  $output .= '<legend><span class="fieldset-legend"><a class="fieldset-title personalize-admin-content-title" href="#"><span class="fieldset-legend-prefix element-invisible">Hide</span> ';
+  $output .= $element['#title'] . '</a>';
+
+  // Header content to be shown next to the title at all times.
+  if (isset($element['#header'])) {
+    $output .= '<div class="personalize-admin-content-title-suffix">' . $element['#header'] . '</div>';
+  }
+
+  $output .= '</span></legend>';
+  $output .= '<div class="fieldset-wrapper personalize-admin-content-content">' . $element['#children'] . '</div>';
+  $output .= '</fieldset>';
+
+  // Summary content that is shown beneath the title when collapsed.
+  if (!empty($element['#summary'])) {
+    $output .= '<div class="personalize-admin-content-collapsed">' . $element['#summary'] . '</div>';
+  }
+
+  // Wrap the fieldset content.
+  $output = '<div class="personalize-admin-content personalize-collapsible">' . $output . '</div>';
+  return $output;
+}
+
+/**
  * Implements hook_personalize_admin_section().
  */
 function personalize_preprocess_personalize_admin_section(&$variables, $hook) {
   // Add general classes.
   $variables['classes_array'][] = 'clearfix';
-}
-
-/**
- * Implements hook_preprocess_personalize_content_set().
- */
-function personalize_preprocess_personalize_admin_content(&$variables, $hook) {
-  // Move elements to the template variables.
-  $variables['title'] = $variables['element']['#title'];
-  $variables['collapsible'] = $variables['element']['#collapsible'];
-  $variables['collapsed'] = isset($variables['element']['#collapsed']) ? $variables['element']['#collapsed'] : TRUE;
-
-  // Add general classes.
-  $variables['title_attributes_array']['class'][] = 'personalize-admin-content-title';
-  $variables['content_attributes_array']['class'][] = 'personalize-admin-content-content';
-
-  // Add the variation count to the title suffix.
-  if (isset($variables['element']['#variation_count'])) {
-    $variables['title_suffix']['variation_count'] = $variables['element']['#variation_count'];
-  }
-
-  // Add the statistics to the title suffix.
-  if (isset($variables['element']['#statistics'])) {
-    $variables['title_suffix']['statistics'] = $variables['element']['#statistics'];
-    $variables['title_suffix']['statistics']['#weight'] = 30;
-  }
-
-  // Add needed pieces for collapsing content.
-  if ($variables['collapsible']) {
-    $variables['classes_array'][] = 'personalize-collapsible';
-    if ($variables['collapsed']) {
-      $variables['classes_array'][] = 'personalize-collapsed';
-    }
-    $variables['title_prefix']['collapse-trigger'] = array(
-      '#type' => 'link',
-      '#title' => t('edit'),
-      '#href' => '',
-      '#attributes' => array('class' => array('personalize-collapse-edit')),
-    );
-    // Get the collapsed content and add into the
-    if (isset($variables['element']['#collapsed_content'])) {
-      $variables['collapsed_content'] = $variables['element']['#collapsed_content'];
-    }
-  }
 }
 
 /**

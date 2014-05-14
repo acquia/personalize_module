@@ -7,7 +7,7 @@
  * All 
 */
 .personalize-goal .form-item label,
-.personalize-admin-content-content .form-item label {
+.personalize-admin-content .fieldset-wrapper .form-item label {
   margin: 0;
 }
 
@@ -73,36 +73,6 @@ div.personalize-variation-row div.personalize-remove-context {
     padding-top: 1.4em;
 }
 
-/**
- * Content sets
- */
-@media screen and (min-width: 44em) {
-  .personalize-admin-primary,
-  .personalize-admin-secondary {
-    float: left;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    width: 49%;
-    min-height: 4em;
-  }
-
-  .personalize-admin-primary {
-    margin-right: 2%;
-  }
-}
-
-/**
- * Content variation tabular layout
- */
-.personalize-content-variation:first-child {
-  border-top: #ccc 1px solid;
-}
-.personalize-content-variation {
-  border-bottom: #ccc 1px solid;
-  margin: 1em 0;
-  padding: 1em 0 .4em 0;
-}
 /** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
 #personalize-agent-option-sets-form fieldset.personalize-option-set {
   min-width: 0;
@@ -113,6 +83,7 @@ div.personalize-variation-row div.personalize-remove-context {
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
   width: 100%;
   display: block;
+  margin-bottom: 2em;
 }
 
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
@@ -142,26 +113,15 @@ div.personalize-variation-row div.personalize-remove-context {
   background-size: 18px 18px;
   padding-left: 22px;
 }
-#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control:before,
-#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner:before {
-
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
-  margin-left: 1em;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary div {
-  display: inline-block;
-  font-weight: normal;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item,
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-stat {
+#personalize-agent-option-sets-form .personalize-option-header-item,
+#personalize-agent-option-sets-form .personalize-stat {
   border-right: 1px solid;
   margin-right: .5em;
   padding-right: .5em;
   font-weight: normal;
   text-transform: lowercase;
 }
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
+#personalize-agent-option-sets-form .personalize-option-header-item:last-child {
   border-right: none;
 }
 .personalize-content-variation .personalize-admin-enumerated-item {
@@ -229,8 +189,14 @@ html.js .personalize-collapsed .personalize-admin-content-content {
 .personalize-admin-content-title-suffix div,
 #personalize-agent-form #personalize-status-toggle-form,
 #personalize-agent-form #personalize-status-toggle-form div {
-  display: inline-block; /* changed to inline-block-KO */
-  vertical-align: middle; /* added this attribute -KO */
+  display: inline-block;
+}
+#personalize-agent-form #personalize-status-toggle-form,
+#personalize-agent-form #personalize-status-toggle-form div {
+  vertical-align: middle;
+}
+#personalize-agent-option-sets-form .personalize-option-header {
+  margin-left: 1em; /* LTR */
 }
 
 /* Configuration settings page */

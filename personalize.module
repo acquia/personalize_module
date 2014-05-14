@@ -440,6 +440,36 @@ function personalize_element_info() {
 }
 
 /**
+ * Implements hook_library().
+ */
+function personalize_library() {
+  $path = drupal_get_path('module', 'personalize');
+  $options = array(
+    'scope' => 'footer',
+    'defer' => TRUE,
+  );
+
+  $libraries = array();
+  $libraries['admin.campaign'] = array(
+    'title' => 'Campaign edit',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/personalize.admin.js' => $options,
+    ),
+    'css' => array(
+      $path . '/css/personalize.theme.css' => array(),
+      $path . '/css/personalize.admin.css' => array(),
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+      array('system', 'jquery.once'),
+    ),
+  );
+  return $libraries;
+}
+
+/**
  * =======================================================================
  *  T H E M E   I N F O
  * =======================================================================
@@ -476,7 +506,6 @@ function personalize_theme($existing, $type, $theme, $path) {
       'render element' => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
-      'template' => 'personalize-admin-content',
     ),
     'personalize_admin_info_details' => array(
       'render element' => 'element',
@@ -2369,42 +2398,6 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
     'value' => $goal_value
   );
   module_invoke_all('personalize_goal_save', $goal_array);
-}
-
-/**
- * =======================================================================
- *  M I S C E L L A N E O U S
- * =======================================================================
- */
-
-/**
- * Process items in a content set.
- */
-function personalize_pre_render_admin_content($element) {
-  // Process the individual items in the set if there are any.
-  if (isset($element['explicit_targeting']) && $targets = element_children($element['explicit_targeting'])) {
-    $count = count($targets);
-    $variation_text = format_plural($count, '1 variation', '@count variations', array('@count' => $count));
-    $element['#variation_count'] = array(
-      '#theme' => 'html_tag',
-      '#tag' => 'span',
-      '#value' => $variation_text,
-      '#attributes' => array('class' => array('personalize-variation-count')),
-    );
-    foreach ($targets as $key) {
-      $element['explicit_targeting'][$key]['#type'] = 'personalize_content_set_item';
-    }
-  }
-
-  // Attach scripts and styles.
-  $path = drupal_get_path('module', 'personalize');
-  if ($element['#collapsible']) {
-    $element['#attached']['js'][] = $path . '/js/personalize.admin.js';
-  }
-  $element['#attached']['css'][] = $path . '/css/personalize.admin.css';
-  $element['#attached']['css'][] = $path . '/css/personalize.theme.css';
-
-  return $element;
 }
 
 /**

@@ -460,33 +460,28 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (empty($agent_data)) {
     $agent_data = new stdClass();
   }
-
-  $form['agent_form'] = array(
-    '#tree' => TRUE,
-    '#type' => 'personalize_admin_section',
-    'primary' => array(
-      '#theme_wrappers' => array('container'),
-    ),
-  );
-
-  $form['agent_form']['agent_fieldset'] = array(
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => empty($agent_data->machine_name) ? 0 : 1,
-    '#tree' => FALSE,
-    '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
-  );
-
-  $form['agent_form']['agent_fieldset']['header'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('personalize-admin-content-header'),
-    ),
-  );
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
   }
+
+  $form['#attached']['library'][] = array('personalize', 'admin.campaign');
+  $form['agent_form'] = array(
+    '#tree' => TRUE,
+    '#type' => 'personalize_admin_section',
+  );
+
+  $form['agent_form']['agent_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => !empty($agent_data->machine_name),
+    '#collapsed' => !empty($agent_data->machine_name),
+    '#tree' => FALSE,
+    '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
+    '#theme_wrappers' => array('personalize_admin_content'),
+  );
+
   if (!empty($agent_data->machine_name)) {
-    $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+    $form['agent_form']['agent_fieldset']['#header'] = drupal_render($toggle_form);
   }
   $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
   if ($basic_form === FALSE) {
@@ -849,20 +844,16 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     $counter++;
   }
   $form['variations']['primary']['goals_fieldset'] = array(
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => 1,
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
     '#tree' => FALSE,
     '#title' => t('Goals'),
-    '#collapsed_content' => $collapsed,
+    '#summary' => $collapsed,
+    '#theme_wrappers' => array('personalize_admin_content'),
   );
   // Header content for goals.
-  $form['variations']['primary']['goals_fieldset']['header'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('personalize-admin-content-header'),
-    ),
-  );
-  $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
+  $header = array(
     '#prefix' => '<span class="personalize-add-link-prefix"></span>',
     '#type' => 'submit',
     '#value' => t('Add goal'),
@@ -878,6 +869,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     ),
     '#limit_validation_errors' => array(array('goals')),
   );
+  $form['variations']['primary']['goals_fieldset']['#header'] = drupal_render($header);
 
   // Now handle the goals input display.
   $section = &$form['variations']['primary']['goals_fieldset'];
@@ -1010,22 +1002,16 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     $collapsed .= $option_sets_labels[$option_set->osid];
     $counter++;
   }
+  $header = personalize_get_create_new_links_dropbutton($campaign_page);
   $form['variations']['primary']['option_sets'] = array(
     '#tree' => TRUE,
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => 1,
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#title' => t('Content variation sets'),
-    '#collapsed_content' => $collapsed,
-  );
-  $form['variations']['primary']['option_sets']['header'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('personalize-admin-content-header'),
-    ),
-  );
-  $form['variations']['primary']['option_sets']['header']['add'] = array(
-    '#markup' => personalize_get_create_new_links_dropbutton($campaign_page),
+    '#theme_wrappers' => array('personalize_admin_content'),
+    '#summary' => $collapsed,
+    '#header' => $header,
   );
 
   $section = &$form['variations']['primary']['option_sets'];
@@ -1668,11 +1654,13 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
     $collapsed .= $mvt->display_label;
   }
   $form['mvt_wrapper']['mvt'] = array(
-    '#type' => 'personalize_admin_content',
+    '#type' => 'fieldset',
     '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
     '#tree' => TRUE,
     '#title' => t('Multivariate tests'),
-    '#collapsed_content' => $collapsed,
+    '#summary' => $collapsed,
+    '#theme_wrappers' => array('personalize_admin_content'),
   );
   $form['mvt_wrapper']['mvt']['agent'] = array(
     '#type' => 'value',
@@ -1691,9 +1679,11 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       }
       $form['mvt_wrapper']['mvt'][$delta] = array(
         '#tree' => TRUE,
-        '#type' => 'personalize_admin_content',
-        '#collapsible' => FALSE,
+        '#type' => 'container',
         '#title' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
+        '#attributes' => array(
+          'class' => array('personalize-mvt-edit'),
+        ),
       );
     }
   }

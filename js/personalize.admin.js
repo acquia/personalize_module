@@ -4,60 +4,6 @@
   Drupal.personalize.admin = Drupal.personalize.admin || {};
 
   /**
-   * Click handler to toggle editing within a collapsible admin container.
-   *
-   * The container to toggle is either the target or a parent of the target.
-   *
-   * @param event
-   *   Triggering event.
-   */
-  Drupal.personalize.admin.toggleClickHandler = function (event) {
-    var $container = [];
-    if ($(event.target).hasClass('personalize-collapsible')) {
-      $container = $(event.target);
-    } else {
-      $container = $(event.target).parents('.personalize-collapsible');
-    }
-    if ($container.length == 0) {
-      return;
-    }
-    // Any clicks from links in the title suffix will expand the container.
-    if ($(event.target).parents('.personalize-admin-content-title-suffix').length > 0) {
-      Drupal.personalize.admin.togglePersonalizeCollapse($container, true);
-    } else {
-      // Otherwise just toggle.
-      Drupal.personalize.admin.togglePersonalizeCollapse($container);
-    }
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  };
-
-  /**
-   * Toggle the collapse/editing state for a collapsible admin container.
-   *
-   * @param $container
-   *   The jQuery container to toggle.
-   * @param open
-   *   (Optional) boolean indicating if the container should become open.
-   */
-  Drupal.personalize.admin.togglePersonalizeCollapse = function ($container, open) {
-    var closedText = Drupal.t('edit'),
-      openText = Drupal.t('close'),
-      label = $container.hasClass('personalize-collapsed') ? openText : closedText;
-    if (open === true && !$container.hasClass('personalize-collapsed')) {
-      // The container is already open.
-      return;
-    }
-    $container.toggleClass('personalize-collapsed');
-    $container.children('personalize-collapse-edit').text(label);
-    if ($container.hasClass('personalize-collapsed')) {
-      $container.bind('click', Drupal.personalize.admin.toggleClickHandler);
-    } else {
-      $container.unbind('click', Drupal.personalize.admin.toggleClickHandler);
-    }
-  };
-
-  /**
    * Campaign edit page functionality.
    *
    * Make personalize admin content containers collapsible.
@@ -65,18 +11,6 @@
    */
   Drupal.behaviors.personalizeCampaignEdit = {
     attach: function (context, settings) {
-      $('.personalize-collapsible', context).once().each(function() {
-        var $container = $(this),
-            $trigger = $container.children('.personalize-collapse-edit');
-        // Title and edit link always toggles editing.
-        $trigger.bind('click', Drupal.personalize.admin.toggleClickHandler);
-        $('.personalize-admin-content-title', $container).first().bind('click', Drupal.personalize.admin.toggleClickHandler);
-
-        // If it is collapsed, allow click on full div to toggle editing.
-        if ($container.hasClass('personalize-collapsed')) {
-          $container.bind('click', Drupal.personalize.admin.toggleClickHandler);
-        }
-      });
       // Add in context link for goals.
       $('.personalize-goal-action', context).once('personalize-goal-action', function() {
         $(this).bind('change', function(e) {
@@ -85,6 +19,25 @@
             document.location.href = val;
           }
         })
+      });
+      $('.personalize-admin-content', context).once(function() {
+        // If the fieldset is collapsed, then set this style to be collapsed.
+        var $holder = $(this);
+        var $fieldset = $holder.children('fieldset');
+        if (!$fieldset) {
+          return;
+        }
+        if (!$fieldset.hasClass('collapsible')) {
+          return;
+        }
+        if ($fieldset.hasClass('collapsed')) {
+          $holder.addClass('personalize-collapsed');
+        }
+        // When the fieldset title is clicked, then add toggle the collapsed class.
+        console.log('adding click handler');
+        $('.fieldset-title.personalize-admin-content-title', $fieldset).on('click', function(e) {
+          $holder.toggleClass('personalize-collapsed');
+        });
       });
     }
   };
@@ -125,22 +78,6 @@
   };
 
   /**
-   * Add personalize admin content header sections.
-   *
-   * This is content that should appear inline with the admin content title.
-   * It should be shown regardless of collapsed state of the container.
-   */
-  Drupal.behaviors.personalizeAdminContentHeader = {
-    attach: function (context, settings) {
-      $('.personalize-admin-content-header', context).once().each(function() {
-        var $container = $(this).parents('.personalize-collapsible');
-        $container.find('.personalize-admin-content-title').after('<div class="personalize-admin-content-title-suffix"></div>');
-        $('.personalize-admin-content-title-suffix', $container).append($(this));
-      });
-    }
-  };
-
-  /**
    * Handle show/hide of optional admin information.
    */
   Drupal.behaviors.personalizeAdminOptional = {
@@ -170,18 +107,14 @@
    */
   Drupal.behaviors.personalizeAdminFieldset = {
     attach: function (context, settings) {
-      $('#personalize-agent-option-sets-form .personalize-admin-content-content fieldset').once().each(function() {
+      $('#personalize-agent-option-sets-form .fieldset-wrapper fieldset').once().each(function() {
         var fieldset = this,
-          $summary = $('.fieldset-legend:first .summary', this),
           $summary_text = $('.fieldset-wrapper:first .personalize-summary', this);
         if ($summary_text.length == 0) {
           return;
         }
-        if ($summary.length == 0) {
-          $summary = $('.fieldset-legend').append('<span class="summary"></span>');
-        }
-        $summary.html($summary_text.html());
-        $summary_text.hide();
+        $('a.fieldset-title:first', this).after('<div class="personalize-admin-content-title-suffix">' + $summary_text.html() + '</div>');
+        $summary_text.remove();
       });
     }
   };
