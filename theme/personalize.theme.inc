@@ -210,12 +210,6 @@ function theme_personalize_admin_content($variables) {
 
   $output .= '<legend><span class="personalize-fieldset-header"><span class="fieldset-legend personalize-admin-content-title">';
   $output .= $element['#title'] . '</span>';
-
-  // Header content to be shown next to the title at all times.
-  if (isset($element['#header'])) {
-    $output .= '<div class="personalize-admin-content-title-suffix">' . $element['#header'] . '</div>';
-  }
-
   $output .= '</span></legend>';
   $output .= '<div class="fieldset-wrapper personalize-admin-content-content">' . $element['#children'] . '</div>';
   $output .= '</fieldset>';

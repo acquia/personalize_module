@@ -481,7 +481,13 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
 
   if (!empty($agent_data->machine_name)) {
     $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
-    $form['agent_form']['agent_fieldset']['#header'] = drupal_render($toggle_form);
+    $form['agent_form']['agent_fieldset']['header'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-admin-content-header'),
+      ),
+      'toggle_form' => $toggle_form,
+    );
   }
   $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
   if ($basic_form === FALSE) {
@@ -791,6 +797,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // If the "Add another" button was clicked, we need to add goals to get up
   // to the number indicated.
   $num_goals = count($goals);
+  $clicked_add = isset($form_state['clicked_button']['#submit']) && in_array('personalize_agent_add_goal_submit', $form_state['clicked_button']['#submit']);
   if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
     while ($num_goals < $form_state['num_goals']) {
       $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
@@ -846,14 +853,20 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   $form['variations']['primary']['goals_fieldset'] = array(
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
+    '#collapsed' => !$clicked_add,
     '#tree' => FALSE,
     '#title' => t('Goals'),
     '#summary' => $collapsed,
     '#theme_wrappers' => array('personalize_admin_content'),
   );
   // Header content for goals.
-  $header = array(
+  $form['variations']['primary']['goals_fieldset']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
+  );
+  $form['variations']['primary']['goals_fieldset']['header']['add_goal'] = array(
     '#prefix' => '<span class="personalize-add-link-prefix"></span>',
     '#type' => 'submit',
     '#value' => t('Add goal'),
@@ -869,7 +882,6 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     ),
     '#limit_validation_errors' => array(array('goals')),
   );
-  $form['variations']['primary']['goals_fieldset']['#header'] = drupal_render($header);
 
   // Now handle the goals input display.
   $section = &$form['variations']['primary']['goals_fieldset'];
@@ -1002,7 +1014,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     $collapsed .= $option_sets_labels[$option_set->osid];
     $counter++;
   }
-  $header = personalize_get_create_new_links_dropbutton($campaign_page);
   $form['variations']['primary']['option_sets'] = array(
     '#tree' => TRUE,
     '#type' => 'fieldset',
@@ -1011,7 +1022,15 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     '#title' => t('Content variation sets'),
     '#theme_wrappers' => array('personalize_admin_content'),
     '#summary' => $collapsed,
-    '#header' => $header,
+  );
+  $form['variations']['primary']['option_sets']['header'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-admin-content-header'),
+    ),
+  );
+  $form['variations']['primary']['option_sets']['header']['add'] = array(
+    '#markup' => personalize_get_create_new_links_dropbutton($campaign_page),
   );
 
   $section = &$form['variations']['primary']['option_sets'];

@@ -34,9 +34,14 @@
           $holder.addClass('personalize-collapsed');
         }
         // When the fieldset title is clicked, then add toggle the collapsed class.
-        $('.fieldset-title.personalize-admin-content-title', $fieldset).on('click', function(e) {
+        $('legend .personalize-fieldset-header .fieldset-title', $fieldset).on('click', function(e) {
           $holder.toggleClass('personalize-collapsed');
         });
+      });
+      $('.personalize-admin-content-header', context).once(function() {
+        var $container = $(this).parents('.personalize-collapsible');
+        $container.find('.personalize-admin-content-title').after('<div class="personalize-admin-content-title-suffix"></div>');
+        $('.personalize-admin-content-title-suffix', $container).append($(this));
       });
     }
   };
@@ -127,8 +132,16 @@
       if ($newGoal.length == 0) {
         return;
       }
+      // Make sure the fieldset is open.
+      var $fieldset = $('fieldset:first', context);
+      if ($fieldset.hasClass('collapsed')) {
+        Drupal.toggleFieldset($fieldset);
+      }
+      $fieldset.parent('.personalize-admin-content').removeClass('personalize-collapsed');
+      // Find the new goal on the screen.
       var offset = $newGoal.offset();
-      var offsetTop = offset.top + 100; // scroll to just above the new goal
+      var offsetTop = offset.top + 100;
+      // Scroll to just above the new goal.
       $('html, body').animate({
         scrollTop: offsetTop
       }, 1000, function() {
