@@ -518,7 +518,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset']['actions']['submit_form'] = array(
     '#type' => 'submit',
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
     '#value' => t('Save campaign settings'),
   );
@@ -952,7 +952,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-goals-form');
@@ -1236,7 +1236,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-option-sets-form');
@@ -1711,7 +1711,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $form['mvt_wrapper']['mvt']['add']['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-mvt-form');
