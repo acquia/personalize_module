@@ -156,14 +156,6 @@ div.personalize-target-wrapper div.form-item {
   max-width: 60%;
 }
 
-/*
- * Collapsible content
- */
-html.js .personalize-collapsed .personalize-admin-content-content {
-  height: 0;
-  overflow: hidden;
-}
-
 .personalize-admin-content-content .personalize-admin-content-title .personalize-admin-enumerated-item,
 .personalize-admin-content-content fieldset .fieldset-title .personalize-admin-enumerated-item {
   display: block; 
@@ -179,10 +171,6 @@ html.js .personalize-collapsed .personalize-admin-content-content {
 }
 .personalize-admin-optional-trigger {
   margin-left: 0.4em;
-}
-
-.personalize-admin-content-title {
-  cursor: pointer;
 }
 
 .personalize-admin-content-title-suffix,

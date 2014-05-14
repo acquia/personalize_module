@@ -108,12 +108,13 @@
 }
 
 .personalize-admin-content-collapsed {
-  display: none;
+  margin-top: 1em;
+  height: 0;
+  overflow: hidden;
 }
 
 .personalize-collapsed .personalize-admin-content-collapsed {
-  display: block;
-  margin-top: 1em;
+  height: auto;
 }
 
 .personalize-admin-content-collapsed .personalize-admin-enumerated-item {
@@ -123,7 +124,7 @@
 #personalize-agent-option-sets-form .personalize-ctools-dropdown,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-link-wrapper,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper {
-  display: inline-block; /* changed to inline block -KO */
+  display: inline-block;
 }
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown {
@@ -193,4 +194,3 @@ input[type="submit"].personalize-add-link:hover {
     padding-left: 3em; /* LTR */
   }
 }
-
