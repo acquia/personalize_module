@@ -60,6 +60,13 @@ input[type="submit"].personalize-add-link:hover {
   font-size: 1.5em;
   margin-right: .2em;
 }
+/* Align with preview link within content variation sets */
+.personalize-option-set-winner button.personalize-add-link {
+  height: 1.41421em;
+  line-height: 1.41421em;
+  font-weight: 200;
+}
+
 /* smaller to align with text fields.
  * @todo would much rather have these simply be "x" icons -KO. 
 */
@@ -68,6 +75,11 @@ button.personalize-delete-goal, button.personalize-delete-context {
   padding-bottom: .5em;
   margin-left: 0;
   vertical-align: bottom;
+}
+.personalize-content-variation .personalize-admin-enumerated-item+.personalize-option-set-winner {
+  border-left: 1px solid #000;
+  padding-left: .5em;
+  margin-left: .5em;
 }
 
 /* Make the remove context buttons line up with the form elements */

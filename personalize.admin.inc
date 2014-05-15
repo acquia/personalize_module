@@ -1927,7 +1927,7 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
     }
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
-        if ($option['enable_explicit_targeting'] == 0) {
+        if (isset($option['enable_explicit_targeting']) && $option['enable_explicit_targeting'] == 0) {
           $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['mapping'] = array();
           $need_form_state_cache_clear = TRUE;
         }
