@@ -1161,6 +1161,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
             'callback' => 'personalize_agent_option_sets_ajax_callback',
             'wrapper' => $replace_option_set_id,
             'effect' => 'fade',
+            'progress' => array(
+              'message' => ' ',
+              'type' => 'throbber',
+            )
           ),
         );
       }

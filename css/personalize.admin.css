@@ -40,7 +40,8 @@
 * @todo would much rather use action-link style from theme instead but it is
 * specific to "ul.action-links a" selector in Ember and we need a submit button.
 */
-input[type="submit"].personalize-add-link { /* moved color to theme.css -KO */
+button.personalize-add-link,
+input[type="submit"].personalize-add-link {
   background: transparent;
   border: none;
   padding: 0;
@@ -48,7 +49,8 @@ input[type="submit"].personalize-add-link { /* moved color to theme.css -KO */
   height: 2em;
   line-height: 2em;
 }
-input[type="submit"].personalize-add-link:hover { /* moved color and text decoration to theme.css -KO */
+button.personalize-add-link:hover,
+input[type="submit"].personalize-add-link:hover {
   background: transparent;
 }
 /* The + before the Add Goals button */
@@ -142,15 +144,6 @@ div.personalize-variation-row div.personalize-remove-context {
 }
 div.personalize-target-wrapper div.form-item {
     padding: 0 10px 0 0;
-}
-
-/* Truncate content variation title */
-.personalize-content-variation .personalize-admin-enumerated-item {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 60%;
-  max-width: 60%;
 }
 
 .personalize-admin-content > fieldset > legend {
