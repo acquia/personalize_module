@@ -252,8 +252,69 @@ function personalize_agent_list() {
 /**
  * Menu callback for displaying a list of content variations.
  */
-function personalize_option_set_list() {
-  return 'TODO';
+function personalize_option_set_list($form, &$form_state) {
+  $option_sets = personalize_option_set_load_multiple(FALSE);
+
+  $header = array(
+    array('data' => t('Set name')),
+    array('data' => t('Type')),
+    array('data' => t('Campaign')),
+    array('data' => t('Edit')),
+    array('data' => t('Delete')),
+  );
+
+  $types = array();
+  $rows = array();
+  $filter = isset($form_state['values']['filter']) ? $form_state['values']['filter'] : '';
+  foreach($option_sets as $option_set) {
+    $types[$option_set->plugin] = $option_set->plugin;
+    if (!empty($filter) && $filter != $option_set->plugin) {
+      continue;
+    }
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
+    $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
+    $campaign = personalize_agent_load($option_set->agent);
+    $rows[] = array(
+      $option_set->label,
+      $option_set->plugin,
+      l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent),
+      l(t('edit'), $edit_link),
+      l(t('delete'), $delete_link),
+    );
+  }
+
+  // Include a filter by variation set type.
+  if (count($types) > 0) {
+    $types = array_merge(array('' => t('All')), $types);
+    $form['filter'] = array(
+      '#type' => 'select',
+      '#title' => t('Filter by type'),
+      '#options' => $types,
+      '#ajax' => array(
+        'callback' => 'personalize_option_set_list_ajax_callback',
+        'wrapper' => 'personalize-variation-sets',
+      )
+    );
+  }
+
+  $form['results'] = array(
+    '#markup' => theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(
+        'id' => 'personalize-variation-sets',
+      ),
+    )),
+  );
+  return $form;
+}
+
+/**
+ * Ajax submit handler used to filter the content variation list page.
+ */
+function personalize_option_set_list_ajax_callback($form, &$form_state) {
+  return $form['results'];
 }
 
 /**

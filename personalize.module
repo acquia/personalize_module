@@ -86,7 +86,8 @@ function personalize_menu() {
   $items['admin/structure/personalize/variations'] = array(
     'title' => 'Variation sets',
     'description' => 'Manage your personalization campaign content variation sets.',
-    'page callback' => 'personalize_option_set_list',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_option_set_list'),
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,

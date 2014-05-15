@@ -26,8 +26,18 @@ function personalize_elements_menu() {
     'title' => 'List personalize elements',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
+  // Add an add link to the variation listing page.
+  $items['admin/structure/personalize/variations/personalize-elements-add'] = array(
+    'title' => 'Add personalized element',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_form', 'add'),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'personalize_elements.admin.inc',
+  );
+  // Add an add link to the element listing page.
   $items['admin/structure/personalize/variations/personalize-elements/add'] = array(
-    'title' => 'Add personalize element',
+    'title' => 'Add personalized element',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_elements_form', 'add'),
     'access arguments' => array('manage personalized content'),
