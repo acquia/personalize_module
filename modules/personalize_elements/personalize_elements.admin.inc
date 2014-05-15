@@ -37,8 +37,8 @@ function personalize_elements_list() {
   foreach (personalize_option_set_load_by_type('elements') as $option_set) {
     $tablerow = array(
       array('data' => check_plain($option_set->label)),
-      array('data' => l(t('Edit'), 'admin/structure/personalize-elements/manage/'. $option_set->osid . '/edit')),
-      array('data' => l(t('Delete'), 'admin/structure/personalize-elements/manage/'. $option_set->osid . '/delete')),
+      array('data' => l(t('Edit'), 'admin/structure/personalize/variations/personalize-elements/manage/'. $option_set->osid . '/edit')),
+      array('data' => l(t('Delete'), 'admin/structure/personalize/variations/personalize-elements/manage/'. $option_set->osid . '/delete')),
     );
     $rows[] = $tablerow;
   }
@@ -422,7 +422,7 @@ function personalize_elements_form_submit($form, &$form_state) {
     }
     personalize_option_set_save($option_set);
     drupal_set_message(t('The option set was saved.'));
-    $form_state['redirect'] = 'admin/structure/personalize-elements';
+    $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-elements';
   }
 }
 
@@ -500,7 +500,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
 function personalize_elements_element_delete($form, $form_state, $option_set) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $option_set->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $option_set->label);
-  return confirm_form($form, t('Are you sure you want to delete the element %title?', array('%title' => $option_set->label)), 'admin/structure/personalize-elements', '', t('Delete'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to delete the element %title?', array('%title' => $option_set->label)), 'admin/structure/personalize/variations/personalize-elements', '', t('Delete'), t('Cancel'));
 }
 
 /**
@@ -509,7 +509,7 @@ function personalize_elements_element_delete($form, $form_state, $option_set) {
 function personalize_elements_element_delete_submit($form, &$form_state) {
   personalize_option_set_delete($form_state['values']['osid']);
   drupal_set_message(t('The personalized element %name has been removed.', array('%name' => $form_state['values']['title'])));
-  $form_state['redirect'] = 'admin/structure/personalize-elements';
+  $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-elements';
 }
 
 /**

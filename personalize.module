@@ -62,7 +62,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc'
   );
   $items['admin/structure/personalize'] = array(
-    'title' => 'Personalization Campaigns',
+    'title' => 'Personalize',
     'description' => 'Manage your personalization campaigns.',
     'page callback' => 'personalize_agent_list',
     'access callback' => 'user_access',
@@ -71,7 +71,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/list'] = array(
-    'title' => 'Agents',
+    'title' => 'Campaigns',
     'description' => 'List personalization agents',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
@@ -82,6 +82,31 @@ function personalize_menu() {
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'personalize.admin.inc',
+  );
+  $items['admin/structure/personalize/variations'] = array(
+    'title' => 'Variation sets',
+    'description' => 'Manage your personalization campaign content variation sets.',
+    'page callback' => 'personalize_option_set_list',
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'personalize.admin.inc',
+    'weight' => 10,
+  );
+  $items['admin/structure/personalize/variations/list'] = array(
+    'title' => 'All variation sets',
+    'description' => 'Manage all content variation sets for all campaigns.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/structure/personalize/goals'] = array(
+    'title' => 'Goals',
+    'description' => 'Manage your personalization campaign goals.',
+    'page callback' => 'personalize_goals_list',
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'personalize.admin.inc',
+    'weight' => 20,
   );
   $items['personalize/campaign_context'] = array(
     'page callback' => 'personalize_get_campaign_context_callback',

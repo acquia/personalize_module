@@ -249,6 +249,20 @@ function personalize_agent_list() {
 }
 
 /**
+ * Menu callback for displaying a list of content variations.
+ */
+function personalize_option_set_list() {
+  return 'TODO';
+}
+
+/**
+ * Menu callback for displaying a list of campaign goals.
+ */
+function personalize_goals_list() {
+  return 'TODO';
+}
+
+/**
  * Returns a form with just a submit button for changing the status of an agent.
  *
  * @param $agent_name

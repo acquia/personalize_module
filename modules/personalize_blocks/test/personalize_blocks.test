@@ -70,7 +70,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
    * Tests creating blocks inline within the personalized admin block form.
    */
   public function testAddBlocksInline() {
-    $this->drupalGet('admin/structure/personalize-blocks/add');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-blocks/add');
 
     // Check for the add fields on the existing two fields.
     $this->assertAddBlockFields(0);
@@ -105,7 +105,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
     $this->assertEqual($add_block_info, $block['info']);
 
     // Edit this personalized block and ensure the new block is selected.
-    $this->drupalGet('admin/structure/personalize-blocks/manage/1/edit');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-blocks/manage/1/edit');
     $this->assertRaw('<option value="block_delta_1" selected="selected">' . $add_block_info . ' (block:1)</option>');
 
     // Edit the first block to be a new block instead of the existing block.
@@ -151,7 +151,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
    */
   public function testAddPersonalizedBlocks() {
     // There should be two options specified initially.
-    $this->drupalGet('admin/structure/personalize-blocks/add');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-blocks/add');
     $this->assertFieldByName('blocks[0][option_label]', personalize_generate_option_label(0));
     $this->assertFieldByName('blocks[1][option_label]', personalize_generate_option_label(1));
 
@@ -246,7 +246,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
 //      'blocks[0][block][bid]' => 'personalize_blocks_test_delta_custom_block_4',
 //    );
 //
-//    $this->drupalPost('admin/structure/personalize-blocks/manage/' . $pblock->osid . '/edit', $edit, t('Save'));
+//    $this->drupalPost('admin/structure/personalize/variations/personalize-blocks/manage/' . $pblock->osid . '/edit', $edit, t('Save'));
 //    $this->drupalLogout();
 //    $this->drupalGet('<front>');
 //
@@ -258,7 +258,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
 //      'blocks[0][block][bid]' => 'personalize_blocks_test_delta_custom_block_5',
 //    );
 //
-//    $this->drupalPost('admin/structure/personalize-blocks/manage/' . $pblock->osid . '/edit', $edit, t('Save'));
+//    $this->drupalPost('admin/structure/personalize/variations/personalize-blocks/manage/' . $pblock->osid . '/edit', $edit, t('Save'));
 //    $this->drupalLogout();
 //    $this->drupalGet('<front>');
 //
@@ -278,7 +278,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
       'blocks[1][block][bid]' => 'personalize_blocks_test_delta_custom_block_2',
     );
 
-    $path = 'admin/structure/personalize-blocks/add';
+    $path = 'admin/structure/personalize/variations/personalize-blocks/add';
     if (!$load) {
       $path = NULL;
     }
@@ -292,7 +292,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
       $this->assertTRUE(!empty($pblock) && !empty($pblock) && $pblock->label == $edit['title']);
       $this->assertText($edit['title']);
 
-      $this->drupalGet('admin/structure/personalize-blocks/manage/' . $pblock->osid . '/edit');
+      $this->drupalGet('admin/structure/personalize/variations/personalize-blocks/manage/' . $pblock->osid . '/edit');
 
       $this->assertRaw($edit['title']);
       $this->assertRaw($edit['blocks[0][option_label]']);
