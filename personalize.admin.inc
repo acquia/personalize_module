@@ -1049,15 +1049,24 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
 
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
+
+    // Show this open if it was just refreshed via Ajax.
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
       '#collapsible' => 1,
-      '#collapsed' => TRUE,
+      '#collapsed' => !isset($form_state['triggering_element']['#ajax']['wrapper']) || $form_state['triggering_element']['#ajax']['wrapper'] != $replace_option_set_id,
       '#title' => $option_sets_labels[$option_set->osid],
       '#attributes' => array(
         'class' => array('personalize-option-set'),
+        'id' => $replace_option_set_id, // Used for AJAX replace.
       ),
+    );
+    $option_set_winner = isset($form_state['winners']['option_set_' . $option_set->osid]) ? $form_state['winners']['option_set_' . $option_set->osid] : $option_set->winner;
+    $section['option_set_' . $option_set->osid]['winner'] = array(
+      '#type' => 'value',
+      '#value' => $option_set_winner,
     );
     // Header information to be shown in the fieldset summary.
     $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
@@ -1088,9 +1097,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       }
       else {
         $classes[] = 'personalize-content-variation-stopped';
-        // The winner is either previously selected, or the first option.
-        if ((!empty($option_set->winner) && $option_set->winner == $option['option_id']) ||
-          (empty($option_set->winner) && $variant_number == 1)) {
+        // The winner is either previously selected, or the control option.
+        if ((!empty($option_set_winner) && $option_set_winner == $option['option_id']) ||
+          (empty($option_set_winner) && $is_control)) {
           $is_winner = TRUE;
           $classes[] = 'personalize-content-variation-winner';
         }
@@ -1132,6 +1141,29 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
         '#markup' => $heading,
       );
+      if (!$is_running & !$is_winner) {
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['winner'] = array(
+          '#prefix' => '<div class="personalize-option-set-winner">',
+          '#suffix' => '</div>',
+          '#type' => 'submit',
+          '#tag' => 'button',
+          '#text' => t('Set as Fallback/Winner'),
+          '#value' => 'winner_' . $option_set->osid . '_' . $option['option_id'],
+          '#theme_wrappers' => array('personalize_html_tag'),
+          '#attributes' => array(
+            // The ID is necessary for the AJAX replace to function correctly.
+            'id' => 'edit-option-sets-option-set-' . $option_set->osid . '-options-' . $option['option_id'] . '-basic-winner',
+            'class' => array('personalize-add-link'),
+            'title' => t('Click here to set as winning variation.')
+          ),
+          '#submit' => array('personalize_agent_option_sets_winner_submit'),
+          '#ajax' => array(
+            'callback' => 'personalize_agent_option_sets_ajax_callback',
+            'wrapper' => $replace_option_set_id,
+            'effect' => 'fade',
+          ),
+        );
+      }
       if ($targeting_support && !empty($targeting_values)) {
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
           '#type' => 'container',
@@ -1904,6 +1936,23 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
   if ($need_form_state_cache_clear) {
     cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
   }
+}
+
+/**
+ * Ajax submit callback to set the winning variation within an option set.
+ */
+function personalize_agent_option_sets_winner_submit($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  $form_state['winners']['option_set_' . $osid] = $option_id;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Ajax callback to return a portion of the option set form.
+ */
+function personalize_agent_option_sets_ajax_callback($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  return $form['variations']['primary']['option_sets']['option_set_' . $osid];
 }
 
 /**

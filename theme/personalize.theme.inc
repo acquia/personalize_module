@@ -206,7 +206,7 @@ function theme_personalize_admin_info_details($variables) {
 function theme_personalize_admin_content($variables) {
   $element = $variables['element'];
   $attrs = drupal_attributes($element['#attributes']);
-  $output = '<fieldset id="' . $variables['element']['#id'] . '"' . $attrs . '>';
+  $output = '<fieldset ' . $attrs . '>';
 
   $output .= '<legend><span class="personalize-fieldset-header"><span class="fieldset-legend personalize-admin-content-title">';
   $output .= $element['#title'] . '</span>';
