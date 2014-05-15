@@ -183,9 +183,16 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
   margin-left: 1em; /* LTR */
 }
 
+/* MVT Form section */
+.personalize-mvt-edit {
+  font-size: 1.25em;
+}
+.personalize-mvt-edit .personalize-admin-enumerated-item {
+  display: inline-block;
+}
+
 /* Configuration settings page */
 .personalize-admin-cache-settings .form-item,
 .personalize-admin-cache-settings .form-item label {
   display: inline-block;
 }
-

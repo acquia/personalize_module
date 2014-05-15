@@ -1733,12 +1733,11 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
         $label .= ': ' . implode('/', $os_names);
       }
       $form['mvt_wrapper']['mvt'][$delta] = array(
-        '#tree' => TRUE,
-        '#type' => 'container',
-        '#title' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
+        '#markup' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
         '#attributes' => array(
           'class' => array('personalize-mvt-edit'),
         ),
+        '#theme_wrappers' => array('container'),
       );
     }
   }
