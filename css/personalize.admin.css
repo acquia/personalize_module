@@ -99,15 +99,10 @@ div.personalize-variation-row div.personalize-remove-context {
 .personalize-admin-content fieldset {
   padding-top: 1em;
   margin: .5em 0;
-}
-.personalize-admin-content > fieldset {
-  padding-bottom: 1em;
+  min-height: 2em;
 }
 .personalize-admin-content > fieldset > legend {
-  padding: 1em;
-}
-.personalize-admin-content fieldset .fieldset-wrapper {
-  padding-top: 13px;
+  padding: 1em 1em 0 1em;
 }
 
 /** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
@@ -210,8 +205,20 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
 #personalize-agent-form #personalize-status-toggle-form div {
   display: inline-block;
 }
-#personalize-agent-form #personalize-status-toggle-form,
-#personalize-agent-form #personalize-status-toggle-form div {
+.personalize-admin-content-title-suffix {
+  vertical-align: middle;
+}
+.personalize-admin-content-title-suffix .personalize-admin-content-header > * {
+  float: left;
+}
+.personalize-admin-content-title-suffix input {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.personalize-admin-content-title-suffix,
+.personalize-admin-content-title {
+  height: 2.2em;
+  line-height: 2.2em;
   vertical-align: middle;
 }
 #personalize-agent-option-sets-form .personalize-option-header {
