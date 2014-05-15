@@ -186,9 +186,10 @@ function personalize_agent_list() {
   $status_map = personalize_get_agent_status_map();
 
   $header = array(
-    array('data' => t('Campaign')),
+    array('data' => t('Campaign name')),
     array('data' => t('Type')),
-    array('data' => t('Status'), 'colspan' => 2),
+    array('data' => t('Status')),
+    array('data' => t('Start/stop')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
   $rows = array();
@@ -227,7 +228,7 @@ function personalize_agent_list() {
       array('data' => drupal_render($status_toggle_form)),
       //array('data' => $storage),
       array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('Reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
       //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
       //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
       array('data' => $delete_link),
