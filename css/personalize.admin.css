@@ -84,7 +84,30 @@ button.personalize-delete-goal, button.personalize-delete-context {
 
 /* Make the remove context buttons line up with the form elements */
 div.personalize-variation-row div.personalize-remove-context {
-    padding-top: 1.4em;
+  padding-top: 1.4em;
+}
+
+/* Seven positions the fieldset title absolutely */
+.fieldset-legend.personalize-admin-content-title {
+  position: relative;;
+}
+
+/* Tighten up the rest of the fieldsets */
+.fieldset-legend.personalize-admin-content-title {
+  margin-top: 0;
+}
+.personalize-admin-content fieldset {
+  padding-top: 1em;
+  margin: .5em 0;
+}
+.personalize-admin-content > fieldset {
+  padding-bottom: 1em;
+}
+.personalize-admin-content > fieldset > legend {
+  padding: 1em;
+}
+.personalize-admin-content fieldset .fieldset-wrapper {
+  padding-top: 13px;
 }
 
 /** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
