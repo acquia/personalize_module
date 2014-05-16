@@ -102,12 +102,21 @@ function personalize_menu() {
   $items['admin/structure/personalize/goals'] = array(
     'title' => 'Goals',
     'description' => 'Manage your personalization campaign goals.',
-    'page callback' => 'personalize_goals_list',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_goals_list'),
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize.admin.inc',
     'weight' => 20,
+  );
+  $items['admin/structure/personalize/goals/%personalize_goal/delete'] = array(
+    'title' => 'Delete Goal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_admin_goal_delete', 4),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'personalize.admin.inc',
   );
   $items['personalize/campaign_context'] = array(
     'page callback' => 'personalize_get_campaign_context_callback',
@@ -2280,6 +2289,19 @@ function personalize_process_goals(&$page) {
     personalize_clear_goals();
   }
 }
+
+/**
+ * Loads a goal by id.
+ *
+ */
+function personalize_goal_load($goal_id) {
+  $goals = personalize_goal_load_by_conditions(array('id' => $goal_id));
+  if (count($goals) > 0) {
+    return $goals[0];
+  }
+  return NULL;
+}
+
 
 /**
  * Loads all goals satisfying the specified conditions.

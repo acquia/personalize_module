@@ -320,8 +320,67 @@ function personalize_option_set_list_ajax_callback($form, &$form_state) {
 /**
  * Menu callback for displaying a list of campaign goals.
  */
-function personalize_goals_list() {
-  return 'TODO';
+function personalize_goals_list($form, &$form_state) {
+  $goals = personalize_goal_load_by_conditions();
+  $actions = personalize_goals_options();
+
+  $header = array(
+    array('data' => t('Goal')),
+    array('data' => t('Campaign')),
+    array('data' => t('Value')),
+    array('data' => t('Edit')),
+    array('data' => t('Delete')),
+  );
+
+  $rows = array();
+  foreach($goals as $goal) {
+    $campaign = personalize_agent_load($goal['agent']);
+    $rows[] = array(
+      $actions[$goal['action']],
+      $campaign->label,
+      $goal['value'],
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal['agent']),
+      l(t('delete'), 'admin/structure/personalize/goals/' . $goal['id'] . '/delete'),
+    );
+  }
+
+  $form['results'] = array(
+    '#markup' => theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(
+        'id' => 'personalize-goals',
+      ),
+    )),
+  );
+  return $form;
+}
+
+/**
+ * Form creation function to delete a specified goal.
+ *
+ * @param array $goal
+ *   The goal to be deleted.
+ */
+function personalize_admin_goal_delete($form, &$form_state, $goal) {
+  $options = personalize_goals_options();
+  $campaign = personalize_agent_load($goal['agent']);
+  $form['goal'] = array(
+    '#type' => 'value',
+    '#value' => $goal,
+  );
+  return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
+    '%goal' => $options[$goal['action']],
+    '%campaign' => $campaign->label,
+  )), 'admin/structure/personalize/goals');
+}
+
+/**
+ * Form submission handler to delete a specific goal.
+ */
+function personalize_admin_goal_delete_submit($form, &$form_state) {
+  personalize_goal_delete($form_state['values']['goal']['id']);
+  $form_state['redirect'] = 'admin/structure/personalize/goals';
 }
 
 /**
