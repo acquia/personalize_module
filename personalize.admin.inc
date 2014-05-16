@@ -1040,6 +1040,9 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     if (isset($goal['classes']) && is_array($goal['classes'])) {
       $goal_fieldset_classes = array_merge($goal_fieldset_classes, $goal['classes']);
     }
+    // The goal id should match loaded goals from the database for jumping to
+    // a specific goal on page load.  This will not be available after an AJAX
+    // call, but that doesn't matter in the use case of initial page linkages.
     $section['goals'][$delta] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
@@ -1048,7 +1051,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       '#tree' => TRUE,
       '#attributes' => array(
         'class' => $goal_fieldset_classes,
-        'id' => "personalize-goal-{$goal['id']}",
+        'id' => isset($goal['id']) ? "personalize-goal-{$goal['id']}" : "personalize-goal-$delta",
       )
     );
     $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);

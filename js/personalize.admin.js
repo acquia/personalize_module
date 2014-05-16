@@ -124,6 +124,25 @@
   };
 
   /**
+   * Scroll to a specific goal that has been requested in the url query.
+   *
+   * Goal would be passed as ?goal=x where x is the goal id.
+   */
+  Drupal.behaviors.personalizeGoalSpecified = {
+    attach: function (context, settings) {
+      $('body').once(function() {
+        // Get the query parameter for a passed in goal id.
+        var match = RegExp('[?&]goal=([^&]*)').exec(window.location.search);
+        var goalId = match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+        var $goal = $('#personalize-goal-' + goalId);
+        if ($goal.length > 0) {
+          Drupal.personalize.admin.openToGoal($('#personalize-goal-' + goalId));
+        }
+      });
+    }
+  }
+
+  /**
    * Scroll to a new goal that has just been added to the admin page.
    */
   Drupal.behaviors.personalizeGoalAdded = {
@@ -143,7 +162,12 @@
    *   The jQuery instance of the goal.
    */
   Drupal.personalize.admin.openToGoal = function($goal) {
-    
+    var $fieldset = $('#personalize-goals fieldset');
+    // Open the goals form if it is collapsed.
+    if ($fieldset.hasClass('collapsed')) {
+      Drupal.toggleFieldset($fieldset);
+    }
+    // Now get the location of the requested goal section and scroll to it.
     var offset = $goal.offset();
     var offsetTop = offset.top + 100; // scroll to just above the new goal
     $('html, body').animate({
