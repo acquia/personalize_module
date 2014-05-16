@@ -17,16 +17,6 @@ function personalize_blocks_menu() {
     'title' => 'List personalize blocks',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  // Add an add link from the variations page.
-  $items['admin/structure/personalize/variations/personalize-blocks-add'] = array(
-    'title' => 'Add personalized block',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_blocks_form', 'add'),
-    'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_ACTION,
-    'file' => 'personalize_blocks.admin.inc',
-  );
-  // Add an add link from the blocks listing page.
   $items['admin/structure/personalize/variations/personalize-blocks/add'] = array(
     'title' => 'Add personalized block',
     'page callback' => 'drupal_get_form',

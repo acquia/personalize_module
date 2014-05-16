@@ -284,6 +284,12 @@ function personalize_option_set_list($form, &$form_state) {
     );
   }
 
+  // Links to create new option sets of each type.
+  $form['add'] = array(
+    '#type' => 'markup',
+    '#markup' => personalize_get_create_new_links_dropbutton('admin/structure/personalize/variations'),
+  );
+
   // Include a filter by variation set type.
   if (count($types) > 0) {
     $types = array_merge(array('' => t('All')), $types);
