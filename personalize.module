@@ -1581,6 +1581,7 @@ function personalize_agent_save($agent) {
 function personalize_agent_delete($agent_name) {
   $agent = personalize_agent_load($agent_name);
   db_query('DELETE FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name));
+  db_query('DELETE FROM {personalize_campaign_goals} WHERE agent = :agent', array(':agent' => $agent_name));
   module_invoke_all('personalize_agent_delete', $agent);
 }
 
