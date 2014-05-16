@@ -1,10 +1,11 @@
 <?php
 /**
  * @file
- * Provides an extra test agent type for testing with multiple agent types.
+ * Provides an test agent type for testing auto-personalization with fixed
+ * targeting options provided by those selected for campaign context.
  */
 
-class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
+class PersonalizeTestAutopersonalizeAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
 
   public $goals_received = array();
 
@@ -20,7 +21,7 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
    */
   public function getType()
   {
-    return 'test_extra_agent';
+    return 'test_autopersonalize_agent';
   }
 
   /**
@@ -40,6 +41,6 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
    * Implements PersonalizeAutoTargetingInterface::explicitTargetingLimitedToAutoTargetingContext
    */
   public static function explicitTargetingLimitedToAutoTargetingContext() {
-    return FALSE;
+    return TRUE;
   }
 }
