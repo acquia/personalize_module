@@ -132,22 +132,25 @@
       if ($newGoal.length == 0) {
         return;
       }
-      // Make sure the fieldset is open.
-      var $fieldset = $('fieldset:first', context);
-      if ($fieldset.hasClass('collapsed')) {
-        Drupal.toggleFieldset($fieldset);
-      }
-      $fieldset.parent('.personalize-admin-content').removeClass('personalize-collapsed');
-      // Find the new goal on the screen.
-      var offset = $newGoal.offset();
-      var offsetTop = offset.top + 100;
-      // Scroll to just above the new goal.
-      $('html, body').animate({
-        scrollTop: offsetTop
-      }, 1000, function() {
-        $newGoal.find('select').first().focus();
-      });
+      Drupal.personalize.admin.openToGoal($newGoal);
     }
   };
+
+  /**
+   * Open and scroll to a specific goal within the goals list.
+   *
+   * @param $goal
+   *   The jQuery instance of the goal.
+   */
+  Drupal.personalize.admin.openToGoal = function($goal) {
+    
+    var offset = $goal.offset();
+    var offsetTop = offset.top + 100; // scroll to just above the new goal
+    $('html, body').animate({
+      scrollTop: offsetTop
+    }, 1000, function() {
+      $goal.find('select').first().focus();
+    });
+  }
 
 })(jQuery);

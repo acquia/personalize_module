@@ -1048,7 +1048,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       '#tree' => TRUE,
       '#attributes' => array(
         'class' => $goal_fieldset_classes,
-        'id' => "personalize-goal-$delta"
+        'id' => "personalize-goal-{$goal['id']}",
       )
     );
     $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
