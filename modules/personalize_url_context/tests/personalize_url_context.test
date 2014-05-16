@@ -81,7 +81,7 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
     $agent = personalize_agent_load_agent('test-agent');
     $context_plugin = call_user_func_array(array($class, 'create'), array($agent, array('param2', 'param3')));
     $expected_values = array();
-    foreach (array('param2', 'param3') as $name) {
+    foreach (array('some-param', 'param2', 'param3') as $name) {
       $expected_values[$name] = array(
         'value type' => 'string'
       );

@@ -1643,9 +1643,8 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     );
 
     $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
-
-    $edit = array('visitor_context[]' => array('user_profile_context__test_user_field' => 'user_profile_context__test_user_field'));
-    $this->drupalPost('admin/structure/personalize/manage/' . $machine_name . '/edit', $edit, $this->getButton('agent'));
+    // Make sure that there is no auto-personalize visitor context settings.
+    $this->assertNoFieldByName('visitor_context[]');
 
     // Create two block-based option sets.
     $option_sets = array();
@@ -1664,12 +1663,12 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     // submit input elements.
     $edit = array(
       'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'test_user_field',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'user_profile_context__test_user_field',
       'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
       'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
       'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
       'option_sets[option_set_1][options][option-B][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][context]' => 'test_user_field',
+      'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][context]' => 'user_profile_context__test_user_field',
       'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][operator]' => 'contains',
       'option_sets[option_set_1][options][option-B][explicit_targeting][mapping][contexts][0][value][match]' => 'second value',
       'option_sets[option_set_1][options][option-B][explicit_targeting][strategy]' => 'OR',
@@ -1685,6 +1684,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
             'context' => 'test_user_field',
             'match' => 'first value',
             'operator' => 'starts',
+            'plugin' => 'user_profile_context',
           ),
         ),
         'fixed_targeting_strategy' => 'OR'
@@ -1696,6 +1696,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
             'context' => 'test_user_field',
             'match' => 'second value',
             'operator' => 'contains',
+            'plugin' => 'user_profile_context',
           ),
         ),
         'fixed_targeting_strategy' => 'OR'
@@ -1718,6 +1719,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
         'context' => 'test_user_field',
         'match' => 'first value',
         'operator' => 'starts',
+        'plugin' => 'user_profile_context',
       ),
     );
 
@@ -1755,11 +1757,11 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
                   'mapping' => array(
                     'contexts' => array(
                       array(
-                        'context' => 'test_user_field',
+                        'context' => 'user_profile_context__test_user_field',
                         'value' => array('match' => 'some value', 'operator' => 'contains'),
                       ),
                       array(
-                        'context' => 'test_user_field',
+                        'context' => 'user_profile_context__test_user_field',
                         'value' => array('match' => 'other value', 'operator' => 'starts'),
                       )
                     )
@@ -1772,11 +1774,11 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
                   'mapping' => array(
                     'contexts' => array(
                       array(
-                        'context' => 'test_user_field',
+                        'context' => 'user_profile_context__test_user_field',
                         'value' => array('match' => 'ohai', 'operator' => 'starts'),
                       ),
                       array(
-                        'context' => 'test_user_field',
+                        'context' => 'user_profile_context__test_user_field',
                         'value' => array('match' => 'kthxbai', 'operator' => 'ends'),
                       )
                     )
@@ -1799,11 +1801,13 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
             'context' => 'test_user_field',
             'match' => 'some value',
             'operator' => 'contains',
+            'plugin' => 'user_profile_context',
           ),
           'test_user_field--ss-other-value' => array(
             'context' => 'test_user_field',
             'match' => 'other value',
             'operator' => 'starts',
+            'plugin' => 'user_profile_context',
           ),
         ),
         'fixed_targeting_strategy' => 'OR'
@@ -1815,11 +1819,13 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
             'context' => 'test_user_field',
             'match' => 'ohai',
             'operator' => 'starts',
+            'plugin' => 'user_profile_context',
           ),
           'test_user_field--se-kthxbai' => array(
             'context' => 'test_user_field',
             'match' => 'kthxbai',
             'operator' => 'ends',
+            'plugin' => 'user_profile_context',
           ),
         ),
         'fixed_targeting_strategy' => 'AND'
