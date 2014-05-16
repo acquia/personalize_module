@@ -460,33 +460,34 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (empty($agent_data)) {
     $agent_data = new stdClass();
   }
-
-  $form['agent_form'] = array(
-    '#tree' => TRUE,
-    '#type' => 'personalize_admin_section',
-    'primary' => array(
-      '#theme_wrappers' => array('container'),
-    ),
-  );
-
-  $form['agent_form']['agent_fieldset'] = array(
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => empty($agent_data->machine_name) ? 0 : 1,
-    '#tree' => FALSE,
-    '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
-  );
-
-  $form['agent_form']['agent_fieldset']['header'] = array(
-    '#type' => 'container',
-    '#attributes' => array(
-      'class' => array('personalize-admin-content-header'),
-    ),
-  );
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
   }
+
+  $form['#attached']['library'][] = array('personalize', 'admin.campaign');
+  $form['agent_form'] = array(
+    '#tree' => TRUE,
+    '#type' => 'personalize_admin_section',
+  );
+
+  $form['agent_form']['agent_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => !empty($agent_data->machine_name),
+    '#collapsed' => !empty($agent_data->machine_name),
+    '#tree' => FALSE,
+    '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
+    '#theme_wrappers' => array('personalize_admin_content'),
+  );
+
   if (!empty($agent_data->machine_name)) {
-    $form['agent_form']['agent_fieldset']['header']['toggle_form'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+    $form['agent_form']['agent_fieldset']['header'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-admin-content-header'),
+      ),
+      'toggle_form' => $toggle_form,
+    );
   }
   $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
   if ($basic_form === FALSE) {
@@ -523,7 +524,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset']['actions']['submit_form'] = array(
     '#type' => 'submit',
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
     '#value' => t('Save campaign settings'),
   );
@@ -796,6 +797,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // If the "Add another" button was clicked, we need to add goals to get up
   // to the number indicated.
   $num_goals = count($goals);
+  $clicked_add = isset($form_state['clicked_button']['#submit']) && in_array('personalize_agent_add_goal_submit', $form_state['clicked_button']['#submit']);
   if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
     while ($num_goals < $form_state['num_goals']) {
       $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
@@ -849,11 +851,13 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     $counter++;
   }
   $form['variations']['primary']['goals_fieldset'] = array(
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => 1,
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => !$clicked_add,
     '#tree' => FALSE,
     '#title' => t('Goals'),
-    '#collapsed_content' => $collapsed,
+    '#summary' => $collapsed,
+    '#theme_wrappers' => array('personalize_admin_content'),
   );
   // Header content for goals.
   $form['variations']['primary']['goals_fieldset']['header'] = array(
@@ -960,7 +964,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-goals-form');
@@ -994,12 +998,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     'primary' => array(
       '#theme_wrappers' => array('container'),
     ),
-    /*
-    'secondary' => array(
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array('class' => array('personalize-admin-secondary')),
-    ),
-    */
   );
   // Determine collapsed content.
   $collapsed = '';
@@ -1018,11 +1016,12 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   }
   $form['variations']['primary']['option_sets'] = array(
     '#tree' => TRUE,
-    '#type' => 'personalize_admin_content',
-    '#collapsible' => 1,
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     '#title' => t('Content variation sets'),
-    '#collapsed_content' => $collapsed,
+    '#theme_wrappers' => array('personalize_admin_content'),
+    '#summary' => $collapsed,
   );
   $form['variations']['primary']['option_sets']['header'] = array(
     '#type' => 'container',
@@ -1050,15 +1049,24 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
 
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
+
+    // Show this open if it was just refreshed via Ajax.
     $section['option_set_' . $option_set->osid] = array(
       '#tree' => TRUE,
       '#type' => 'fieldset',
       '#collapsible' => 1,
-      '#collapsed' => TRUE,
+      '#collapsed' => !isset($form_state['triggering_element']['#ajax']['wrapper']) || $form_state['triggering_element']['#ajax']['wrapper'] != $replace_option_set_id,
       '#title' => $option_sets_labels[$option_set->osid],
       '#attributes' => array(
         'class' => array('personalize-option-set'),
+        'id' => $replace_option_set_id, // Used for AJAX replace.
       ),
+    );
+    $option_set_winner = isset($form_state['winners']['option_set_' . $option_set->osid]) ? $form_state['winners']['option_set_' . $option_set->osid] : $option_set->winner;
+    $section['option_set_' . $option_set->osid]['winner'] = array(
+      '#type' => 'value',
+      '#value' => $option_set_winner,
     );
     // Header information to be shown in the fieldset summary.
     $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
@@ -1078,49 +1086,10 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       ),
     );
 
-    // Table header row for option set basic information.
-    $section['option_set_' . $option_set->osid]['header'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('personalize-variation-row'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col1'] = array(
-      '#type' => 'markup',
-      '#markup' => '&nbsp;', // Creating an empty div.
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col1', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col2'] = array(
-      '#type' => 'markup',
-      '#markup' => t('Control'),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col2', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col3'] = array(
-      '#type' => 'markup',
-      '#markup' => t('Fallback/winner'),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col3', 'personalize-variation-header'),
-      ),
-    );
-    $section['option_set_' . $option_set->osid]['header']['col4'] = array(
-      '#type' => 'markup',
-      '#markup' => l(t('edit'), 'javascript:void(0);', array('attributes' => array('class' => array('personalize-option-set-edit-trigger')))),
-      '#theme_wrappers' => array('container'),
-      '#attributes' => array(
-        'class' => array('personalize-variation-col4', 'personalize-variation-header'),
-      ),
-    );
-
     $variant_number = 1;
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
+      $is_control = $variant_number == 1;
       // Determine container classes based on campaign status and winner.
       $classes = array('personalize-admin-content-item', 'personalize-content-variation', 'clearfix');
       if ($is_running) {
@@ -1128,9 +1097,9 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       }
       else {
         $classes[] = 'personalize-content-variation-stopped';
-        // The winner is either previously selected, or the first option.
-        if ((!empty($option_set->winner) && $option_set->winner == $option['option_id']) ||
-          (empty($option_set->winner) && $variant_number == 1)) {
+        // The winner is either previously selected, or the control option.
+        if ((!empty($option_set_winner) && $option_set_winner == $option['option_id']) ||
+          (empty($option_set_winner) && $is_control)) {
           $is_winner = TRUE;
           $classes[] = 'personalize-content-variation-winner';
         }
@@ -1155,43 +1124,50 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           'query' => array(PERSONALIZE_PRESELECTION_PARAM => personalize_stringify_osid($option_set->osid) . '--' . $option['option_id']),
         ));
       }
+      $suffix = !empty($preview_link) ? '" ' . $preview_link : '"';
+      if ($is_control) {
+        $suffix .= '<span class="personalize-content-variation-control">' . t('Control') . '</span>';
+      }
+      if ($is_winner) {
+        $suffix .= '<span class="personalize-content-variation-winner">' . t('Fallback/Winner') . '</span>';
+      }
+
       $heading = theme('personalize_admin_enumerated_item', array(
         'enum' => t('V@delta', array('@delta' => $variant_number)),
         'title' => filter_xss($option['option_label']),
         'title_prefix' => '"',
-        'title_suffix' => !empty($preview_link) ? '" ' . $preview_link : '"',
-        'attributes' => array(
-          'class' => array('personalize-variation-col1'),
-        ),
+        'title_suffix' => $suffix,
       ));
       $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
         '#markup' => $heading,
       );
-      $classes = array('personalize-variation-col2', 'personalize-variation-control');
-      if ($variant_number == 1) {
-        $classes[] = 'personalize-variation-selected-control';
+      if (!$is_running & !$is_winner) {
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['winner'] = array(
+          '#prefix' => '<div class="personalize-option-set-winner">',
+          '#suffix' => '</div>',
+          '#type' => 'submit',
+          '#tag' => 'button',
+          '#text' => t('Set as Fallback/Winner'),
+          '#value' => 'winner_' . $option_set->osid . '_' . $option['option_id'],
+          '#theme_wrappers' => array('personalize_html_tag'),
+          '#attributes' => array(
+            // The ID is necessary for the AJAX replace to function correctly.
+            'id' => 'edit-option-sets-option-set-' . $option_set->osid . '-options-' . $option['option_id'] . '-basic-winner',
+            'class' => array('personalize-add-link'),
+            'title' => t('Click here to set as winning variation.')
+          ),
+          '#submit' => array('personalize_agent_option_sets_winner_submit'),
+          '#ajax' => array(
+            'callback' => 'personalize_agent_option_sets_ajax_callback',
+            'wrapper' => $replace_option_set_id,
+            'effect' => 'fade',
+            'progress' => array(
+              'message' => ' ',
+              'type' => 'throbber',
+            )
+          ),
+        );
       }
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['control'] = array(
-        '#type' => 'radio',
-        '#return_value' => $option['option_id'],
-        '#default_value' => $variant_number == 1,
-        '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'control'),
-        '#attributes' => array('class' => $classes),
-        '#disabled' => TRUE,
-        '#theme_wrappers' => array('container'),
-      );
-      $classes = array('personalize-variation-col3', 'personalize-variation-winner');
-      if ($is_winner) {
-        $classes[] = 'personalize-variation-selected-winner';
-      }
-      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['winner'] = array(
-        '#type' => 'radio',
-        '#return_value' => $option['option_id'],
-        '#default_value' => $is_winner,
-        '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'winner'),
-        '#attributes' => array('class' => $classes),
-        '#theme_wrappers' => array('container'),
-      );
       if ($targeting_support && !empty($targeting_values)) {
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
           '#type' => 'container',
@@ -1315,7 +1291,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $section['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-option-sets-form');
@@ -1733,11 +1709,13 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
     $collapsed .= $mvt->display_label;
   }
   $form['mvt_wrapper']['mvt'] = array(
-    '#type' => 'personalize_admin_content',
+    '#type' => 'fieldset',
     '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
     '#tree' => TRUE,
     '#title' => t('Multivariate tests'),
-    '#collapsed_content' => $collapsed,
+    '#summary' => $collapsed,
+    '#theme_wrappers' => array('personalize_admin_content'),
   );
   $form['mvt_wrapper']['mvt']['agent'] = array(
     '#type' => 'value',
@@ -1755,10 +1733,11 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
         $label .= ': ' . implode('/', $os_names);
       }
       $form['mvt_wrapper']['mvt'][$delta] = array(
-        '#tree' => TRUE,
-        '#type' => 'personalize_admin_content',
-        '#collapsible' => FALSE,
-        '#title' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
+        '#markup' => $label . ' - ' . l(t('edit'), "admin/structure/personalize/mvt/manage/{$existing->machine_name}/edit"),
+        '#attributes' => array(
+          'class' => array('personalize-mvt-edit'),
+        ),
+        '#theme_wrappers' => array('container'),
       );
     }
   }
@@ -1786,7 +1765,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
       'effect' => 'fade',
     ),
     '#attributes' => array(
-      'class' => array('action-item-primary-active'),
+      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
     ),
   );
   $form['mvt_wrapper']['mvt']['add']['actions']['reset'] = _personalize_agent_get_cancel('personalize-agent-mvt-form');
@@ -1948,7 +1927,7 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
     }
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
-        if ($option['enable_explicit_targeting'] == 0) {
+        if (isset($option['enable_explicit_targeting']) && $option['enable_explicit_targeting'] == 0) {
           $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['mapping'] = array();
           $need_form_state_cache_clear = TRUE;
         }
@@ -1960,6 +1939,23 @@ function personalize_agent_option_sets_form_validate($form, &$form_state) {
   if ($need_form_state_cache_clear) {
     cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
   }
+}
+
+/**
+ * Ajax submit callback to set the winning variation within an option set.
+ */
+function personalize_agent_option_sets_winner_submit($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  $form_state['winners']['option_set_' . $osid] = $option_id;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Ajax callback to return a portion of the option set form.
+ */
+function personalize_agent_option_sets_ajax_callback($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  return $form['variations']['primary']['option_sets']['option_set_' . $osid];
 }
 
 /**
@@ -1975,9 +1971,6 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       $option_set->stateful = $values['advanced']['stateful'];
       if (isset($values['advanced']['executor'])) {
         $option_set->executor = $values['advanced']['executor'];
-      }
-      if ($values['winner']) {
-        $option_set->winner = $values['winner'];
       }
       if (isset($values['advanced']['decision_name'])) {
         $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);

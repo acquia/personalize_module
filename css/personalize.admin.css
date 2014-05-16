@@ -7,7 +7,7 @@
  * All 
 */
 .personalize-goal .form-item label,
-.personalize-admin-content-content .form-item label {
+.personalize-admin-content .fieldset-wrapper .form-item label {
   margin: 0;
 }
 
@@ -40,7 +40,8 @@
 * @todo would much rather use action-link style from theme instead but it is
 * specific to "ul.action-links a" selector in Ember and we need a submit button.
 */
-input[type="submit"].personalize-add-link { /* moved color to theme.css -KO */
+button.personalize-add-link,
+input[type="submit"].personalize-add-link {
   background: transparent;
   border: none;
   padding: 0;
@@ -48,7 +49,8 @@ input[type="submit"].personalize-add-link { /* moved color to theme.css -KO */
   height: 2em;
   line-height: 2em;
 }
-input[type="submit"].personalize-add-link:hover { /* moved color and text decoration to theme.css -KO */
+button.personalize-add-link:hover,
+input[type="submit"].personalize-add-link:hover {
   background: transparent;
 }
 /* The + before the Add Goals button */
@@ -58,6 +60,13 @@ input[type="submit"].personalize-add-link:hover { /* moved color and text decora
   font-size: 1.5em;
   margin-right: .2em;
 }
+/* Align with preview link within content variation sets */
+.personalize-option-set-winner button.personalize-add-link {
+  height: 1.41421em;
+  line-height: 1.41421em;
+  font-weight: 200;
+}
+
 /* smaller to align with text fields.
  * @todo would much rather have these simply be "x" icons -KO. 
 */
@@ -67,42 +76,35 @@ button.personalize-delete-goal, button.personalize-delete-context {
   margin-left: 0;
   vertical-align: bottom;
 }
+.personalize-content-variation .personalize-admin-enumerated-item+.personalize-option-set-winner {
+  border-left: 1px solid #000;
+  padding-left: .5em;
+  margin-left: .5em;
+}
 
 /* Make the remove context buttons line up with the form elements */
 div.personalize-variation-row div.personalize-remove-context {
-    padding-top: 2em;
+  padding-top: 1.4em;
 }
 
-/**
- * Content sets
- */
-@media screen and (min-width: 44em) {
-  .personalize-admin-primary,
-  .personalize-admin-secondary {
-    float: left;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    width: 49%;
-    min-height: 4em;
-  }
-
-  .personalize-admin-primary {
-    margin-right: 2%;
-  }
+/* Seven positions the fieldset title absolutely */
+.fieldset-legend.personalize-admin-content-title {
+  position: relative;;
 }
 
-/**
- * Content variation tabular layout
- */
-.personalize-content-variation:first-child {
-  border-top: #ccc 1px solid;
+/* Tighten up the rest of the fieldsets */
+.fieldset-legend.personalize-admin-content-title {
+  margin-top: 0;
 }
-.personalize-content-variation {
-  border-bottom: #ccc 1px solid;
-  margin: 1em 0;
-  padding: 1em 0 .4em 0;
+.personalize-admin-content fieldset {
+  padding-top: 1em;
+  margin: .5em 0;
+  min-height: 2em;
 }
+.personalize-admin-content > fieldset > legend {
+  padding: 1em 1em 0 1em;
+}
+
 /** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
 #personalize-agent-option-sets-form fieldset.personalize-option-set {
   min-width: 0;
@@ -113,53 +115,55 @@ div.personalize-variation-row div.personalize-remove-context {
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
   width: 100%;
   display: block;
+  margin-bottom: 2em;
 }
 
 #personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
   min-height: 1em;
 }
-
-#personalize-agent-goals-form fieldset.personalize-goal .fieldset-legend,
-#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend {
-  background-position: .5em .5em;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title {
-  display: inline-block;
-  width: 60%;
-  position: absolute;
+#personalize-agent-goals-form fieldset.personalize-goal legend .fieldset-title div.personalize-admin-enumerated-item,
+#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
+  display: inline;
 }
 #personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control,
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner {
   display: inline-block;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary {
-  display: none;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set.collapsed .fieldset-legend span.summary {
+  margin-left: 1.5em;
   font-weight: normal;
-  display: inline-block;
-  position: absolute;
-  right: 1em;
-  font-size: 1rem;
+  background-image: url('../images/check_8AC340.png');
+  background-image: url('../images/check_8AC340.svg'), none;
+  background-position: left bottom;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  padding-left: 22px;
 }
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary div {
-  display: inline-block; /* changed to inline-block-KO */
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item,
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-stat {
+#personalize-agent-option-sets-form .personalize-option-header-item,
+#personalize-agent-option-sets-form .personalize-stat {
   border-right: 1px solid;
   margin-right: .5em;
   padding-right: .5em;
+  font-weight: normal;
+  text-transform: lowercase;
 }
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend span.summary .personalize-option-header-item:last-child {
+#personalize-agent-option-sets-form .personalize-option-header-item:last-child {
   border-right: none;
+}
+.personalize-content-variation .personalize-admin-enumerated-item {
+  font-weight: bold;
+}
+.personalize-content-variation .personalize-admin-enumerated-item a {
+  font-weight: normal;
 }
 .personalize-variation-row {
   clear: both;
-  margin-bottom: 1em;
+  margin-bottom: .5em;
   width: 100%;
+  display: inline-block;
 }
 .personalize-variation-row div {
   float: left;
@@ -169,60 +173,12 @@ div.personalize-variation-row div.personalize-remove-context {
     clear: both;
 }
 div.personalize-target-wrapper div.form-item {
-    padding-right: 10px;
-}
-.personalize-variation-row div.personalize-variation-col1 {
-  width: 60%
-}
-.personalize-variation-row div.personalize-variation-col2,
-.personalize-variation-row div.personalize-variation-col3 {
-  width: 15%;
-  text-align: center;
-}
-.personalize-variation-row div.personalize-variation-col4 {
-  width: 10%;
-  text-align: center;
+    padding: 0 10px 0 0;
 }
 
-.personalize-variation-row input.personalize-variation-control,
-.personalize-variation-row input.personalize-variation-winner {
-  display: inline-block;
-  visibility: hidden;
+.personalize-admin-content > fieldset > legend {
+  font-size: 1em;
 }
-.personalize-variation-row div.personalize-variation-winner.personalize-edit input.personalize-variation-winner {
-  visibility: visible;
-}
-.personalize-variation-row div.personalize-variation-selected-control,
-.personalize-variation-row div.personalize-variation-selected-winner {
-  background-image: url('../images/check_8AC340.png');
-  background-image: url('../images/check_8AC340.svg'), none;
-  background-position: center bottom;
-  background-repeat: no-repeat;
-  background-size: contain;
-  height: 1.2em;
-}
-
-.personalize-variation-row div.personalize-variation-selected-winner.personalize-edit {
-  background: none;
-}
-
-/* Truncate content variation title */
-.personalize-content-variation .personalize-admin-enumerated-item {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 60%;
-  max-width: 60%;
-}
-
-/*
- * Collapsible content
- */
-html.js .personalize-collapsed .personalize-admin-content-content {
-  height: 0;
-  overflow: hidden;
-}
-
 .personalize-admin-content-content .personalize-admin-content-title .personalize-admin-enumerated-item,
 .personalize-admin-content-content fieldset .fieldset-title .personalize-admin-enumerated-item {
   display: block; 
@@ -240,16 +196,41 @@ html.js .personalize-collapsed .personalize-admin-content-content {
   margin-left: 0.4em;
 }
 
-.personalize-admin-content-title {
-  cursor: pointer;
-}
-
+html.js .personalize-admin-content .collapsible .fieldset-legend,
+.personalize-admin-content fieldset legend,
+.personalize-admin-content fieldset .fieldset-legend,
 .personalize-admin-content-title-suffix,
 .personalize-admin-content-title-suffix div,
 #personalize-agent-form #personalize-status-toggle-form,
 #personalize-agent-form #personalize-status-toggle-form div {
-  display: inline-block; /* changed to inline-block-KO */
-  vertical-align: middle; /* added this attribute -KO */
+  display: inline-block;
+}
+.personalize-admin-content-title-suffix {
+  vertical-align: middle;
+}
+.personalize-admin-content-title-suffix .personalize-admin-content-header > * {
+  float: left;
+}
+.personalize-admin-content-title-suffix input {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.personalize-admin-content-title-suffix,
+.personalize-admin-content-title {
+  height: 2.2em;
+  line-height: 2.2em;
+  vertical-align: middle;
+}
+#personalize-agent-option-sets-form .personalize-option-header {
+  margin-left: 1em; /* LTR */
+}
+
+/* MVT Form section */
+.personalize-mvt-edit {
+  font-size: 1.25em;
+}
+.personalize-mvt-edit .personalize-admin-enumerated-item {
+  display: inline-block;
 }
 
 /* Configuration settings page */
@@ -257,4 +238,3 @@ html.js .personalize-collapsed .personalize-admin-content-content {
 .personalize-admin-cache-settings .form-item label {
   display: inline-block;
 }
-

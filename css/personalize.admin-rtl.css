@@ -28,3 +28,7 @@
   padding-right: 3em; /* RTL */
 }
 
+#personalize-agent-option-sets-form .personalize-option-header {
+  margin-right: 1em; /* RTL */
+}
+

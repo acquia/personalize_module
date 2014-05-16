@@ -6,9 +6,8 @@
   width: 100%;
 }
 
-.personalize-admin-content {  
-  /* margin: 1em 0; remove -KO */
-  padding: 1em;
+.personalize-admin-content {
+  padding: 0 1em 1em 1em;
   background-color: #fff;
   border: 1px solid #ccc;
   margin: 5px 0;
@@ -57,7 +56,7 @@
 }
 
 /* smaller button for header -KO */
-.personalize-admin-content-header input[type="submit"] {
+.personalize-admin-content-title-suffix input[type="submit"] {
   padding-top: .4em;
   padding-bottom: .4em;
 }
@@ -90,25 +89,6 @@
   margin-left: 1em; /* LTR */
 }
 
-.personalize-admin-content.personalize-collapsed:hover .personalize-collapse-edit,
-.personalize-admin-content.personalize-collapsed:active .personalize-collapse-edit,
-.personalize-admin-section .personalize-collapse-edit {
-  background-image: url("../images/edit_active.png");
-  background-image: url("../images/edit_active.svg"), none; /* Displays SVG with PNG fallback */
-  width: 24px;
-  height: 24px;
-  display: inline-block;
-  text-indent: -999px;
-  cursor: pointer;
-  margin-right: 5px; /* LTR */
-  vertical-align: middle; /* added -KO */
-}
-
-.personalize-admin-section .personalize-collapsed .personalize-collapse-edit {
-  background-image: url("../images/edit.png");
-  background-image: url("../images/edit.svg"), none;
-}
-
 .personalize-admin-content-title-secondary {
     display: inline;
     margin-left: 25px;
@@ -128,12 +108,13 @@
 }
 
 .personalize-admin-content-collapsed {
-  display: none;
+  margin-top: 1em;
+  height: 0;
+  overflow: hidden;
 }
 
 .personalize-collapsed .personalize-admin-content-collapsed {
-  display: block;
-  margin-top: 1em;
+  height: auto;
 }
 
 .personalize-admin-content-collapsed .personalize-admin-enumerated-item {
@@ -143,7 +124,7 @@
 #personalize-agent-option-sets-form .personalize-ctools-dropdown,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-link-wrapper,
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper {
-  display: inline-block; /* changed to inline block -KO */
+  display: inline-block;
 }
 
 #personalize-agent-option-sets-form .personalize-ctools-dropdown {
@@ -173,34 +154,41 @@ html.js div.ctools-dropdown div.ctools-dropdown-container ul li a:hover {
   text-decoration: underline;
 }
 
-
-/* remove c-tools icon -KO */
-html.js div.ctools-dropdown a.ctools-dropdown-text-link {
+/* remove c-tools icon */
+html.js .personalize-admin-content-title-suffix div.ctools-dropdown a.ctools-dropdown-text-link {
   background: none;
   padding-left: 0px;
 }
 
 /* use Acquia Ember link colors for all header links and link look-alikes. */
-.personalize-admin-content-header a {
+.personalize-admin-content-title-suffix a {
   color: #2fa6e5;
 }
-.personalize-admin-content-header a:hover,
-.personalize-admin-content-header a:active {
+.personalize-admin-content-title-suffix a:hover,
+.personalize-admin-content-title-suffix a:active {
   color: #007ec0;
+}
+#personalize-agent-option-sets-form .personalize-content-variation div.personalize-admin-enumerated-item {
+  color: #555;
 }
 /* Link look alike styling for add a goal button */
 .personalize-add-link-prefix:after {
   content: '+';
   color: #2fa6e5;
 }
+button.personalize-add-link,
 input[type="submit"].personalize-add-link {
   text-decoration: none;
   color: #2fa6e5;
   font-weight: normal;
 }
+button.personalize-add-link:hover,
 input[type="submit"].personalize-add-link:hover {
   text-decoration: underline;
   color: #007ec0;
+}
+#personalize-agent-option-sets-form .personalize-option-header {
+  color: #555;
 }
 
 @media all and (min-width: 699px) {
@@ -208,4 +196,3 @@ input[type="submit"].personalize-add-link:hover {
     padding-left: 3em; /* LTR */
   }
 }
-

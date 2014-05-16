@@ -579,12 +579,21 @@ class PersonalizeTest extends PersonalizeBaseTest {
 
     personalize_option_set_save(_personalize_blocks_convert_form_to_personalized_block($personalized_blocks_form_state));
 
-    // Set the winning option in the first Option Set as Option C.
-    $edit = array();
-    $edit['option_sets[option_set_1][winner]'] = 'option-C';
-    $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
-    $option_set_1 = personalize_option_set_load(1, TRUE);
-    $this->assertEqual('option-C', $option_set_1->winner);
+    // We aren't able to check the set as winner link as it is a button rather
+    // than a submit input.
+    // We can check that the winning option is properly displayed.
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/edit");
+    $this->assertNoRaw('<button id="edit-option-sets-option-set-1-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+
+    $option_set = personalize_option_set_load(1);
+    $option_set->winner = 'option-C';
+    personalize_option_set_save($option_set);
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/edit");
+    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertNoRaw('<button id="edit-option-sets-option-set-1-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
 
     // Now let's place the block in a region and make sure the correct js settings
     // show up when it's rendered on a page.
