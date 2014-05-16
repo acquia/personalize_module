@@ -1557,7 +1557,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       // to determine the item to delete when "remove" is clicked.
       $mappings[$delta] = array(
         'plugin' => $plugin_name,
-        'context' => $context_option,
+        'context' => $context['context'],
         'operator' => $context['value']['operator'],
         'match' => $context['value']['match'],
       );
@@ -1607,7 +1607,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] = count($mappings);
   foreach ($mappings as $delta => $mapping) {
     $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
-    $selected_context = $mapping['context'];
+    $selected_context = $mapping['plugin'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $mapping['context'];
     $selected_operator = $mapping['operator'];
     $selected_match = $mapping['match'];
     $form['mapping']['contexts'][$delta] = array(
