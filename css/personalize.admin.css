@@ -53,8 +53,8 @@ input[type="submit"].personalize-add-link {
   -webkit-border-radius: 0;
   border-radius: 0;
 }
-input[type="submit"].personalize-add-link:hover,
-button.personalize-add-link:hover {
+button.personalize-add-link:hover,
+input[type="submit"].personalize-add-link:hover {
   background: transparent;
 }
 .personalize-admin-content-header input.personalize-add-link {
