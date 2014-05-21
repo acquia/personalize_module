@@ -162,10 +162,15 @@
    *   The jQuery instance of the goal.
    */
   Drupal.personalize.admin.openToGoal = function($goal) {
-    var $fieldset = $('#personalize-goals fieldset');
+    var $fieldset = $('#personalize-goals').parents('fieldset');
     // Open the goals form if it is collapsed.
     if ($fieldset.hasClass('collapsed')) {
       Drupal.toggleFieldset($fieldset);
+      $fieldset.parent('.personalize-admin-content').removeClass('personalize-collapsed');
+    }
+    // Now open the selected goal.
+    if ($goal.hasClass('collapsed')) {
+      Drupal.toggleFieldset($goal);
     }
     // Now get the location of the requested goal section and scroll to it.
     var offset = $goal.offset();

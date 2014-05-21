@@ -345,7 +345,7 @@ function personalize_goals_list($form, &$form_state) {
       $actions[$goal['action']],
       $campaign->label,
       $goal['value'],
-      l(t('edit'), 'admin/structure/personalize/manage/' . $goal['agent']),
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal['agent'], array('query' => array('goal' => $goal['id']))),
       l(t('delete'), 'admin/structure/personalize/goals/' . $goal['id'] . '/delete'),
     );
   }
