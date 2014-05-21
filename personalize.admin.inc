@@ -371,6 +371,18 @@ function personalize_goals_list($form, &$form_state) {
 function personalize_admin_goal_delete($form, &$form_state, $goal) {
   $options = personalize_goals_options();
   $campaign = personalize_agent_load($goal['agent']);
+  if ($campaign->status == PERSONALIZE_STATUS_RUNNING) {
+    $description = t('The %goal goal will be no longer be tracked in the currently running %campaign campaign.', array(
+      '%campaign' => $campaign->label,
+      '%goal' => $options[$goal['action']]
+    ));
+  }
+  else {
+    $description = t('The %goal goal will be no longer be tracked when the %campaign campaign is started.', array(
+      '%campaign' => $campaign->label,
+      '%goal' => $options[$goal['action']]
+    ));
+  }
   $form['goal'] = array(
     '#type' => 'value',
     '#value' => $goal,
@@ -378,7 +390,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
   return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
     '%goal' => $options[$goal['action']],
     '%campaign' => $campaign->label,
-  )), 'admin/structure/personalize/goals');
+  )), 'admin/structure/personalize/goals', $description);
 }
 
 /**
