@@ -28,7 +28,7 @@ function personalize_blocks_menu() {
   $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block'] = array(
     'title' => 'Edit Personalized Block',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_blocks_form', 'edit', 4),
+    'page arguments' => array('personalize_blocks_form', 'edit', 6),
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize_blocks.admin.inc',
   );
@@ -40,7 +40,7 @@ function personalize_blocks_menu() {
   $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block/delete'] = array(
     'title' => 'Delete Personalized Block',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_blocks_block_delete', 4),
+    'page arguments' => array('personalize_blocks_block_delete', 6),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_blocks.admin.inc',

@@ -136,7 +136,7 @@
         var goalId = match && decodeURIComponent(match[1].replace(/\+/g, ' '));
         var $goal = $('#personalize-goal-' + goalId);
         if ($goal.length > 0) {
-          Drupal.personalize.admin.openToGoal($('#personalize-goal-' + goalId));
+          Drupal.personalize.admin.openToGoal($goal);
         }
       });
     }

@@ -37,7 +37,7 @@ function personalize_elements_menu() {
   $items['admin/structure/personalize/variations/personalize-elements/manage/%personalize_element'] = array(
     'title' => 'Edit Personalized Element',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_elements_form', FALSE, 4),
+    'page arguments' => array('personalize_elements_form', FALSE, 6),
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize_elements.admin.inc',
   );
@@ -49,7 +49,7 @@ function personalize_elements_menu() {
   $items['admin/structure/personalize/variations/personalize-elements/manage/%personalize_element/delete'] = array(
     'title' => 'Delete Personalized Element',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_elements_element_delete', 4),
+    'page arguments' => array('personalize_elements_element_delete', 6),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_elements.admin.inc',
