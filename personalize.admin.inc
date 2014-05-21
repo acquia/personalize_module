@@ -434,6 +434,12 @@ function personalize_status_toggle_message($agent_name, $current_status) {
  * Menu callback for the campaign edit page.
  */
 function personalize_agent_page($agent_data) {
+  // The page title of the simple campaign name is taken from
+  // personalize_campaign_title_callback().  In order to give the edit tab
+  // a specific title, explicitly update the title.
+  $edit_tab_title = t('Edit @campaign', array('@campaign' => drupal_get_title()));
+  drupal_set_title($edit_tab_title);
+
   // Set the campaign context to this campaign.
   personalize_set_campaign_context($agent_data->machine_name);
   $build = array();
@@ -2097,6 +2103,12 @@ function personalize_mvt_save_from_form_values($form_values) {
  *   (optional) Content variation set id to use for initial display.
  */
 function personalize_campaign_report($agent_data, $osid = NULL) {
+  // The page title of the simple campaign name is taken from
+  // personalize_campaign_title_callback().  In order to give the reports tab
+  // a specific title, explicitly update the title.
+  $report_tab_title = t('@campaign Campaign Report', array('@campaign' => drupal_get_title()));
+  drupal_set_title($report_tab_title);
+
   $plugins = personalize_get_agent_types();
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
