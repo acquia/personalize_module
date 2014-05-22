@@ -1393,6 +1393,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
     // No error should have been set.
     $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
+    $this->resetAll();
     // The agent's status should now be "running".
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
@@ -1424,6 +1425,16 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
+
+    // Now pause and restart an agent that was defined completely in code.
+    $this->drupalPost('admin/structure/personalize', array(), t('Pause'), array(), array(), 'personalize-toggle-status-test-agent-form');
+    $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('test-agent'));
+
+    $this->resetAll();
+    $this->drupalPost('admin/structure/personalize', array(), t('Resume'), array(), array(), 'personalize-toggle-status-test-agent-form');
+    $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
+    $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('test-agent'));
   }
 
   /**
