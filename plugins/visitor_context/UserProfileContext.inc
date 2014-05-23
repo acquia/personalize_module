@@ -114,9 +114,15 @@ class UserProfileContext extends PersonalizeContextBase {
         // for editing and pull the options list out of it. (There is no API
         // function for getting the list of possible values from a field.)
         $element = options_field_widget_form($form, $form_state, $field, $instance, LANGUAGE_NONE, array(), 0, array('#required' => FALSE, '#entity_type' => 'user', '#entity' => $entity));
-        foreach ($element['#options'] as $key => $label) {
-          if ($key != '_none') {
-            $possible_values[$name]['values'][$key] = $label;
+        if ($instance['widget']['type'] === 'options_onoff') {
+          $possible_values[$name]['values']['#on_value'] = 'On';
+          $possible_values[$name]['values']['#off_value'] = 'Off';
+        }
+        else {
+          foreach ($element['#options'] as $key => $label) {
+            if ($key != '_none') {
+              $possible_values[$name]['values'][$key] = $label;
+            }
           }
         }
       }
