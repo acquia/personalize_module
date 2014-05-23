@@ -376,7 +376,11 @@ function personalize_elements_form_validate($form, &$form_state) {
     // Remove empty options.
     foreach ($values['options'] as $i => &$option) {
       // First, filter out any disallowed html tags.
-      $filtered = filter_xss($option['personalize_elements_content'], $allowed_tags);
+      // @todo Do this in a more generic manner.
+      $filtered = $option['personalize_elements_content'];
+      if ($values['variation_type'] !== 'runJS') {
+        $filtered = filter_xss($filtered, $allowed_tags);
+      }
       if ($filtered !== $option['personalize_elements_content']) {
         $changed++;
       }

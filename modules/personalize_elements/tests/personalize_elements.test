@@ -198,6 +198,75 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertFieldByName('pages', 'about');
   }
 
+  /**
+   * Tests cross site scripting filter for Personalize Elements Option Sets.
+   */
+  function testPersonalizeElementsAdminFilter() {
+    $control_option = array(
+      'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
+      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'personalize_elements_content' => '',
+    );
+
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content', 'use advanced personalize elements features'));
+    $this->drupalLogin($admin_user);
+
+    // Create an option set that should be filtered.
+    $edit = array(
+      'agent_select' => 'test-agent',
+      'title' => $this->randomName(),
+      'selector' => '#some-id',
+      'variation_type' => 'replaceHtml',
+      'options[1][option_label]' => 'first-option',
+      'options[1][personalize_elements_content]' => '<script type="text/javascript">alert("xss");</script>',
+    );
+    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->assertText(t('Disallowed HTML tags were removed from 1 variation.'));
+    $option_set = personalize_option_set_load(1, TRUE);
+    $expected = array(
+      0 => $control_option,
+      1 => array(
+        'option_id' => 'first-option',
+        'option_label' => 'first-option',
+        'personalize_elements_content' => 'alert("xss");',
+      ),
+    );
+    $this->assertEqual(count($expected), count($option_set->options));
+    foreach ($expected as $i => $option) {
+      $this->assertEqual($option, $option_set->options[$i]);
+    }
+
+    // Create an option set that should NOT be filtered.
+    $edit = array(
+      'agent_select' => 'test-agent',
+      'title' => $this->randomName(),
+      'selector' => '#some-id',
+      'variation_type' => 'runJS',
+      'options[1][option_label]' => 'first-option',
+      'options[1][personalize_elements_content]' => '<script type="text/javascript">alert("xss");</script>',
+    );
+    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->assertNoText(t('Disallowed HTML tags were removed from 1 variation.'));
+    $option_set = personalize_option_set_load(2, TRUE);
+    $control_option = array(
+      'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
+      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'personalize_elements_content' => '',
+    );
+    $expected = array(
+      0 => $control_option,
+      1 => array(
+        'option_id' => 'first-option',
+        'option_label' => 'first-option',
+        'personalize_elements_content' => '<script type="text/javascript">alert("xss");</script>',
+      ),
+    );
+    $this->assertEqual(count($expected), count($option_set->options));
+    foreach ($expected as $i => $option) {
+      $this->assertEqual($option, $option_set->options[$i]);
+    }
+  }
+
   function testPersonalizeElementsNewCampaign() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
     $this->drupalLogin($admin_user);
