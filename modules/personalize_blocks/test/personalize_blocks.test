@@ -101,6 +101,7 @@ class PersonalizeBlocksTest extends DrupalWebTestCase {
     $this->drupalPost(NULL, $edit, t('Save'));
 
     // Verify that the block was created.
+    $this->assertText(t('The block @title has been created.', array('@title' => $edit['blocks[1][block][add][info]'])));
     $block = block_custom_block_get(1);
     $this->assertEqual($add_block_info, $block['info']);
 

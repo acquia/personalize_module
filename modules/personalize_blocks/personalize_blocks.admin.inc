@@ -628,5 +628,6 @@ function _personalize_blocks_add_custom_block($block_values) {
     }
   }
   $query->execute();
+  drupal_set_message(t('The block %title has been created.', array('%title' => $block_values['info'])));
   return 'block_delta_' . $delta;
 }
