@@ -844,10 +844,13 @@ function personalize_pause_if_running($agent_name) {
     personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
     $campaign_url = "admin/structure/personalize/manage/{$agent_name}/edit";
     $current_path = current_path();
-    if ($current_path !== $campaign_url && $current_path !== 'system/ajax') {
+    $destination_path = isset($_GET['destination']) ? $_GET['destination'] : $current_path;
+    if ($current_path !== $campaign_url && $destination_path != $campaign_url && $current_path !== 'system/ajax') {
       drupal_set_message(t('The campaign has been paused because you have made changes. You can edit and restart the campaign !here', array('!here' => l('here', $campaign_url))), 'warning');
     }
     else {
+      module_load_include('inc', 'personalize', 'personalize.admin');
+      drupal_set_message(t('The campaign has been paused because you have made changes.'));
       personalize_status_toggle_message($agent_name, PERSONALIZE_STATUS_PAUSED);
     }
   }
