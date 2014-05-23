@@ -48,6 +48,9 @@ input[type="submit"].personalize-add-link {
   margin: 0;
   height: 2em;
   line-height: 2em;
+  -moz-border-radius: 0;
+  -webkit-border-radius: 0;
+  border-radius: 0;
 }
 button.personalize-add-link:hover,
 input[type="submit"].personalize-add-link:hover {
