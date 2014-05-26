@@ -26,7 +26,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalLogin($marketer);
     $this->drupalGet('admin/config/content/personalize/personalize-elements');
     $this->assertResponse(403);
-    $this->drupalGet('admin/structure/personalize-elements/add');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/add');
     // Find the "Variation type" select list and confirm that 'runJS' is not one of
     // the options.
     $elements = $this->xpath('//select[@id=:id]', array(':id' => 'edit-variation-type'));
@@ -46,7 +46,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalLogin($advanced_user);
     $this->drupalGet('admin/config/content/personalize/personalize-elements');
     $this->assertResponse(200);
-    $this->drupalGet('admin/structure/personalize-elements/add');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/add');
     $elements = $this->xpath('//select[@id=:id]', array(':id' => 'edit-variation-type'));
 
     $options = array();
@@ -73,12 +73,12 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'selector' => '#some-id',
       'add_control_option' => FALSE,
     );
-    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText('You must choose an operation');
 
     $edit['variation_type'] = 'replaceHtml';
     $this->assertFieldByName('options[0][option_label]', PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL);
-    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText($options_count_error);
     $this->drupalPost(NULL, array(), $this->getButton('add_another'));
     $this->assertFieldByName('options[2][option_label]', personalize_generate_option_label(1));
@@ -92,13 +92,13 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertEqual(2, count($option_set->options));
     $edit = array();
     $edit['add_control_option'] = TRUE;
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
 
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual(3, count($option_set->options));
 
     // Add another element with a script tag.
-    $this->drupalGet('admin/structure/personalize-elements/manage/1/edit');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/1/edit');
     $this->assertFieldByName('options[0][option_label]', PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL);
     $this->drupalPost(NULL, array(), $this->getButton('add_another'));
     $edit = array();
@@ -138,7 +138,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['options[2][option_label]'] = '';
     $edit['options[2][personalize_elements_content]'] = '';
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     unset($expected[2]);
     $expected = array_values($expected);
     $option_set = personalize_option_set_load(1, TRUE);
@@ -150,7 +150,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     // Remove the control option.
     $edit = array();
     $edit['add_control_option'] = FALSE;
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     unset($expected[0]);
     $expected = array_values($expected);
     $option_set = personalize_option_set_load(1, TRUE);
@@ -163,7 +163,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['options[1][option_label]'] = '';
     $edit['options[1][personalize_elements_content]'] = '';
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     $this->assertText($options_count_error);
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual(count($expected), count($option_set->options));
@@ -174,7 +174,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     // Add back the control option.
     $edit = array();
     $edit['add_control_option'] = TRUE;
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     array_unshift($expected, $control_option);
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual(count($expected), count($option_set->options));
@@ -188,13 +188,13 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'pages_all' => 1,
       'pages' => 'about',
     );
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
-    $this->drupalGet('admin/structure/personalize-elements/manage/1/edit');
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/1/edit');
     $this->assertFieldByName('pages', '');
 
     $edit['pages_all'] = 0;
     $this->drupalPost(NULL, $edit, $this->getButton('save'));
-    $this->drupalGet('admin/structure/personalize-elements/manage/1/edit');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/1/edit');
     $this->assertFieldByName('pages', 'about');
   }
 
@@ -284,7 +284,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'options[1][option_label]' => 'first-option',
       'options[1][personalize_elements_content]' => 'some content'
     );
-    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->resetAll();
     if ($agent = personalize_agent_load_agent($machine_name)) {
       $this->assertTrue($agent instanceof PersonalizeTestAgent);
@@ -313,7 +313,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertEqual('<a> <em>', $allowed_tags);
 
     // Resave the personalized element and confirm that disallowed tags are stripped out.
-    $this->drupalPost('admin/structure/personalize-elements/manage/1/edit', array(), t('Save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', array(), t('Save'));
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual('ohai', $option_set->options[1]['personalize_elements_content']);
     $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[2]['personalize_elements_content']);
@@ -348,7 +348,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'pages_all' => 0,
       'pages' => "user\r\nuser/*"
     );
-    $this->drupalPost("admin/structure/personalize-elements/manage/{$option_set->osid}/edit", $edit, $this->getButton('save'));
+    $this->drupalPost("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit", $edit, $this->getButton('save'));
     $this->resetAll();
 
     $this->drupalGet('');
@@ -378,7 +378,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
    *   A stdClass object representing the created option set.
    */
   protected function createPersonalizedElement($edit = array(), $assertResult = TRUE, $num_options = 2) {
-    $this->drupalGet('admin/structure/personalize-elements/add');
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/add');
     // Only fields for the first option will be available when the form is loaded.
     // For the second and subsequent options, we need to hit the "Add another" button.
     for ($i = 1; $i < $num_options; $i++) {
@@ -404,7 +404,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       $this->assertTRUE(!empty($option_set) && $option_set->label == $edit['title']);
       $this->assertText($edit['title']);
 
-      $this->drupalGet('admin/structure/personalize-elements/manage/' . $option_set->osid . '/edit');
+      $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/' . $option_set->osid . '/edit');
 
       $this->assertRaw($edit['title']);
       $this->assertRaw($edit['options[1][option_label]']);

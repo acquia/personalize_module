@@ -62,7 +62,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc'
   );
   $items['admin/structure/personalize'] = array(
-    'title' => 'Personalization Campaigns',
+    'title' => 'Personalize',
     'description' => 'Manage your personalization campaigns.',
     'page callback' => 'personalize_agent_list',
     'access callback' => 'user_access',
@@ -71,7 +71,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/list'] = array(
-    'title' => 'Agents',
+    'title' => 'Campaigns',
     'description' => 'List personalization agents',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
@@ -81,6 +81,41 @@ function personalize_menu() {
     'page arguments' => array('personalize_agent_form'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
+    'file' => 'personalize.admin.inc',
+  );
+  $items['admin/structure/personalize/variations'] = array(
+    'title' => 'Variation sets',
+    'description' => 'Manage your personalization campaign content variation sets.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_option_set_list'),
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'personalize.admin.inc',
+    'weight' => 10,
+  );
+  $items['admin/structure/personalize/variations/list'] = array(
+    'title' => 'All variation sets',
+    'description' => 'Manage all content variation sets for all campaigns.',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/structure/personalize/goals'] = array(
+    'title' => 'Goals',
+    'description' => 'Manage your personalization campaign goals.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_goals_list'),
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'personalize.admin.inc',
+    'weight' => 20,
+  );
+  $items['admin/structure/personalize/goals/%personalize_goal/delete'] = array(
+    'title' => 'Delete Goal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_admin_goal_delete', 4),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_CALLBACK,
     'file' => 'personalize.admin.inc',
   );
   $items['personalize/campaign_context'] = array(
@@ -1549,6 +1584,7 @@ function personalize_agent_save($agent) {
 function personalize_agent_delete($agent_name) {
   $agent = personalize_agent_load($agent_name);
   db_query('DELETE FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name));
+  db_query('DELETE FROM {personalize_campaign_goals} WHERE agent = :agent', array(':agent' => $agent_name));
   module_invoke_all('personalize_agent_delete', $agent);
 }
 
@@ -2257,6 +2293,19 @@ function personalize_process_goals(&$page) {
     personalize_clear_goals();
   }
 }
+
+/**
+ * Loads a goal by id.
+ *
+ */
+function personalize_goal_load($goal_id) {
+  $goals = personalize_goal_load_by_conditions(array('id' => $goal_id));
+  if (count($goals) > 0) {
+    return $goals[0];
+  }
+  return NULL;
+}
+
 
 /**
  * Loads all goals satisfying the specified conditions.

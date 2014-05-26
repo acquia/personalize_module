@@ -186,9 +186,10 @@ function personalize_agent_list() {
   $status_map = personalize_get_agent_status_map();
 
   $header = array(
-    array('data' => t('Campaign')),
+    array('data' => t('Campaign name')),
     array('data' => t('Type')),
-    array('data' => t('Status'), 'colspan' => 2),
+    array('data' => t('Status')),
+    array('data' => t('Start/stop')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
   $rows = array();
@@ -227,7 +228,7 @@ function personalize_agent_list() {
       array('data' => drupal_render($status_toggle_form)),
       //array('data' => $storage),
       array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('Reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
       //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
       //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
       array('data' => $delete_link),
@@ -246,6 +247,158 @@ function personalize_agent_list() {
     '#attributes' => array('id' => 'personalize'),
   );
   return $build;
+}
+
+/**
+ * Menu callback for displaying a list of content variations.
+ */
+function personalize_option_set_list($form, &$form_state) {
+  $option_sets = personalize_option_set_load_multiple(FALSE);
+
+  $header = array(
+    array('data' => t('Set name')),
+    array('data' => t('Type')),
+    array('data' => t('Campaign')),
+    array('data' => t('Edit')),
+    array('data' => t('Delete')),
+  );
+
+  $types = array();
+  $rows = array();
+  $filter = isset($form_state['values']['filter']) ? $form_state['values']['filter'] : '';
+  foreach($option_sets as $option_set) {
+    $types[$option_set->plugin] = $option_set->plugin;
+    if (!empty($filter) && $filter != $option_set->plugin) {
+      continue;
+    }
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
+    $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
+    $campaign = personalize_agent_load($option_set->agent);
+    $rows[] = array(
+      $option_set->label,
+      $option_set->plugin,
+      l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent),
+      l(t('edit'), $edit_link),
+      l(t('delete'), $delete_link),
+    );
+  }
+
+  // Links to create new option sets of each type.
+  $form['add'] = array(
+    '#type' => 'markup',
+    '#markup' => personalize_get_create_new_links_dropbutton('admin/structure/personalize/variations'),
+  );
+
+  // Include a filter by variation set type.
+  if (count($types) > 0) {
+    $types = array_merge(array('' => t('All')), $types);
+    $form['filter'] = array(
+      '#type' => 'select',
+      '#title' => t('Filter by type'),
+      '#options' => $types,
+      '#ajax' => array(
+        'callback' => 'personalize_option_set_list_ajax_callback',
+        'wrapper' => 'personalize-variation-sets',
+      )
+    );
+  }
+
+  $form['results'] = array(
+    '#markup' => theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(
+        'id' => 'personalize-variation-sets',
+      ),
+    )),
+  );
+  return $form;
+}
+
+/**
+ * Ajax submit handler used to filter the content variation list page.
+ */
+function personalize_option_set_list_ajax_callback($form, &$form_state) {
+  return $form['results'];
+}
+
+/**
+ * Menu callback for displaying a list of campaign goals.
+ */
+function personalize_goals_list($form, &$form_state) {
+  $goals = personalize_goal_load_by_conditions();
+  $actions = personalize_goals_options();
+
+  $header = array(
+    array('data' => t('Goal')),
+    array('data' => t('Campaign')),
+    array('data' => t('Value')),
+    array('data' => t('Edit')),
+    array('data' => t('Delete')),
+  );
+
+  $rows = array();
+  foreach($goals as $goal) {
+    $campaign = personalize_agent_load($goal['agent']);
+    $rows[] = array(
+      $actions[$goal['action']],
+      $campaign->label,
+      $goal['value'],
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal['agent'], array('query' => array('goal' => $goal['id']))),
+      l(t('delete'), 'admin/structure/personalize/goals/' . $goal['id'] . '/delete'),
+    );
+  }
+
+  $form['results'] = array(
+    '#markup' => theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array(
+        'id' => 'personalize-goals',
+      ),
+    )),
+  );
+  return $form;
+}
+
+/**
+ * Form creation function to delete a specified goal.
+ *
+ * @param array $goal
+ *   The goal to be deleted.
+ */
+function personalize_admin_goal_delete($form, &$form_state, $goal) {
+  $options = personalize_goals_options();
+  $campaign = personalize_agent_load($goal['agent']);
+  if ($campaign->status == PERSONALIZE_STATUS_RUNNING) {
+    $description = t('The %goal goal will be no longer be tracked in the currently running %campaign campaign.', array(
+      '%campaign' => $campaign->label,
+      '%goal' => $options[$goal['action']]
+    ));
+  }
+  else {
+    $description = t('The %goal goal will be no longer be tracked when the %campaign campaign is started.', array(
+      '%campaign' => $campaign->label,
+      '%goal' => $options[$goal['action']]
+    ));
+  }
+  $form['goal'] = array(
+    '#type' => 'value',
+    '#value' => $goal,
+  );
+  return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
+    '%goal' => $options[$goal['action']],
+    '%campaign' => $campaign->label,
+  )), 'admin/structure/personalize/goals', $description);
+}
+
+/**
+ * Form submission handler to delete a specific goal.
+ */
+function personalize_admin_goal_delete_submit($form, &$form_state) {
+  personalize_goal_delete($form_state['values']['goal']['id']);
+  $form_state['redirect'] = 'admin/structure/personalize/goals';
 }
 
 /**
@@ -905,6 +1058,9 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     if (isset($goal['classes']) && is_array($goal['classes'])) {
       $goal_fieldset_classes = array_merge($goal_fieldset_classes, $goal['classes']);
     }
+    // The goal id should match loaded goals from the database for jumping to
+    // a specific goal on page load.  This will not be available after an AJAX
+    // call, but that doesn't matter in the use case of initial page linkages.
     $section['goals'][$delta] = array(
       '#type' => 'fieldset',
       '#collapsible' => TRUE,
@@ -913,7 +1069,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       '#tree' => TRUE,
       '#attributes' => array(
         'class' => $goal_fieldset_classes,
-        'id' => "personalize-goal-$delta"
+        'id' => isset($goal['id']) ? "personalize-goal-{$goal['id']}" : "personalize-goal-$delta",
       )
     );
     $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
