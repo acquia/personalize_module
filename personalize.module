@@ -1255,6 +1255,10 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
     $client_side_goals = personalize_goal_load_by_conditions(array('action' => $actions));
     foreach ($client_side_goals as $goal) {
       if ($agent = personalize_agent_load_agent($goal['agent'])) {
+        // Don't include goal information for campaigns that aren't running.
+        if ($agent->getStatus() != PERSONALIZE_STATUS_RUNNING) {
+          continue;
+        }
         if (!isset($action_listeners[$goal['action']])) {
           $action_listeners[$goal['action']] = array();
         }
