@@ -483,7 +483,7 @@ function personalize_update_7010() {
 /**
  * Update fixed targeting rules to reference the origin context plugin.
  */
-function personalize_update_7010() {
+function personalize_update_7011() {
   // Get all possible targeting values for all context plugins.
   ctools_include('plugins');
   $contexts = personalize_get_visitor_contexts();
