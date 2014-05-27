@@ -742,6 +742,12 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
     // full personalize-agent-form regardless of the submit used.
     $form_div_id = 'personalize-agent-form';
   }
+  else if ($form['#form_id'] == 'personalize_agent_option_sets_form') {
+    // Updating the option sets causes the campaign to pause so we need to
+    // update display of the status toggle.
+    $campaign_form = drupal_get_form('personalize_agent_form', $agent_data);
+    $commands[] = ajax_command_replace('#personalize-agent-form', drupal_render($campaign_form));
+  }
 
   // Update the current agent status.
   if (!empty($agent_data)) {
