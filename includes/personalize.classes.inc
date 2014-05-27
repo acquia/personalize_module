@@ -205,7 +205,7 @@ interface PersonalizeAutoTargetingInterface extends PersonalizeAgentInterface {
    *   explicit targeting options are selected independently of campaign
    *   auto-targeting context options.
    */
-  public static function explicitTargetingLimitedToAutoTargetingContext();
+  public static function constrainExplicitTargetingContexts();
 }
 
 /**

@@ -1884,7 +1884,7 @@ function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_
  */
 function personalize_get_fixed_targeting_values_for_agent($agent_data) {
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::explicitTargetingLimitedToAutoTargetingContext()) {
+  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::constrainExplicitTargetingContexts()) {
     $value_options = array();
     if (!empty($agent_data->data['visitor_context'])) {
       foreach ($agent_data->data['visitor_context'] as $name => $contexts) {

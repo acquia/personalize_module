@@ -37,9 +37,9 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   }
 
   /**
-   * Implements PersonalizeAutoTargetingInterface::explicitTargetingLimitedToAutoTargetingContext
+   * Implements PersonalizeAutoTargetingInterface::constrainExplicitTargetingContexts
    */
-  public static function explicitTargetingLimitedToAutoTargetingContext() {
+  public static function constrainExplicitTargetingContexts() {
     return FALSE;
   }
 }
