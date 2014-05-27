@@ -56,7 +56,7 @@ class QuerystringContext extends PersonalizeContextBase {
   }
 
   /**
-   * Implements PersonalizeAgentInterface::getPossibleValues().
+   * Implements PersonalizeContextInterface::getPossibleValues().
    */
   public function getPossibleValues($limit = FALSE) {
     $possible_values = array();
