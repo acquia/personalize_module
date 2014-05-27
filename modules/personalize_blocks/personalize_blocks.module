@@ -4,48 +4,48 @@
  * Implements hook_menu().
  */
 function personalize_blocks_menu() {
-  $items['admin/structure/personalize-blocks'] = array(
-    'title' => 'Personalize Blocks',
+  $items['admin/structure/personalize/variations/personalize-blocks'] = array(
+    'title' => 'Blocks',
     'description' => 'Create personalized blocks.',
     'page callback' => 'personalize_blocks_list',
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_blocks.admin.inc',
   );
-  $items['admin/structure/personalize-blocks/list'] = array(
-    'title' => 'List personalize_blocks',
+  $items['admin/structure/personalize/variations/personalize-blocks/list'] = array(
+    'title' => 'List personalize blocks',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/structure/personalize-blocks/add'] = array(
-    'title' => 'Add personalize_blocks Instance',
+  $items['admin/structure/personalize/variations/personalize-blocks/add'] = array(
+    'title' => 'Add personalized block',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_blocks_form', 'add'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'personalize_blocks.admin.inc',
   );
-  $items['admin/structure/personalize-blocks/manage/%personalize_block'] = array(
+  $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block'] = array(
     'title' => 'Edit Personalized Block',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_blocks_form', 'edit', 4),
+    'page arguments' => array('personalize_blocks_form', 'edit', 6),
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize_blocks.admin.inc',
   );
-  $items['admin/structure/personalize-blocks/manage/%personalize_block/edit'] = array(
+  $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block/edit'] = array(
     'title' => 'Edit Personalized Block',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
   );
-  $items['admin/structure/personalize-blocks/manage/%personalize_block/delete'] = array(
+  $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block/delete'] = array(
     'title' => 'Delete Personalized Block',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_blocks_block_delete', 4),
+    'page arguments' => array('personalize_blocks_block_delete', 6),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_blocks.admin.inc',
   );
-  $items['admin/structure/personalize-blocks/manage/%personalize_block/clone'] = array(
+  $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block/clone'] = array(
     'title' => 'Clone Personalized Block',
     'page callback' => 'personalize_blocks_clone',
     'page arguments' => array(4),
@@ -150,7 +150,7 @@ function personalize_blocks_block_view($delta = '') {
   $block = array();
   if ($pblock = personalize_blocks_build_personalized_block($delta)) {
       $block['content'] = $pblock;
-      $block['content']['#contextual_links']['personalize_blocks'] = array('admin/structure/personalize-blocks/manage', array($delta));
+      $block['content']['#contextual_links']['personalize_blocks'] = array('admin/structure/personalize/variations/personalize-blocks/manage', array($delta));
       $block['subject'] = FALSE;
   }
   return $block;
@@ -166,7 +166,7 @@ function personalize_blocks_contextual_links_view_alter(&$element, $items) {
   if (isset($element['#element']['#block']) && $element['#element']['#block']->module != 'personalize_blocks' && !isset($element['#element']['#block']->personalized)) {
     $block = $element['#element']['#block'];
     $links = &$element['#links'];
-    personalize_add_personalize_this_contextual_link($links, 'admin/structure/personalize-blocks/add', array('query' => array('original_block' => $block->bid)));
+    personalize_add_personalize_this_contextual_link($links, 'admin/structure/personalize/variations/personalize-blocks/add', array('query' => array('original_block' => $block->bid)));
   }
 }
 
@@ -197,7 +197,7 @@ function personalize_blocks_build_personalized_block($osid) {
           // Add a contextual link for editing the personalize block.
           foreach (element_children($renderable['sub_blocks'][$child]) as $key) {
             $renderable['sub_blocks'][$child][$key]['#contextual_links']['personalize_blocks'] = array(
-              'admin/structure/personalize-blocks/manage',
+              'admin/structure/personalize/variations/personalize-blocks/manage',
               array($osid, 'edit'),
             );
           }
@@ -303,7 +303,7 @@ function personalize_blocks_personalize_create_new_links() {
   return array(
     array(
       'title' => 'Personalized Block',
-      'path' => 'admin/structure/personalize-blocks/add',
+      'path' => 'admin/structure/personalize/variations/personalize-blocks/add',
     ),
   );
 }
@@ -315,7 +315,7 @@ function personalize_blocks_personalize_edit_link($option_set) {
   if ($option_set->plugin != 'block') {
     return '';
   }
-  return "admin/structure/personalize-blocks/manage/{$option_set->osid}/edit";
+  return "admin/structure/personalize/variations/personalize-blocks/manage/{$option_set->osid}/edit";
 }
 
 /**
@@ -325,7 +325,7 @@ function personalize_blocks_personalize_delete_link($option_set) {
   if ($option_set->plugin != 'block') {
     return '';
   }
-  return "admin/structure/personalize-blocks/manage/{$option_set->osid}/delete";
+  return "admin/structure/personalize/variations/personalize-blocks/manage/{$option_set->osid}/delete";
 }
 
 /**
@@ -349,7 +349,7 @@ function personalize_blocks_personalize_option_load($option_set, $option) {
   $block = $personalized_block->buildBlock($bid);
   list($module, $delta) = PersonalizedBlock::extractBlockId($bid);
   $block["{$module}_{$delta}"]['#contextual_links']['personalize_blocks'] = array(
-    'admin/structure/personalize-blocks/manage',
+    'admin/structure/personalize/variations/personalize-blocks/manage',
     array($option_set->osid, 'edit'),
   );
 

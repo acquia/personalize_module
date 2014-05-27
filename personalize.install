@@ -459,6 +459,27 @@ function personalize_update_7009() {
   }
 }
 
+/**
+ * Delete any goals that belong to campaigns that no longer exist.
+ */
+function personalize_update_7010() {
+  // Get all the current campaigns.
+  $all_agents = personalize_agent_load_multiple();
+  $agents = array_keys($all_agents);
+
+  // Find any goals that don't belong to an existing campaign and delete.
+  $result = db_select('personalize_campaign_goals', 'g')
+    ->fields('g', array('id', 'agent'))
+    ->execute();
+  foreach ($result as $row) {
+    if (!in_array($row->agent, $agents)) {
+      db_delete('personalize_campaign_goals')
+        ->condition('id', $row->id)
+        ->execute();
+    }
+  }
+}
+
 
 /**
  * Converts a feature string to an array with 'key' and 'value' elements.

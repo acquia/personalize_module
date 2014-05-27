@@ -13,43 +13,43 @@ define('PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR', 'https://docs.acquia.com/lift/p
  * Implements hook_menu().
  */
 function personalize_elements_menu() {
-  $items['admin/structure/personalize-elements'] = array(
-    'title' => 'Personalize Elements',
+  $items['admin/structure/personalize/variations/personalize-elements'] = array(
+    'title' => 'Elements',
     'description' => 'Personalize page elements.',
     'page callback' => 'personalize_elements_list',
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
-    'type' => MENU_NORMAL_ITEM,
+    'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_elements.admin.inc',
   );
-  $items['admin/structure/personalize-elements/list'] = array(
-    'title' => 'List personalize_elements',
+  $items['admin/structure/personalize/variations/personalize-elements/list'] = array(
+    'title' => 'List personalize elements',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
-  $items['admin/structure/personalize-elements/add'] = array(
-    'title' => 'Add personalize_elements Instance',
+  $items['admin/structure/personalize/variations/personalize-elements/add'] = array(
+    'title' => 'Add personalized element',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_elements_form', 'add'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'personalize_elements.admin.inc',
   );
-  $items['admin/structure/personalize-elements/manage/%personalize_element'] = array(
+  $items['admin/structure/personalize/variations/personalize-elements/manage/%personalize_element'] = array(
     'title' => 'Edit Personalized Element',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_elements_form', FALSE, 4),
+    'page arguments' => array('personalize_elements_form', FALSE, 6),
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize_elements.admin.inc',
   );
-  $items['admin/structure/personalize-elements/manage/%personalize_element/edit'] = array(
+  $items['admin/structure/personalize/variations/personalize-elements/manage/%personalize_element/edit'] = array(
     'title' => 'Edit Personalized Element',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'context' => MENU_CONTEXT_INLINE,
   );
-  $items['admin/structure/personalize-elements/manage/%personalize_element/delete'] = array(
+  $items['admin/structure/personalize/variations/personalize-elements/manage/%personalize_element/delete'] = array(
     'title' => 'Delete Personalized Element',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_elements_element_delete', 4),
+    'page arguments' => array('personalize_elements_element_delete', 6),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_TASK,
     'file' => 'personalize_elements.admin.inc',
@@ -170,7 +170,7 @@ function personalize_elements_personalize_create_new_links() {
   return array(
     array(
       'title' => 'Personalized Element',
-      'path' => 'admin/structure/personalize-elements/add',
+      'path' => 'admin/structure/personalize/variations/personalize-elements/add',
     ),
   );
 }
@@ -182,7 +182,7 @@ function personalize_elements_personalize_edit_link($option_set) {
   if ($option_set->plugin != 'elements') {
     return '';
   }
-  return "admin/structure/personalize-elements/manage/{$option_set->osid}/edit";
+  return "admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit";
 }
 
 /**
@@ -192,7 +192,7 @@ function personalize_elements_personalize_delete_link($option_set) {
   if ($option_set->plugin != 'elements') {
     return '';
   }
-  return "admin/structure/personalize-elements/manage/{$option_set->osid}/delete";
+  return "admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/delete";
 }
 
 /**
