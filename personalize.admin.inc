@@ -464,6 +464,7 @@ function personalize_agent_page($agent_data) {
     $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
   }
   $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  dpm($build);
   return $build;
 }
 

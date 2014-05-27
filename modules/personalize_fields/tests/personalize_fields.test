@@ -101,8 +101,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Load the node edit form and confirm there is no agent dropdown.
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
-    $test = personalize_agent_load('test-agent');
-    debug($test, 'saved from testing personalize_fields.test:109');
+    $this->resetAll();
     $this->drupalGet('node/1/edit');
     $this->assertFieldByName('article_headline[und][0][value]');
     $this->assertNoFieldByName('agent_select');
@@ -126,6 +125,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $new_label = $this->randomName();
     $this->drupalGet('node/1/edit');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
     $edit['article_headline[und][0][personalize_fields_option_label]'] = $new_label;
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
@@ -137,6 +137,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // Restart the agent and confirm that removing an option pauses the agent.
     $this->drupalGet('node/1/edit');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
     $edit['article_headline[und][2][value]'] = '';
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
@@ -149,9 +150,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Now restart the agent and add/remove a field in the same form to
     // confirm that it is still detected as a change.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
     $new_label = $this->randomName();
     $this->drupalGet('node/1/edit');
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     $edit['article_headline[und][1][value]'] = '';
     $edit['article_headline[und][2][value]'] = $this->randomName();
     $edit['article_headline[und][2][personalize_fields_option_label]'] = $new_label;
@@ -173,8 +175,9 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertEqual($options, array_values($option_set->options));
 
     // Restart the agent and make sure that other changes do not cause pausing.
-    $this->drupalGet('node/1/edit');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+    $this->drupalGet('node/1/edit');
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] .= ': edited';
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -248,6 +251,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
     unset($edit['agent_select']);
     // Now remove all but one option.
     $edit['article_headline[und][1][value]'] = '';
@@ -277,7 +281,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       ->execute()
       ->fetchField();
     $this->assertFalse($result);
-
   }
 
   /**
