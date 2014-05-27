@@ -2237,13 +2237,26 @@ function personalize_visitor_context_expiration_load() {
   if ($expiration = cache_get(PERSONALIZE_CONTEXT_EXPIRATION_CACHE)) {
     return $expiration->data;
   }
+  $expiration = array();
   // Get all currently running campaigns
   $current_campaigns = personalize_agent_load_multiple(array(), array('status' => PERSONALIZE_STATUS_RUNNING));
   $current_campaign_contexts = array();
   // Get the visitor context for each of the currently running campaigns.
   foreach ($current_campaigns as $campaign) {
+    // Add auto-targeting contexts.
     if (!empty($campaign->data['visitor_context'])) {
       $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+    }
+    // Add explicit targeting contexts for options within the campaign.
+    $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
+    foreach($option_sets as $option_set) {
+      foreach($option_set->options as $option) {
+        if (!empty($option['fixed_targeting_rules'])) {
+          foreach($option['fixed_targeting_rules'] as $rule) {
+            $current_campaign_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
+          }
+        }
+      }
     }
   }
   // Now loop over those contexts and add the option cache expiration data.

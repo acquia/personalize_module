@@ -744,6 +744,29 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
+
+    // Add a personalized block based option set and use the removed context for
+    // fixed targeting.
+    $options = array(
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
+    );
+    $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $agent->machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $edit = array(
+      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_session',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
+    );
+    $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/edit", $edit, $this->getButton('option'));
+    $this->resetAll();
+    
+    // Start the agent up and verify the session context is back.
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
   }
 
   /**
