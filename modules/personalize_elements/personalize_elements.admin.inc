@@ -29,7 +29,7 @@ function personalize_elements_edit($element) {
 function personalize_elements_list() {
 
   $header = array(
-    array('data' => t('element name')),
+    array('data' => t('Variation set name')),
     array('data' => t('Operations'), 'colspan' => 2),
   );
   $rows = array();
@@ -107,7 +107,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
 
   $form['title'] = array(
     '#title' => t('Variation set name'),
-    '#description' => t('The administrative title of this Content Variation Set.'),
+    '#description' => t('The administrative title of this content variation set.'),
     '#type' => 'textfield',
     '#required' => TRUE,
     '#default_value' => isset($option_set->label) ? $option_set->label : '',
@@ -145,8 +145,8 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#prefix' => '<div class="form-item-help-link">',
       '#suffix' => '</div>',
       '#title' => t('Element') . ' ' . '<span class="secondary">' . t('(selector)' . '</span>'),
-      '#field_prefix' => l(t('What should I put here?'), PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR, array('target' => '_blank')),
-      '#description' => t('The selector to find the element to personalize.'),
+      '#field_prefix' => l(t('What should I put here?'), PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR, array('attributes' => array('target' => '_blank'))),
+      '#description' => t('Enter the selector that identifies the element or elements that you want to personalize'),
       '#type' => 'textfield',
       '#default_value' => isset($option_set->data['personalize_elements_selector']) ? $option_set->data['personalize_elements_selector'] : '',
     );
@@ -259,6 +259,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       $option_form['#attributes']['class'][] = 'personalize-elements-control';
       $option_form['option_label']['#attributes']['disabled'] = 'disabled';
       $option_form['personalize_elements_content']['#attributes']['disabled'] = 'disabled';
+      $option_form['personalize_elements_content']['#default_value'] = t('Display original content without personalization.');
       $option_form['#states'] = array(
         'visible' => array(
           ':input[name="add_control_option"]' => array('checked' => TRUE),
@@ -307,7 +308,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
 
   $form['details']['advanced']['add_control_option'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Use the original, or unpersonalized content as the control variation.'),
+    '#title' => t("Use a control variation based on your website's original content."),
     '#default_value' => $show_control,
   );
 
