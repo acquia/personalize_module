@@ -256,7 +256,7 @@ function personalize_option_set_list($form, &$form_state) {
   $option_sets = personalize_option_set_load_multiple(FALSE);
 
   $header = array(
-    array('data' => t('Set name')),
+    array('data' => t('Variation set name')),
     array('data' => t('Type')),
     array('data' => t('Campaign')),
     array('data' => t('Edit')),
