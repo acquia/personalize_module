@@ -17,6 +17,12 @@
       // Update the appropriate option label when an element is selected so long
       // as the user has not yet changed the label.
       $('.personalize-elements-add-content:not(.personalize-elements-add-processed)', context).keyup(function(e) {
+        if ($(':input[name="variation_type"]').val() === 'runJS') {
+          // We don't do anything for run JavaScript operations as the content
+          // is not suitable for labels.
+          // @todo generalize this using a settings value.
+          return;
+        }
         var $variationText = $(this).parents('.personalize-elements-option-content-element').prev('.personalize-elements-option-label-element').find('.personalize-elements-add-option-label');
         var $variationLabel = $(this).parents('.personalize-elements-option-content-element').prev('.personalize-elements-option-label-element').find('label');
         if (Drupal.personalizeElements.changedOptionLabels.indexOf($variationText.attr('id')) >= 0) {
