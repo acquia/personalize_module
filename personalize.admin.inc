@@ -194,7 +194,7 @@ function personalize_agent_list() {
   );
   $rows = array();
 
-  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE) as $agent) {
+  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
     // The ability to delete depends on the storage type and on whether the campaign has started
     // or contains option sets.
     $can_delete = personalize_delete_agent_access($agent);
@@ -253,7 +253,7 @@ function personalize_agent_list() {
  * Menu callback for displaying a list of content variations.
  */
 function personalize_option_set_list($form, &$form_state) {
-  $option_sets = personalize_option_set_load_multiple(FALSE);
+  $option_sets = personalize_option_set_load_multiple(FALSE, array(), FALSE, 'label');
 
   $header = array(
     array('data' => t('Variation set name')),

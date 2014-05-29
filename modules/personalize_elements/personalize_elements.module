@@ -103,7 +103,7 @@ function personalize_elements_ctools_plugin_api($owner, $api) {
  * Implements hook_page_build().
  */
 function personalize_elements_page_build(&$page) {
-  $option_sets = personalize_option_set_load_by_type('elements');
+  $option_sets = personalize_option_set_load_by_type('elements', 'label');
   $elements = array();
   foreach ($option_sets as $osid => $option_set) {
     $page_match = TRUE;
@@ -127,9 +127,6 @@ function personalize_elements_page_build(&$page) {
   }
   $page['page_top']['personalize_elements'] = array(
     '#attached' => array(
-      'css' => array(
-        drupal_get_path('module', 'personalize_elements') . '/css/personalize_elements.test_styles.css' => array(),
-      ),
       'js' => array(
         drupal_get_path('module', 'personalize_elements') . '/js/personalize_elements.js' => array(),
         array(

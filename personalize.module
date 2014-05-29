@@ -325,7 +325,7 @@ function personalize_page_build(&$page) {
     // and goals for the control UI.
     $actions = visitor_actions_get_actions();
     // List the campaigns in Drupal.settings.
-    foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE) as $agent) {
+    foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
       foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
         if (isset($actions[$goal['action']])) {
           $goals[$goal['action']] = $actions[$goal['action']]['label'];
@@ -616,6 +616,40 @@ function personalize_preprocess_block(&$variables) {
  *  P E R S O N A L I Z E  A P I
  * =======================================================================
  */
+
+/**
+ * Helper function to sort an array of objects based on a property within
+ * each object.
+ *
+ * @param array $objects
+ *   An array of "object"/associative arrays.
+ * @param string $sort
+ *   Either the name of the property to sort by or a function to use for
+ *   comparison.
+ */
+function _personalize_loaded_object_sort(&$objects, $sort) {
+  if (!empty($sort)) {
+    if (function_exists($sort)) {
+      uasort($objects, $sort);
+    }
+    else {
+      uasort($objects, function($a, $b) use($sort) {
+        if (isset($a->{$sort}) && isset($b->{$sort})) {
+          if ($a->{$sort} == $b->{$sort}) {
+            return 0;
+          }
+          if (is_numeric($a->{$sort}) && is_numeric($b->{$sort})) {
+            ($a->{$sort} < $b->{$sort}) ? -1 : 1;
+          }
+          else {
+            return strcmp(drupal_strtolower($a->{$sort}), drupal_strtolower($b->{$sort}));
+          }
+        }
+        return 0;
+      });
+    }
+  }
+}
 
 /**
  * Performs necessary asset loading for an element being rendered with
@@ -1370,8 +1404,23 @@ function personalize_agent_load($name, $reset = FALSE, $include_completed = FALS
 
 /**
  * Load all or specified agents from the database or from code.
+ *
+ * @param array $names
+ *   An array of agent machine names to load
+ * @param array $conditions
+ *   An array of conditions to match where array keys match the object property
+ *   and value is the value to match.
+ * @param boolean $reset
+ *   True to reset the object cache, false to load from cache where available.
+ * @param boolean $include_completed
+ *   True to include agents that have a status of completed, false to exclude.
+ * @param string $sort
+ *   The name of an object property to sort the results on.  Sorts will be
+ *   ascending.  Alternatively, a sort comparison function to use.
+ * @return array
+ *   An array of agents matching the selection criteria keyed by machine name.
  */
-function personalize_agent_load_multiple($names = array(), $conditions = array(), $reset = FALSE, $include_completed = FALSE) {
+function personalize_agent_load_multiple($names = array(), $conditions = array(), $reset = FALSE, $include_completed = FALSE, $sort = NULL) {
   ctools_include('export');
   if ($reset) {
     // @todo No way to just reset the cache for agents specified in the $names
@@ -1389,6 +1438,9 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
     $defaults = ctools_export_load_object('personalize_agent', 'conditions', $conditions);
   }
 
+  if (!empty($sort)) {
+    _personalize_loaded_object_sort($defaults, $sort);
+  }
   if ($include_completed) {
     return $defaults;
   }
@@ -1707,18 +1759,18 @@ function personalize_option_set_save($option_set) {
  *
  * @param array $ids
  *   The IDs of the option sets to loads, or FALSE to load all.
- *
  * @param array $conditions
  *   An array of conditions to restrict the option sets returned to those
  *   matching the specified conditions.
- *
  * @param boolean $reset
  *   Whether or not to reset the static cache and load fresh from the DB.
- *
+ * @param string $sort
+ *   The name of an object property to sort the results on.  Sorts will be
+ *   ascending.  Alternatively, a sort comparison function to use.
  * @return array
  *   An array of option set objects keyed by osid.
  */
-function personalize_option_set_load_multiple($ids = array(), $conditions = array(), $reset = FALSE) {
+function personalize_option_set_load_multiple($ids = array(), $conditions = array(), $reset = FALSE, $sort = NULL) {
   $cached_option_sets = &drupal_static(__FUNCTION__, array());
   $option_sets = array();
   if ($reset) {
@@ -1813,6 +1865,9 @@ function personalize_option_set_load_multiple($ids = array(), $conditions = arra
     }
     $option_sets = $passed_ids;
   }
+  else if (!empty($sort)) {
+    _personalize_loaded_object_sort($option_sets, $sort);
+  }
 
   return $option_sets;
 }
@@ -1820,11 +1875,11 @@ function personalize_option_set_load_multiple($ids = array(), $conditions = arra
 /**
  * Returns all Option Sets of a given type.
  */
-function personalize_option_set_load_by_type($type) {
+function personalize_option_set_load_by_type($type, $sort = NULL) {
   $option_sets = &drupal_static(__FUNCTION__, array());
 
   if (!isset($option_sets[$type])) {
-    $option_sets[$type] = personalize_option_set_load_multiple(array(), array('plugin' => $type));
+    $option_sets[$type] = personalize_option_set_load_multiple(array(), array('plugin' => $type), FALSE, $sort);
   }
 
   return $option_sets[$type];
