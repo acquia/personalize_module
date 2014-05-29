@@ -469,6 +469,8 @@ function personalize_elements_convert_form_values_to_option_set($values) {
     // This will get added back on if needed, after the other options have
     // been processed.
     $control_option = array_shift($options);
+    // Reset the content to empty.
+    $control_option['personalize_elements_content'] = '';
   }
   if (isset($values['add_control_option']) && $values['add_control_option']) {
     if (!isset($control_option)) {
