@@ -220,7 +220,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'options[1][option_label]' => 'first-option',
       'options[1][personalize_elements_content]' => '<script type="text/javascript">alert("xss");</script>',
     );
-    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText(t('Disallowed HTML tags were removed from 1 variation.'));
     $option_set = personalize_option_set_load(1, TRUE);
     $expected = array(
@@ -245,7 +245,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'options[1][option_label]' => 'first-option',
       'options[1][personalize_elements_content]' => '<script type="text/javascript">alert("xss");</script>',
     );
-    $this->drupalPost('admin/structure/personalize-elements/add', $edit, $this->getButton('save'));
+    $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertNoText(t('Disallowed HTML tags were removed from 1 variation.'));
     $option_set = personalize_option_set_load(2, TRUE);
     $control_option = array(
