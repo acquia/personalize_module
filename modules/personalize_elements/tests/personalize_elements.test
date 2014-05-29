@@ -134,9 +134,8 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       $this->assertEqual($option, $option_set->options[$i]);
     }
 
-    // Remove one of the options by setting label and content to nothing.
+    // Remove one of the options by setting content to nothing.
     $edit = array();
-    $edit['options[2][option_label]'] = '';
     $edit['options[2][personalize_elements_content]'] = '';
     $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     unset($expected[2]);
@@ -161,7 +160,6 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
 
     // Try removing another option, should fail validation.
     $edit = array();
-    $edit['options[1][option_label]'] = '';
     $edit['options[1][personalize_elements_content]'] = '';
     $this->drupalPost('admin/structure/personalize/variations/personalize-elements/manage/1/edit', $edit, $this->getButton('save'));
     $this->assertText($options_count_error);

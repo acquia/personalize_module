@@ -386,13 +386,10 @@ function personalize_elements_form_validate($form, &$form_state) {
         $changed++;
       }
       $option['personalize_elements_content'] = $filtered;
-      if (!empty($option['option_label']) || !empty($option['personalize_elements_content'])) {
+      if (!empty($option['personalize_elements_content'])) {
         $non_empty_options++;
         if (empty($option['option_label'])) {
           form_set_error('options[' . $i . '][option_label', t('Please enter a label for each option'));
-        }
-        if ($option['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL && empty($option['personalize_elements_content'])) {
-          form_set_error('options[' . $i . '][personalize_elements_content', t('Please enter content for each option'));
         }
       }
     }
@@ -459,7 +456,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
   $options = $values['options'];
   // Remove empty options.
   foreach ($options as $i => $option) {
-    if (empty($option['option_label']) && empty($option['personalize_elements_content'])) {
+    if (empty($option['personalize_elements_content'])) {
       unset($options[$i]);
     }
   }
