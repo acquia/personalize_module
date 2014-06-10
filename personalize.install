@@ -495,8 +495,7 @@ function personalize_update_7011() {
     }
   }
   // Add all targeting values from Lift that are allowed for fixed targeting selections.
-  $lift_values_json = '["c-cen","c-geo-c3","c-geo-cont","c-geo-usr","c-geo-wrg","c-time-gwp","c-time-ldp","c-time-lwp","c-time-tz","c-ua-bb","c-ua-mo","c-ua-os","c-usr-tld","c-wea-cw"]';
-  $lift_values = json_decode($lift_values_json);
+  $lift_values = array("c-cen","c-geo-c3","c-geo-cont","c-geo-usr","c-geo-wrg","c-time-gwp","c-time-ldp","c-time-lwp","c-time-tz","c-ua-bb","c-ua-mo","c-ua-os","c-usr-tld","c-wea-cw");
   $plugin_options = array_merge($plugin_options, array_fill_keys(array_values($lift_values), 'acquia_lift_context'));
 
   // Update any existing fixed targeting rules with the plugin name.
