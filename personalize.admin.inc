@@ -1865,8 +1865,8 @@ function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_
       // Get the values and add in the source visitor context plugin name.
       $values = $plugin->getPossibleValues($limit);
 
-      array_walk($values, function (&$item, $key, $name) {
-        $item['visitor_context'] = $name;
+      array_walk($values, function (&$item, $key, $visitor_context_plugin) {
+        $item['visitor_context'] = $visitor_context_plugin;
       }, $plugin_name);
     }
   }
