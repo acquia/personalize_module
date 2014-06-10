@@ -506,12 +506,15 @@ function personalize_update_7011() {
     $options = unserialize($row->options);
     foreach ($options as &$option) {
       if (!empty($option['fixed_targeting_rules'])) {
-        foreach ($option['fixed_targeting_rules'] as &$rule) {
+        foreach ($option['fixed_targeting_rules'] as $key => &$rule) {
           // There is a rule without a plugin defined here.
           // Update the plugin if it can be found.  If it cannot be found that
           // indicates a targeting value that is no longer available.
           if (isset($plugin_options[$rule['context']])) {
             $rule['plugin'] = $plugin_options[$rule['context']];
+          }
+          else {
+            unset($option['fixed_targeting_rules'][$key]);
           }
         }
       }
