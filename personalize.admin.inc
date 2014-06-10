@@ -109,7 +109,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
         if (isset($disallowed[$plugin_name][$code])) {
           continue;
         }
-        $option_name = $plugin_name . '__' . $code;
+        $option_name = $plugin_name . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $code;
         if (isset($info['group'])) {
           $group = $info['group'];
           if (!isset($groups[$group])) {
@@ -145,7 +145,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
   }
   $element = array(
     '#type' => 'select',
-    '#title' => t('Visitor contexts'),
+    '#title' => t('Visitor contexts to use for automatic targeting'),
     '#options' => $groups,
     '#multiple' => TRUE,
     '#default_value' => $selected,
@@ -169,7 +169,7 @@ function personalize_admin_convert_visitor_context_form_values($values) {
   $selected = array_filter($values);
   foreach ($selected as $name => $value) {
     // Element names are in the form {$plugin_name}__{$element_name}
-    list($plugin_name, $element_name) = explode('__', $name);
+    list($plugin_name, $element_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $name);
     if (!isset($visitor_context[$plugin_name])) {
       $visitor_context[$plugin_name] = array();
     }
@@ -655,11 +655,15 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   }
   $form['agent_form']['agent_fieldset']['agent_basic'] = $basic_form;
 
-  // Add visitor context items to the form.
+  // Add visitor context items to the form for agents that support automatic
+  // targeting.
   if (!empty($agent_data->machine_name)) {
-    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
-    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
-      $form['agent_form']['agent_fieldset']['visitor_context'] = $context_element;
+    $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+    if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
+      $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
+      if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
+        $form['agent_form']['agent_fieldset']['visitor_context'] = $context_element;
+      }
     }
   }
   $form['agent_form']['agent_fieldset']['advanced'] = array(
@@ -1212,7 +1216,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
     $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_targeting_values_for_agent($agent_instance);
+    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
   }
 
   foreach ($option_sets as $option_set) {
@@ -1389,9 +1393,6 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
       '#description' => 'Shown in the menu when you are viewing content variations on a page.',
       '#default_value' => isset($option_set->label) ? $option_set->label : '',
     );
-    // @todo Once we want to provide support for using the same decision name across
-    //   option sets we'll need to allow setting the decision name here, but it must
-    //   be a machine name.
     $section['option_set_' . $option_set->osid]['advanced']['decision_name'] = array(
       '#type' => 'textfield',
       '#title' => 'Decision Name',
@@ -1523,9 +1524,10 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     )
   );
   foreach ($targeting_values as  $key => $info) {
+    $option_key = $info['visitor_context'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $key;
     $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
-    $context_options[$key] = $key_label;
-    $value_types[$key] = $info['value type'];
+    $context_options[$option_key] = $key_label;
+    $value_types[$option_key] = $info['value type'];
   }
 
   // This is the portion of the form that will be replace when the "add new" or "remove
@@ -1550,10 +1552,12 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $mappings = array();
   if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
+      list($plugin_name, $context_option) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context['context']);
       // Important: preserve the delta passed through the form as it is used
       // to determine the item to delete when "remove" is clicked.
       $mappings[$delta] = array(
-        'context' => $context['context'],
+        'plugin' => $plugin_name,
+        'context' => $context_option,
         'operator' => $context['value']['operator'],
         'match' => $context['value']['match'],
       );
@@ -1581,6 +1585,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       'context' => '',
       'operator' => 'equals',
       'match' => '',
+      'plugin' => '',
     );
   }
 
@@ -1593,6 +1598,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         'context' => '',
         'operator' => 'equals',
         'match' => '',
+        'plugin' => '',
       );
       $num_contexts++;
     }
@@ -1601,6 +1607,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] = count($mappings);
   foreach ($mappings as $delta => $mapping) {
     $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
+    $selected_plugin_context = $mapping['plugin'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $mapping['context'];
     $selected_context = $mapping['context'];
     $selected_operator = $mapping['operator'];
     $selected_match = $mapping['match'];
@@ -1611,7 +1618,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         '#type' => 'select',
         '#title' => t('Context'),
         '#options' => $context_options,
-        '#default_value' => empty($selected_context) ? '' : $selected_context,
+        '#default_value' => empty($selected_plugin_context) ? '' : $selected_plugin_context,
         '#ajax' => array(
           'event' => 'change',
           'callback' => 'personalize_explicit_targeting_context_callback',
@@ -1627,7 +1634,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#prefix' => '<div id="' . $wrapper_id. '">',
       '#suffix' => '</div>'
     );
-    $value_type = isset($value_types[$selected_context]) ? $value_types[$selected_context] : 'string';
+    $value_type = isset($value_types[$selected_plugin_context]) ? $value_types[$selected_plugin_context] : 'string';
     // We use different form elements depending on whether there is a predefined list
     // of possible values or not.
     if ($value_type == 'predefined') {
@@ -1804,10 +1811,18 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
 }
 
 /**
- * Extracts the available targeting values from contexts set up on the agent.
+ * Helper function to return targeting values for a particular visitor context
+ * plugin and agent.
  *
- * @param PersonalizeAgentInterface $agent_instance
- *   The agent to retrieve available targeting values for.
+ * This function returns the results in an array suitable for fixed targeting.
+ *
+ * @param string $plugin_name
+ *   The name of the plugin to get targeting values from.
+ * @param stdClass $agent_data
+ *   The agent data for the current campaign.
+ * @param array $selected_context
+ *   (Optional) An array of pre-selected contexts for the agent in order to
+ *   limit the returned values.  Only pass if limit is desired.
  * @return array
  *   An associative array keyed by context name, with an array of information about the
  *   possible values for that context. The 'value type' key in this array indicates what
@@ -1817,11 +1832,13 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  *     array(
  *       'some_context' => array(
  *         'label' => 'Some Context',
- *         'type' => 'string'
+ *         'type' => 'string',
+ *         'visitor_context' => 'Plugin name',
  *        ),
  *       'some_other_context' => array(
  *         'label' => 'Some Other Context',
  *         'type' => 'predefined',
+ *         'visitor_context' => 'Plugin name',
  *         'values' => array(
  *           'some_value' => 'Some Value',
  *           'some_other_value' => 'Some Other Value',
@@ -1829,22 +1846,76 @@ function personalize_explicit_targeting_context_callback($form, &$form_state) {
  *       ),
  *     )
  */
-function personalize_get_targeting_values_for_agent($agent_instance) {
+function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_context = NULL) {
   ctools_include('plugins');
-  $value_options = array();
-  // Predefined values will be options in a multi-select field. For non-predefined
-  // values we need to build form elements allowing new values to be specified
-  // based on certain criteria.
-  $data = $agent_instance->getData();
-  if (!empty($data['visitor_context'])) {
-    foreach ($data['visitor_context'] as $name => $contexts) {
-      $selected_context = array_filter($contexts);
-      if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-        if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($selected_context)))) {
-          $value_options = array_merge($value_options, $plugin->getPossibleValues());
+  $values = array();
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  $limit = TRUE;
+  if (!isset($limit_to_context)) {
+    $limit = FALSE;
+    $limit_to_context = array();
+  }
+
+  if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+    // Make sure this agent is allowed to use this context.
+    if (!call_user_func(array($class, 'allowedFromAgent'), $agent_data)) {
+      return $values;
+    }
+    if ($plugin = call_user_func_array(array($class, 'create'), array($agent_instance, array_keys($limit_to_context)))) {
+      // Get the values and add in the source visitor context plugin name.
+      $values = $plugin->getPossibleValues($limit);
+
+      array_walk($values, function (&$item, $key, $visitor_context_plugin) {
+        $item['visitor_context'] = $visitor_context_plugin;
+      }, $plugin_name);
+    }
+  }
+  return $values;
+}
+
+/**
+ * Extracts targeting values from those set up on the agent available for fixed
+ * targeting.
+ *
+ * @param stdClass $agent_data
+ *   The personalize agent plugin data.
+ * @return array
+ *   An associative array keyed by context name, with an array of information
+ *   about the possible values for that context.
+ */
+function personalize_get_fixed_targeting_values_for_agent($agent_data) {
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::constrainExplicitTargetingContexts()) {
+    $value_options = array();
+    if (!empty($agent_data->data['visitor_context'])) {
+      foreach ($agent_data->data['visitor_context'] as $name => $contexts) {
+        $selected_context = array_filter($contexts);
+        if (!empty($selected_context)) {
+          $value_options = array_merge($value_options, _personalize_get_targeting_values($name, $agent_data, $selected_context));
         }
       }
     }
+    return $value_options;
+  }
+  // Otherwise the targeting values for an agent are the same as the options
+  // available.
+  return personalize_get_targeting_options_for_agent($agent_data);
+}
+
+/**
+ * Gets all targeting options that can be selected for an agent.
+ *
+ * @param stdClass $agent_data
+ *   The personalize agent plugin data.
+ * @return array
+ *   An associative array keyed by context name, with an array of information
+ *   about the possible values for that context.
+ */
+function personalize_get_targeting_options_for_agent($agent_data) {
+  $contexts = personalize_get_visitor_contexts();
+  $value_options = array();
+  foreach ($contexts as $plugin_name => $plugin_info) {
+    $value_options = array_merge($value_options, _personalize_get_targeting_values($plugin_name, $agent_data));
   }
   return $value_options;
 }
@@ -2156,7 +2227,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       $agent = personalize_agent_load_agent($agent_name);
       // Keep track of feature strings that have already been designated to options,
       // which options they have been designated to, and whether there's a rule
-      // assocatiated with each feature.
+      // associated with each feature.
       $designated_features = $option_features = $feature_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
@@ -2166,6 +2237,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             if ($context_values['context'] == '') {
               continue;
             }
+            list($plugin_name, $context_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context_values['context']);
             $context_values['match'] = $context_values['value']['match'];
             $context_values['operator'] = $context_values['value']['operator'];
             unset($context_values['value'], $context_values['remove']);
@@ -2173,11 +2245,14 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
             // Create a feature string for this context value that can be consumed
             // by the agent that will be using it.
-            $feature_string = $agent->convertContextToFeatureString($context_values['context'], $value);
+            $feature_string = $agent->convertContextToFeatureString($context_name, $value);
             $feature_values[] = $feature_string;
             // Save the actual rule information as this is what will be used
             // for evaluating it.
             $rules[$feature_string] = $context_values;
+            // Override the context to split it into plugin and context parts.
+            $rules[$feature_string]['context'] = $context_name;
+            $rules[$feature_string]['plugin'] = $plugin_name;
           }
           foreach ($feature_values as $feature) {
             $option_features[$option_id][] = $feature;

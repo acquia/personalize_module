@@ -168,6 +168,10 @@ interface PersonalizeAgentReportInterface {
   public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
 }
 
+/**
+ * An interface to implement when an agent supports explicit targeting for
+ * content variations.
+ */
 interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterface {
 
   const EXPLICIT_TARGETING_MULTIPLE_OR = 1;
@@ -176,13 +180,32 @@ interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterfac
 
   /**
    * Returns how this agent supports explicit targeting
-   * with muliple features.
+   * with multiple features.
    *
    * @return int
    *   Returns one of the above constants.
    */
   public static function explicitTargetingSupportMultiple();
 
+}
+
+/**
+ * An interface to implement when an agent supports automatic targeting of
+ * results based on campaign-specific targeting options.
+ */
+interface PersonalizeAutoTargetingInterface extends PersonalizeAgentInterface {
+
+  /**
+   * Indicates if explicit targeting options are dependent on the auto targeting
+   * context options selected for the campaign.
+   *
+   * @return boolean
+   *   True to indicate that explicit targeting values are dependent upon
+   *   campaign auto-targeting options selected.  False to indicate that
+   *   explicit targeting options are selected independently of campaign
+   *   auto-targeting context options.
+   */
+  public static function constrainExplicitTargetingContexts();
 }
 
 /**
@@ -405,15 +428,17 @@ interface PersonalizeContextInterface {
    */
   public static function allowedFromAgent(StdClass $agent);
 
-/**
+  /**
    * Returns the possible values that this context plugin could send as
    * feature strings.
-   *
+   * @param $limit
+   *   True if values should be limited by the selected context; false to
+   *   return all possible values regardless of selected context.
    * @return array
    *   An associative array of values with feature strings as keys and
    *   human-readable names as values.
    */
-  public function getPossibleValues();
+  public function getPossibleValues($limit = FALSE);
 
   /**
    * Returns the assets required for this context object to work.
@@ -485,7 +510,7 @@ abstract class PersonalizeContextBase implements PersonalizeContextInterface, Pe
   /**
    * Implements PersonalizeContextInterface::getPossibleValues().
    */
-  public function getPossibleValues() {
+  public function getPossibleValues($limit = FALSE) {
     return array();
   }
 }

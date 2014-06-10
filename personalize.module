@@ -12,8 +12,9 @@ define('PERSONALIZE_PRESELECTION_PARAM', 'personalize-preselection');
 define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
 define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
-define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
 define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
+define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
+define('PERSONALIZE_TARGETING_ADMIN_SEPARATOR', '__');
 
 /**
  * Define constants for campaign status values.
@@ -691,16 +692,27 @@ function personalize_element_with_option_set(&$element, $option_set) {
   // Add visitor context assets.
   $visitor_context = array();
 
-  if (isset($data['visitor_context'])) {
-    foreach ($data['visitor_context'] as $name => $contexts) {
-      $selected_context = array_filter($contexts);
-      if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-        if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-          // Ensure js assets for visitor_context plugins are loaded.
-          $assets = array_merge_recursive($assets, $plugin->getAssets());
-          // Keep track of which visitor_context plugins are enabled for this agent.
-          $visitor_context[$name] = $selected_context;
-        }
+  // Find the possible visitor context based on the agent (auto-targeting) and
+  // on the selected option set's options (fixed targeting).
+  $all_contexts = !empty($data['visitor_context']) ? $data['visitor_context'] : array();
+  foreach ($option_set->options as $option) {
+    if (!empty($option['fixed_targeting_rules'])) {
+      foreach($option['fixed_targeting_rules'] as $rule) {
+        // Doesn't matter if we overwrite an existing value as they are all the
+        // same key/value pairs.
+        $all_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
+      }
+    }
+  }
+
+  foreach ($all_contexts as $name => $contexts) {
+    $selected_context = array_filter($contexts);
+    if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+      if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+        // Ensure js assets for visitor_context plugins are loaded.
+        $assets = array_merge_recursive($assets, $plugin->getAssets());
+        // Keep track of which visitor_context plugins are enabled for this agent.
+        $visitor_context[$name] = $selected_context;
       }
     }
   }
@@ -2225,13 +2237,26 @@ function personalize_visitor_context_expiration_load() {
   if ($expiration = cache_get(PERSONALIZE_CONTEXT_EXPIRATION_CACHE)) {
     return $expiration->data;
   }
+  $expiration = array();
   // Get all currently running campaigns
   $current_campaigns = personalize_agent_load_multiple(array(), array('status' => PERSONALIZE_STATUS_RUNNING));
   $current_campaign_contexts = array();
   // Get the visitor context for each of the currently running campaigns.
   foreach ($current_campaigns as $campaign) {
+    // Add auto-targeting contexts.
     if (!empty($campaign->data['visitor_context'])) {
       $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+    }
+    // Add explicit targeting contexts for options within the campaign.
+    $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
+    foreach($option_sets as $option_set) {
+      foreach($option_set->options as $option) {
+        if (!empty($option['fixed_targeting_rules'])) {
+          foreach($option['fixed_targeting_rules'] as $rule) {
+            $current_campaign_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
+          }
+        }
+      }
     }
   }
   // Now loop over those contexts and add the option cache expiration data.
