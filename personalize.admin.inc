@@ -1527,7 +1527,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     $option_key = $info['visitor_context'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $key;
     $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
     $context_options[$option_key] = $key_label;
-    $value_types[$key] = $info['value type'];
+    $value_types[$option_key] = $info['value type'];
   }
 
   // This is the portion of the form that will be replace when the "add new" or "remove
