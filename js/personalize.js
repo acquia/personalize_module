@@ -341,7 +341,7 @@
   };
 
   /**
-   * User Context object.
+   * Visitor Context object.
    *
    * This object holds the context for the active user which will be used
    * as the basis of personalization. Agents may add additional information
