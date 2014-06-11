@@ -19,18 +19,18 @@
    * ID.
    */
   Drupal.personalize.initializeSessionID = function() {
-    if (sessionID) {
-      return sessionID;
+    if (sessionId) {
+      return sessionId;
     }
     // Populate the session id from the cookie, if present.
     var storedId = $.cookie(cookieName);
     if (storedId) {
-      sessionID = storedId;
+      sessionId = storedId;
     }
     else if (Drupal.settings.personalize.sessionID) {
-      sessionID = Drupal.settings.personalize.sessionID;
+      sessionId = Drupal.settings.personalize.sessionID;
     }
-    return sessionID;
+    return sessionId;
   };
 
   /**
@@ -38,7 +38,7 @@
    * future decision and goal requests.
    */
   Drupal.personalize.saveSessionID = function(session_id) {
-    sessionID = session_id;
+    sessionId = session_id;
     $.cookie(cookieName, session_id);
   };
 
@@ -54,7 +54,7 @@
    */
   Drupal.personalize.isAdminMode = function() {
     if (adminMode == null) {
-      adminMode = settings.personalize.hasOwnProperty('adminMode');
+      adminMode = Drupal.settings.personalize.hasOwnProperty('adminMode');
     }
     return adminMode;
   }
@@ -96,7 +96,7 @@
       for (var plugin in contexts) {
         if (contexts.hasOwnProperty(plugin)) {
           // @todo: Should be able to just always return promises and let
-          // nested promises resolve but it doesn't appear to ever resolve.
+          // nested promises resolve but it doesn't appear to work that way.
           var contextResult = getVisitorContext(plugin, contexts[plugin]);
           if (contextResult instanceof Promise) {
             promisePlugins.push(plugin);
@@ -106,7 +106,7 @@
           }
         }
       }
-      // Once all the contexts are loaded, evaluate them and load the decisions
+      // Once all the contexts are loaded, evaluate them and load the decisions.
       Promise.all(contextPromises).then(function(loadedContexts) {
         // Results are in the same order as promises were.
         var num = loadedContexts.length;
@@ -344,9 +344,9 @@
    *   The agent name.
    * @param agentType
    *   The type of agent.
-   * @param object visitorContext
+   * @param {object} visitorContext
    *   The enabled context for the agent as an object keyed by plugin name.
-   * @param object featureRules
+   * @param {object} featureRules
    *   Fixed targeting feature rules for the agent.
    * @returns {object}
    *   An object that holds arrays for each context key to indicate the rule
@@ -508,7 +508,7 @@
    *
    * @param settings
    *   A Drupal settings object.
-   * @return object
+   * @return {object}
    *   An associative array keyed by osid for all option sets to be processed.
    */
   function prepareOptionSets(settings) {
@@ -800,7 +800,7 @@
    *
    * @param option
    *   The option within an option set to check for fixed targeting rules.
-   * @return
+   * @return {object}
    *   An object of fixed targeting rules keyed by feature name.
    */
   function getFixedTargetingRules(option) {
@@ -845,7 +845,7 @@
    * @param osid
    *   The option set id.
    */
-  addDecisionCallback = function(executor, agent_name, decision_point, $option_set, osid) {
+  function addDecisionCallback(executor, agent_name, decision_point, $option_set, osid) {
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid) {
       return function(decision) {
@@ -855,9 +855,9 @@
       }
     }(executor, $option_set, osid));
     // Now add it to the array for this decision name.
-    callbacks[agent_name] = Drupal.personalize.decisions.callbacks[agent_name] || {};
-    callbacks[agent_name][decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point] || [];
-    callbacks[agent_name][decision_point].push(callback);
+    decisionCallbacks[agent_name] = decisionCallbacks[agent_name] || {};
+    decisionCallbacks[agent_name][decision_point] = decisionCallbacks[agent_name][decision_point] || [];
+    decisionCallbacks[agent_name][decision_point].push(callback);
   }
 
   /**
@@ -872,7 +872,7 @@
    *
    * Relies on closure variable decisionCallbacks.
    */
-  executeDecisionCallbacks = function(agent_name, decision_point, decisions) {
+  function executeDecisionCallbacks(agent_name, decision_point, decisions) {
     var callbacks = {};
     if (decisionCallbacks.hasOwnProperty(agent_name) &&
       decisionCallbacks[agent_name].hasOwnProperty(decision_point)) {
