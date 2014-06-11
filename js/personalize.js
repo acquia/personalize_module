@@ -6,8 +6,6 @@
    */
   Drupal.personalize = Drupal.personalize || {};
 
-  var sessionID = false;
-
   /**
    * Initializes the session ID to be used for decision and goal requests.
    *
@@ -16,19 +14,20 @@
    * stored in a cookie, or, for logged in users, it is a hash of the user
    * ID.
    */
+  Drupal.personalize.sessionId = Drupal.personalize.sessionId || false;
   Drupal.personalize.initializeSessionID = function() {
-    if (sessionID) {
-      return sessionID;
+    if (Drupal.personalize.sessionID) {
+      return Drupal.personalize.sessionID;
     }
     // Populate the session id from the cookie, if present.
     var storedId = $.cookie(cookieName);
     if (storedId) {
-      sessionID = storedId;
+      Drupal.personalize.sessionID = storedId;
     }
     else if (Drupal.settings.personalize.sessionID) {
-      sessionID = Drupal.settings.personalize.sessionID;
+      Drupal.personalize.sessionID = Drupal.settings.personalize.sessionID;
     }
-    return sessionID;
+    return Drupal.personalize.sessionID;
   };
 
   /**
@@ -36,12 +35,9 @@
    * future decision and goal requests.
    */
   Drupal.personalize.saveSessionID = function(session_id) {
-    sessionID = session_id;
+    Drupal.personalize.sessionID = session_id;
     $.cookie(cookieName, session_id);
   };
-
-
-  var agents = {}, adminMode = false, processedDecisions = {}, processedOptionSets = [];
 
 
   /**
@@ -54,26 +50,84 @@
       // Assure that at least the personalize key is available on settings.
       settings.personalize = settings.personalize || {};
 
-      adminMode = settings.personalize.hasOwnProperty('adminMode');
+      Drupal.personalize.adminMode = settings.personalize.hasOwnProperty('adminMode');
 
-      if (!sessionID) {
-        Drupal.personalize.initializeSessionID();
-      }
+      Drupal.personalize.initializeSessionID();
 
       // Clear out any expired local storage.
       Drupal.personalize.storage.utilities.maintain();
 
-      // First process MVTs if there are any.
-      processMVTs(settings);
+      // Prepare MVTs and option sets for processing.
+      var optionSets = prepareOptionSets(settings);
 
-      // Only Option Sets that weren't part of an MVT will now be processed.
-      processOptionSets(settings);
+      // Gets the agent data for any option sets requiring decisions.
+      // Any decisions that can be rendered early are handled here and only
+      // those agents that require decisions are returned.
+      var agents = processOptionSets(optionSets);
 
-      // Once MVTs and other Option Sets have been processed, we're ready to fire
-      // off requests for decisions.
-      triggerDecisions(settings);
+      // Get a consolidation of all visitor contexts to be retrieved for all agents.
+      var contexts = getAgentsContexts(agents);
 
-      if (!adminMode) {
+      // Load and evaluate all contexts.
+      var contextPromises = [];
+      var syncContexts = [];
+      for (var plugin in contexts) {
+        if (contexts.hasOwnProperty(plugin)) {
+          var pluginContexts = contexts[plugin];
+          for (var contextName in pluginContexts) {
+            if (pluginContexts.hasOwnProperty(contextName)) {
+              // @todo: Should be able to just always return promises and let
+              // nested promises resolve but it doesn't appear to ever resolve.
+              var contextResult = getVisitorContext(plugin, contextName);
+              if (contextResult instanceof Promise) {
+                contextPromises.push(contextResult);
+              } else {
+                syncContexts.push(contextResult);
+              }
+            }
+          }
+        }
+      }
+      // Once all the contexts are loaded, evaluate them and load the decisions
+      Promise.all(contextPromises).then(function(loadedContexts) {
+        loadedContexts = loadedContexts.concat(syncContexts);
+        var contextValues = {};
+        // Merge all context values into a single object.
+        var num = loadedContexts.length;
+        for (var i = 0; i < num; i++) {
+          for (var j in loadedContexts[i]) {
+            if (loadedContexts[i].hasOwnProperty(j)) {
+              contextValues[j] = loadedContexts[i][j];
+            }
+          }
+        }
+        for (var agentName in agents) {
+          if (!agents.hasOwnProperty(agentName)) {
+            continue;
+          }
+          var agent = agents[agentName];
+          var agentContexts = {};
+          // Apply the context values to each of the agent's enabled contexts
+          // which essentially means limiting the agent's contexts to those
+          // returned here.
+          for (var plugin in agent.enabledContexts) {
+            if (agent.enabledContexts.hasOwnProperty(plugin)) {
+              if (contextValues.hasOwnProperty(plugin)) {
+                agentContexts = contextValues[plugin];
+              }
+            }
+          }
+
+          // Evaluate the contexts.
+          agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
+        }
+        // Trigger decision calls on the agents.
+        triggerDecisions(agents);
+      });
+
+      // This part is not dependent upon decisions so it can run prior to
+      // fulfillment of Promise.
+      if (!Drupal.personalize.adminMode) {
         // Dispatch any goals that were triggered server-side.
         Drupal.personalize.sendGoals(settings);
       }
@@ -222,53 +276,73 @@
   };
 
   /**
-   * Returns an object with key/value pairs for the enabled visitor contexts.
+   * Builds up an object of all enabled contexts for active agents on the page.
+   *
+   * @param agents
+   *   An object of all active agents on the page keyed by agent name.
+   * @return
+   *   An object of all contexts on the page keyed by plugin name.
    */
-  function getVisitorContext(agent_name, agent_type, enabled_context) {
-    var i, j, new_values, visitor_context = Drupal.personalize.visitor_context, context_values = {};
-    for (i in enabled_context) {
-      if (enabled_context.hasOwnProperty(i) && visitor_context.hasOwnProperty(i) && typeof visitor_context[i].getContext === 'function') {
-        new_values = visitor_context[i].getContext(enabled_context[i]);
-        for (j in new_values) {
-          context_values[j] = new_values[j];
-        }
+  function getAgentsContexts(agents) {
+    var contexts = {};
+    for (var agentName in agents) {
+      if (!agents.hasOwnProperty(agentName)) {
+        continue;
       }
-    }
-    return Drupal.personalize.evaluateContexts(agent_name, agent_type, context_values);
-  }
-
-
-  var fixed_targeting_rules = null;
-  Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext) {
-    if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
-      return;
-    }
-    // If we haven't already gone through all the explicit targeting rules, we need to
-    // do that first to find the rule for each feature string.
-    if (fixed_targeting_rules === null) {
-      fixed_targeting_rules = {};
-      var settings = Drupal.settings.personalize.option_sets;
-      for (var i in settings) {
-        if (settings.hasOwnProperty(i)) {
-          var option_set = settings[i];
-          var agent = option_set.agent;
-          for (var j in option_set.options) {
-            if (option_set.options.hasOwnProperty(j) && option_set.options[j].hasOwnProperty('fixed_targeting')) {
-              fixed_targeting_rules[agent] = fixed_targeting_rules[agent] || {};
-              // Loop through all features specified for an option and grab the rule
-              // associated with it.
-              for (var k in option_set.options[j].fixed_targeting) {
-                if (option_set.options[j].fixed_targeting.hasOwnProperty(k)) {
-                  var feature_name = option_set.options[j].fixed_targeting[k];
-                  if (option_set.options[j].hasOwnProperty('fixed_targeting_rules') && option_set.options[j].fixed_targeting_rules.hasOwnProperty(feature_name)) {
-                    fixed_targeting_rules[agent][feature_name] = option_set.options[j].fixed_targeting_rules[feature_name];
-                  }
-                }
-              }
+      var agent = agents[agentName];
+      for (var pluginName in agent.enabledContexts) {
+        if (agent.enabledContexts.hasOwnProperty(pluginName)) {
+          var plugin = agent.enabledContexts[pluginName];
+          if (!contexts.hasOwnProperty(pluginName)) {
+            contexts[pluginName] = {};
+          }
+          for (var context in plugin) {
+            if (plugin.hasOwnProperty(context)) {
+              contexts[pluginName][context] = plugin[context];
             }
           }
         }
       }
+    }
+    return contexts;
+  }
+
+  /**
+   * Gets the values for a particular visitor context.
+   *
+   * @param plugin
+   *   The plugin name to use to retrieve visitor context.
+   * @param context
+   *   The context to retrieve for the current visitor.
+   * @returns {Promise}
+   *   An asynchronous JS promise.
+   */
+  function getVisitorContext(plugin, context) {
+    var visitor_context = Drupal.personalize.visitor_context;
+    if (visitor_context.hasOwnProperty(plugin) && typeof visitor_context[plugin].getContext === 'function') {
+      return context_values = visitor_context[plugin].getContext(context);
+    }
+    return null;
+  }
+
+  /**
+   * Evaluate the visitor contexts for an agent.
+   *
+   * @param agentName
+   *   The agent name.
+   * @param agentType
+   *   The type of agent.
+   * @param object visitorContext
+   *   The enabled context for the agent.
+   * @param object featureRules
+   *   Fixed targeting feature rules for the agent.
+   * @returns {object}
+   *   An object that holds arrays for each context key to indicate the rule
+   *   and how the rule was satisfied.
+   */
+  Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext, featureRules) {
+    if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
+      return;
     }
     // The new visitor context object will hold an array of values for each
     // key, rather than just a single value. This is because in addition to
@@ -289,8 +363,7 @@
     // Use the rules to set values on the visitor context which can then be used
     // for explicit targeting. It is up to the agent how exactly the explicit
     // targeting is done.
-    if (fixed_targeting_rules.hasOwnProperty(agentName)) {
-      var featureRules = fixed_targeting_rules[agentName];
+    if (typeof featureRules !== 'undefined') {
       for (var featureName in featureRules) {
         if (featureRules.hasOwnProperty(featureName)) {
           var key = featureRules[featureName].context;
@@ -412,51 +485,52 @@
   };
 
   /**
-   * Processes all multivariate tests on the page.
+   * Prepares option sets for processing.  Separates out those option sets
+   * that are part of an MVT and then adds in rest of option sets with
+   * relevant agent information.
    *
    * @param settings
    *   A Drupal settings object.
+   * @return object
+   *   An associative array keyed by osid for all option sets to be processed.
    */
-  function processMVTs(settings) {
-    var i, mvt_name, mvt, agent_info, option_set;
+  function prepareOptionSets(settings) {
+    var option_sets = {};
+    // First process all MVTs.
     if (settings.personalize.hasOwnProperty('mvt')) {
-      for (mvt_name in settings.personalize.mvt) {
+      for (var mvt_name in settings.personalize.mvt) {
         if (settings.personalize.mvt.hasOwnProperty(mvt_name)) {
           // Extract agent and decision info from the mvt settings.
-          mvt = settings.personalize.mvt[mvt_name];
-          agent_info = Drupal.settings.personalize.agent_map[mvt.agent];
-          for (i in mvt.option_sets) {
+          var mvt = settings.personalize.mvt[mvt_name];
+          var agent_info = Drupal.settings.personalize.agent_map[mvt.agent];
+          for (var i in mvt.option_sets) {
             if (mvt.option_sets.hasOwnProperty(i)) {
-              option_set = mvt.option_sets[i];
+              var option_set = mvt.option_sets[i];
               option_set.decision_point = mvt_name;
               option_set.agent = mvt.agent;
               option_set.agent_info = agent_info;
-              processOptionSet(option_set);
+              option_sets[option_set.osid] = option_set;
             }
           }
         }
       }
     }
-  }
-
-  /**
-   * Processes all Option Sets on the page.
-   *
-   * @param settings
-   *   A Drupal settings object.
-   */
-  function processOptionSets(settings) {
-    var i, osid, mvt, agent_info, option_set;
+    // Now add any option sets that aren't part of MVTs.
     if (settings.personalize.hasOwnProperty('option_sets')) {
-      for (osid in settings.personalize.option_sets) {
+      for (var osid in settings.personalize.option_sets) {
         if (settings.personalize.option_sets.hasOwnProperty(osid)) {
+          // If it was part of an MVT then skip it.
+          if (option_sets.hasOwnProperty(osid)) {
+            continue;
+          }
           // Extract agent and decision info from the option set settings.
-          option_set = settings.personalize.option_sets[osid];
+          var option_set = settings.personalize.option_sets[osid];
           option_set.agent_info = Drupal.settings.personalize.agent_map[option_set.agent];
-          processOptionSet(option_set)
+          option_sets[osid] = option_set;
         }
       }
     }
+    return option_sets;
   }
 
   /**
@@ -474,7 +548,7 @@
     return agent_name + Drupal.personalize.storage.utilities.cacheSeparator + point;
   }
 
-  function readDecisionsfromStorage(agent_name, point) {
+  function readDecisionsFromStorage(agent_name, point) {
     if (!Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return null;
     }
@@ -483,7 +557,7 @@
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
-    if (!sessionID || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
+    if (!Drupal.personalize.sessionId || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
     var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
@@ -492,94 +566,42 @@
 
   /**
    * Triggers all decisions needing to be made for the current page.
+   *
+   * @param agents
+   *   An object of agent data keyed by agent name.
    */
-  function triggerDecisions(settings) {
+  function triggerDecisions(agents) {
     var agent_name, agent, point, decisions, callback;
-
-    // Given a set of callbacks and a selected option for each decision
-    // made, calls the callbacks for each decision, passing them the
-    // selected option.
-    function callCallbacksWithSelection(callbacks, selection) {
-      for (var i in selection) {
-        if (selection.hasOwnProperty(i) && callbacks.hasOwnProperty(i)) {
-          for (var j = 0; j < callbacks[i].length; j++) {
-            callbacks[i][j].call(undefined, selection[i]);
-          }
-          // If the option set is shareable, push the decision to the
-          // URL.
-          if (optionSetIsStateful(i)) {
-            var state = {};
-            state[i] = selection[i];
-            $.bbq.pushState(state);
-          }
-        }
-      }
-    }
-
-    // Checks the choice for each decision against the valid set of choices
-    // for that decision. Returns false if any of the decisions has an invalid
-    // choice.
-    function decisionsAreValid(decisionsToCheck, validDecisions) {
-      var i;
-      for (i in decisionsToCheck) {
-        if (decisionsToCheck.hasOwnProperty(i)) {
-          if (!validDecisions.hasOwnProperty(i) || validDecisions[i].indexOf(decisionsToCheck[i]) == -1) {
-            return false;
-          }
-        }
-      }
-      return true;
-    }
 
     // Loop through all agents and ask them for decisions.
     for (agent_name in agents) {
       if (agents.hasOwnProperty(agent_name)) {
-        // Keep track of the decisions we process per agent.
-        processedDecisions[agent_name] = processedDecisions[agent_name] || {};
         agent = agents[agent_name];
         for (point in agent.decisionPoints) {
           if (agent.decisionPoints.hasOwnProperty(point)) {
-            // Only continue if this decision point hasn't previously been processed.
-            if (!processedDecisions[agent_name][point]) {
-              processedDecisions[agent_name][point] = 1;
-              // Only talk to the agent if the decision hasn't already been
-              // made and cached locally.
-              decisions = readDecisionsfromStorage(agent_name, point);
-              // Decisions from localStorage need to be checked against the known valid
-              // set of choices because they may be stale (e.g. if an option has been
-              // removed after being stored in a user's localStorage).
-              if (!decisionsAreValid(decisions, agent.decisionPoints[point].choices)) {
-                decisions = null;
-              }
-              if (decisions != null) {
-                callCallbacksWithSelection(agent.decisionPoints[point].callbacks, decisions);
-              }
-              else {
-                callback = (function(inner_agent_name, inner_agent, inner_point) {
-                  return function(selection) {
-                    // Save to local storage.
-                    writeDecisionsToStorage(inner_agent_name, inner_point, selection)
-                    // Call the per-option-set callbacks.
-                    callCallbacksWithSelection(inner_agent.decisionPoints[inner_point].callbacks, selection);
-                  };
-                })(agent_name, agent, point);
-                var decisionAgent = Drupal.personalize.agents[agent.agentType];
-                if (!decisionAgent || typeof decisionAgent.getDecisionsForPoint !== 'function') {
-                  // If for some reason we can't find the agent responsible for this decision,
-                  // just use the fallbacks.
-                  var fallbacks = agent.decisionPoints[point].fallbacks;
-                  decisions = {};
-                  for (var key in fallbacks) {
-                    if (fallbacks.hasOwnProperty(key) && agent.decisionPoints[point].choices.hasOwnProperty(key)) {
-                      decisions[key] = agent.decisionPoints[point].choices[key][fallbacks[key]];
-                    }
-                  }
-                  callCallbacksWithSelection(agent.decisionPoints[point].callbacks, decisions);
-                  return;
+            callback = (function(inner_agent_name, inner_agent, inner_point) {
+              return function(selection) {
+                // Save to local storage.
+                writeDecisionsToStorage(inner_agent_name, inner_point, selection)
+                // Call the per-option-set callbacks.
+                Drupal.personalize.decisions.executeCallbacks(inner_agent_name, inner_point, selection);
+              };
+            })(agent_name, agent, point);
+            var decisionAgent = Drupal.personalize.agents[agent.agentType];
+            if (!decisionAgent || typeof decisionAgent.getDecisionsForPoint !== 'function') {
+              // If for some reason we can't find the agent responsible for this decision,
+              // just use the fallbacks.
+              var fallbacks = agent.decisionPoints[point].fallbacks;
+              decisions = {};
+              for (var key in fallbacks) {
+                if (fallbacks.hasOwnProperty(key) && agent.decisionPoints[point].choices.hasOwnProperty(key)) {
+                  decisions[key] = agent.decisionPoints[point].choices[key][fallbacks[key]];
                 }
-                decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
               }
+              Drupal.personalize.decisions.executeCallbacks(agent_name, point, decisions);
+              return;
             }
+            decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
           }
         }
       }
@@ -626,22 +648,48 @@
     return false;
   }
 
-  /**
-   * Private function that parses information from the passed in
-   * option set and builds up the decision tree for the relevant
-   * agent.
-   *
-   * @param option_set
-   *   An object representing an option sett.
-   */
-  function processOptionSet(option_set) {
-    // Bail if this option set has already been processed.
-    for (var i in processedOptionSets) {
-      if (option_set.osid == processedOptionSets[i]) {
-        return;
+  Drupal.personalize.decisions = Drupal.personalize.decisions || {};
+  Drupal.personalize.decisions.processed = Drupal.personalize.decisions.processed || {};
+  function processOptionSets (option_sets) {
+    var agents = {};
+    for(var osid in option_sets) {
+      if (Drupal.personalize.decisions.processed.hasOwnProperty(osid)) {
+        continue;
+      }
+      Drupal.personalize.decisions.processed[osid] = true;
+      if (option_sets.hasOwnProperty(osid)) {
+        var agentData = processOptionSet(option_sets[osid]);
+        // If agent data is not returned then the decision is not necessary for
+        // this option set.
+        if (!agentData) {
+          continue;
+        }
+        // Merge in the agent data with other option set agent data.
+        var agentName = agentData.agentName;
+        if (!agents.hasOwnProperty(agentName)) {
+          agents[agentName] = agentData;
+        } else {
+          // Merge in decision point data.
+          $.extend(agents[agentName].decisionPoints, agentData.decisionPoints);
+          // Merge in fixed targeting data.
+          $.extend(agents[agentName].fixedTargeting, agentData.fixedTargeting);
+        }
       }
     }
+    return agents;
+  }
 
+  /**
+   * Parses through an option set and handles a decision if one can be made
+   * immediately (due to cache, preselection, etc.) -- otherwise returns
+   * the agent decision data necessary to retrieve a decision.
+   *
+   * @param option_set
+   *   An object representing an option set.
+   * @return object|null
+   *   An associative array of agent decision data.
+   */
+  function processOptionSet(option_set) {
     var executor = option_set.executor == undefined ? 'show' : option_set.executor,
       osid = option_set.osid,
       agent_name = option_set.agent,
@@ -651,11 +699,11 @@
       // If we have an empty or undefined decision point, use the decision name.
       decision_point = option_set.decision_point == undefined || option_set.decision_point == '' ? decision_name : option_set.decision_point,
       choices = option_set.option_names,
-      $option_set = $(option_set.selector);
-    // Mark this Option Set as processed so it doesn't get processed again.
-    processedOptionSets.push(option_set.osid);
+      $option_set = $(option_set.selector),
+      fallbackIndex = 0,
+      chosenOption = null;
 
-    var chosenOption = null, fallbackIndex = 0;
+    // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
       fallbackIndex = option_set.winner;
     }
@@ -666,7 +714,7 @@
     }
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
-    else if (adminMode || !agent_info.active) {
+    else if (Drupal.personalize.adminMode || !agent_info.active) {
       chosenOption = choices[fallbackIndex];
     }
     // If we now have a chosen option, just call the executor and be done.
@@ -677,45 +725,162 @@
       return;
     }
 
+    // If there is no agent, then return empty.
     if (!agent_info) {
       return;
     }
-    var agent_type = agent_info.type;
-    if (agent_type == undefined) {
-      agent_type = 'default_agent';
-    }
-
-    var visitor_context = getVisitorContext(agent_name, agent_type, agent_info.enabled_contexts);
 
     // Build up the agent data, organized into decision points and decisions.
-    agents[agent_name] = agents[agent_name] || {
-      agentType: agent_type,
-      visitorContext: visitor_context,
-      decisionPoints: {}
+    var agentData = {
+      agentName: agent_name,
+      agentType: agent_info.type == undefined ? 'default_agent' : agent_info.type,
+      enabledContexts: agent_info.enabled_contexts,
+      decisionPoints: {},
+      fixedTargeting: {}
     };
-    agents[agent_name].decisionPoints[decision_point] =
-       agents[agent_name].decisionPoints[decision_point] || { choices: {}, callbacks: {}, fallbacks: {}};
+    agentData.decisionPoints[decision_point] = { choices: {}, callbacks: {}, fallbacks: {}};
 
-    if (!agents[agent_name].decisionPoints[decision_point].choices[decision_name]) {
-      // The choices for a given decision are the same regardless of the number of
-      // different option sets using it.
-      agents[agent_name].decisionPoints[decision_point].choices[decision_name] = choices;
+    agentData.decisionPoints[decision_point].choices[decision_name] = choices;
+    agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
+    Drupal.personalize.decisions.addDecisionCallback(executor, agent_name, decision_point, $option_set, osid);
+
+    // Check to see if this decision is already in storage.
+    decisions = readDecisionsFromStorage(agent_name, decision_point);
+    // Decisions from localStorage need to be checked against the known valid
+    // set of choices because they may be stale (e.g. if an option has been
+    // removed after being stored in a user's localStorage).
+    if (!decisionsAreValid(decisions, agentData.decisionPoints[decision_point].choices)) {
+      decisions = null;
     }
-    if (!agents[agent_name].decisionPoints[decision_point].fallbacks[decision_name]) {
-      // The fallback for a given decision also has to be the same for each option
-      // set using it.
-      agents[agent_name].decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
+    if (decisions != null) {
+      // Execute the decision callbacks and skip processing this agent any further.
+      Drupal.personalize.decisions.executeCallbacks(agent_name, decision_point, decisions);
+      return;
     }
 
-    agents[agent_name].decisionPoints[decision_point].callbacks[decision_name] =
-      agents[agent_name].decisionPoints[decision_point].callbacks[decision_name] || [];
-    // Add a callback for this option set to the decision point.
-    agents[agent_name].decisionPoints[decision_point].callbacks[decision_name].push(function(decision) {
-      Drupal.personalize.executors[executor].execute($option_set, decision, osid);
-      // Fire an event so other code can respond to the decision.
-      $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
-    });
+    // Build up the fixed targeting rules for options within this option set.
+    for (var j in option_set.options) {
+      if (option_set.options.hasOwnProperty(j)) {
+        $.extend(agentData.fixedTargeting, getFixedTargetingRules(option_set.options[j]));
+      }
+    }
+    return agentData;
+  }
 
+  /**
+   * Builds the fixed targeting rules for an option within an option set.
+   *
+   * @param option
+   *   The option within an option set to check for fixed targeting rules.
+   * @return
+   *   An object of fixed targeting rules keyed by feature name.
+   */
+  function getFixedTargetingRules(option) {
+    var rules = {};
+    if (option.hasOwnProperty('fixed_targeting')) {
+      for (var i in option.fixed_targeting) {
+        if (option.fixed_targeting.hasOwnProperty(i)) {
+          var feature_name = option.fixed_targeting[i];
+          if (option.hasOwnProperty('fixed_targeting_rules') && option.fixed_targeting_rules.hasOwnProperty(feature_name)) {
+            rules[feature_name] = option.fixed_targeting_rules[feature_name];
+          }
+        }
+      }
+    }
+    return rules;
+  }
+
+  // Checks the choice for each decision against the valid set of choices
+  // for that decision. Returns false if any of the decisions has an invalid
+  // choice.
+  function decisionsAreValid(decisionsToCheck, validDecisions) {
+    var i;
+    for (i in decisionsToCheck) {
+      if (decisionsToCheck.hasOwnProperty(i)) {
+        if (!validDecisions.hasOwnProperty(i) || validDecisions[i].indexOf(decisionsToCheck[i]) == -1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // D . E . C . I . S . I . O . N . . C . A . L . L . B . A . C . K . S */
+  Drupal.personalize.decisions.callbacks = Drupal.personalize.decisions.callbacks || {};
+
+  /**
+   * Adds a decision callback for later processing.
+   *
+   * @param agent_name
+   *   The name of the decision agent.
+   * @param decision_point
+   *   The decision point to listen for.
+   * @param option_sets
+   *   The option set jQuery element.
+   * @param osid
+   *   The option set id.
+   */
+  Drupal.personalize.decisions.addDecisionCallback = function(executor, agent_name, decision_point, $option_set, osid) {
+    // Define the callback function.
+    var callback = (function(inner_executor, $inner_option_set, inner_osid) {
+      return function(decision) {
+        Drupal.personalize.decisions.decisionCallback(inner_executor, $inner_option_set, decision, inner_osid);
+      }
+    }(executor, $option_set, osid));
+    // Now add it to the array for this decision name.
+    Drupal.personalize.decisions.callbacks[agent_name] = Drupal.personalize.decisions.callbacks[agent_name] || {};
+    Drupal.personalize.decisions.callbacks[agent_name][decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point] || [];
+    Drupal.personalize.decisions.callbacks[agent_name][decision_point].push(callback);
+  }
+
+  /**
+   * A decision callback to execute the selected option.
+   *
+   * @param $option_set
+   *   The jQuery selector for an option set.
+   * @param decision
+   *   The decision that should be executed for the option set.
+   * @param osid
+   *   The option set id.
+   */
+  Drupal.personalize.decisions.decisionCallback = function(executor, $option_set, decision, osid) {
+    Drupal.personalize.executors[executor].execute($option_set, decision, osid);
+    // Fire an event so other code can respond to the decision.
+    $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
+  }
+
+  /**
+   * Executes the callbacks for a decision.
+   *
+   * @param agent_name
+   *   The name of the decision agent.
+   * @param decision_point
+   *   The decision point that the decision is for.
+   * @param decisions
+   *   An array of decisions that have been returned for the point.
+   */
+  Drupal.personalize.decisions.executeCallbacks = function(agent_name, decision_point, decisions) {
+    var callbacks = {};
+    if (Drupal.personalize.decisions.callbacks.hasOwnProperty(agent_name) &&
+      Drupal.personalize.decisions.callbacks[agent_name].hasOwnProperty(decision_point)) {
+      callbacks[decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point];
+    }
+    // Call each executor callback.
+    for (var decision_point in decisions) {
+      if (decisions.hasOwnProperty(decision_point) && callbacks.hasOwnProperty(decision_point)) {
+        var num = callbacks[decision_point].length;
+        for (var j=0; j < num; j++) {
+          callbacks[decision_point][j].call(undefined, decisions[decision_point]);
+        }
+        // If the option set is shareable, push the decision to the
+        // URL.
+        if (optionSetIsStateful(decision_point)) {
+          var state = {};
+          state[decision_point] = decisions[decision_point];
+          $.bbq.pushState(state);
+        }
+      }
+    }
   }
 
   // Keeps track of processed listeners so we don't subscribe them more than once.
@@ -725,7 +890,7 @@
    * Add an action listener for client-side goal events.
    */
   function addActionListener(settings) {
-    if (Drupal.hasOwnProperty('visitorActions') && !adminMode) {
+    if (Drupal.hasOwnProperty('visitorActions') && !Drupal.personalize.adminMode) {
       var events = {}, new_events = 0;
       for (var eventName in settings.personalize.actionListeners) {
         if (settings.personalize.actionListeners.hasOwnProperty(eventName) && !processedListeners.hasOwnProperty(eventName)) {
