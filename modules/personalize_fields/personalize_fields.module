@@ -418,7 +418,7 @@ function personalize_fields_form_submit($form, &$form_state) {
         $option_set_delta = isset($option['personalize_fields_option_id']) && in_array($option['personalize_fields_option_id'], $option_hash) ? $option_hash[$option['personalize_fields_option_id']] : FALSE;
         // Regenerate the option label if it was emptied.
         $option_label = !empty($option['personalize_fields_option_label']) ? $option['personalize_fields_option_label'] : personalize_generate_option_label($delta);
-        if (!empty($option['value']) || (isset($option['fid']) && (int) $option['fid'] > 0)) {
+        if (_personalize_fields_option_has_value($option)) {
           // Update an existing option.
           if (($option_set_delta) !== FALSE) {
             $option_set->options[$option_set_delta]['option_label'] = $option_label;
@@ -431,7 +431,7 @@ function personalize_fields_form_submit($form, &$form_state) {
         }
         // This option is being deleted.
         else {
-          if ($option_set_delta !== FALSE && (isset($option['value']) || isset($option['fid']))) {
+          if ($option_set_delta !== FALSE && _personalize_fields_option_has_value($option, TRUE)) {
             unset($option_set->options[$option_set_delta]);
           }
         }
@@ -908,4 +908,24 @@ function _personalize_fields_get_entity_link_from_option_set($option_set) {
     return $entity_link['path'];
   }
   return '';
+}
+
+/**
+ * Returns whether or not a value exists for this option. If the $empty param is set to
+ * TRUE, then this will return TRUE even if the value is an empty value.
+ */
+function _personalize_fields_option_has_value($option, $empty = FALSE) {
+  // Supports all fields that use a 'value' column.
+  if (isset($option['value'])) {
+    return !empty($option['value']) || $empty;
+  }
+  // Supports file fields.
+  if (isset($option['fid'])) {
+    return (int) $option['fid'] > 0 || $empty;
+  }
+  // Supports entity_reference fields.
+  if (isset($option['target_id'])) {
+    return !empty($option['target_id']) || $empty;
+  }
+  return FALSE;
 }

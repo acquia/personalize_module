@@ -33,8 +33,14 @@ function theme_personalize_options_wrapper($variables) {
   $js_id = personalize_stringify_osid($option_set->osid);
   $prefix = '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" id="personalize-' . $js_id . '">';
   if (isset($variables['element']['#first_option'])) {
-    $prefix .= '<noscript>' . drupal_render($variables['element']['#first_option']) . '</noscript>';
+    $no_script_content = drupal_render($variables['element']['#first_option']);
+    // Strip any noscript tags from the content so we don't end up with nested
+    // noscript tags.
+    $pattern = '/\<noscript\>(.*)\<\/noscript\>/';
+    $no_script_content = preg_replace($pattern, '', $no_script_content);
+    $prefix .= '<noscript>' . $no_script_content . '</noscript>';
   }
+
   $prefix .= '<script type="text/template">';
   $suffix = '</script></div>';
 
