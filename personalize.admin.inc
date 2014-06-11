@@ -2095,7 +2095,7 @@ function personalize_agent_form_submit($form, &$form_state) {
   $agent->data['cache_decisions'] = $form_state['values']['cache_decisions'];
   $exists = personalize_agent_load($agent->machine_name);
   if (personalize_agent_save($agent)) {
-    drupal_set_message(t('The agent has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
+    drupal_set_message(t('The campaign has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
     personalize_set_campaign_context($agent->machine_name);
     if (personalize_agent_get_status($agent->machine_name) == PERSONALIZE_STATUS_RUNNING) {
       personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
@@ -2104,7 +2104,7 @@ function personalize_agent_form_submit($form, &$form_state) {
     $form_state['redirect'] = "admin/structure/personalize/manage/{$agent->machine_name}/edit";
   }
   else {
-    drupal_set_message(t('There was a problem saving the agent'));
+    drupal_set_message(t('There was a problem saving the campaign.'));
     $form_state['redirect'] = "admin/structure/personalize";
   }
 }
