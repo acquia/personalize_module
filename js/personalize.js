@@ -677,15 +677,22 @@
     return false;
   }
 
-  Drupal.personalize.decisions = Drupal.personalize.decisions || {};
-  Drupal.personalize.decisions.processed = Drupal.personalize.decisions.processed || {};
+  /**
+   * Loops through the option sets on the page and handles retrieving
+   * and formatting agent data including decision points and targeting data.
+   *
+   * @param option_sets
+   *   An object of option set data keyed by osid.
+   * @returns object
+   *   The combined agent data for all option sets on the page.
+   */
   function processOptionSets (option_sets) {
     var agents = {};
     for(var osid in option_sets) {
-      if (Drupal.personalize.decisions.processed.hasOwnProperty(osid)) {
+      if (processedOptionSets.hasOwnProperty(osid)) {
         continue;
       }
-      Drupal.personalize.decisions.processed[osid] = true;
+      processedOptionSets[osid] = true;
       if (option_sets.hasOwnProperty(osid)) {
         var agentData = processOptionSet(option_sets[osid]);
         // If agent data is not returned then the decision is not necessary for
