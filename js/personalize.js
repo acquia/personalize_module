@@ -7,6 +7,10 @@
   Drupal.personalize = Drupal.personalize || {};
 
   /**
+   * Private variable: Session identifier for decision and goals.
+   */
+  var sessionId = false;
+  /**
    * Initializes the session ID to be used for decision and goal requests.
    *
    * The session ID can be used by decision agents to keep track of visitors
@@ -14,20 +18,19 @@
    * stored in a cookie, or, for logged in users, it is a hash of the user
    * ID.
    */
-  Drupal.personalize.sessionId = Drupal.personalize.sessionId || false;
   Drupal.personalize.initializeSessionID = function() {
-    if (Drupal.personalize.sessionID) {
-      return Drupal.personalize.sessionID;
+    if (sessionID) {
+      return sessionID;
     }
     // Populate the session id from the cookie, if present.
     var storedId = $.cookie(cookieName);
     if (storedId) {
-      Drupal.personalize.sessionID = storedId;
+      sessionID = storedId;
     }
     else if (Drupal.settings.personalize.sessionID) {
-      Drupal.personalize.sessionID = Drupal.settings.personalize.sessionID;
+      sessionID = Drupal.settings.personalize.sessionID;
     }
-    return Drupal.personalize.sessionID;
+    return sessionID;
   };
 
   /**
@@ -35,7 +38,7 @@
    * future decision and goal requests.
    */
   Drupal.personalize.saveSessionID = function(session_id) {
-    Drupal.personalize.sessionID = session_id;
+    sessionID = session_id;
     $.cookie(cookieName, session_id);
   };
 
