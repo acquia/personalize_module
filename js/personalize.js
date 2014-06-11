@@ -18,6 +18,7 @@
    * stored in a cookie, or, for logged in users, it is a hash of the user
    * ID.
    */
+  Drupal.personalize.sessionId = Drupal.personalize.sessionId || false;
   Drupal.personalize.initializeSessionID = function() {
     if (sessionId) {
       return sessionId;
@@ -130,14 +131,15 @@
           // returned here.
           for (var plugin in agent.enabledContexts) {
             if (agent.enabledContexts.hasOwnProperty(plugin)) {
-              if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
-                agentContexts[plugin] = contextValues[plugin];
+              if (contextValues.hasOwnProperty(plugin)) {
+                agentContexts = contextValues[plugin];
               }
             }
           }
+
+          // Evaluate the contexts.
+          agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         }
-        // Evaluate the contexts.
-        agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         // Trigger decision calls on the agents.
         triggerDecisions(agents);
       });
@@ -674,6 +676,37 @@
       return Drupal.settings.personalize.preselected[osid];
     }
     return false;
+  }
+
+  Drupal.personalize.decisions = Drupal.personalize.decisions || {};
+  Drupal.personalize.decisions.processed = Drupal.personalize.decisions.processed || {};
+  function processOptionSets (option_sets) {
+    var agents = {};
+    for(var osid in option_sets) {
+      if (Drupal.personalize.decisions.processed.hasOwnProperty(osid)) {
+        continue;
+      }
+      Drupal.personalize.decisions.processed[osid] = true;
+      if (option_sets.hasOwnProperty(osid)) {
+        var agentData = processOptionSet(option_sets[osid]);
+        // If agent data is not returned then the decision is not necessary for
+        // this option set.
+        if (!agentData) {
+          continue;
+        }
+        // Merge in the agent data with other option set agent data.
+        var agentName = agentData.agentName;
+        if (!agents.hasOwnProperty(agentName)) {
+          agents[agentName] = agentData;
+        } else {
+          // Merge in decision point data.
+          $.extend(agents[agentName].decisionPoints, agentData.decisionPoints);
+          // Merge in fixed targeting data.
+          $.extend(agents[agentName].fixedTargeting, agentData.fixedTargeting);
+        }
+      }
+    }
+    return agents;
   }
 
   /**
