@@ -18,7 +18,6 @@
    * stored in a cookie, or, for logged in users, it is a hash of the user
    * ID.
    */
-  Drupal.personalize.sessionId = Drupal.personalize.sessionId || false;
   Drupal.personalize.initializeSessionID = function() {
     if (sessionId) {
       return sessionId;
