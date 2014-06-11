@@ -70,36 +70,27 @@
 
       // Load and evaluate all contexts.
       var contextPromises = [];
-      var syncContexts = [];
+      var promisePlugins = [];
+      var contextValues = {};
       for (var plugin in contexts) {
         if (contexts.hasOwnProperty(plugin)) {
-          var pluginContexts = contexts[plugin];
-          for (var contextName in pluginContexts) {
-            if (pluginContexts.hasOwnProperty(contextName)) {
-              // @todo: Should be able to just always return promises and let
-              // nested promises resolve but it doesn't appear to ever resolve.
-              var contextResult = getVisitorContext(plugin, contextName);
-              if (contextResult instanceof Promise) {
-                contextPromises.push(contextResult);
-              } else {
-                syncContexts.push(contextResult);
-              }
-            }
+          // @todo: Should be able to just always return promises and let
+          // nested promises resolve but it doesn't appear to ever resolve.
+          var contextResult = getVisitorContext(plugin, contexts[plugin]);
+          if (contextResult instanceof Promise) {
+            promisePlugins.push(plugin);
+            contextPromises.push(contextResult);
+          } else {
+            contextValues[plugin] = contextResult;
           }
         }
       }
       // Once all the contexts are loaded, evaluate them and load the decisions
       Promise.all(contextPromises).then(function(loadedContexts) {
-        loadedContexts = loadedContexts.concat(syncContexts);
-        var contextValues = {};
-        // Merge all context values into a single object.
+        // Results are in the same order as promises were.
         var num = loadedContexts.length;
         for (var i = 0; i < num; i++) {
-          for (var j in loadedContexts[i]) {
-            if (loadedContexts[i].hasOwnProperty(j)) {
-              contextValues[j] = loadedContexts[i][j];
-            }
-          }
+          contextValues[promisePlugins[i]] = loadedContexts[i];
         }
         for (var agentName in agents) {
           if (!agents.hasOwnProperty(agentName)) {
@@ -112,8 +103,8 @@
           // returned here.
           for (var plugin in agent.enabledContexts) {
             if (agent.enabledContexts.hasOwnProperty(plugin)) {
-              if (contextValues.hasOwnProperty(plugin)) {
-                agentContexts = contextValues[plugin];
+              if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
+                agentContexts[plugin] = contextValues[plugin];
               }
             }
           }
@@ -313,7 +304,7 @@
    * @param plugin
    *   The plugin name to use to retrieve visitor context.
    * @param context
-   *   The context to retrieve for the current visitor.
+   *   The context object to retrieve values for in the current visitor context.
    * @returns {Promise}
    *   An asynchronous JS promise.
    */
@@ -333,7 +324,7 @@
    * @param agentType
    *   The type of agent.
    * @param object visitorContext
-   *   The enabled context for the agent.
+   *   The enabled context for the agent as an object keyed by plugin name.
    * @param object featureRules
    *   Fixed targeting feature rules for the agent.
    * @returns {object}
@@ -345,7 +336,7 @@
       return;
     }
     // The new visitor context object will hold an array of values for each
-    // key, rather than just a single value. This is because in addition to
+    // key, rather than just a single value for each plugin's key. This is because in addition to
     // having a string representing key and actual value, for each rule that
     // is satisfied we'll also need a string indicating that that rule is
     // satisfied. For example, if we have a targeting rule that says show this
@@ -355,9 +346,13 @@
     // "sc-submarines"], where sc- is just the prefix added to codify "string
     // contains".
     var newVisitorContext = {};
-    for (var contextKey in visitorContext) {
-      if (visitorContext.hasOwnProperty(contextKey)) {
-        newVisitorContext[contextKey] = [visitorContext[contextKey]];
+    for (var plugin in visitorContext) {
+      if (visitorContext.hasOwnProperty(plugin)) {
+        for (var contextKey in visitorContext[plugin]) {
+          if (visitorContext[plugin].hasOwnProperty(contextKey)) {
+            newVisitorContext[contextKey] = [visitorContext[plugin][contextKey]];
+          }
+        }
       }
     }
     // Use the rules to set values on the visitor context which can then be used
@@ -367,7 +362,8 @@
       for (var featureName in featureRules) {
         if (featureRules.hasOwnProperty(featureName)) {
           var key = featureRules[featureName].context;
-          if (visitorContext.hasOwnProperty(key)) {
+          var plugin = featureRules[featureName].plugin;
+          if (visitorContext.hasOwnProperty(plugin) && visitorContext[plugin].hasOwnProperty(key)) {
             // Evaluate the rule and if it returns true, we set the feature string
             // on the visitor context.
             var operator = featureRules[featureName].operator;
