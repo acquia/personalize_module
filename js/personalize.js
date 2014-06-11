@@ -131,8 +131,8 @@
           // returned here.
           for (var plugin in agent.enabledContexts) {
             if (agent.enabledContexts.hasOwnProperty(plugin)) {
-              if (contextValues.hasOwnProperty(plugin)) {
-                agentContexts = contextValues[plugin];
+              if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
+                agentContexts[plugin] = contextValues[plugin];
               }
             }
           }
