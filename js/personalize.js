@@ -60,6 +60,10 @@
   }
 
   /**
+   * Private tracking variables across behavior attachments.
+   */
+  var processedDecisions = {}, decisionCallbacks = {}, processedOptionSets = {};
+  /**
    * Looks for personalized elements and calls the corresponding decision agent
    * for each one.
    */
@@ -68,9 +72,6 @@
 
       // Assure that at least the personalize key is available on settings.
       settings.personalize = settings.personalize || {};
-
-      var processedDecisions = {},
-        processedOptionSets = {};
 
       Drupal.personalize.initializeSessionID();
 
@@ -585,6 +586,8 @@
    *
    * @param agents
    *   An object of agent data keyed by agent name.
+   *
+   * Relies on closure variable processedDecisions.
    */
   function triggerDecisions(agents) {
     var agent_name, agent, point, decisions, callback;
@@ -593,14 +596,16 @@
     for (agent_name in agents) {
       if (agents.hasOwnProperty(agent_name)) {
         agent = agents[agent_name];
+        processedDecisions[agent_name] = processedDecisions[agent_name] || {};
         for (point in agent.decisionPoints) {
-          if (agent.decisionPoints.hasOwnProperty(point)) {
+          if (agent.decisionPoints.hasOwnProperty(point) && !processedDecisions[agent_name][point]) {
+            processedDecisions[agent_name][point] = true;
             callback = (function(inner_agent_name, inner_agent, inner_point) {
               return function(selection) {
                 // Save to local storage.
                 writeDecisionsToStorage(inner_agent_name, inner_point, selection)
                 // Call the per-option-set callbacks.
-                Drupal.personalize.decisions.executeCallbacks(inner_agent_name, inner_point, selection);
+                executeDecisionCallbacks(inner_agent_name, inner_point, selection);
               };
             })(agent_name, agent, point);
             var decisionAgent = Drupal.personalize.agents[agent.agentType];
@@ -614,7 +619,7 @@
                   decisions[key] = agent.decisionPoints[point].choices[key][fallbacks[key]];
                 }
               }
-              Drupal.personalize.decisions.executeCallbacks(agent_name, point, decisions);
+              executeDecisionCallbacks(agent_name, point, decisions);
               return;
             }
             decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
@@ -664,15 +669,22 @@
     return false;
   }
 
-  Drupal.personalize.decisions = Drupal.personalize.decisions || {};
-  Drupal.personalize.decisions.processed = Drupal.personalize.decisions.processed || {};
+  /**
+   * Loops through the option sets on the page and handles retrieving
+   * and formatting agent data including decision points and targeting data.
+   *
+   * @param option_sets
+   *   An object of option set data keyed by osid.
+   * @returns object
+   *   The combined agent data for all option sets on the page.
+   */
   function processOptionSets (option_sets) {
     var agents = {};
     for(var osid in option_sets) {
-      if (Drupal.personalize.decisions.processed.hasOwnProperty(osid)) {
+      if (processedOptionSets.hasOwnProperty(osid)) {
         continue;
       }
-      Drupal.personalize.decisions.processed[osid] = true;
+      processedOptionSets[osid] = true;
       if (option_sets.hasOwnProperty(osid)) {
         var agentData = processOptionSet(option_sets[osid]);
         // If agent data is not returned then the decision is not necessary for
@@ -758,7 +770,7 @@
 
     agentData.decisionPoints[decision_point].choices[decision_name] = choices;
     agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
-    Drupal.personalize.decisions.addDecisionCallback(executor, agent_name, decision_point, $option_set, osid);
+    addDecisionCallback(executor, agent_name, decision_point, $option_set, osid);
 
     // Check to see if this decision is already in storage.
     decisions = readDecisionsFromStorage(agent_name, decision_point);
@@ -770,7 +782,7 @@
     }
     if (decisions != null) {
       // Execute the decision callbacks and skip processing this agent any further.
-      Drupal.personalize.decisions.executeCallbacks(agent_name, decision_point, decisions);
+      executeDecisionCallbacks(agent_name, decision_point, decisions);
       return;
     }
 
@@ -821,9 +833,6 @@
     return true;
   }
 
-  // D . E . C . I . S . I . O . N . . C . A . L . L . B . A . C . K . S */
-  Drupal.personalize.decisions.callbacks = Drupal.personalize.decisions.callbacks || {};
-
   /**
    * Adds a decision callback for later processing.
    *
@@ -836,33 +845,19 @@
    * @param osid
    *   The option set id.
    */
-  Drupal.personalize.decisions.addDecisionCallback = function(executor, agent_name, decision_point, $option_set, osid) {
+  addDecisionCallback = function(executor, agent_name, decision_point, $option_set, osid) {
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid) {
       return function(decision) {
-        Drupal.personalize.decisions.decisionCallback(inner_executor, $inner_option_set, decision, inner_osid);
+        Drupal.personalize.executors[inner_executor].execute($inner_option_set, decision, inner_osid);
+        // Fire an event so other code can respond to the decision.
+        $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid]);
       }
     }(executor, $option_set, osid));
     // Now add it to the array for this decision name.
-    Drupal.personalize.decisions.callbacks[agent_name] = Drupal.personalize.decisions.callbacks[agent_name] || {};
-    Drupal.personalize.decisions.callbacks[agent_name][decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point] || [];
-    Drupal.personalize.decisions.callbacks[agent_name][decision_point].push(callback);
-  }
-
-  /**
-   * A decision callback to execute the selected option.
-   *
-   * @param $option_set
-   *   The jQuery selector for an option set.
-   * @param decision
-   *   The decision that should be executed for the option set.
-   * @param osid
-   *   The option set id.
-   */
-  Drupal.personalize.decisions.decisionCallback = function(executor, $option_set, decision, osid) {
-    Drupal.personalize.executors[executor].execute($option_set, decision, osid);
-    // Fire an event so other code can respond to the decision.
-    $(document).trigger('personalizeDecision', [$option_set, decision, osid]);
+    callbacks[agent_name] = Drupal.personalize.decisions.callbacks[agent_name] || {};
+    callbacks[agent_name][decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point] || [];
+    callbacks[agent_name][decision_point].push(callback);
   }
 
   /**
@@ -874,12 +869,14 @@
    *   The decision point that the decision is for.
    * @param decisions
    *   An array of decisions that have been returned for the point.
+   *
+   * Relies on closure variable decisionCallbacks.
    */
-  Drupal.personalize.decisions.executeCallbacks = function(agent_name, decision_point, decisions) {
+  executeDecisionCallbacks = function(agent_name, decision_point, decisions) {
     var callbacks = {};
-    if (Drupal.personalize.decisions.callbacks.hasOwnProperty(agent_name) &&
-      Drupal.personalize.decisions.callbacks[agent_name].hasOwnProperty(decision_point)) {
-      callbacks[decision_point] = Drupal.personalize.decisions.callbacks[agent_name][decision_point];
+    if (decisionCallbacks.hasOwnProperty(agent_name) &&
+      decisionCallbacks[agent_name].hasOwnProperty(decision_point)) {
+      callbacks[decision_point] = decisionCallbacks[agent_name][decision_point];
     }
     // Call each executor callback.
     for (var decision_point in decisions) {
