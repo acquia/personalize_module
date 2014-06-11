@@ -42,6 +42,22 @@
     $.cookie(cookieName, session_id);
   };
 
+  /**
+   * Private administrative indicator - available as a convenience to store
+   * property from reference.
+   */
+  var adminMode = null;
+  /**
+   * Returns whether or not personalization is running in admin mode.
+   *
+   * @return boolean
+   */
+  Drupal.personalize.isAdminMode = function() {
+    if (adminMode == null) {
+      adminMode = settings.personalize.hasOwnProperty('adminMode');
+    }
+    return adminMode;
+  }
 
   /**
    * Looks for personalized elements and calls the corresponding decision agent
@@ -53,7 +69,8 @@
       // Assure that at least the personalize key is available on settings.
       settings.personalize = settings.personalize || {};
 
-      Drupal.personalize.adminMode = settings.personalize.hasOwnProperty('adminMode');
+      var processedDecisions = {},
+        processedOptionSets = {};
 
       Drupal.personalize.initializeSessionID();
 
@@ -121,7 +138,7 @@
 
       // This part is not dependent upon decisions so it can run prior to
       // fulfillment of Promise.
-      if (!Drupal.personalize.adminMode) {
+      if (!Drupal.personalize.isAdminMode()) {
         // Dispatch any goals that were triggered server-side.
         Drupal.personalize.sendGoals(settings);
       }
@@ -713,7 +730,7 @@
     }
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
-    else if (Drupal.personalize.adminMode || !agent_info.active) {
+    else if (Drupal.personalize.isAdminMode() || !agent_info.active) {
       chosenOption = choices[fallbackIndex];
     }
     // If we now have a chosen option, just call the executor and be done.
@@ -889,7 +906,7 @@
    * Add an action listener for client-side goal events.
    */
   function addActionListener(settings) {
-    if (Drupal.hasOwnProperty('visitorActions') && !Drupal.personalize.adminMode) {
+    if (Drupal.hasOwnProperty('visitorActions') && !Drupal.personalize.isAdminMode()) {
       var events = {}, new_events = 0;
       for (var eventName in settings.personalize.actionListeners) {
         if (settings.personalize.actionListeners.hasOwnProperty(eventName) && !processedListeners.hasOwnProperty(eventName)) {
