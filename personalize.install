@@ -264,6 +264,14 @@ function personalize_uninstall() {
   variable_del('personalize_local_caching_storage');
   variable_del('personalize_use_admin_mode');
   variable_del('personalize_visitor_context_disabled');
+
+  // Delete the campaign status variables.
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a')
+    ->execute();
+  foreach ($result as $row) {
+    variable_del("personalize_campaign_{$row->machine_name}_status");
+  }
 }
 
 /**
