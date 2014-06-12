@@ -18,7 +18,7 @@
    * stored in a cookie, or, for logged in users, it is a hash of the user
    * ID.
    */
-  Drupal.personalize.initializeSessionID = function() {
+  Drupal.personalize.initializeSessionId = function() {
     if (sessionId) {
       return sessionId;
     }
@@ -73,7 +73,7 @@
       // Assure that at least the personalize key is available on settings.
       settings.personalize = settings.personalize || {};
 
-      Drupal.personalize.initializeSessionID();
+      Drupal.personalize.initializeSessionId();
 
       // Clear out any expired local storage.
       Drupal.personalize.storage.utilities.maintain();
