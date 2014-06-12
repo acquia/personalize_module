@@ -36,14 +36,6 @@ function personalize_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'status' => array(
-        'description' => 'Integer representing the status of this agent.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => PERSONALIZE_STATUS_NOT_STARTED,
-      ),
       'started' => array(
         'description' => 'The Unix timestamp of when the agent was first activated.',
         'type' => 'int',
