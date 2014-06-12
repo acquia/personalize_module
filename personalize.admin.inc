@@ -217,14 +217,15 @@ function personalize_agent_list() {
         $storage = t('Default');
         break;
     }
-    $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent->status);
+    $agent_status = personalize_agent_get_status($agent->machine_name);
+    $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent_status);
     // @todo We are ignoring the "storage" info and the clone/export functionality
     //   for now. Revisit once we can provide full support for clone/export.
     $plugin = personalize_agent_load_agent($agent->machine_name);
     $tablerow = array(
       array('data' => check_plain($agent->label)),
       array('data' => $agent->plugin),
-      array('data' => $status_map[$agent->status]),
+      array('data' => $status_map[$agent_status]),
       array('data' => drupal_render($status_toggle_form)),
       //array('data' => $storage),
       array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
@@ -371,7 +372,7 @@ function personalize_goals_list($form, &$form_state) {
 function personalize_admin_goal_delete($form, &$form_state, $goal) {
   $options = personalize_goals_options();
   $campaign = personalize_agent_load($goal['agent']);
-  if ($campaign->status == PERSONALIZE_STATUS_RUNNING) {
+  if (personalize_agent_get_status($campaign->machine_name) == PERSONALIZE_STATUS_RUNNING) {
     $description = t('The %goal goal will no longer be tracked in the currently running %campaign campaign.', array(
       '%campaign' => $campaign->label,
       '%goal' => $options[$goal['action']]
@@ -415,7 +416,7 @@ function personalize_status_toggle_form($form, &$form_state, $agent_name, $curre
   // If called via Ajax, then retrieve the new status values from the previous submit.
   if (!empty($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($agent_name);
-    $current_status = $agent_data->status;
+    $current_status = personalize_agent_get_status($agent_data->machine_name);
   }
   $form = personalize_status_toggle_form_definition($agent_name, $current_status, FALSE, $ajax_callback);
   return $form;
@@ -639,7 +640,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   );
 
   if (!empty($agent_data->machine_name)) {
-    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_data->status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, personalize_agent_get_status($agent_data->machine_name), TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
     $form['agent_form']['agent_fieldset']['header'] = array(
       '#type' => 'container',
       '#attributes' => array(
@@ -759,7 +760,7 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
       'personalize' => array(
         'campaigns' => array(
           $agent_data->machine_name => array(
-            'status' => $agent_data->status,
+            'status' => personalize_agent_get_status($agent_data->machine_name),
           ),
         ),
       ),
@@ -1150,7 +1151,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
-  $is_running = $agent_data->status == PERSONALIZE_STATUS_RUNNING;
+  $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
 
   $form = array();
   $form['#agent'] = $agent_data;
