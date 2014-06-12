@@ -1467,17 +1467,22 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
   if ($include_completed && !$limit_status) {
     return $defaults;
   }
-  $active_only = array();
+  $limited = array();
   foreach ($defaults as $name => $agent) {
     // If a specific status is requested then return only that status, otherwise
     // limit the status to those that are not completed.
-    $status = !$limit_status ? PERSONALIZE_STATUS_COMPLETED : $limit_status;
-    if (personalize_agent_get_status($agent->machine_name) & $status) {
+    $current_status = personalize_agent_get_status($agent->machine_name);
+    // Skip agents not matching the requested status.
+    if ($limit_status && $current_status != $limit_status) {
       continue;
     }
-    $active_only[$name] = $agent;
+    // Skip any completed agents.
+    else if ($current_status & PERSONALIZE_STATUS_COMPLETED) {
+      continue;
+    }
+    $limited[$name] = $agent;
   }
-  return $active_only;
+  return $limited;
 }
 
 /**
@@ -1630,11 +1635,16 @@ function personalize_agent_save($agent) {
       'plugin' => $agent->plugin,
       'label' => $agent->label,
       'data' => serialize($agent->data),
+      'started' => isset($agent->started) ? $agent->started : 0,
     ))
     ->execute();
 
   // Make sure the static cache for this agent is reset.
   personalize_agent_load($agent->machine_name, TRUE);
+
+  // Also reset the visitor context cache.
+  personalize_visitor_context_expiration_clear();
+
   // Call the save callback of the agent type.
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
