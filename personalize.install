@@ -528,6 +528,26 @@ function personalize_update_7011() {
 }
 
 /**
+ * Remove campaign status from exportable configuration data.
+ */
+function personalize_update_7012() {
+  // Set the status for all existing campaigns into variables if not already
+  // done so via UI.
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a')
+    ->execute();
+  foreach ($result as $row) {
+    $varname = _personalize_agent_get_status_variable($row->machine_name);
+    $already_set = variable_get($varname, NULL);
+    if (empty($already_set)) {
+      variable_set('personalize_campaign_' . $row->machine_name . '_status', $row->status);
+    }
+  }
+  // Delete the column in the database.
+  db_drop_field('personalize_agent', 'status');
+}
+
+/**
  * Converts a feature string to an array with 'key' and 'value' elements.
  *
  * It is not really possible to reliably convert a feature string to a context,
