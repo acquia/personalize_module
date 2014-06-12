@@ -1637,31 +1637,47 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     $value_type = isset($value_types[$selected_plugin_context]) ? $value_types[$selected_plugin_context] : 'string';
     // We use different form elements depending on whether there is a predefined list
     // of possible values or not.
-    if ($value_type == 'predefined') {
-      $form['mapping']['contexts'][$delta]['value']['operator'] = array(
-        '#type' => 'value',
-        '#value' => 'equals',
-      );
-      $form['mapping']['contexts'][$delta]['value']['match'] = array(
-        '#type' => 'select',
-        '#options' => $targeting_values[$selected_context]['values'],
-        '#title' => 'Value',
-        '#default_value' => $selected_match,
-      );
-    }
-    else {
-      $form['mapping']['contexts'][$delta]['value']['operator'] = array(
-        '#type' => 'select',
-        '#title' => t('Operator'),
-        '#options' => $operator_options[$value_type],
-        '#default_value' => $selected_operator
-      );
-      $form['mapping']['contexts'][$delta]['value']['match'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Value',
-        '#size' => $value_type == 'number' ? 6 : 30,
-        '#default_value' => $selected_match,
-      );
+    switch ($value_type) {
+      case 'predefined':
+        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
+          '#type' => 'value',
+          '#value' => 'equals',
+        );
+        $form['mapping']['contexts'][$delta]['value']['match'] = array(
+          '#type' => 'select',
+          '#options' => $targeting_values[$selected_context]['values'],
+          '#title' => 'Value',
+          '#default_value' => $selected_match,
+        );
+       break;
+      case 'boolean':
+        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
+          '#type' => 'value',
+          '#value' => 'equals',
+        );
+        $off_label = isset($targeting_values[$selected_context]['off_label']) ? $targeting_values[$selected_context]['off_label'] : 'No';
+        $on_label = isset($targeting_values[$selected_context]['on_label']) ? $targeting_values[$selected_context]['on_label'] : 'Yes';
+        $form['mapping']['contexts'][$delta]['value']['match'] = array(
+          '#type' => 'select',
+          '#options' => array(0 => $off_label, 1 => $on_label),
+          '#title' => 'Value',
+          '#default_value' => $selected_match,
+        );
+        break;
+      default:
+        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
+          '#type' => 'select',
+          '#title' => t('Operator'),
+          '#options' => $operator_options[$value_type],
+          '#default_value' => $selected_operator
+        );
+        $form['mapping']['contexts'][$delta]['value']['match'] = array(
+          '#type' => 'textfield',
+          '#title' => 'Value',
+          '#size' => $value_type == 'number' ? 6 : 30,
+          '#default_value' => $selected_match,
+        );
+        break;
     }
 
     // Add a "remove" button for this context.

@@ -202,6 +202,35 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
     field_create_instance($fieldInstance);
     return $field;
   }
+
+  /**
+   * Creates a user profile field that's just a single on/off checkbox.
+   */
+  protected function createBooleanProfileField($field_name = NULL, $on_value = 'on', $off_value = 'off') {
+    $field_name = empty($field_name) ? $this->randomName() : $field_name;
+    // Boolean field.
+    $field = array(
+      'field_name' => 'field_' . drupal_strtolower($field_name),
+      'type' => 'list_boolean',
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => $off_value, 1 => $on_value),
+      ),
+    );
+    $field = field_create_field($field);
+    // Create an instance of the 'boolean' field.
+    $instance = array(
+      'field_name' => $field['field_name'],
+      'entity_type' => 'user',
+      'bundle' => 'user',
+      'widget' => array(
+        'module' => 'options',
+        'type' => 'options_onoff',
+      ),
+    );
+    field_create_instance($instance);
+    return $field;
+  }
 }
 
 /**
@@ -1841,6 +1870,99 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertEqual($expected_targeting['option-A']['fixed_targeting'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting']);
     $this->assertEqual($expected_targeting['option-A']['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_rules']);
     $this->assertEqual($expected_targeting['option-A']['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_strategy']);
+  }
+
+  /**
+   * Tests fixed targeting using a boolean context.
+   */
+  function testFixedTargetingWithBooleanContext() {
+    // Enable a test module that provides fixed targeting.
+    module_enable(array('personalize_test_extra_agent'));
+    $this->resetAll();
+
+    // Create user profile fields that we can use for targeting.
+    $this->createBooleanProfileField('boolean_user_field_1');
+
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    // Create a new agent.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[machine_name]' => $machine_name,
+      'agent_basic_info[agent_type]' => 'test_extra_agent',
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+
+    // Create block-based option set.
+
+    // Each option set will have 2 options.
+    $options = array(
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
+    );
+    $option_set = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
+    $agent_data = personalize_agent_load($machine_name);
+    module_load_include('inc', 'personalize', 'personalize.admin');
+    // Ensure that we get the expected targeting values available for use by our
+    // agent for fixed targeting.
+    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
+    $expected_targeting_values = array(
+      'boolean_user_field_1' => array(
+        'friendly name' => 'field_boolean_user_field_1',
+        'value type' => 'boolean',
+        'on_label' => 'On',
+        'off_label' => 'Off',
+        'visitor_context' => 'user_profile_context',
+      )
+    );
+    $this->assertEqual($expected_targeting_values, $targeting_values);
+    // Now mock a call to the function to output the form elements, to make sure the
+    // boolean value is handled correctly.
+    $option = $option_set->options[0];
+    // This simulates having selected our user profile field from teh dropdown list.
+    $form_state = array(
+      'values' => array(
+        'option_sets' => array(
+          'option_set_1' => array(
+            'options' => array(
+              $option['option_id'] => array(
+                'explicit_targeting' => array(
+                  'mapping' => array(
+                    'contexts' => array(
+                      array(
+                        'context' => 'user_profile_context__boolean_user_field_1',
+                        'value' => array(
+                          'operator' => '',
+                          'match' => ''
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+
+    $form_elements = personalize_targeting_support_form_elements($option_set, $option, $targeting_values, PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH, array(), array('option_sets', 'option_set_1', 'options', $option_set->options[0]['option_id']), $form_state);
+    $this->assertEqual('user_profile_context__boolean_user_field_1', $form_elements['mapping']['contexts'][0]['context']['#default_value']);
+    $operator_element = $form_elements['mapping']['contexts'][0]['value']['operator'];
+    // Assert there is no 'operator' dropdown, just a value element.
+    $this->assertEqual('value', $operator_element['#type']);
+    $this->assertEqual('equals', $operator_element['#value']);
+
+    $match_element = $form_elements['mapping']['contexts'][0]['value']['match'];
+    // Assert the correct options in the match dropdown.
+    $this->assertEqual(array(
+      0 => 'Off',
+      1 => 'On',
+    ), $match_element['#options']);
   }
 }
 
