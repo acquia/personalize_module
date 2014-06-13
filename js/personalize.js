@@ -581,7 +581,7 @@
   }
 
   function writeDecisionsToStorage(agent_name, point, decisions) {
-    if (!Drupal.personalize.sessionId || !Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
+    if (!Drupal.settings.personalize.agent_map[agent_name].cache_decisions) {
       return;
     }
     var bucket = Drupal.personalize.storage.utilities.getBucket('decisions');
