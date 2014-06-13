@@ -326,13 +326,15 @@
    *   The plugin name to use to retrieve visitor context.
    * @param context
    *   The context object to retrieve values for in the current visitor context.
-   * @returns {Promise}
-   *   An asynchronous JS promise.
+   * @returns object|Promise|null
+   *   The context object with values filled in for each context key
+   *   OR An asynchronous JS promise for asynchronous processing
+   *   OR null.
    */
   function getVisitorContext(plugin, context) {
     var visitor_context = Drupal.personalize.visitor_context;
     if (visitor_context.hasOwnProperty(plugin) && typeof visitor_context[plugin].getContext === 'function') {
-      return context_values = visitor_context[plugin].getContext(context);
+      return visitor_context[plugin].getContext(context);
     }
     return null;
   }
