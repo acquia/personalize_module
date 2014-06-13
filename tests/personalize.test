@@ -267,6 +267,11 @@ class PersonalizeTest extends PersonalizeBaseTest {
    * @see personalize_test_personalized_page().
    */
   function testPersonalizePage() {
+    // Set initial status of the campaigns.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+
     // Call the test page with no params - results in just one Option Set
     // with two options being output.
     $this->drupalGet('personalize-test/personalized-page');
@@ -739,29 +744,34 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $agent = personalize_agent_load($machine_name);
     $agent->data['visitor_context']['personalize_test_visitor_context'] = array(
       'test_session' => 'test_session',
-      'test_local_30' => 'test_local_30',
       'test_local_none' => 'test_local_none',
       'test_nocache' => 'test_nocache',
     );
-    $agent->status = PERSONALIZE_STATUS_RUNNING;
     personalize_agent_save($agent);
-    $this->resetAll();
 
+    // Create a block based option set.
+    $options = array(
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
+    );
+    $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
+
+    // Don't remove until this is fixed: https://drupal.org/node/2256243
+    $this->resetAll();
     // Load a page and verify cache settings.
     $this->drupalGet('');
 
     // Verify the cache settings are in the Drupal settings.
     $settings = $this->drupalGetSettings();
     $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
-    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], '30');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30']));
     $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
-    /* @todo Re-enable this after agent status is moved out of configuration.
-     * @see https://drupal.org/node/2213219
     // Pause the campaign and verify that the settings are no longer there.
-    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
-    $this->resetAll();
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_PAUSED);
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session']));
@@ -770,12 +780,11 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
     // Restart the agent and verify that they come back.
-    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
-    $this->resetAll();
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
-    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], '30');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30']));
     $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
@@ -787,30 +796,34 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30']));
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
-    // Add a personalized block based option set and use the removed context for
+    // Add a personalized block based option set and use the unused context for
     // fixed targeting.
     $options = array(
-    array('bid' => 'comment_delta_recent'),
-    array('bid' => 'system_delta_powered-by'),
+      array('bid' => 'comment_delta_recent'),
+      array('bid' => 'system_delta_powered-by'),
     );
     $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $agent->machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
-    $this->resetAll();
     $edit = array(
       'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_session',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_local_30',
       'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
       'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
       'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
     );
     $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/edit", $edit, $this->getButton('option'));
 
-    // Start the agent up and verify the session context is back.
-    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+    // Start the agent up and verify the various contexts are included.
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
-     */
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:test_session']));
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], '30');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
   }
 
   /**
@@ -1490,7 +1503,6 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should now be "running".
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status($first_agent_machine_name));
-    $this->resetAll();
     // Check the "started" time of the agent, which should now have been set.
     $time_after = time();
     $agent = personalize_agent_load($first_agent_machine_name);

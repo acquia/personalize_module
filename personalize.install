@@ -36,14 +36,6 @@ function personalize_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'status' => array(
-        'description' => 'Integer representing the status of this agent.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => PERSONALIZE_STATUS_NOT_STARTED,
-      ),
       'started' => array(
         'description' => 'The Unix timestamp of when the agent was first activated.',
         'type' => 'int',
@@ -272,6 +264,14 @@ function personalize_uninstall() {
   variable_del('personalize_local_caching_storage');
   variable_del('personalize_use_admin_mode');
   variable_del('personalize_visitor_context_disabled');
+
+  // Delete the campaign status variables.
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a')
+    ->execute();
+  foreach ($result as $row) {
+    variable_del("personalize_campaign_{$row->machine_name}_status");
+  }
 }
 
 /**
@@ -525,6 +525,26 @@ function personalize_update_7011() {
       ->fields(array('options' => serialize($options)))
       ->execute();
   }
+}
+
+/**
+ * Remove campaign status from exportable configuration data.
+ */
+function personalize_update_7012() {
+  // Set the status for all existing campaigns into variables if not already
+  // done so via UI.
+  $result = db_select('personalize_agent', 'a')
+    ->fields('a')
+    ->execute();
+  foreach ($result as $row) {
+    $varname = _personalize_agent_get_status_variable($row->machine_name);
+    $already_set = variable_get($varname, NULL);
+    if (empty($already_set)) {
+      variable_set('personalize_campaign_' . $row->machine_name . '_status', $row->status);
+    }
+  }
+  // Delete the column in the database.
+  db_drop_field('personalize_agent', 'status');
 }
 
 /**

@@ -335,7 +335,7 @@ function personalize_page_build(&$page) {
       $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
-        'status' => $agent->status,
+        'status' => personalize_agent_get_status($agent->machine_name),
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
@@ -756,6 +756,17 @@ function personalize_element_with_option_set(&$element, $option_set) {
 }
 
 /**
+ * Helper function to determine the variable name to use for a campaign's status
+ * variable.
+ *
+ * @param $agent_name
+ *   The name of the campaign to use for name generation.
+ */
+function _personalize_agent_get_status_variable($agent_name) {
+  return "personalize_campaign_{$agent_name}_status";
+}
+
+/**
  * Set the status of an agent.
  *
  * @param $agent_name
@@ -789,12 +800,8 @@ function personalize_agent_set_status($agent_name, $status) {
     return TRUE;
   }
 
-  $fields = array(
-    'status' => $status
-  );
   if ($status == PERSONALIZE_STATUS_RUNNING) {
     // Do a check before setting the status to running.
-    $agent_instance = personalize_agent_load_agent($agent_name);
     if (!personalize_verify_agent($agent_name)) {
       drupal_set_message(t('There is a problem with this campaign and it cannot be run at this time.'), 'error');
       return FALSE;
@@ -802,17 +809,14 @@ function personalize_agent_set_status($agent_name, $status) {
     // If we're setting a campaign to the running status for the first time,
     // record the current time as the "started" property of the agent.
     if ($old_status == PERSONALIZE_STATUS_NOT_STARTED) {
-      $fields['started'] = time();
+      $agent = personalize_agent_load($agent_name);
+      $agent->started = time();
+      personalize_agent_save($agent);
     }
   }
 
-  db_update('personalize_agent')
-    ->fields($fields)
-    ->condition('machine_name', $agent_name)
-    ->execute();
-
-  // Clear the agent cache for this agent.
-  personalize_agent_load($agent_name, TRUE);
+  // Set the new status in variables.
+  variable_set(_personalize_agent_get_status_variable($agent_name), $status);
 
   // Clear the visitor context cache settings for running campaigns.
   personalize_visitor_context_expiration_clear();
@@ -885,7 +889,7 @@ function personalize_verify_agent($agent_name) {
  *   An integer representing the status of the agebtn.
  */
 function personalize_agent_get_status($agent_name) {
-  $status = db_query('SELECT status FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name))->fetchField();
+  $status = variable_get(_personalize_agent_get_status_variable($agent_name), PERSONALIZE_STATUS_NOT_STARTED);
   return $status;
 }
 
@@ -1439,6 +1443,13 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
     //   param?
     ctools_export_load_object_reset('personalize_agent');
   }
+  // Status is stored outside of configuration.
+  $limit_status = FALSE;
+  if (isset($conditions['status'])) {
+    $limit_status = $conditions['status'];
+    unset($conditions['status']);
+  }
+
   $defaults = array();
   if (empty($names) && empty($conditions)) {
     $defaults = ctools_export_load_object('personalize_agent', 'all');
@@ -1453,18 +1464,25 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
   if (!empty($sort)) {
     _personalize_loaded_object_sort($defaults, $sort);
   }
-  if ($include_completed) {
+  if ($include_completed && !$limit_status) {
     return $defaults;
   }
-  $active_only = array();
+  $limited = array();
   foreach ($defaults as $name => $agent) {
-    // Return only agents whose status is not completed.
-    if ($agent->status & PERSONALIZE_STATUS_COMPLETED) {
+    // If a specific status is requested then return only that status, otherwise
+    // limit the status to those that are not completed.
+    $current_status = personalize_agent_get_status($agent->machine_name);
+    // Skip agents not matching the requested status.
+    if ($limit_status && $current_status != $limit_status) {
       continue;
     }
-    $active_only[$name] = $agent;
+    // Skip any completed agents.
+    else if ($current_status & PERSONALIZE_STATUS_COMPLETED) {
+      continue;
+    }
+    $limited[$name] = $agent;
   }
-  return $active_only;
+  return $limited;
 }
 
 /**
@@ -1610,27 +1628,23 @@ function personalize_agent_save($agent) {
     $agent = (object) $agent_array;
   }
   module_invoke_all('personalize_agent_presave', $agent);
-  // Make sure we have a valid status for this agent.
-  if (isset($agent->status)) {
-    $status_map = personalize_get_agent_status_map();
-    if (!in_array($agent->status, array_keys($status_map))) {
-      $agent->status = PERSONALIZE_STATUS_NOT_STARTED;
-    }
-  }
-  else {
-    $agent->status = PERSONALIZE_STATUS_NOT_STARTED;
-  }
+
   db_merge('personalize_agent')
     ->key(array('machine_name' => $agent->machine_name))
     ->fields(array(
       'plugin' => $agent->plugin,
       'label' => $agent->label,
-      'status' => $agent->status,
       'data' => serialize($agent->data),
+      'started' => isset($agent->started) ? $agent->started : 0,
     ))
     ->execute();
+
   // Make sure the static cache for this agent is reset.
   personalize_agent_load($agent->machine_name, TRUE);
+
+  // Also reset the visitor context cache.
+  personalize_visitor_context_expiration_clear();
+
   // Call the save callback of the agent type.
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
@@ -1653,6 +1667,7 @@ function personalize_agent_delete($agent_name) {
   $agent = personalize_agent_load($agent_name);
   db_query('DELETE FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name));
   db_query('DELETE FROM {personalize_campaign_goals} WHERE agent = :agent', array(':agent' => $agent_name));
+  variable_del(_personalize_agent_get_status_variable($agent_name));
   module_invoke_all('personalize_agent_delete', $agent);
 }
 

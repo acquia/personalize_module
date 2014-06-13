@@ -112,8 +112,7 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
       'referrer_url' => 'referrer_url',
       'original_referrer_url' => 'original_referrer_url',
     );
-    $agent->status = PERSONALIZE_STATUS_RUNNING;
-    personalize_agent_save($agent);
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
 
     $this->resetAll();
     // Load a page and verify cache settings.

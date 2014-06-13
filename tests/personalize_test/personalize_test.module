@@ -67,6 +67,10 @@ function personalize_test_menu() {
  * @see PersonalizeTest::testPersonalizePage()
  */
 function personalize_test_personalized_page($option_sets = NULL, $goal_names = NULL, $use_multiple_agents = FALSE, $mvt = NULL, $mvt_num = NULL) {
+  // Set all agent statuses to running.
+  personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+  personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
+
   if ($option_sets !== NULL) {
     $option_sets = explode(',', $option_sets);
   }
@@ -306,7 +310,6 @@ function personalize_test_personalize_default_agents() {
   $personalize_agent->plugin = 'test_agent';
   $personalize_agent->label = 'My Test Agent';
   $personalize_agent->data = array('use_client_side_goal_processing' => TRUE);
-  $personalize_agent->status = PERSONALIZE_STATUS_RUNNING;
   $items["test-agent"] = $personalize_agent;
 
   $personalize_agent = new stdClass();
@@ -316,7 +319,6 @@ function personalize_test_personalize_default_agents() {
   $personalize_agent->plugin = 'test_agent';
   $personalize_agent->label = 'My Second Test Agent';
   $personalize_agent->data = array('use_client_side_goal_processing' => TRUE);
-  $personalize_agent->status = PERSONALIZE_STATUS_RUNNING;
   $items["test-agent-2"] = $personalize_agent;
 
   $personalize_agent = new stdClass();
@@ -326,7 +328,6 @@ function personalize_test_personalize_default_agents() {
   $personalize_agent->plugin = 'test_agent';
   $personalize_agent->label = 'My Third Test Agent';
   $personalize_agent->data = array('use_client_side_goal_processing' => FALSE);
-  $personalize_agent->status = PERSONALIZE_STATUS_RUNNING;
   $items["test-agent-3"] = $personalize_agent;
   return $items;
 }
