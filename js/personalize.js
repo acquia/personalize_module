@@ -818,7 +818,7 @@
     addDecisionCallback(executor, agent_name, decision_point, $option_set, osid);
 
     // Check to see if this decision is already in storage.
-    decisions = readDecisionsFromStorage(agent_name, decision_point);
+    var decisions = readDecisionsFromStorage(agent_name, decision_point);
     // Decisions from localStorage need to be checked against the known valid
     // set of choices because they may be stale (e.g. if an option has been
     // removed after being stored in a user's localStorage).
