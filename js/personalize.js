@@ -113,6 +113,12 @@
         for (var i = 0; i < num; i++) {
           contextValues[promisePlugins[i]] = loadedContexts[i];
         }
+      }, function handleErrorContexts(err) {
+        if (console.log) {
+          console.log(err.message);
+        }
+      }).then(function() {
+        // Now that everything is loaded we can apply context rules.
         for (var agentName in agents) {
           if (!agents.hasOwnProperty(agentName)) {
             continue;
@@ -129,10 +135,9 @@
               }
             }
           }
-
-          // Evaluate the contexts.
-          agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         }
+        // Evaluate the contexts.
+        agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         // Trigger decision calls on the agents.
         triggerDecisions(agents);
       });
