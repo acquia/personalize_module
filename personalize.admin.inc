@@ -684,10 +684,15 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['#suffix'] = !empty($form['#suffix']) ? $form['#suffix'] . '</div>' : '</div>';
 
   $form['agent_form']['agent_fieldset']['actions'] = array('#type' => 'actions');
+  $classes = array('action-item-primary-active');
+  if (!empty($agent_data->machine_name)) {
+    // Triggers warning when editing an active campaign.
+    $classes[] = 'personalize-admin-warn';
+  }
   $form['agent_form']['agent_fieldset']['actions']['submit_form'] = array(
     '#type' => 'submit',
     '#attributes' => array(
-      'class' => array('action-item-primary-active', 'personalize-admin-warn'),
+      'class' => $classes,
     ),
     '#value' => t('Save campaign settings'),
   );
