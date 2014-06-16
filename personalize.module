@@ -353,16 +353,13 @@ function personalize_page_build(&$page) {
   $page['page_top']['personalization'] = array(
     '#attached' => array(
       'js' => array(
-        $path . '/js/personalize.js' => $options,
         array(
           'data' => array('personalize' => $settings),
           'type' => 'setting'
         ),
       ),
       'library' => array(
-        array('system', 'jquery.cookie'),
-        array('system', 'jquery.bbq'),
-        array('system', 'drupal.ajax'),
+        array('personalize', 'personalize'),
       ),
     )
   );
@@ -501,6 +498,22 @@ function personalize_library() {
       array('system', 'jquery'),
       array('system', 'jquery.once'),
     ),
+  );
+  $libraries['personalize'] = array(
+    'title' => 'Personalize capabilities',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/promise-1.0.0.min.js' => $options,
+      $path . '/js/personalize.js' => $options,
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+      array('system', 'jquery.once'),
+      array('system', 'jquery.cookie'),
+      array('system', 'jquery.bbq'),
+      array('system', 'drupal.ajax'),
+    )
   );
   return $libraries;
 }
