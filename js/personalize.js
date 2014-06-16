@@ -715,44 +715,6 @@
   }
 
   /**
-   * Loops through the option sets on the page and handles retrieving
-   * and formatting agent data including decision points and targeting data.
-   *
-   * @param option_sets
-   *   An object of option set data keyed by osid.
-   * @returns object
-   *   The combined agent data for all option sets on the page.
-   */
-  function processOptionSets (option_sets) {
-    var agents = {};
-    for(var osid in option_sets) {
-      if (processedOptionSets.hasOwnProperty(osid)) {
-        continue;
-      }
-      processedOptionSets[osid] = true;
-      if (option_sets.hasOwnProperty(osid)) {
-        var agentData = processOptionSet(option_sets[osid]);
-        // If agent data is not returned then the decision is not necessary for
-        // this option set.
-        if (!agentData) {
-          continue;
-        }
-        // Merge in the agent data with other option set agent data.
-        var agentName = agentData.agentName;
-        if (!agents.hasOwnProperty(agentName)) {
-          agents[agentName] = agentData;
-        } else {
-          // Merge in decision point data.
-          $.extend(agents[agentName].decisionPoints, agentData.decisionPoints);
-          // Merge in fixed targeting data.
-          $.extend(agents[agentName].fixedTargeting, agentData.fixedTargeting);
-        }
-      }
-    }
-    return agents;
-  }
-
-  /**
    * Parses through an option set and handles a decision if one can be made
    * immediately (due to cache, preselection, etc.) -- otherwise returns
    * the agent decision data necessary to retrieve a decision.
