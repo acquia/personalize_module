@@ -135,9 +135,9 @@
               }
             }
           }
+          // Evaluate the contexts.
+          agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         }
-        // Evaluate the contexts.
-        agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
         // Trigger decision calls on the agents.
         triggerDecisions(agents);
       });
