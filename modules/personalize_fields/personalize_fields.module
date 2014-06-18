@@ -49,7 +49,10 @@ function personalize_fields_field_info_alter(&$info) {
  */
 function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
   $field = $form['#field'];
-  if (!$form['#field']['locked']) {
+  $instance = $form['#instance'];
+  // We only support multi-value fields that use the default handling for multiple
+  // values.
+  if (!$form['#field']['locked'] && field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT) {
     // Add the "personalizable checkbox, unless this is a user field
     // and the setting to allow personalizable user fields has not been
     // enabled.

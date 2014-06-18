@@ -461,4 +461,54 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalGet('node/add/article');
     $this->assertPattern('/class=".*?personalize-fields-personalized.*?"/', 'personalize-fields-personalized class found');
   }
+
+  /**
+   * Tests unsupported field widgets.
+   */
+  function testPersonalizeFieldCustomWidget() {
+    module_enable(array('field_test'));
+    $this->resetAll();
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Add a multi-value text field to the article node type.
+    $field = array(
+      'type' => 'text',
+      'field_name' => 'article_headline',
+      'cardinality' => -1,
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'article_headline',
+      'entity_type' => 'node',
+      'label' => 'Headline',
+      'bundle' => 'article',
+      'required' => FALSE
+    );
+    field_create_instance($instance);
+    // An ordinary text field uses a widget that uses default multi-value handlint so
+    // the "Make this field personalizable" checkbox should show up.
+    $this->drupalGet('admin/structure/types/manage/article/fields/article_headline');
+    $this->assertFieldByName('field[settings][personalizable]');
+
+    $field = array(
+      'type' => 'test_field',
+      'field_name' => 'my_test_field',
+      'cardinality' => -1,
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'my_test_field',
+      'entity_type' => 'node',
+      'label' => 'My test field',
+      'bundle' => 'article',
+      'required' => FALSE,
+      'widget' => array('type' => 'test_field_widget_multiple', 'settings' => array('test_widget_setting' => 'Some setting')),
+    );
+    field_create_instance($instance);
+
+    // The test_field_widget_multiple widget type uses non-default handling for multiple
+    // values so we should not get a "Make this field personalizable" checkbox.
+    $this->drupalGet('admin/structure/types/manage/article/fields/my_test_field');
+    $this->assertNoFieldByName('field[settings][personalizable]');
+  }
 }
