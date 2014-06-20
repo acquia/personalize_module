@@ -1163,7 +1163,7 @@
         var stored = this.store.getItem(generateKey.call(this,key));
         if (stored) {
           var record = JSON.parse(stored);
-          if (record.val) {
+          if (typeof record.val !== 'undefined') {
             return record.val;
           }
         }
