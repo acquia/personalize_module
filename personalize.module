@@ -270,6 +270,21 @@ function personalize_delete_agent_access($agent) {
 }
 
 /**
+ * Implements hook_entity_info().
+ */
+function personalize_entity_info() {
+  return array(
+    'personalize_option_set' => array(
+      'label' => t('Personalize Option Set'),
+      'base table' => 'personalize_option_sets',
+      'entity keys' => array(
+        'id' => 'osid',
+      ),
+    ),
+  );
+}
+
+/**
  * Implements hook_page_build().
  */
 function personalize_page_build(&$page) {
@@ -710,6 +725,7 @@ function personalize_element_with_option_set(&$element, $option_set) {
       );
     }
   }
+
 
   $agent = personalize_agent_load_agent($agent_name);
   // Bail if for some reason the agent could not be instantiated.
@@ -1887,124 +1903,28 @@ function personalize_option_set_save($option_set) {
 }
 
 /**
- * Loads option sets from the database or, if available, from memory.
- *
- * The logic in this function is taken from the DefaultEntityController's
- * load() method in includes/entity.inc.
- *
- * @param array $ids
- *   The IDs of the option sets to loads, or FALSE to load all.
- * @param array $conditions
- *   An array of conditions to restrict the option sets returned to those
- *   matching the specified conditions.
- * @param boolean $reset
- *   Whether or not to reset the static cache and load fresh from the DB.
- * @param string $sort
- *   The name of an object property to sort the results on.  Sorts will be
- *   ascending.  Alternatively, a sort comparison function to use.
- * @return array
- *   An array of option set objects keyed by osid.
+ * Load a single Option Set based on Option Set ID
  */
-function personalize_option_set_load_multiple($ids = array(), $conditions = array(), $reset = FALSE, $sort = NULL) {
-  $cached_option_sets = &drupal_static(__FUNCTION__, array());
-  $option_sets = array();
-  if ($reset) {
-    if (!empty($ids)) {
-      // Just reset the specified IDs.
-      foreach ($ids as $id) {
-        if (isset($cached_option_sets[$id])) {
-          unset($cached_option_sets[$id]);
-        }
-      }
-    }
-    else {
-      $cached_option_sets = array();
-    }
-  }
+function personalize_option_set_load($osid = NULL, $reset = FALSE){
+  $osids = (isset ($osid) ? array($osid) : array());
+  $option_sets = personalize_option_set_load_multiple($osids, array(), $reset);
+  return $option_sets ? reset ($option_sets) : FALSE;
+}
 
-  // The $ids variable keeps track of the option sets that still need to be loaded
-  // from the database, and will be reduced as items are loaded from the cache,
-  // so $passed_ids holds the original set of requested ids, or FALSE if none were
-  // specifically requested.
-  $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
+function personalize_option_set_load_multiple($osids = array(), $conditions = array(), $reset = FALSE){
+  return entity_load('personalize_option_set', $osids, $conditions, $reset);
+}
 
-  // Load any available option sets from the static cache.
-  if (!empty($cached_option_sets)) {
-    if ($ids) {
-      $option_sets += array_intersect_key($cached_option_sets, array_flip($ids));
-    }
-    // If loading option sets only by conditions, fetch all available ones
-    // from the cache. Those that don't match are removed later.
-    elseif ($conditions) {
-      $option_sets = $cached_option_sets;
-    }
+/**
+ * Implements hook_personalize_option_set_load().
+ */
+function personalize_personalize_option_set_load($option_sets) {
+  foreach ($option_sets as $option_set) {
+    $option_set->options = unserialize($option_set->options);
+    $option_set->data = unserialize($option_set->data);
+    $option_set->decision_name = personalize_get_decision_name_for_option_set($option_set);
+    $option_set->decision_point = personalize_get_decision_point_name_for_option_set($option_set);
   }
-
-  // Exclude any option sets loaded from cache if they don't match $conditions.
-  if ($conditions) {
-    foreach ($cached_option_sets as $option_set) {
-      $os_values = (array) $option_set;
-      if (array_diff_assoc($conditions, $os_values)) {
-        unset($option_sets[$option_set->osid]);
-      }
-    }
-  }
-
-  // If any option sets were loaded, remove them from the ids still to load.
-  if ($passed_ids) {
-    $ids = array_keys(array_diff_key($passed_ids, $option_sets));
-  }
-
-  // Load any remaining option sets from the database. This is the case if $ids
-  // is set to FALSE (so we load all), if there are any ids left to
-  // load, or if $conditions was passed without $ids.
-  if ($ids === FALSE || $ids || ($conditions && !$passed_ids)) {
-    // Build the query.
-    $query = db_select('personalize_option_sets', 'o')
-      ->fields('o');
-    foreach ($conditions as $key => $value) {
-      $query->condition("o.$key", $value);
-    }
-    if ($ids) {
-      $query->condition('o.osid', $ids, 'IN');
-    }
-    $queried_option_sets = $query
-      ->execute()
-      ->fetchAllAssoc('osid');
-  }
-
-  if (!empty($queried_option_sets)) {
-    foreach ($queried_option_sets as &$os) {
-      $os = _personalize_unpack_option_set($os);
-    }
-    // Allow other modules to add information to the Option Sets.
-    foreach (module_implements('personalize_option_set_load') as $module) {
-      $func = $module . '_personalize_option_set_load';
-      $func($queried_option_sets);
-    }
-    $option_sets += $queried_option_sets;
-  }
-
-  // Add option sets to the static cache.
-  if (!empty($queried_option_sets)) {
-    $cached_option_sets += $queried_option_sets;
-  }
-
-  // Ensure that the returned array is ordered the same as the original
-  // $ids array if this was passed in and remove any invalid ids.
-  if ($passed_ids) {
-    // Remove any invalid ids from the array.
-    $passed_ids = array_intersect_key($passed_ids, $option_sets);
-    foreach ($option_sets as $option_set) {
-      $passed_ids[$option_set->osid] = $option_set;
-    }
-    $option_sets = $passed_ids;
-  }
-  else if (!empty($sort)) {
-    _personalize_loaded_object_sort($option_sets, $sort);
-  }
-
-  return $option_sets;
 }
 
 /**
@@ -2031,14 +1951,6 @@ function personalize_option_set_load_by_agent($agent_name, $reset = FALSE) {
   }
 
   return $option_sets[$agent_name];
-}
-
-/**
- * Load a single Option Set based on Option Set ID
- */
-function personalize_option_set_load($osid, $reset = FALSE) {
-  $option_sets = personalize_option_set_load_multiple(array($osid), array(), $reset);
-  return !empty($option_sets) ? $option_sets[$osid] : NULL;
 }
 
 /**

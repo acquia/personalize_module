@@ -720,7 +720,7 @@ function personalize_fields_personalize_option_set_delete($option_set) {
 /**
  * Implements hook_personalize_option_set_load().
  */
-function personalize_fields_personalize_option_set_load(&$option_sets) {
+function personalize_fields_personalize_option_set_load($option_sets) {
   foreach ($option_sets as $option_set) {
     if ($option_set->plugin != 'fields') {
       continue;
