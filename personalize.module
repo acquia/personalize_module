@@ -342,6 +342,7 @@ function personalize_page_build(&$page) {
       $plugin = personalize_agent_load_agent($agent->machine_name);
       $current_status = personalize_agent_get_status($agent->machine_name);
       list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
+      $verified = personalize_verify_agent($agent->machine_name);
       $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
@@ -353,10 +354,10 @@ function personalize_page_build(&$page) {
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
-          'report' => $plugin instanceof PersonalizeAgentReportInterface ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
+          'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
         ),
         'goals' => (isset($goals)) ? $goals : NULL,
-        'verified' => personalize_verify_agent($agent->machine_name),
+        'verified' => $verified,
       );
       // In the client, goals will render to an array when it is empty and an
       // object when it has data, so the no-data state must be NULL to keep
