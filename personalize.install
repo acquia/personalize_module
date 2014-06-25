@@ -143,6 +143,12 @@ function personalize_schema() {
         'not null' => FALSE,
         'description' => 'The path to a local preview page for the option set.',
       ),
+      'uuid' => array(
+        'type' => 'char',
+        'length' => 36,
+        'default' => '',
+        'description' => 'The Universally Unique Identifier.',
+      ),
     ),
     'primary key' => array('osid'),
     'foreign keys' => array(
@@ -545,6 +551,16 @@ function personalize_update_7012() {
   }
   // Delete the column in the database.
   db_drop_field('personalize_agent', 'status');
+}
+
+/**
+ * Add UUID support.
+ */
+function personalize_update_7013() {
+  // Make sure to add UUID field
+  if (!db_field_exists('personalize_option_sets', 'uuid')) {
+    db_add_field('personalize_option_sets', 'uuid', array('type' => 'char', 'length' => 36, 'default' => '', 'description' => 'The Universally Unique Identifier.'));
+  }
 }
 
 /**
