@@ -181,6 +181,13 @@ function personalize_menu() {
     //'type' => MENU_LOCAL_TASK,
     'file' => 'personalize.admin.inc',
   );
+  $items['admin/structure/personalize/manage/%personalize_agent/ajax_status/%'] = array(
+    'page callback' => 'personalize_agent_set_status_ajax',
+    'page arguments' => array(4, 6),
+    'access callback' => 'user_access',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_CALLBACK,
+  );
   $items['admin/structure/personalize/mvt'] = array(
     'title' => 'Personalize: Multivariate Tests',
     'description' => 'Manage your multivariate.',
@@ -333,16 +340,23 @@ function personalize_page_build(&$page) {
         }
       }
       $plugin = personalize_agent_load_agent($agent->machine_name);
-        $settings['campaigns'][$agent->machine_name] = array(
+      $current_status = personalize_agent_get_status($agent->machine_name);
+      list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
+      $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
-        'status' => personalize_agent_get_status($agent->machine_name),
+        'status' => $current_status,
+        'nextStatus' => array(
+          'status' => $next_status,
+          'text' => $status_text,
+        ),
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
           'report' => $plugin instanceof PersonalizeAgentReportInterface ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
         ),
         'goals' => (isset($goals)) ? $goals : NULL,
+        'verified' => personalize_verify_agent($agent->machine_name),
       );
       // In the client, goals will render to an array when it is empty and an
       // object when it has data, so the no-data state must be NULL to keep
@@ -778,6 +792,60 @@ function personalize_element_with_option_set(&$element, $option_set) {
  */
 function _personalize_agent_get_status_variable($agent_name) {
   return "personalize_campaign_{$agent_name}_status";
+}
+
+/**
+ * Helper function to determine the next status and text to display for
+ * changing an agent's status.
+ *
+ * @param $current_status
+ *   The current status of the agent.
+ * @return
+ *   An array with two values:
+ *   - new status value
+ *   - text to display
+ */
+function _personalize_status_toggle_next($current_status) {
+  switch ($current_status) {
+    case PERSONALIZE_STATUS_NOT_STARTED:
+      $new_status = PERSONALIZE_STATUS_RUNNING;
+      $button_text = t('Start');
+      break;
+    case PERSONALIZE_STATUS_PAUSED:
+      $new_status = PERSONALIZE_STATUS_RUNNING;
+      $button_text = t('Resume');
+      break;
+    case PERSONALIZE_STATUS_RUNNING:
+      $new_status = PERSONALIZE_STATUS_PAUSED;
+      $button_text = t('Pause');
+      break;
+    default:
+      $new_status = FALSE;
+      $button_text = '';
+  }
+  return array($new_status, $button_text);
+}
+
+/**
+ * Ajax callback to update an agent status.
+ *
+ * @param $agent
+ *   The agent to update.
+ * @param $status
+ *   The new status to set.
+ */
+function personalize_agent_set_status_ajax($agent, $status) {
+  $updated = personalize_agent_set_status($agent->machine_name, $status);
+  $return = array('success' => $updated);
+  if ($updated) {
+    list($next_status, $text) = _personalize_status_toggle_next($status);
+    $return['nextStatus'] = array(
+      'status' => $next_status,
+      'text' => $text,
+    );
+    $return['currentStatus'] = $status;
+  }
+  return drupal_json_output($return);
 }
 
 /**
