@@ -463,13 +463,18 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
   }
 
   /**
-   * Tests unsupported field widgets.
+   * Tests supported and unsupported field widgets.
    */
   function testPersonalizeFieldCustomWidget() {
     module_enable(array('field_test'));
     $this->resetAll();
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
     $this->drupalLogin($admin_user);
+
+    // Multivalue image fields should be supported..
+    $this->drupalGet('admin/structure/types/manage/article/fields/field_image');
+    $this->assertFieldByName('field[settings][personalizable]');
+
     // Add a multi-value text field to the article node type.
     $field = array(
       'type' => 'text',
@@ -485,7 +490,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'required' => FALSE
     );
     field_create_instance($instance);
-    // An ordinary text field uses a widget that uses default multi-value handlint so
+    // An ordinary text field uses a widget that uses default multi-value handling so
     // the "Make this field personalizable" checkbox should show up.
     $this->drupalGet('admin/structure/types/manage/article/fields/article_headline');
     $this->assertFieldByName('field[settings][personalizable]');

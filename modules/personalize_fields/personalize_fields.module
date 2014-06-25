@@ -52,7 +52,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
   $instance = $form['#instance'];
   // We only support multi-value fields that use the default handling for multiple
   // values.
-  if (!$form['#field']['locked'] && field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT) {
+  if (!$form['#field']['locked'] && personalize_fields_is_supported_field_instance($field, $instance)) {
     // Add the "personalizable checkbox, unless this is a user field
     // and the setting to allow personalizable user fields has not been
     // enabled.
@@ -73,6 +73,20 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
 }
 
 /**
+ * Returns whether or not this field instance is supported for personalization.
+ *
+ * @param $field
+ *   An array representing the field.
+ * @param $instance
+ *   An array representing the field instance.
+ * @return bool
+ *   TRUE if the instance is supported, FALSE otherwise.
+ */
+function personalize_fields_is_supported_field_instance($field, $instance) {
+  return in_array($field['type'], array('image', 'text')) || field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function personalize_fields_form_alter(&$form, &$form_state, $form_id) {
@@ -80,7 +94,6 @@ function personalize_fields_form_alter(&$form, &$form_state, $form_id) {
     personalize_fields_add_personalized_fields($form, $form_state, $form['#entity_type']);
   }
 }
-
 
 /**
  * Implements hook_contextual_links_view_alter().
