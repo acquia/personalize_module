@@ -279,7 +279,9 @@ function personalize_entity_info() {
       'base table' => 'personalize_option_sets',
       'entity keys' => array(
         'id' => 'osid',
+        'uuid' => 'uuid',
       ),
+      'uuid' => TRUE,
     ),
   );
 }
@@ -1872,6 +1874,7 @@ function personalize_option_set_save($option_set) {
       ->condition('osid', $option_set->osid)
       ->fields($fields)
       ->execute();
+    module_invoke_all('entity_update', $option_set, 'personalize_option_set');
   }
   else {
     // We don't use db_merge because it doesn't return the new ID if it's
@@ -1880,6 +1883,7 @@ function personalize_option_set_save($option_set) {
       ->fields($fields)
       ->execute();
     $option_set->osid = $osid;
+    module_invoke_all('entity_insert', $option_set, 'personalize_option_set');
   }
   // Make sure both decision_point and decision_name are set.
   $option_set->decision_name = personalize_get_decision_name_for_option_set($option_set);
