@@ -332,14 +332,15 @@ function personalize_page_build(&$page) {
           $goals[$goal['action']] = $actions[$goal['action']]['label'];
         }
       }
-      $settings['campaigns'][$agent->machine_name] = array(
+      $plugin = personalize_agent_load_agent($agent->machine_name);
+        $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
         'status' => personalize_agent_get_status($agent->machine_name),
         'links' => array(
           'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
           'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
-          'report' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/report',
+          'report' => $plugin instanceof PersonalizeAgentReportInterface ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
         ),
         'goals' => (isset($goals)) ? $goals : NULL,
       );
