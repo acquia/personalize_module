@@ -1493,7 +1493,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
     }
     $time_before = time();
-    // THe status of each agent should now be "not started"
+    // The status of each agent should now be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($first_agent_machine_name));
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
     // Click the "start" button for the first agent.
@@ -1531,8 +1531,37 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
-  }
 
+    // Now test the ajax callback.
+    // Expected case to update to next status.
+    $expected = array(
+      'success' => TRUE,
+      'nextStatus' => array(
+        'status' => PERSONALIZE_STATUS_PAUSED,
+        'text' => t('Pause'),
+      ),
+      'currentStatus' => PERSONALIZE_STATUS_RUNNING,
+    );
+    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
+    $this->assertEqual($expected, $result);
+
+    // Try an update that doesn't change the status.
+    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
+    $this->assertEqual($expected, $result);
+
+    // Try to update an agent that cannot be verified.
+    $expected = array(
+      'success' => FALSE,
+    );
+    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $second_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
+    $this->assertEqual($expected, $result);
+
+    // Try to call the path without the proper permissions.
+    $this->drupalLogout();
+    $this->drupalGet('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
+    $this->assertText(t('Access denied'));
+  }
+  
   /**
    * Tests changing personalization configuration settings.
    */
