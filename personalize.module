@@ -13,6 +13,7 @@ define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
 define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
 define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
+define('PERSONALIZE_AGENT_VERIFY_CACHE', 'personalize:agent:verification');
 define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
 define('PERSONALIZE_TARGETING_ADMIN_SEPARATOR', '__');
 
@@ -342,7 +343,7 @@ function personalize_page_build(&$page) {
       $plugin = personalize_agent_load_agent($agent->machine_name);
       $current_status = personalize_agent_get_status($agent->machine_name);
       list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
-      $verified = $current_status === PERSONALIZE_STATUS_RUNNING || personalize_verify_agent($agent->machine_name, FALSE);
+      $verified = _personalize_agent_verification_cache_get($agent->machine_name);
       $settings['campaigns'][$agent->machine_name] = array(
         'name' => $agent->machine_name,
         'label' => filter_xss($agent->label),
@@ -903,6 +904,9 @@ function personalize_agent_set_status($agent_name, $status) {
 
   // Clear the visitor context cache settings for running campaigns.
   personalize_visitor_context_expiration_clear();
+
+  // Clear the agent's verification status.
+  _personalize_agent_verification_cache_clear($agent->machine_name);
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
@@ -1736,6 +1740,9 @@ function personalize_agent_save($agent) {
   // Also reset the visitor context cache.
   personalize_visitor_context_expiration_clear();
 
+  // And reset the verification status of the agent.
+  _personalize_agent_verification_cache_clear($agent->machine_name);
+
   // Call the save callback of the agent type.
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
@@ -1759,6 +1766,7 @@ function personalize_agent_delete($agent_name) {
   db_query('DELETE FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name));
   db_query('DELETE FROM {personalize_campaign_goals} WHERE agent = :agent', array(':agent' => $agent_name));
   variable_del(_personalize_agent_get_status_variable($agent_name));
+  _personalize_agent_verification_cache_clear($agent_name);
   module_invoke_all('personalize_agent_delete', $agent);
 }
 
@@ -1863,6 +1871,10 @@ function personalize_option_set_save($option_set) {
   personalize_pause_if_running($option_set->agent);
   // Set the active campaign to the one this option set was created for.
   personalize_set_campaign_context($option_set->agent);
+
+  // Reset the verification cache for this agent.
+  _personalize_agent_verification_cache_clear($option_set->agent);
+
 
   // Allow modules to act after an option set has been saved.
   module_invoke_all('personalize_option_set_save', $option_set);
@@ -2393,6 +2405,48 @@ function personalize_visitor_context_expiration_clear() {
 }
 
 /**
+ * Helper function to read the current agent's verification status from cache.
+ *
+ * @param string $agent_name
+ *   The machine name of the agent to get verification for.
+ * @result bool
+ *   True if agent is verified, false if not.
+ */
+function _personalize_agent_verification_cache_get($agent_name) {
+  $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
+  if ($cache) {
+    $verification = $cache->data;
+  }
+  else {
+    $verification = array();
+  }
+  if (!isset($verification[$agent_name])) {
+    $verification[$agent_name] = personalize_verify_agent($agent_name, FALSE);
+    cache_set(PERSONALIZE_AGENT_VERIFY_CACHE, $verification);
+  }
+  return $verification[$agent_name];
+}
+
+/**
+ * Helper function to clear the cache of the verification status for a
+ * particular agent.
+ *
+ * @param string $agent_name
+ *   The machine name of the agent that should have cache cleared.
+ */
+function _personalize_agent_verification_cache_clear($agent_name) {
+  $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
+  if (!$cache) {
+    return;
+  }
+  $verification = $cache->data;
+  if (isset($verification[$agent_name])) {
+    unset($verification[$agent_name]);
+    cache_set(PERSONALIZE_AGENT_VERIFY_CACHE, $verification);
+  }
+}
+
+/**
  * =======================================================================
  *  G O A L  R E L A T E D
  * =======================================================================
@@ -2639,6 +2693,9 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
     'name' => $action_name,
     'value' => $goal_value
   );
+
+  // Clear the agent's verification status.
+  _personalize_agent_verification_cache_clear($agent_name);
   module_invoke_all('personalize_goal_save', $goal_array);
 }
 
