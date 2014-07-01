@@ -4,7 +4,7 @@
  * Provides an agent type for testing purposes.
  */
 
-class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAgentGoalInterface {
+class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAgentGoalInterface, PersonalizeAgentReportInterface {
 
   public $goals_received = array();
 
@@ -62,6 +62,22 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
       'js' => array(
         drupal_get_path('module', 'personalize_test') . '/personalize_test.js' => array('type' => 'file', 'scope' => 'footer', 'defer' => TRUE),
       )
+    );
+  }
+
+  /**
+   * Implements PersonalizeAgentReportInterface::renderStatsforOptionSet().
+   */
+  public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL) {
+    return NULL;
+  }
+
+  /**
+   * Implements PersonalizeAgentReportInterface::buildCampaignReports().
+   */
+  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL) {
+    return array(
+      'report' => NULL,
     );
   }
 }

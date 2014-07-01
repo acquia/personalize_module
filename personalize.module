@@ -906,7 +906,7 @@ function personalize_agent_set_status($agent_name, $status) {
   personalize_visitor_context_expiration_clear();
 
   // Clear the agent's verification status.
-  _personalize_agent_verification_cache_clear($agent->machine_name);
+  _personalize_agent_verification_cache_clear($agent_name);
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
