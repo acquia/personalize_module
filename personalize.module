@@ -2413,12 +2413,15 @@ function personalize_visitor_context_expiration_clear() {
  *   True if agent is verified, false if not.
  */
 function _personalize_agent_verification_cache_get($agent_name) {
-  $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
-  if ($cache) {
-    $verification = $cache->data;
-  }
-  else {
-    $verification = array();
+  $verification = &drupal_static(__FUNCTION__);
+  if (!isset($verification)) {
+    $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
+    if ($cache) {
+      $verification = $cache->data;
+    }
+    else {
+      $verification = array();
+    }
   }
   if (!isset($verification[$agent_name])) {
     $verification[$agent_name] = personalize_verify_agent($agent_name, FALSE);
