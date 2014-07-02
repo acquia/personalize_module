@@ -37,4 +37,13 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   public static function constrainExplicitTargetingContexts() {
     return FALSE;
   }
+
+  /**
+   * Implements PersonalizeAgentInterface:errors().
+   */
+  public function errors() {
+    return array(
+      'Agent is not valid.'
+    );
+  }
 }

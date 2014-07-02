@@ -440,22 +440,7 @@ function personalize_status_toggle_form_definition($agent_name, $current_status,
   $form['#prefix'] = '<div id="personalize-status-toggle-form">';
   $form['#suffix'] = '</div>';
 
-  switch ($current_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_PAUSED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Resume');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      $new_status = PERSONALIZE_STATUS_PAUSED;
-      $button_text = t('Pause');
-      break;
-    default:
-      $new_status = FALSE;
-  }
+  list($new_status, $button_text) = _personalize_status_toggle_next($current_status);
   if (!$new_status) {
     return array();
   }
