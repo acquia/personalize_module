@@ -168,7 +168,7 @@ class PersonalizeUrlContextTest extends DrupalWebTestCase {
       $expected_values[$name] = array(
         'value type' => 'string'
       );
-      $expected_values[PERSONALIZE_COOKIE_EXISTS_PREFIX . '-' . $name] = array(
+      $expected_values[PERSONALIZE_COOKIE_EXISTS_PREFIX . $name] = array(
         'friendly name' => t('Cookie exists: @cookie', array('@cookie' => $name)),
         'value type' => 'boolean',
       );
