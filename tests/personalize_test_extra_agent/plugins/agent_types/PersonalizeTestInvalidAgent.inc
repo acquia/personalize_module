@@ -1,12 +1,11 @@
 <?php
 /**
  * @file
- * Provides an extra test agent type for testing with multiple agent types.
+ * Provides an invalid test agent type for testing with multiple agent types
+ * and scenarios.
  */
 
-class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
-
-  public $goals_received = array();
+class PersonalizeTestInvalidAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
 
   /**
    * Implements PersonalizeAgentInterface::create().
@@ -21,7 +20,7 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
    */
   public function getType()
   {
-    return 'test_extra_agent';
+    return 'test_invalid_agent';
   }
 
   /**
@@ -42,6 +41,8 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
    * Implements PersonalizeAgentInterface:errors().
    */
   public function errors() {
-    return array();
+    return array(
+      'Agent is not valid.'
+    );
   }
 }

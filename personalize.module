@@ -963,7 +963,12 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
   }
   // Now allow the agent to run a check.
   $agent_instance = personalize_agent_load_agent($agent_name);
-  $errors = $agent_instance->errors();
+  if ($agent_instance instanceof PersonalizeAgentInterface) {
+    $errors = $agent_instance->errors();
+  }
+  else {
+    $errors[] = t('The agent @agent_name is not a valid PersonalizeAgentInterface implementation.', array('@agent_name' => $agent_name));
+  }
   if (!empty($errors)) {
     if ($show_messages) {
       foreach ($errors as $error) {
@@ -2382,12 +2387,12 @@ function personalize_visitor_context_expiration_load() {
   foreach ($current_campaign_contexts as $plugin_name => $selected_contexts) {
     if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
       $context_options = call_user_func(array($class, 'getOptions'));
-      foreach ($context_options as $code => $info) {
-        if (isset($disallowed[$plugin_name][$code]) || !array_key_exists($code, $selected_contexts)) {
+      foreach ($selected_contexts as $code) {
+        if (isset($disallowed[$plugin_name][$code])) {
           continue;
         }
-        if (!empty($info['cache_type'])) {
-          $expiration['visitor_context:' . $plugin_name . ':' . $code] = $info['cache_type'] == 'session' ? 'session' : $info['cache_expiration'];
+        if (!empty($context_options[$code]['cache_type'])) {
+          $expiration['visitor_context:' . $plugin_name . ':' . $code] = $context_options[$code]['cache_type'] == 'session' ? 'session' : $context_options[$code]['cache_expiration'];
         }
       }
     }

@@ -1480,7 +1480,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       array(
         'label' => $second_agent_name,
         'machine_name' => $second_agent_machine_name,
-        'agent_type' => 'test_extra_agent',
+        'agent_type' => 'test_invalid_agent',
       ),
     );
     foreach ($agents as $agent) {
@@ -1625,7 +1625,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'text' => t('Start'),
         ),
         'status' => PERSONALIZE_STATUS_NOT_STARTED,
-        'verified' => FALSE,
+        'verified' => TRUE,
       ),
     );
     $settings = $this->drupalGetSettings();
