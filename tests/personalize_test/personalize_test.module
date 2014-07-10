@@ -53,9 +53,10 @@ function personalize_test_menu() {
  * This enables testing scenarios with multiple things related to personal-
  * ization happening on the same page.
  *
- * @param string $option_sets
+ * @param string $personalized_content
  *   A string of comma separated integer values, each representing an option
- *   set to be output with that number of options.
+ *   set to be output with that number of options, or a simple string representing
+ *   the name of a multi-variate test whose option sets should be output.
  * @param string $goal_names
  *   A string of comma-separated goal names, each representing a goal to be
  *   set on the test-agent.
@@ -66,7 +67,7 @@ function personalize_test_menu() {
  *
  * @see PersonalizeTest::testPersonalizePage()
  */
-function personalize_test_personalized_page($personalized_content = NULL, $goal_names = NULL, $use_multiple_agents = FALSE, $mvt = NULL) {
+function personalize_test_personalized_page($personalized_content = NULL, $goal_names = NULL, $use_multiple_agents = FALSE) {
   // Set all agent statuses to running.
   personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
   personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
