@@ -1915,6 +1915,18 @@ function personalize_option_set_load($osid = NULL, $reset = FALSE){
   return $option_sets ? reset ($option_sets) : FALSE;
 }
 
+/**
+ * Loads all option sets, or a set as constrained by the ids or conditions passed in.
+ *
+ * @param array $osids
+ *   An array of Option Set IDs to load.
+ * @param array $conditions
+ *   An array of conditions to constrain the query to.
+ * @param bool $reset
+ *   Whether to reset the cache and load fresh from the DB.
+ * @return array
+ *   An array of Option Set objects.
+ */
 function personalize_option_set_load_multiple($osids = array(), $conditions = array(), $reset = FALSE){
   return entity_load('personalize_option_set', $osids, $conditions, $reset);
 }
