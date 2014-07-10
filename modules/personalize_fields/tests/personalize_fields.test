@@ -184,7 +184,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     node_delete(1);
     drupal_static_reset();
     $option_set = personalize_option_set_load(1, TRUE);
-    $this->assertNull($option_set);
+    $this->assertFalse($option_set);
 
     // Confirm that the record has also been deleted from the table
     // personalize_fields_option_sets.
@@ -220,7 +220,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalPost('node/add/article', $edit, t('Save'));
     // Confirm that there is no third option set.
     $option_set = personalize_option_set_load(3);
-    $this->assertNull($option_set);
+    $this->assertFalse($option_set);
     // Assert that no option sets are loaded onto the node.
     $node = node_load(3);
     $this->assertFalse(isset($node->option_sets));
@@ -253,7 +253,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertText(t('The campaign has been paused because you have made changes.'));
     // Confirm that the Option Set has been deleted.
     $option_set = personalize_option_set_load(3, TRUE);
-    $this->assertNull($option_set);
+    $this->assertFalse($option_set);
     // Confirm that the campaign has indeed been paused.
     $status = personalize_agent_get_status('test-agent');
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
@@ -264,7 +264,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     drupal_static_reset();
     // Confirm that the option set has also been deleted.
     $option_set = personalize_option_set_load(2);
-    $this->assertNull($option_set);
+    $this->assertFalse($option_set);
 
     // Confirm that the record has also been deleted from the table
     // personalize_fields_option_sets.
