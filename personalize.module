@@ -329,42 +329,7 @@ function personalize_page_build(&$page) {
   if (user_access('manage personalized content')) {
     // Provide the status constants
     $settings['status'] = personalize_get_agent_status_map();
-
-    // We need to provide information about all configured campaigns
-    // and goals for the control UI.
-    $actions = visitor_actions_get_actions();
-    // List the campaigns in Drupal.settings.
-    foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
-      foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
-        if (isset($actions[$goal['action']])) {
-          $goals[$goal['action']] = $actions[$goal['action']]['label'];
-        }
-      }
-      $plugin = personalize_agent_load_agent($agent->machine_name);
-      $current_status = personalize_agent_get_status($agent->machine_name);
-      list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
-      $verified = _personalize_agent_verification_cache_get($agent->machine_name);
-      $settings['campaigns'][$agent->machine_name] = array(
-        'name' => $agent->machine_name,
-        'label' => filter_xss($agent->label),
-        'status' => $current_status,
-        'nextStatus' => array(
-          'status' => $next_status,
-          'text' => $status_text,
-        ),
-        'links' => array(
-          'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
-          'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
-          'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
-        ),
-        'goals' => (isset($goals)) ? $goals : NULL,
-        'verified' => $verified,
-      );
-      // In the client, goals will render to an array when it is empty and an
-      // object when it has data, so the no-data state must be NULL to keep
-      // the type consistent as an object.
-      unset($goals);
-    }
+    $settings['campaigns'] = personalize_agent_get_settings();
   }
 
   $page['page_top']['personalization'] = array(
@@ -385,6 +350,54 @@ function personalize_page_build(&$page) {
   // little chance of a redirect happening, but it can't be so late that
   // JavaScript files can't be added to the page.
   personalize_process_goals($page);
+}
+
+/**
+ * Generate an array of campaign settings that are currently configured.
+ * This administrative information is used for navigation and campaign
+ * management.
+ *
+ * @return array
+ *   An array of campaigns keyed by machine_name.
+ */
+function personalize_agent_get_settings() {
+  $campaigns = array();
+  // We need to provide information about all configured campaigns
+  // and goals for the control UI.
+  $actions = visitor_actions_get_actions();
+  // List the campaigns in Drupal.settings.
+  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
+    foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
+      if (isset($actions[$goal['action']])) {
+        $goals[$goal['action']] = $actions[$goal['action']]['label'];
+      }
+    }
+    $plugin = personalize_agent_load_agent($agent->machine_name);
+    $current_status = personalize_agent_get_status($agent->machine_name);
+    list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
+    $verified = _personalize_agent_verification_cache_get($agent->machine_name);
+    $campaigns[$agent->machine_name] = array(
+      'name' => $agent->machine_name,
+      'label' => filter_xss($agent->label),
+      'status' => $current_status,
+      'nextStatus' => array(
+        'status' => $next_status,
+        'text' => $status_text,
+      ),
+      'links' => array(
+        'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
+        'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
+        'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
+      ),
+      'goals' => (isset($goals)) ? $goals : NULL,
+      'verified' => $verified,
+    );
+    // In the client, goals will render to an array when it is empty and an
+    // object when it has data, so the no-data state must be NULL to keep
+    // the type consistent as an object.
+    unset($goals);
+  }
+  return $campaigns;
 }
 
 /**
