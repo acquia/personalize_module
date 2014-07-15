@@ -212,6 +212,15 @@
         // Invalid JSON in the template.  Just show the noscript option.
         winner = $(element).prev('noscript').html();
       }
+      else if (!choices[choice_name].hasOwnProperty('html')) {
+        var controlOptionName = Drupal.settings.personalize.controlOptionName;
+        if (choices.hasOwnProperty(controlOptionName) && choices[controlOptionName].hasOwnProperty('html')) {
+          winner = choices[controlOptionName]['html'];
+        }
+        else {
+          winner = $(element).prev('noscript').html();
+        }
+      }
       else {
         winner = choices[choice_name]['html'];
       }
@@ -1164,7 +1173,7 @@
        *
        * @param key
        *   The bucket-specific key to use to lookup the item.
-       * @returns
+       * @return
        *   The value set for the key or null if not available.
        */
       read: function (key) {

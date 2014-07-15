@@ -453,10 +453,10 @@ function personalize_update_7009() {
   foreach ($result as $row) {
     $options = unserialize($row->options);
     if ($options[0]['option_label'] === 'Control Option') {
-      $options[0]['option_label'] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
+      $options[0]['option_label'] = PERSONALIZE_CONTROL_OPTION_LABEL;
     }
     if ($options[0]['option_id'] === 'control-option') {
-      $options[0]['option_id'] = PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID;
+      $options[0]['option_id'] = PERSONALIZE_CONTROL_OPTION_ID;
     }
     db_update('personalize_option_sets')
       ->condition('osid', $row->osid)
