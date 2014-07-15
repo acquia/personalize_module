@@ -431,6 +431,9 @@ function personalize_fields_form_submit($form, &$form_state) {
       $keep_option_deltas = array();
       // Now update the options based on what the user passed in
       foreach ($values[$key][LANGUAGE_NONE] as $delta => $option) {
+        if (!is_array($option)) {
+          continue;
+        }
         $option_set_delta = isset($option['personalize_fields_option_id']) && in_array($option['personalize_fields_option_id'], $option_hash) ? $option_hash[$option['personalize_fields_option_id']] : FALSE;
         // Regenerate the option label if it was emptied.
         $option_label = !empty($option['personalize_fields_option_label']) ? $option['personalize_fields_option_label'] : personalize_generate_option_label($delta);
@@ -440,8 +443,8 @@ function personalize_fields_form_submit($form, &$form_state) {
             $option_set->options[$option_set_delta]['option_label'] = $option_label;
             $keep_option_deltas[] = $option_set_delta;
           }
-          // Adding a new option
           else {
+            // Adding a new option
             $option_set->options[]['option_label'] = $option_label;
           }
         }
@@ -452,6 +455,7 @@ function personalize_fields_form_submit($form, &$form_state) {
           }
         }
       }
+
       foreach ($option_set->options as $delta => $option) {
         if (!empty($option['option_id']) && !in_array($delta, $keep_option_deltas)) {
           unset($option_set->options[$delta]);
@@ -931,16 +935,19 @@ function _personalize_fields_get_entity_link_from_option_set($option_set) {
  * TRUE, then this will return TRUE even if the value is an empty value.
  */
 function _personalize_fields_option_has_value($option, $empty = FALSE) {
+  if (!is_array($option)) {
+    return FALSE;
+  }
   // Supports all fields that use a 'value' column.
-  if (isset($option['value'])) {
+  if (array_key_exists('value', $option)) {
     return !empty($option['value']) || $empty;
   }
   // Supports file fields.
-  if (isset($option['fid'])) {
+  if (array_key_exists('fid', $option)) {
     return (int) $option['fid'] > 0 || $empty;
   }
   // Supports entity_reference fields.
-  if (isset($option['target_id'])) {
+  if (array_key_exists('target_id', $option)) {
     return !empty($option['target_id']) || $empty;
   }
   return FALSE;
