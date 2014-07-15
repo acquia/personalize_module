@@ -2076,14 +2076,13 @@ function personalize_get_decision_name_for_option_set($option_set) {
  *
  * @param $variation_set_name
  *   The variation set this belongs to.
- * @param $label
- *   A label for the option set
  * @param $option_set
  *   The option set object to add the option to
  * @param $option_info
  *   The information about the individual option to be added for this variation.
- * @param $option_id
- *   The option id to use.
+ * @param $variation_number
+ *   The variation number to add this option to. If unspecified it will be created as a
+ *   new variation.
  */
 function personalize_create_page_variation($variation_set_name, $option_set, $option_info, $variation_number = NULL) {
   // Find all other option sets in this variation set (i.e. with the same
