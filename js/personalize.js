@@ -397,7 +397,7 @@
             var operator = featureRules[featureName].operator;
             var match = featureRules[featureName].match;
             if (Drupal.personalize.targetingOperators.hasOwnProperty(operator)) {
-              if (Drupal.personalize.targetingOperators[operator](visitorContext[key], match)) {
+              if (Drupal.personalize.targetingOperators[operator](visitorContext[plugin][key], match)) {
                 // The feature string was created by the agent responsible for consuming
                 // it, so only that agent knows how to split it up into its key and
                 // value components.
