@@ -92,14 +92,67 @@ function personalize_admin_form_submit($form, &$form_state) {
  *     if no context options are available to show
  */
 function personalize_admin_build_visitor_context_select($settings, $exclude_disallowed = TRUE, $agent_data = NULL) {
-  $disallowed = $exclude_disallowed ? variable_get('personalize_visitor_context_disabled', array()) : array();
-  $contexts = personalize_get_visitor_contexts();
-  $groups = array('Miscellaneous' => array());
+  $groups = personalize_get_grouped_context_options($agent_data, $exclude_disallowed);
+  // We'll need an array of default values.
   $selected = array();
+  // Count the number of items in total so we can determine the correct size of
+  // the multi-select element.
+  $group_count = 0;
+  foreach ($groups as $group) {
+    $group_count++;
+    if (is_array($group)) {
+      $group_count = $group_count + count($group);
+      foreach ($group as $option_name => $friendly_name) {
+        list($plugin_name, $code) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $option_name);
+        // Build up our default values based on the settings passed in.
+        if (isset($settings[$plugin_name][$code])) {
+          $selected[$option_name] = $option_name;
+        }
+      }
+    }
+  }
+  if ($group_count === 0) {
+    return FALSE;
+  }
+  $element = array(
+    '#type' => 'select',
+    '#title' => t('Visitor contexts to use for automatic targeting'),
+    '#options' => $groups,
+    '#multiple' => TRUE,
+    '#default_value' => $selected,
+    '#size' => $group_count > 0 ? $group_count : 1,
+  );
+  return $element;
+}
+
+/**
+ * Returns the available context options, sorted into groups.
+ *
+ * The array returned is suitable for use in a select element.
+ *
+ * @param null $agent
+ *   An object representing an agent, if these settings apply to an agent.
+ * @param bool $exclude_disallowed
+ *   Whether to exclude any contexts that have been set as disallowed.
+ * @param array $exclude_plugins
+ *   An array of plugins to be excluded from the list.
+ * @return array
+ *   An associative array of available contexts where the keys are group names
+ *   and each value is an associative array  of contexts with context name and
+ *   friendly name as key and value respectively.
+ */
+function personalize_get_grouped_context_options($agent = NULL, $exclude_disallowed = TRUE, $exclude_plugins = array()) {
+  ctools_include('plugins');
+  $disallowed = $exclude_disallowed ? variable_get('personalize_visitor_context_disabled', array()) : array();
+  $groups = array('Miscellaneous' => array());
+  $contexts = personalize_get_visitor_contexts();
   foreach ($contexts as $plugin_name => $plugin_info) {
+    if (in_array($plugin_name, $exclude_plugins)) {
+      continue;
+    }
     if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
-      if (!empty($agent_data)) {
-        if (!call_user_func(array($class, 'allowedFromAgent'), $agent_data)) {
+      if (!empty($agent)) {
+        if (!call_user_func(array($class, 'allowedFromAgent'), $agent)) {
           continue;
         }
       }
@@ -120,9 +173,6 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
         else {
           $groups['Miscellaneous'][$option_name] = $info['name'];
         }
-        if (isset($settings[$plugin_name][$code])) {
-          $selected[$option_name] = $option_name;
-        }
       }
     }
   }
@@ -132,26 +182,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
   if (!empty($misc)) {
     $groups['Miscellaneous'] = $misc;
   }
-  // Get the number of items in the select element.
-  $group_count = 0;
-  foreach ($groups as $group) {
-    $group_count++;
-    if (is_array($group)) {
-      $group_count = $group_count + count($group);
-    }
-  }
-  if ($group_count === 0) {
-    return FALSE;
-  }
-  $element = array(
-    '#type' => 'select',
-    '#title' => t('Visitor contexts to use for automatic targeting'),
-    '#options' => $groups,
-    '#multiple' => TRUE,
-    '#default_value' => $selected,
-    '#size' => $group_count > 0 ? $group_count : 1,
-  );
-  return $element;
+  return $groups;
 }
 
 /**
