@@ -197,24 +197,56 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
     'replaceHtml' => array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Edit HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+        ),
+      ),
     ),
     'addClass' => array(
       'label' => t('Add a class'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Add CSS class'),
+        'formitem' => array(
+          '#type' => 'textfield',
+          '#title' => t('New class'),
+        ),
+      ),
     ),
     'appendHtml' => array(
       'label' => t('Append HTML'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Append HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+        ),
+      ),
     ),
     'prependHtml' => array(
       'label' => t('Prepend HTML'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Append HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+        ),
+      ),
     ),
   );
   if (user_access('use advanced personalize elements features') || !$filter_by_perms) {
     $types['runJS'] = array(
       'label' => t('Run JavaScript code'),
       'needs_selector' => FALSE,
+      'contextual' => FALSE,
     );
   }
   return $types;
