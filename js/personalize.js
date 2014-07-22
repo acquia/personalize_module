@@ -145,7 +145,7 @@
               }
             }
             // Evaluate the contexts.
-            agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
+            agent.visitorContext = Drupal.personalize.evaluateContexts(agent.agentType, agentContexts, agent.fixedTargeting);
           }
           // Trigger decision calls on the agents.
           triggerDecisions(agents);
@@ -370,9 +370,9 @@
    *   An object that holds arrays for each context key to indicate the rule
    *   and how the rule was satisfied.
    */
-  Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext, featureRules) {
+  Drupal.personalize.evaluateContexts = function (agentType, visitorContext, featureRules) {
     if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
-      return;
+      return {};
     }
     // The new visitor context object will hold an array of values for each
     // key, rather than just a single value for each plugin's key. This is because in addition to
@@ -385,11 +385,11 @@
     // "sc-submarines"], where sc- is just the prefix added to codify "string
     // contains".
     var newVisitorContext = {};
-    for (var plugin in visitorContext) {
-      if (visitorContext.hasOwnProperty(plugin)) {
-        for (var contextKey in visitorContext[plugin]) {
-          if (visitorContext[plugin].hasOwnProperty(contextKey)) {
-            newVisitorContext[contextKey] = [visitorContext[plugin][contextKey]];
+    for (var pluginName in visitorContext) {
+      if (visitorContext.hasOwnProperty(pluginName)) {
+        for (var contextKey in visitorContext[pluginName]) {
+          if (visitorContext[pluginName].hasOwnProperty(contextKey)) {
+            newVisitorContext[contextKey] = [visitorContext[pluginName][contextKey]];
           }
         }
       }
