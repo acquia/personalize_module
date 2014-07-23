@@ -63,6 +63,42 @@
    * Private tracking variables across behavior attachments.
    */
   var processedDecisions = {}, decisionCallbacks = {}, processedOptionSets = {};
+
+  Drupal.personalize.getVisitorContexts = function(contexts, callback) {
+
+    // Load and evaluate all contexts.
+    var contextPromises = [];
+    var promisePlugins = [];
+    var contextValues = {};
+    for (var plugin in contexts) {
+      if (contexts.hasOwnProperty(plugin)) {
+        // @todo: Should be able to just always return promises and let
+        // nested promises resolve but it doesn't appear to work that way.
+        var contextResult = getVisitorContext(plugin, contexts[plugin]);
+        if (contextResult instanceof Promise) {
+          promisePlugins.push(plugin);
+          contextPromises.push(contextResult);
+        } else {
+          contextValues[plugin] = contextResult;
+        }
+      }
+    }
+    // Once all the contexts are loaded, evaluate them and load the decisions.
+    Promise.all(contextPromises).then(function processLoadedVisitorContexts(loadedContexts) {
+      // Results are in the same order as promises were.
+      var num = loadedContexts.length;
+      for (var i = 0; i < num; i++) {
+        contextValues[promisePlugins[i]] = loadedContexts[i];
+      }
+    }, function handleErrorContexts(err) {
+      if (console.log) {
+        console.log(err.message);
+      }
+    }).then(function() {
+      callback(contextValues);
+    });
+  };
+
   /**
    * Looks for personalized elements and calls the corresponding decision agent
    * for each one.
@@ -86,61 +122,36 @@
       // those agents that require decisions are returned.
       var agents = processOptionSets(optionSets);
 
-      // Get a consolidation of all visitor contexts to be retrieved for all agents.
-      var contexts = getAgentsContexts(agents);
+      if (!$.isEmptyObject(agents)) {
+        // Get a consolidation of all visitor contexts to be retrieved for all agents.
+        var contexts = getAgentsContexts(agents);
 
-      // Load and evaluate all contexts.
-      var contextPromises = [];
-      var promisePlugins = [];
-      var contextValues = {};
-      for (var plugin in contexts) {
-        if (contexts.hasOwnProperty(plugin)) {
-          // @todo: Should be able to just always return promises and let
-          // nested promises resolve but it doesn't appear to work that way.
-          var contextResult = getVisitorContext(plugin, contexts[plugin]);
-          if (contextResult instanceof Promise) {
-            promisePlugins.push(plugin);
-            contextPromises.push(contextResult);
-          } else {
-            contextValues[plugin] = contextResult;
-          }
-        }
-      }
-      // Once all the contexts are loaded, evaluate them and load the decisions.
-      Promise.all(contextPromises).then(function processLoadedVisitorContexts(loadedContexts) {
-        // Results are in the same order as promises were.
-        var num = loadedContexts.length;
-        for (var i = 0; i < num; i++) {
-          contextValues[promisePlugins[i]] = loadedContexts[i];
-        }
-      }, function handleErrorContexts(err) {
-        if (console.log) {
-          console.log(err.message);
-        }
-      }).then(function() {
-        // Now that everything is loaded we can apply context rules.
-        for (var agentName in agents) {
-          if (!agents.hasOwnProperty(agentName)) {
-            continue;
-          }
-          var agent = agents[agentName];
-          var agentContexts = {};
-          // Apply the context values to each of the agent's enabled contexts
-          // which essentially means limiting the agent's contexts to those
-          // returned here.
-          for (var plugin in agent.enabledContexts) {
-            if (agent.enabledContexts.hasOwnProperty(plugin)) {
-              if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
-                agentContexts[plugin] = contextValues[plugin];
+        // Set up a callback for when all visitor contexts have been resolved.
+        var callback = function(contextValues) {
+          for (var agentName in agents) {
+            if (!agents.hasOwnProperty(agentName)) {
+              continue;
+            }
+            var agent = agents[agentName];
+            var agentContexts = {};
+            // Apply the context values to each of the agent's enabled contexts
+            // which essentially means limiting the agent's contexts to those
+            // returned here.
+            for (var plugin in agent.enabledContexts) {
+              if (agent.enabledContexts.hasOwnProperty(plugin)) {
+                if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
+                  agentContexts[plugin] = contextValues[plugin];
+                }
               }
             }
+            // Evaluate the contexts.
+            agent.visitorContext = Drupal.personalize.evaluateContexts(agent.agentType, agentContexts, agent.fixedTargeting);
           }
-          // Evaluate the contexts.
-          agent.visitorContext = Drupal.personalize.evaluateContexts(agentName, agent.agentType, agentContexts, agent.fixedTargeting);
-        }
-        // Trigger decision calls on the agents.
-        triggerDecisions(agents);
-      });
+          // Trigger decision calls on the agents.
+          triggerDecisions(agents);
+        };
+        Drupal.personalize.getVisitorContexts(contexts, callback);
+      }
 
       // This part is not dependent upon decisions so it can run prior to
       // fulfillment of Promise.
@@ -347,8 +358,6 @@
   /**
    * Evaluate the visitor contexts for an agent.
    *
-   * @param agentName
-   *   The agent name.
    * @param agentType
    *   The type of agent.
    * @param {object} visitorContext
@@ -359,9 +368,9 @@
    *   An object that holds arrays for each context key to indicate the rule
    *   and how the rule was satisfied.
    */
-  Drupal.personalize.evaluateContexts = function (agentName, agentType, visitorContext, featureRules) {
+  Drupal.personalize.evaluateContexts = function (agentType, visitorContext, featureRules) {
     if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
-      return;
+      return {};
     }
     // The new visitor context object will hold an array of values for each
     // key, rather than just a single value for each plugin's key. This is because in addition to
@@ -374,11 +383,11 @@
     // "sc-submarines"], where sc- is just the prefix added to codify "string
     // contains".
     var newVisitorContext = {};
-    for (var plugin in visitorContext) {
-      if (visitorContext.hasOwnProperty(plugin)) {
-        for (var contextKey in visitorContext[plugin]) {
-          if (visitorContext[plugin].hasOwnProperty(contextKey)) {
-            newVisitorContext[contextKey] = [visitorContext[plugin][contextKey]];
+    for (var pluginName in visitorContext) {
+      if (visitorContext.hasOwnProperty(pluginName)) {
+        for (var contextKey in visitorContext[pluginName]) {
+          if (visitorContext[pluginName].hasOwnProperty(contextKey)) {
+            newVisitorContext[contextKey] = [visitorContext[pluginName][contextKey]];
           }
         }
       }
