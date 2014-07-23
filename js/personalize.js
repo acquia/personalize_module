@@ -358,8 +358,6 @@
   /**
    * Evaluate the visitor contexts for an agent.
    *
-   * @param agentName
-   *   The agent name.
    * @param agentType
    *   The type of agent.
    * @param {object} visitorContext
