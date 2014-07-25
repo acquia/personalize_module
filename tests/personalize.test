@@ -126,8 +126,6 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    * @see testSaveAgent()
    */
   protected function createTestAgent($data = array()) {
-    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
-    $this->drupalLogin($admin_user);
     $data += array(
       'name' => $this->randomName(),
     );
@@ -142,7 +140,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
 
     $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
     $agent = personalize_agent_load_agent($data['machine_name'], TRUE);
-    $this->drupalLogout();
+    $this->assertTrue($agent instanceof PersonalizeAgentBase);
     return $agent;
   }
 
@@ -978,6 +976,8 @@ class PersonalizeTest extends PersonalizeBaseTest {
    * Tests the function that pauses agents that are due to be paused.
    */
   function testPauseAgents() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
     // Create some test agents.
     $agent_data = array(
       array(
@@ -1025,6 +1025,8 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-3'));
     // The fourth agent's status should be paused.
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-4'));
+
+    $this->drupalLogout();
   }
 }
 
@@ -2184,6 +2186,7 @@ class PersonalizeRequirementsTest extends PersonalizeBaseTest {
 
     // Enable a test agent and verify that a campaign edit form is presented.
     module_enable(array('personalize_test'));
+
     $agent = personalize_agent_load_agent('test-agent');
     $this->assertTrue($agent instanceof PersonalizeAgentBase);
     $this->drupalGet('admin/structure/personalize/add');
