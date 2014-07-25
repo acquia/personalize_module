@@ -126,6 +126,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    * @see testSaveAgent()
    */
   protected function createTestAgent($data = array()) {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
     $data += array(
       'name' => $this->randomName(),
     );
@@ -140,8 +142,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
 
     $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
     $agent = personalize_agent_load_agent($data['machine_name'], TRUE);
-    $this->assertTrue($agent instanceof PersonalizeTestAgent);
-
+    $this->drupalLogout();
     return $agent;
   }
 
@@ -971,6 +972,59 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // Get the active context.
     $response = $this->drupalGetAJAX('personalize/campaign_context/');
     $this->assertEqual($machine_name, $response['personalize_campaign'], 'The new campaign is the active personalize campaign context.');
+  }
+
+  /**
+   * Tests the function that pauses agents that are due to be paused.
+   */
+  function testPauseAgents() {
+    // Create some test agents.
+    $agent_data = array(
+      array(
+        'name' => 'agent-1',
+        'machine_name' => personalize_generate_machine_name('agent-1', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+      array(
+        'name' => 'agent-2',
+        'machine_name' => personalize_generate_machine_name('agent-2', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+      array(
+        'name' => 'agent-3',
+        'machine_name' => personalize_generate_machine_name('agent-3', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+      array(
+        'name' => 'agent-4',
+        'machine_name' => personalize_generate_machine_name('agent-4', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_extra_agent'
+      ),
+    );
+    foreach ($agent_data as $data) {
+      $this->createTestAgent($data);
+      personalize_agent_set_status($data['machine_name'], PERSONALIZE_STATUS_RUNNING);
+    }
+    $now = time();
+    // First agent was due to expire yesterday.
+    $variable = _personalize_agent_get_stoptime_variable('agent-1');
+    variable_set($variable, $now - 86400);
+    // Second agent is due to expire tomorrow.
+    $variable = _personalize_agent_get_stoptime_variable('agent-2');
+    variable_set($variable, $now + 86400);
+
+    // Call the function that should pause all agents that are scheduled to be
+    // paused.
+    personalize_pause_agents();
+
+    // The first agent's status should be paused.
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-1'));
+    // The second agent's status should still be running.
+    $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
+    // The third agent's status should still be running.
+    $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-3'));
+    // The fourth agent's status should be paused.
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-4'));
   }
 }
 

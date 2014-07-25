@@ -113,6 +113,19 @@ interface PersonalizeAgentInterface {
    *   the agent failed the check.
    */
   public function errors();
+
+  /**
+   * Whether this agent should be paused now.
+   *
+   * An agent class can implement some logic to determine whether or not the agent
+   * in question should be set to the "paused" status. For example, an agent type
+   * might have some notion of having a "winner", and once it has found this winner
+   * the agent should pause on that.
+   *
+   * @return boolean
+   *   TRUE if the agent should be paused, FALSE otherwise.
+   */
+  public function stopNow();
 }
 
 interface PersonalizeAgentGoalInterface {
@@ -351,10 +364,17 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   }
 
   /**
-   * Implements PersonalizeAgentInterface::verify().
+   * Implements PersonalizeAgentInterface::errors().
    */
   public function errors() {
     return array();
+  }
+
+  /**
+   * Implements PersonalizeAgentInterface::stopNow().
+   */
+  public function stopNow() {
+    return FALSE;
   }
 
   /**

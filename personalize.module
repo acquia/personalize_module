@@ -287,6 +287,60 @@ function personalize_entity_info() {
 }
 
 /**
+ * Implements hook_cron().
+ */
+function personalize_cron() {
+  personalize_pause_agents();
+}
+
+/**
+ * Pauses any agent that is due to be paused.
+ */
+function personalize_pause_agents() {
+  $all_agents = personalize_agent_load_multiple();
+  foreach ($all_agents as $agent_name => $agent) {
+    $status = personalize_agent_get_status($agent_name);
+    if ($status == PERSONALIZE_STATUS_RUNNING) {
+      if (personalize_agent_stop_now($agent)) {
+        personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
+        watchdog('personalize', 'Pausing agent @agent via cron', array('@agent' => $agent_name));
+      }
+    }
+  }
+}
+
+/**
+ * Returns whether or not the passed in agent is due to be paused.
+ *
+ * @param $agent_data
+ *   An object representing the agent.
+ * @return bool
+ *   TRUE if the agent is due to be paused, FALSE otherwise.
+ */
+function personalize_agent_stop_now($agent_data) {
+  // First check if a variable has been set specifying a timestamp for
+  // when this agent should be paused.
+  $variable = _personalize_agent_get_stoptime_variable($agent_data->machine_name);
+  $stop_time = variable_get($variable, 0);
+  if ($stop_time > 0) {
+    $ts = time();
+    if ($ts >= $stop_time) {
+      return TRUE;
+    }
+    else {
+      // Hasn't reached the scheduled stop time yet.
+      return FALSE;
+    }
+  }
+  // Otherwise the agent plugin might have some logic for determining whether
+  // it should be stopped.
+  if ($agent = personalize_agent_load_agent($agent_data->machine_name)) {
+    return $agent->stopNow();
+  }
+  return FALSE;
+}
+
+/**
  * Implements hook_page_build().
  */
 function personalize_page_build(&$page) {
@@ -825,6 +879,17 @@ function personalize_element_with_option_set(&$element, $option_set) {
  */
 function _personalize_agent_get_status_variable($agent_name) {
   return "personalize_campaign_{$agent_name}_status";
+}
+
+/**
+ * Helper function to determine the variable name to use for a campaign's stop
+ * time variable.
+ *
+ * @param $agent_name
+ *   The name of the campaign to use for name generation.
+ */
+function _personalize_agent_get_stoptime_variable($agent_name) {
+  return "personalize_campaign_{$agent_name}_stop";
 }
 
 /**
