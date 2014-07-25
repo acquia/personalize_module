@@ -2186,8 +2186,9 @@ class PersonalizeRequirementsTest extends PersonalizeBaseTest {
 
     // Enable a test agent and verify that a campaign edit form is presented.
     module_enable(array('personalize_test'));
-
+    $this->resetAll();
     $agent = personalize_agent_load_agent('test-agent');
+
     $this->assertTrue($agent instanceof PersonalizeAgentBase);
     $this->drupalGet('admin/structure/personalize/add');
     $this->assertNoText(t('You don\'t have any agent types enabled.'));
