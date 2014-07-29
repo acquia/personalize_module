@@ -351,7 +351,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     // There should be no settings on the home page.
-    $this->assertFalse(isset($settings['personalize_elements']));
+    $this->assertFalse(isset($settings['personalize_elements']['elements']));
 
     $this->drupalGet('user');
     // The settings should show up on the user page.
