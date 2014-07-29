@@ -103,7 +103,6 @@ function personalize_elements_ctools_plugin_api($owner, $api) {
 function personalize_elements_page_build(&$page) {
   $option_sets = personalize_option_set_load_by_type('elements', 'label');
   $settings = array(
-    'controlOptionName' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
     'contextualVariationTypes' => personalize_elements_contextual_menu_variations(),
   );
   $elements = array();
@@ -205,6 +204,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
           '#type' => 'textarea',
           '#title' => t('HTML'),
           '#rows' => 4,
+          '#required' => TRUE,
         ),
       ),
     ),
@@ -216,6 +216,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
         'formitem' => array(
           '#type' => 'textfield',
           '#title' => t('New class'),
+          '#required' => TRUE,
         ),
       ),
     ),
@@ -228,6 +229,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
           '#type' => 'textarea',
           '#title' => t('HTML'),
           '#rows' => 4,
+          '#required' => TRUE,
         ),
       ),
     ),
@@ -240,6 +242,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
           '#type' => 'textarea',
           '#title' => t('HTML'),
           '#rows' => 4,
+          '#required' => TRUE,
         ),
       ),
     ),
