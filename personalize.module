@@ -2105,7 +2105,7 @@ function personalize_create_page_variation($variation_set_name, $option_set, $op
   }
 
   $option_set->decision_name = $variation_set_name;
-  $has_controL_option = FALSE;
+  $has_control_option = FALSE;
   $option_id = 'variation-' . $variation_number;
   $option_label = t('Variation @num', array('@num' => $variation_number));
   $i = 0;
@@ -2117,7 +2117,7 @@ function personalize_create_page_variation($variation_set_name, $option_set, $op
         unset($option_set->options[$i]);
       }
       else {
-        $has_controL_option = TRUE;
+        $has_control_option = TRUE;
       }
     }
   }
@@ -2128,8 +2128,8 @@ function personalize_create_page_variation($variation_set_name, $option_set, $op
   }
   // Now add the option for this variation.
   $option_set->options[$variation_number] = array('option_id' => $option_id, 'option_label' => $option_label) + $option_info;
-  $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID);
-  if (!$has_controL_option) {
+  $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
+  if (!$has_control_option) {
     array_unshift($option_set->options, $control_option);
   }
 
