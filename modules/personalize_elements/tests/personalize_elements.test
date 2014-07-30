@@ -358,6 +358,10 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $settings = $this->drupalGetSettings();
     $personalize_elements_settings = $settings['personalize_elements'];
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
+
+    // Check for the contextual settings for a few of the variation types.
+    $this->assertEqual(t("Add CSS class"), $personalize_elements_settings['contextualVariationTypes']['addClass']);
+    $this->assertFalse(isset($personalize_elements['contextualVariationTypes']['runJS']));
   }
 
   function testPersonalizeElementsVariationSets() {
