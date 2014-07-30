@@ -77,7 +77,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertText('You must choose an operation');
 
     $edit['variation_type'] = 'replaceHtml';
-    $this->assertFieldByName('options[0][option_label]', PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL);
+    $this->assertFieldByName('options[0][option_label]', PERSONALIZE_CONTROL_OPTION_LABEL);
     $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText($options_count_error);
     $this->drupalPost(NULL, array(), $this->getButton('add_another'));
@@ -99,7 +99,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
 
     // Add another element with a script tag.
     $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/1/edit');
-    $this->assertFieldByName('options[0][option_label]', PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL);
+    $this->assertFieldByName('options[0][option_label]', PERSONALIZE_CONTROL_OPTION_LABEL);
     $this->drupalPost(NULL, array(), $this->getButton('add_another'));
     $edit = array();
     $edit['options[3][personalize_elements_content]'] = '<script type="text/javascript">alert("xss");</script>';
@@ -107,8 +107,8 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertText(t('Disallowed HTML tags were removed from 1 variation.'));
     $option_set = personalize_option_set_load(1, TRUE);
     $control_option = array(
-      'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
-      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+      'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
       'personalize_elements_content' => '',
     );
     $expected = array(
@@ -201,8 +201,8 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
    */
   function testPersonalizeElementsAdminFilter() {
     $control_option = array(
-      'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
-      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+      'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
       'personalize_elements_content' => '',
     );
 
@@ -247,8 +247,8 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertNoText(t('Disallowed HTML tags were removed from 1 variation.'));
     $option_set = personalize_option_set_load(2, TRUE);
     $control_option = array(
-      'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID,
-      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+      'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
       'personalize_elements_content' => '',
     );
     $expected = array(
@@ -331,7 +331,6 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     // Make sure the expected js settings are there.
     $settings = $this->drupalGetSettings();
     $personalize_elements_settings = $settings['personalize_elements'];
-    $this->assertEqual(PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID, $personalize_elements_settings['controlOptionName']);
     $js_id = $js_id = personalize_stringify_osid($option_set->osid);
     $expected = array(
       $js_id => array(
@@ -358,8 +357,62 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     // The settings should show up on the user page.
     $settings = $this->drupalGetSettings();
     $personalize_elements_settings = $settings['personalize_elements'];
-    $this->assertEqual(PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID, $personalize_elements_settings['controlOptionName']);
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
+  }
+
+  function testPersonalizeElementsVariationSets() {
+    $agent_name = 'test-agent';
+    // Variation 1 (only one element).
+    $os1 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
+    personalize_create_page_variation('my_first_varset', $os1, array('personalize_elements_content' => 'test-class'));
+
+    // Variation 2 (2 elements).
+    $os2 = personalize_elements_get_option_set_for_variation('my second os', $agent_name, 'div.some-class', 'appendHtml', 'node');
+    personalize_create_page_variation('my_first_varset', $os2, array('personalize_elements_content' => 'appended html'));
+    $os3 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
+    personalize_create_page_variation('my_first_varset', $os3, array('personalize_elements_content' => 'other-class'), 2);
+
+
+    $this->resetAll();
+    $option_sets = personalize_option_set_load_multiple(array(), array('agent' => $agent_name));
+    $this->assertEqual(2, count($option_sets));
+    foreach ($option_sets as $osid => $option_set) {
+      $this->assertEqual('my_first_varset', $option_set->decision_name);
+      $this->assertEqual(3, count($option_set->options));
+    }
+    $expected_options_os1 = array(
+      array(
+        'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+        'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+      ),
+      array(
+        'option_id' => 'variation-1',
+        'option_label' => 'Variation 1',
+        'personalize_elements_content' => 'test-class'
+      ),
+      array(
+        'option_id' => 'variation-2',
+        'option_label' => 'Variation 2',
+        'personalize_elements_content' => 'other-class'
+      ),
+    );
+    $this->assertEqual($expected_options_os1, $option_sets[1]->options);
+    $expected_options_os2 = array(
+      array(
+        'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+        'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+      ),
+      array(
+        'option_id' => 'variation-1',
+        'option_label' => 'Variation 1',
+      ),
+      array(
+        'option_id' => 'variation-2',
+        'option_label' => 'Variation 2',
+        'personalize_elements_content' => 'appended html'
+      ),
+    );
+    $this->assertEqual($expected_options_os2, $option_sets[2]->options);
   }
 
   /**
@@ -431,4 +484,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
         return $type;
     }
   }
+
+
+
 }

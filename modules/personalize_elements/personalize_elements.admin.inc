@@ -160,7 +160,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   // options by one.
   $num_options = count($options);
   if (empty($options) || (isset($form_state['num_options']) && $form_state['num_options'] > $num_options)) {
-    $index = isset($options[0]['option_label']) && $options[0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL ? $num_options - 1 : $num_options;
+    $index = isset($options[0]['option_label']) && $options[0]['option_label'] == PERSONALIZE_CONTROL_OPTION_LABEL ? $num_options - 1 : $num_options;
     $options[] = array(
       'option_label' => personalize_generate_option_label($index),
       'content' => '',
@@ -175,15 +175,15 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   }
   // If this is an edit form and there is no control in the options loaded,
   // then don't show the control.
-  else if (isset($option_set->osid) && $options[0]['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+  else if (isset($option_set->osid) && $options[0]['option_label'] !== PERSONALIZE_CONTROL_OPTION_LABEL) {
     $show_control = FALSE;
   }
   // If the first option is not already the control, and then add a control
   // option.  This option is always available to show on the display in response
   // to the add control option checkbox.
-  if (count($options) == 0 || $options[0]['option_label'] !== PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+  if (count($options) == 0 || $options[0]['option_label'] !== PERSONALIZE_CONTROL_OPTION_LABEL) {
     array_unshift($options, array(
-      'option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL,
+      'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
       'personalize_elements_content' => '',
     ));
   }
@@ -248,7 +248,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       '#default_value' => !empty($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '',
     );
     // Add markup to differentiate a control.
-    if ($option['option_label'] === PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+    if ($option['option_label'] === PERSONALIZE_CONTROL_OPTION_LABEL) {
       // If the form is re-submitted via Ajax (e.g., Add another) then the
       // control option will appear even if the add checkbox has been unchecked.
       // Adding the "element-hidden" class will hide the element, but still allow
@@ -354,7 +354,7 @@ function personalize_elements_form_validate($form, &$form_state) {
       form_set_error('variation_type', t('You must choose an operation'));
     }
     $needs_control_option = isset($values['add_control_option']) && $values['add_control_option'];
-    $has_control_option = $values['options'][0]['option_label'] == PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL;
+    $has_control_option = $values['options'][0]['option_label'] == PERSONALIZE_CONTROL_OPTION_LABEL;
     // If the option set needs a control option and doesn't yet have one, then
     // one will be added on submit so only 1 additional option is required,
     // otherwise a minimum of 2 options must be supplied.
@@ -462,7 +462,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
   }
   // Re-key the array in case some items were removed.
   $options = array_values($options);
-  if ($options[0]['option_label'] === PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL) {
+  if ($options[0]['option_label'] === PERSONALIZE_CONTROL_OPTION_LABEL) {
     // This will get added back on if needed, after the other options have
     // been processed.
     $control_option = array_shift($options);
@@ -471,7 +471,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
   }
   if (isset($values['add_control_option']) && $values['add_control_option']) {
     if (!isset($control_option)) {
-      $control_option = array('option_label' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_ELEMENTS_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
+      $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
     }
     // Auto-generation of option IDs needs to happen *before* we add the control
     // option as it should not affect the numbering scheme.

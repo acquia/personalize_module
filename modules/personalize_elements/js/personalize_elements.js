@@ -17,17 +17,21 @@
           document.location.href = base + path + '?' + param + '=' + osid + '--' + choice_name;
         }
         else {
-          var choices = Drupal.settings.personalize.option_sets[osid].options,  choiceNames = Drupal.settings.personalize.option_sets[osid].option_names, choiceIndex = choiceNames.indexOf(choice_name);
-          // Option Sets of type Personalize Elements have the concept of a control option,
-          // where no change should be made to the selector. We need to pass in whether this
-          // is the control option.
-          var isControl = choice_name == Drupal.settings.personalize_elements.controlOptionName;
-          var selectedContent = choices[choiceIndex]['personalize_elements_content'];
+          var choices = Drupal.settings.personalize.option_sets[osid].options,  choiceNames = Drupal.settings.personalize.option_sets[osid].option_names, choiceIndex = choiceNames.indexOf(choice_name), selectedContent = null, isControl = false;
+          // This might be a "do nothing" option, either because it is the control option
+          // or because it is an option with no content, in which case we treat is as the
+          // control option.
+          if (choice_name == Drupal.settings.personalize.controlOptionName || !choices[choiceIndex].hasOwnProperty('personalize_elements_content')) {
+            isControl = true;
+          }
+          else {
+            selectedContent = choices[choiceIndex]['personalize_elements_content'];
+          }
           if ($option_set.length == 0 && element.variation_type != 'runJS') {
             // Only the runJS can do something with an empty Option Set.
             return;
           }
-          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid, choice_name, preview);
+          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
         }
       }

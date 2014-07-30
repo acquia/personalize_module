@@ -16,6 +16,8 @@ define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expi
 define('PERSONALIZE_AGENT_VERIFY_CACHE', 'personalize:agent:verification');
 define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
 define('PERSONALIZE_TARGETING_ADMIN_SEPARATOR', '__');
+define('PERSONALIZE_CONTROL_OPTION_ID', 'control-variation');
+define('PERSONALIZE_CONTROL_OPTION_LABEL', 'Control variation');
 
 /**
  * Define constants for campaign status values.
@@ -290,10 +292,10 @@ function personalize_entity_info() {
  * Implements hook_page_build().
  */
 function personalize_page_build(&$page) {
-  // Add the necessary JavaScript for personalization.
-  $path = drupal_get_path('module', 'personalize');
+  // Add the necessary JavaScript settings for personalization.
   $settings = array(
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
+    'controlOptionName' => PERSONALIZE_CONTROL_OPTION_ID,
   );
 
   // cacheExpiration keys should match web storage bucket names.
@@ -303,9 +305,6 @@ function personalize_page_build(&$page) {
   // Add in the decision caching expiration settings.
   $settings['cacheExpiration']['decisions'] = variable_get('personalize_local_caching_storage', 'session') == 'session' ? 'session' : variable_get('personalize_local_caching_expiration', 30);
 
-  $options = array(
-    'scope' => 'footer',
-  );
   // Check if a pre-selection for one or more option sets has been
   // passed in the querystring.
   if (isset($_GET[PERSONALIZE_PRESELECTION_PARAM])) {
@@ -2070,6 +2069,92 @@ function personalize_get_decision_name_for_option_set($option_set) {
   }
   // Default to a name based on the osid.
   return personalize_stringify_osid($option_set->osid);
+}
+
+/**
+ * Creates an option set option for a page variation based on the passed in option info.
+ *
+ * @param $variation_set_name
+ *   The variation set this belongs to.
+ * @param $option_set
+ *   The option set object to add the option to
+ * @param $option_info
+ *   The information about the individual option to be added for this variation.
+ * @param $variation_number
+ *   The variation number to add this option to. If unspecified it will be created as a
+ *   new variation.
+ */
+function personalize_create_page_variation($variation_set_name, $option_set, $option_info, $variation_number = NULL) {
+  // Find all other option sets in this variation set (i.e. with the same
+  // decision name and agent.)
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $option_set->agent));
+
+  // To figure out the variation number, check the number of options in the first
+  // existing option set and the number of options in the passed in option set and
+  // use whichever is higher.
+  if (!empty($option_sets)) {
+    $first_os = reset($option_sets);
+    $count = count($first_os->options);
+  }
+  else {
+    $count = 0;
+  }
+  $max_variation_number = max(array(1, $count, count($option_set->options)));
+  if ($variation_number === NULL || $variation_number > $max_variation_number) {
+    $variation_number = $max_variation_number;
+  }
+
+  $option_set->decision_name = $variation_set_name;
+  $has_control_option = FALSE;
+  $option_id = 'variation-' . $variation_number;
+  $option_label = t('Variation @num', array('@num' => $variation_number));
+  $i = 0;
+  foreach ($option_set->options as $i => $option) {
+    // Check for the control variation.
+    if ($option['option_id'] == PERSONALIZE_CONTROL_OPTION_ID) {
+      if ($i !== 0) {
+        // The control option has to be index 0.
+        unset($option_set->options[$i]);
+      }
+      else {
+        $has_control_option = TRUE;
+      }
+    }
+  }
+  $next_option = $i + 1;
+  // Add any missing options before adding the one for this variation.
+  for ($j = $next_option; $j < $variation_number; $j++) {
+    $option_set->options[$j] = array('option_id' => 'variation-' . $j, 'option_label' => t('Variation @num', array('@num' => $j)));
+  }
+  // Now add the option for this variation.
+  $option_set->options[$variation_number] = array('option_id' => $option_id, 'option_label' => $option_label) + $option_info;
+  $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
+  if (!$has_control_option) {
+    array_unshift($option_set->options, $control_option);
+  }
+
+  $option_set = personalize_option_set_save($option_set);
+  // Go through the other option sets in the variation set to update their options.
+  foreach ($option_sets as $osid => $os) {
+    if (isset($option_set->osid) && $osid == $option_set->osid) {
+      continue;
+    }
+    // Make sure we have a control option.
+    if (!isset($os->options[0])) {
+      $os->options[0] = array();
+    }
+    $os->options[0] = array_merge($os->options[0], $control_option);
+    // Add empty options for any missing indexes up to and including the variation number.
+    for ($i = 1; $i <= $variation_number; $i++) {
+      if (!isset($os->options[$i])) {
+        $op_id = 'variation-' . $i;
+        $op_label = t('Variation @num', array('@num' => $i));
+        $os->options[$i] = array('option_id' => $op_id, 'option_label' => $op_label);
+      }
+    }
+    personalize_option_set_save($os);
+  }
+  return $variation_number;
 }
 
 /**
