@@ -44,4 +44,8 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   public function errors() {
     return array();
   }
+
+  public function stopNow() {
+    return TRUE;
+  }
 }
