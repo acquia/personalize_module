@@ -102,9 +102,10 @@ function personalize_elements_ctools_plugin_api($owner, $api) {
  */
 function personalize_elements_page_build(&$page) {
   $option_sets = personalize_option_set_load_by_type('elements', 'label');
-  $settings = array(
-    'contextualVariationTypes' => personalize_elements_contextual_menu_variations(),
-  );
+  $settings = array();
+  if (user_access('manage personalized content')) {
+    $settings['contextualVariationTypes'] = personalize_elements_contextual_menu_variations();
+  }
   $elements = array();
   foreach ($option_sets as $osid => $option_set) {
     $page_match = TRUE;
