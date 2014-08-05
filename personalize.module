@@ -350,6 +350,7 @@ function personalize_page_build(&$page) {
   $settings = array(
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
     'controlOptionName' => PERSONALIZE_CONTROL_OPTION_ID,
+    'controlOptionLabel' => PERSONALIZE_CONTROL_OPTION_LABEL,
   );
 
   // cacheExpiration keys should match web storage bucket names.
@@ -452,6 +453,7 @@ function personalize_agent_get_settings() {
     $campaigns[$agent->machine_name] = array(
       'name' => $agent->machine_name,
       'label' => filter_xss($agent->label),
+      'type' => $plugin->getType(),
       'status' => $current_status,
       'nextStatus' => array(
         'status' => $next_status,
