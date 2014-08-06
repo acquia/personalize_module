@@ -1684,7 +1684,7 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
  * Load all agents of a particular type.
  */
 function personalize_agent_load_by_type($type, $reset = FALSE, $include_completed = FALSE) {
-  return personalize_agent_load_multiple(array(), array('agent_type' => $type), $reset, $include_completed);
+  return personalize_agent_load_multiple(array(), array('plugin' => $type), $reset, $include_completed);
 }
 
 /**
