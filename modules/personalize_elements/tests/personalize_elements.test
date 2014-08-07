@@ -351,13 +351,17 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     // There should be no settings on the home page.
-    $this->assertFalse(isset($settings['personalize_elements']));
+    $this->assertFalse(isset($settings['personalize_elements']['elements']));
 
     $this->drupalGet('user');
     // The settings should show up on the user page.
     $settings = $this->drupalGetSettings();
     $personalize_elements_settings = $settings['personalize_elements'];
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
+
+    // Check for the contextual settings for a few of the variation types.
+    $this->assertEqual(t("Add CSS class"), $personalize_elements_settings['contextualVariationTypes']['addClass']);
+    $this->assertFalse(isset($personalize_elements['contextualVariationTypes']['runJS']));
   }
 
   function testPersonalizeElementsVariationSets() {
@@ -384,6 +388,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       array(
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+        'personalize_elements_content' => '',
       ),
       array(
         'option_id' => 'variation-1',
@@ -401,6 +406,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       array(
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+        'personalize_elements_content' => '',
       ),
       array(
         'option_id' => 'variation-1',
