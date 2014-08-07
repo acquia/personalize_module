@@ -1109,7 +1109,8 @@ class PersonalizeTest extends PersonalizeBaseTest {
       array(
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
-        'bid' => 'block_delta_1'
+        'bid' => 'block_delta_1',
+        'personalize_elements_content' => '',
       ),
       array(
         'option_id' => 'variation-1',
@@ -1140,7 +1141,9 @@ class PersonalizeTest extends PersonalizeBaseTest {
       array(
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
-        'bid' => 'block_delta_3'
+        'bid' => 'block_delta_3',
+        'personalize_elements_content' => '',
+
       ),
       array(
         'option_id' => 'variation-1',
