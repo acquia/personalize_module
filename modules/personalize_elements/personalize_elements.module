@@ -102,6 +102,10 @@ function personalize_elements_ctools_plugin_api($owner, $api) {
  */
 function personalize_elements_page_build(&$page) {
   $option_sets = personalize_option_set_load_by_type('elements', 'label');
+  $settings = array();
+  if (user_access('manage personalized content')) {
+    $settings['contextualVariationTypes'] = personalize_elements_contextual_menu_variations();
+  }
   $elements = array();
   foreach ($option_sets as $osid => $option_set) {
     $page_match = TRUE;
@@ -120,8 +124,8 @@ function personalize_elements_page_build(&$page) {
       'previewable' => $option_set->data['personalize_elements_type'] !== 'runJS',
     );
   }
-  if (empty($elements)) {
-    return;
+  if (!empty($elements)) {
+    $settings['elements'] = $elements;
   }
   $page['page_top']['personalize_elements'] = array(
     '#attached' => array(
@@ -129,9 +133,7 @@ function personalize_elements_page_build(&$page) {
         drupal_get_path('module', 'personalize_elements') . '/js/personalize_elements.js' => array(),
         array(
           'data' => array(
-            'personalize_elements' => array(
-              'elements' => $elements,
-            )
+            'personalize_elements' => $settings,
           ),
           'type' => 'setting'
         ),
@@ -197,24 +199,60 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
     'replaceHtml' => array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Edit HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+          '#required' => TRUE,
+        ),
+      ),
     ),
     'addClass' => array(
       'label' => t('Add a class'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Add CSS class'),
+        'formitem' => array(
+          '#type' => 'textfield',
+          '#title' => t('New class'),
+          '#required' => TRUE,
+        ),
+      ),
     ),
     'appendHtml' => array(
       'label' => t('Append HTML'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Append HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+          '#required' => TRUE,
+        ),
+      ),
     ),
     'prependHtml' => array(
       'label' => t('Prepend HTML'),
       'needs_selector' => TRUE,
+      'contextual' => array(
+        'label' => t('Prepend HTML'),
+        'formitem' => array(
+          '#type' => 'textarea',
+          '#title' => t('HTML'),
+          '#rows' => 4,
+          '#required' => TRUE,
+        ),
+      ),
     ),
   );
   if (user_access('use advanced personalize elements features') || !$filter_by_perms) {
     $types['runJS'] = array(
       'label' => t('Run JavaScript code'),
       'needs_selector' => FALSE,
+      'contextual' => FALSE,
     );
   }
   return $types;
@@ -265,6 +303,21 @@ function personalize_elements_get_option_set_for_variation($title, $agent_name, 
     )
   );
   return (object) $option_set;
+}
+
+/**
+ * Gets the variation types available for use within a contextual menu
+ * specific to an element.
+ */
+function personalize_elements_contextual_menu_variations() {
+  $variation_types = module_invoke_all('personalize_elements_variation_types');
+  $options = array();
+  foreach ($variation_types as $type => $info) {
+    if ($info['contextual'] && $info['contextual'] !== FALSE) {
+      $options[$type] = $info['contextual']['label'];
+    }
+  }
+  return $options;
 }
 
 /**
