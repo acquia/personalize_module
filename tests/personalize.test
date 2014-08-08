@@ -766,7 +766,40 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
-    // Pause the campaign and verify that the settings are no longer there.
+    // Create a second agent that uses some of the same contexts.
+    $second_agent_name = $this->randomName();
+    $second_machine_name = personalize_generate_machine_name($second_agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $second_agent_name,
+      'agent_basic_info[machine_name]' => $second_machine_name,
+      'agent_basic_info[agent_type]' => 'test_extra_agent',
+      'cache_decisions' => FALSE,
+    );
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+
+    $second_agent = personalize_agent_load($second_machine_name);
+    $second_agent->data['visitor_context']['personalize_test_visitor_context'] = array(
+      'test_local_30' => 'test_local_30',
+      'test_local_none' => 'test_local_none',
+      'test_nocache' => 'test_nocache',
+    );
+    personalize_agent_save($second_agent);
+    personalize_agent_set_status($second_machine_name, PERSONALIZE_STATUS_RUNNING);
+
+    $this->resetAll();
+    // Load a page and verify cache settings.
+    $this->drupalGet('');
+
+    // Verify the cache settings of the combined agents.
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_session'], 'session');
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_30'], 30);
+
+    $this->assertEqual($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none'], 'none');
+    $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
+
+    // Pause both campaigns and verify that the settings are no longer there.
+    personalize_agent_set_status($second_machine_name, PERSONALIZE_STATUS_PAUSED);
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_PAUSED);
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
@@ -775,7 +808,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_local_none']));
     $this->assertFalse(isset($settings['personalize']['cacheExpiration']['visitor_context:personalize_test_visitor_context:test_nocache']));
 
-    // Restart the agent and verify that they come back.
+    // Restart the first agent and verify that the settings come back.
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();

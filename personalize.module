@@ -2459,7 +2459,12 @@ function personalize_visitor_context_expiration_load() {
   foreach ($current_campaigns as $campaign) {
     // Add auto-targeting contexts.
     if (!empty($campaign->data['visitor_context'])) {
-      $current_campaign_contexts = array_merge_recursive($current_campaign_contexts, $campaign->data['visitor_context']);
+      foreach ($campaign->data['visitor_context'] as $plugin => $contexts) {
+        if (!isset($current_campaign_contexts[$plugin])) {
+          $current_campaign_contexts[$plugin] = array();
+        }
+        $current_campaign_contexts[$plugin] = array_merge($current_campaign_contexts[$plugin], $contexts);
+      }
     }
     // Add explicit targeting contexts for options within the campaign.
     $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
