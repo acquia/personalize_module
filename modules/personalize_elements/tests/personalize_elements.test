@@ -368,13 +368,13 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $agent_name = 'test-agent';
     // Variation 1 (only one element).
     $os1 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
-    personalize_create_page_variation('my_first_varset', $os1, array('personalize_elements_content' => 'test-class'));
+    personalize_page_variation_create('my_first_varset', $os1, array('personalize_elements_content' => 'test-class'));
 
     // Variation 2 (2 elements).
     $os2 = personalize_elements_get_option_set_for_variation('my second os', $agent_name, 'div.some-class', 'appendHtml', 'node');
-    personalize_create_page_variation('my_first_varset', $os2, array('personalize_elements_content' => 'appended html'));
+    personalize_page_variation_create('my_first_varset', $os2, array('personalize_elements_content' => 'appended html'));
     $os3 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
-    personalize_create_page_variation('my_first_varset', $os3, array('personalize_elements_content' => 'other-class'), 2);
+    personalize_page_variation_create('my_first_varset', $os3, array('personalize_elements_content' => 'other-class'), 2);
 
 
     $this->resetAll();
