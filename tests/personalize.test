@@ -1160,7 +1160,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
         'bid' => 'block_delta_1',
-        'personalize_elements_content' => '',
       ),
       array(
         'option_id' => 'variation-1',
@@ -1192,7 +1191,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
         'bid' => 'block_delta_3',
-        'personalize_elements_content' => '',
       ),
       array(
         'option_id' => 'variation-1',
@@ -1228,24 +1226,24 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
       array(
         'option_id' => 'variation-1',
-        'option_label' => 'Variation 1',
+        'option_label' => 'Variation #1',
         'bid' => 'block_delta_10',
       ),
       array(
         'option_id' => 'variation-2',
-        'option_label' => 'Variation 2',
+        'option_label' => 'Variation #2',
       ),
       array(
         'option_id' => 'variation-3',
-        'option_label' => 'Variation 3',
+        'option_label' => 'Variation #3',
       ),
       array(
         'option_id' => 'variation-4',
-        'option_label' => 'Variation 4',
+        'option_label' => 'Variation #4',
       ),
       array(
         'option_id' => 'variation-5',
-        'option_label' => 'Variation 5',
+        'option_label' => 'Variation #5',
       ),
     );
     $this->assertEqual($expected_options_os3, $option_sets[3]->options);

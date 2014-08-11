@@ -84,7 +84,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   }
   elseif (isset($option_set->options)) {
     foreach ($option_set->options as $option) {
-      $options[] = array('option_label' => $option['option_label'], 'personalize_elements_content' => $option['personalize_elements_content']);
+      $options[] = array('option_label' => $option['option_label'], 'personalize_elements_content' => isset($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '');
     }
   }
   if (!empty($option_set->osid)) {
