@@ -1249,14 +1249,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
     );
     $this->assertEqual($expected_options_os3, $option_sets[3]->options);
-
-    // Rename the second variation.
-    personalize_rename_page_variation('first_variation_set', $agent_name, 2, 'Hello');
-    $expected_options_os1[2]['option_label'] = 'Hello';
-    $expected_options_os2[2]['option_label'] = 'Hello';
-    $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => 'first_variation_set', 'agent' => $agent_name));
-    $this->assertEqual($expected_options_os1, $option_sets[1]->options);
-    $this->assertEqual($expected_options_os2, $option_sets[2]->options);
   }
 
   /**
