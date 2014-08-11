@@ -2276,6 +2276,54 @@ function personalize_rename_page_variation($variation_set_name, $agent_name, $va
 }
 
 /**
+ * Rename a page variation.
+ *
+ * To rename a page variation, re-label all options that match the variation.
+ *
+ * @param string $variation_set_name
+ *   The name of the variation set that this variation belongs to.
+ * @param string $agent_name
+ *   The name of the campaign/agent for this page variation.
+ * @param number $variation_number
+ *   The number of variation within the variation set to rename
+ * @param string $variation_name
+ *   The new variation name.
+ */
+function personalize_rename_page_variation($variation_set_name, $agent_name, $variation_number, $variation_name) {
+  // Cannot rename the control variation.
+  if ($variation_number == 0) {
+    return;
+  }
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
+  foreach ($option_sets as $option_set) {
+    if (count($option_set->options) > $variation_number) {
+      $option_set->options[$variation_number]['option_label'] = $variation_name;
+      personalize_option_set_save($option_set);
+    }
+  }
+}
+
+/**
+ * Delete a page variation.
+ *
+ * @param string $variation_set_name
+ *   The name of the variation set that contains the variation to be removed.
+ * @param string $agent_name
+ *   The name of the campaign/agent for the page variation.
+ * @param number $variation_number
+ *   The number for the variation to delete.
+ */
+function personalize_delete_page_variation($variation_set_name, $agent_name, $variation_number) {
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
+  foreach ($option_sets as $option_set) {
+    if (count($option_set->options) > $variation_number) {
+      unset($option_set->options[$variation_number]);
+      personalize_option_set_save($option_set);
+    }
+  }
+}
+
+/**
  * Returns a list of all available executors.
  */
 function personalize_get_executors() {
