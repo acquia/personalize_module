@@ -1164,26 +1164,26 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
       array(
         'option_id' => 'variation-1',
-        'option_label' => 'Variation 1',
+        'option_label' => 'Variation #1',
         'bid' => 'block_delta_2'
       ),
       array(
         'option_id' => 'variation-2',
-        'option_label' => 'Variation 2',
+        'option_label' => 'Variation #2',
       ),
       array(
         'option_id' => 'variation-3',
-        'option_label' => 'Variation 3',
+        'option_label' => 'Variation #3',
         'bid' => 'block_delta_5'
       ),
       array(
         'option_id' => 'variation-4',
-        'option_label' => 'Variation 4',
+        'option_label' => 'Variation #4',
         'bid' => 'block_delta_6'
       ),
       array(
         'option_id' => 'variation-5',
-        'option_label' => 'Variation 5',
+        'option_label' => 'Variation #5',
       ),
     );
     $this->assertEqual($expected_options_os1, $option_sets[1]->options);
@@ -1196,25 +1196,25 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
       array(
         'option_id' => 'variation-1',
-        'option_label' => 'Variation 1',
+        'option_label' => 'Variation #1',
       ),
       array(
         'option_id' => 'variation-2',
-        'option_label' => 'Variation 2',
+        'option_label' => 'Variation #2',
         'bid' => 'block_delta_4'
       ),
       array(
         'option_id' => 'variation-3',
-        'option_label' => 'Variation 3',
+        'option_label' => 'Variation #3',
       ),
       array(
         'option_id' => 'variation-4',
-        'option_label' => 'Variation 4',
+        'option_label' => 'Variation #4',
         'bid' => 'block_delta_7'
       ),
       array(
         'option_id' => 'variation-5',
-        'option_label' => 'Variation 5',
+        'option_label' => 'Variation #5',
         'bid' => 'block_delta_8'
       ),
     );
