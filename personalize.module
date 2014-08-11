@@ -443,6 +443,9 @@ function personalize_agent_get_settings() {
       }
     }
     $plugin = personalize_agent_load_agent($agent->machine_name);
+    if (!$plugin) {
+      continue;
+    }
     $current_status = personalize_agent_get_status($agent->machine_name);
     list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
     $verified = _personalize_agent_verification_cache_get($agent->machine_name);
@@ -2196,6 +2199,13 @@ function personalize_create_page_variation($variation_set_name, $option_set, $op
   $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID, 'personalize_elements_content' => '');
   if (!$has_control_option) {
     array_unshift($option_set->options, $control_option);
+  }
+  // If the variation set contains variations with higher numbers than this, make
+  // sure options exist in this option set for those variation numbers.
+  for ($k = $variation_number + 1; $k < $max_variation_number; $k++) {
+    if (!isset($option_set->options[$k])) {
+      $option_set->options[$k] = array('option_id' => 'variation-' . $k, 'option_label' => t('Variation @num', array('@num' => $k)));
+    }
   }
 
   $option_set = personalize_option_set_save($option_set);

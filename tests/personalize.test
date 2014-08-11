@@ -1072,7 +1072,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->drupalLogin($admin_user);
 
     // Create some custom blocks to use as variations.
-    $deltas = $this->createCustomBlocks(8);
+    $deltas = $this->createCustomBlocks(10);
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
@@ -1131,9 +1131,26 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $var_num = personalize_create_page_variation('first_variation_set', $os_2, array('bid' => array_shift($deltas)), 6);
     $this->assertEqual(5, $var_num);
 
+    // Create another block-based option set and add it to variation 1. (We need to
+    // make sure an option gets created for each subsequent variation.)
+    $os3 = array(
+      'agent' => $agent_name,
+      'plugin' => 'block',
+      'executor' => 'show',
+      'options' => array(
+        array('option_id' => PERSONALIZE_CONTROL_OPTION_ID, 'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'bid' => array_shift($deltas))
+      ),
+      'data' => array(
+        'block_title' => 'My personalized block'
+      )
+    );
+    $option_set_3 = (object) $os3;
+    $var_num = personalize_create_page_variation('first_variation_set', $option_set_3, array('bid' => array_shift($deltas)), 1);
+    $this->assertEqual(1, $var_num);
+
     $this->resetAll();
     $option_sets = personalize_option_set_load_multiple(array(), array('agent' => $agent_name));
-    $this->assertEqual(2, count($option_sets));
+    $this->assertEqual(3, count($option_sets));
     foreach ($option_sets as $osid => $option_set) {
       $this->assertEqual('first_variation_set', $option_set->decision_name);
       $this->assertEqual(6, count($option_set->options));
@@ -1176,7 +1193,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
         'bid' => 'block_delta_3',
         'personalize_elements_content' => '',
-
       ),
       array(
         'option_id' => 'variation-1',
@@ -1203,6 +1219,36 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
     );
     $this->assertEqual($expected_options_os2, $option_sets[2]->options);
+    $expected_options_os3 = array(
+      array(
+        'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+        'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+        'bid' => 'block_delta_9',
+
+      ),
+      array(
+        'option_id' => 'variation-1',
+        'option_label' => 'Variation 1',
+        'bid' => 'block_delta_10',
+      ),
+      array(
+        'option_id' => 'variation-2',
+        'option_label' => 'Variation 2',
+      ),
+      array(
+        'option_id' => 'variation-3',
+        'option_label' => 'Variation 3',
+      ),
+      array(
+        'option_id' => 'variation-4',
+        'option_label' => 'Variation 4',
+      ),
+      array(
+        'option_id' => 'variation-5',
+        'option_label' => 'Variation 5',
+      ),
+    );
+    $this->assertEqual($expected_options_os3, $option_sets[3]->options);
   }
 
   /**
