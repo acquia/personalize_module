@@ -2167,7 +2167,7 @@ function personalize_get_decision_name_for_option_set($option_set) {
  * @return number
  *   The variation number that was created or added to.
  */
-function personalize_create_page_variation($variation_set_name, $option_set, $option_info, $variation_number = NULL) {
+function personalize_page_variation_create($variation_set_name, $option_set, $option_info, $variation_number = NULL) {
   // Find all other option sets in this variation set (i.e. with the same
   // decision name and agent.)
   $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $option_set->agent));
@@ -2261,7 +2261,7 @@ function personalize_create_page_variation($variation_set_name, $option_set, $op
  * @param string $variation_name
  *   The new variation name.
  */
-function personalize_rename_page_variation($variation_set_name, $agent_name, $variation_number, $variation_name) {
+function personalize_page_variation_rename($variation_set_name, $agent_name, $variation_number, $variation_name) {
   // Cannot rename the control variation.
   if ($variation_number == 0) {
     return;
@@ -2313,7 +2313,7 @@ function personalize_rename_page_variation($variation_set_name, $agent_name, $va
  * @param number $variation_number
  *   The number for the variation to delete.
  */
-function personalize_delete_page_variation($variation_set_name, $agent_name, $variation_number) {
+function personalize_page_variation_delete($variation_set_name, $agent_name, $variation_number) {
   $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
   foreach ($option_sets as $option_set) {
     if (count($option_set->options) > $variation_number) {
