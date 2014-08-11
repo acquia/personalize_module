@@ -2257,7 +2257,7 @@ function personalize_page_variation_rename($variation_set_name, $agent_name, $va
   }
   $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
   foreach ($option_sets as $option_set) {
-    if (count($option_set->options) > $variation_number) {
+    if (isset($option_set->options[$variation_number])) {
       $option_set->options[$variation_number]['option_label'] = $variation_name;
       personalize_option_set_save($option_set);
     }
@@ -2265,31 +2265,24 @@ function personalize_page_variation_rename($variation_set_name, $agent_name, $va
 }
 
 /**
- * Rename a page variation.
- *
- * To rename a page variation, re-label all options that match the variation.
+ * Gets the name of a specific page variation set variation.
  *
  * @param string $variation_set_name
  *   The name of the variation set that this variation belongs to.
  * @param string $agent_name
  *   The name of the campaign/agent for this page variation.
  * @param number $variation_number
- *   The number of variation within the variation set to rename
- * @param string $variation_name
- *   The new variation name.
+ *   The number of variation within the variation set to retrieve.
  */
-function personalize_rename_page_variation($variation_set_name, $agent_name, $variation_number, $variation_name) {
-  // Cannot rename the control variation.
-  if ($variation_number == 0) {
-    return;
-  }
+function personalize_page_variation_get_name($variation_set_name, $agent_name, $variation_number) {
   $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
-  foreach ($option_sets as $option_set) {
-    if (count($option_set->options) > $variation_number) {
-      $option_set->options[$variation_number]['option_label'] = $variation_name;
-      personalize_option_set_save($option_set);
+  $option_set = current($option_sets);
+  if ($option_set) {
+    if (isset($option_set->options[$variation_number])) {
+      return check_plain($option_set->options[$variation_number]['option_label']);
     }
   }
+  return '';
 }
 
 /**
@@ -2305,7 +2298,7 @@ function personalize_rename_page_variation($variation_set_name, $agent_name, $va
 function personalize_page_variation_delete($variation_set_name, $agent_name, $variation_number) {
   $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
   foreach ($option_sets as $option_set) {
-    if (count($option_set->options) > $variation_number) {
+    if (isset($option_set->options[$variation_number])) {
       unset($option_set->options[$variation_number]);
       personalize_option_set_save($option_set);
     }
