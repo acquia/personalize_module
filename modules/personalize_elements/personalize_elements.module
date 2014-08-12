@@ -106,7 +106,6 @@ function personalize_elements_page_build(&$page) {
   if (user_access('manage personalized content')) {
     $settings['contextualVariationTypes'] = personalize_elements_contextual_menu_variations();
   }
-
   personalize_elements_limit_option_sets_by_path($option_sets);
   $elements = personalize_elements_element_settings($option_sets);
   if (!empty($elements)) {
