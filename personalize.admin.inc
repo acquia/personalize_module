@@ -223,61 +223,81 @@ function personalize_agent_list() {
     array('data' => t('Start/stop')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
-  $rows = array();
+  $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
 
-  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
-    // The ability to delete depends on the storage type and on whether the campaign has started
-    // or contains option sets.
-    $can_delete = personalize_delete_agent_access($agent);
-    $delete_link = '';
-    // Determine storage
-    switch ($agent->export_type) {
-      case EXPORT_IN_DATABASE | EXPORT_IN_CODE:
-        $storage = t('Overridden');
-        if ($can_delete) {
-          $delete_link = l(t('Revert'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
-        }
-        break;
-      case EXPORT_IN_DATABASE:
-        $storage = t('Normal');
-        if ($can_delete) {
-          $delete_link = l(t('Delete'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
-        }
-        break;
-      case EXPORT_IN_CODE:
-        $storage = t('Default');
-        break;
-    }
-    $agent_status = personalize_agent_get_status($agent->machine_name);
-    $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent_status);
-    // @todo We are ignoring the "storage" info and the clone/export functionality
-    //   for now. Revisit once we can provide full support for clone/export.
-    $plugin = personalize_agent_load_agent($agent->machine_name);
-    $tablerow = array(
-      array('data' => check_plain($agent->label)),
-      array('data' => $agent->plugin),
-      array('data' => $status_map[$agent_status]),
-      array('data' => drupal_render($status_toggle_form)),
-      //array('data' => $storage),
-      array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-      array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
-      //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
-      //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
-      array('data' => $delete_link),
-    );
-    $rows[] = $tablerow;
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No agents available.'), 'colspan' => 6));
-  }
-
-  $build = array(
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => $rows,
-    '#attributes' => array('id' => 'personalize'),
+  $sorted_agents = array(
+    PERSONALIZE_STATUS_NOT_STARTED => array(),
+    PERSONALIZE_STATUS_RUNNING => array(),
+    PERSONALIZE_STATUS_PAUSED => array(),
+    PERSONALIZE_STATUS_COMPLETED => array()
   );
+
+  foreach ($agents as $agent) {
+    $agent_status = personalize_agent_get_status($agent->machine_name);
+    $sorted_agents[$agent_status][] = $agent;
+  }
+
+  $build = array();
+  foreach ($sorted_agents as $status => $agents) {
+    $build['status_' . $status] = array(
+      '#markup' => '<h2>' . $status_map[$status] . '</h2>'
+    );
+    $rows = array();
+    foreach ($agents as $agent) {
+      // The ability to delete depends on the storage type and on whether the campaign has started
+      // or contains option sets.
+      $can_delete = personalize_delete_agent_access($agent);
+      $delete_link = '';
+      // Determine storage
+      switch ($agent->export_type) {
+        case EXPORT_IN_DATABASE | EXPORT_IN_CODE:
+          $storage = t('Overridden');
+          if ($can_delete) {
+            $delete_link = l(t('Revert'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
+          }
+          break;
+        case EXPORT_IN_DATABASE:
+          $storage = t('Normal');
+          if ($can_delete) {
+            $delete_link = l(t('Delete'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
+          }
+          break;
+        case EXPORT_IN_CODE:
+          $storage = t('Default');
+          break;
+      }
+      $agent_status = personalize_agent_get_status($agent->machine_name);
+      $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent_status);
+      // @todo We are ignoring the "storage" info and the clone/export functionality
+      //   for now. Revisit once we can provide full support for clone/export.
+      $plugin = personalize_agent_load_agent($agent->machine_name);
+      $tablerow = array(
+        array('data' => check_plain($agent->label)),
+        array('data' => $agent->plugin),
+        array('data' => $status_map[$agent_status]),
+        array('data' => drupal_render($status_toggle_form)),
+        //array('data' => $storage),
+        array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
+        //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
+        array('data' => $delete_link),
+      );
+      $rows[] = $tablerow;
+    }
+
+    if (empty($rows)) {
+      $rows[] = array(array('data' => t('No agents available.'), 'colspan' => 6));
+    }
+
+    $build['table_' . $status] = array(
+      '#theme' => 'table',
+      '#header' => $header,
+      '#rows' => $rows,
+      '#attributes' => array('id' => 'personalize'),
+    );
+  }
+
   return $build;
 }
 
