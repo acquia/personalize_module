@@ -106,6 +106,7 @@ function personalize_elements_page_build(&$page) {
   if (user_access('manage personalized content')) {
     $settings['contextualVariationTypes'] = personalize_elements_contextual_menu_variations();
   }
+  personalize_elements_limit_option_sets_by_path($option_sets);
   $elements = personalize_elements_element_settings($option_sets);
   if (!empty($elements)) {
     $settings['elements'] = $elements;
@@ -129,32 +130,19 @@ function personalize_elements_page_build(&$page) {
 }
 
 /**
- * Helper function to generate the Drupal settings elements for the page.
+ * Helper function to generate the Drupal settings elements for option sets.
  *
  * @param array $option_sets
  *   An array of option sets to get personalize_elements settings for.
- * @param string $path
- *   An option path to match for retrieving matched elements.
  * @return array
  *   An array element element settings keyed by JS osid with:
  *   - selector: the jQuery selector
  *   - variation_type: the type of personalize_elements variation
  *   - previewable: boolean indicating if this element can be previewed.
  */
-function personalize_elements_element_settings($option_sets, $path = NULL) {
-  if (empty($option_sets)) {
-    $option_sets = personalize_option_set_load_by_type('elements', 'label');
-  }
+function personalize_elements_element_settings($option_sets) {
   $elements = array();
   foreach ($option_sets as $osid => $option_set) {
-    $page_match = TRUE;
-    if (isset($option_set->data['pages']) && !empty($option_set->data['pages'])) {
-      $page_match = personalize_elements_match_page($option_set->data['pages'], $path);
-    }
-    if (!$page_match) {
-      unset($option_sets[$osid]);
-      continue;
-    }
     $js_id = $js_id = personalize_stringify_osid($option_set->osid);
     $elements[$js_id] = array(
       'selector' => $option_set->data['personalize_elements_selector'],
@@ -164,6 +152,29 @@ function personalize_elements_element_settings($option_sets, $path = NULL) {
     );
   }
   return $elements;
+}
+
+/**
+ * Helper function to limit personalize option sets to those applicable to a
+ * particular path.
+ *
+ * @param array &$option_sets
+ *   An array of option sets to limit by reference.
+ * @param string $path
+ *   An optional path to match for limited option sets.  If empty then the
+ *   current path will be used.
+ */
+function personalize_elements_limit_option_sets_by_path(&$option_sets, $path = NULL) {
+  foreach ($option_sets as $osid => $option_set) {
+    $page_match = TRUE;
+    if (isset($option_set->data['pages']) && !empty($option_set->data['pages'])) {
+      $page_match = personalize_elements_match_page($option_set->data['pages'], $path);
+    }
+    if (!$page_match) {
+      unset($option_sets[$osid]);
+      continue;
+    }
+  }
 }
 
 /**
