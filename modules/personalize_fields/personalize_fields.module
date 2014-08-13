@@ -5,6 +5,8 @@
  * Provides interaction between fields and the personalize module.
  */
 
+define('PERSONALIZE_FIELDS_CACHE_BIN', 'cache_personalize_fields');
+
 /**
  * Implements hook_help().
  */
@@ -636,7 +638,7 @@ function personalize_fields_entity_presave($entity, $type) {
  * Implements hook_entity_load().
  */
 function personalize_fields_entity_load($entities, $type) {
-  // Add Option Sets to the entity.
+  // We need an entity_type property on the entity.
   foreach ($entities as $entity) {
     $entity->entity_type = $type;
   }
@@ -646,7 +648,7 @@ function personalize_fields_entity_load($entities, $type) {
  * Implements hook_entity_view_alter().
  */
 function personalize_fields_entity_view_alter(&$build, $type) {
-  if (isset($build['#entity']) && is_object($build['#entity'])) {
+/*  if (isset($build['#entity']) && is_object($build['#entity'])) {
     $entity = $build['#entity'];
   }
   elseif(isset($build['#' . $type])) {
@@ -664,7 +666,7 @@ function personalize_fields_entity_view_alter(&$build, $type) {
         personalize_element_with_option_set($build, $option_set);
       }
     }
-  }
+  }*/
 }
 
 /**
@@ -682,13 +684,12 @@ function personalize_fields_entity_delete($entity, $type) {
  * Implements hook_field_delete_instance().
  */
 function personalize_fields_field_delete_instance($instance) {
-  $result = db_select('personalize_fields_option_sets', 'f')
-    ->fields('f', array('osid'))
-    ->condition('f.entity_type', $instance['entity_type'])
-    ->condition('f.field_name', $instance['field_name'])
-    ->execute();
-  foreach ($result as $row) {
-    personalize_option_set_delete($row->osid);
+  $fields_option_sets = personalize_option_set_load_by_type('fields');
+  foreach ($fields_option_sets as $osid => $option_set) {
+    $data = $option_set->data;
+    if ($data['entity_type'] == $instance['entity_type'] && $data['field_name'] == $instance['field_name']) {
+      personalize_option_set_delete($osid);
+    }
   }
 }
 
@@ -696,9 +697,9 @@ function personalize_fields_field_delete_instance($instance) {
  * Implements hook_personalize_option_set_delete().
  */
 function personalize_fields_personalize_option_set_delete($option_set) {
-  db_delete('personalize_fields_option_sets')
-    ->condition('osid', $option_set->osid)
-    ->execute();
+  $field_info = _personalize_fields_get_field_info_from_option_set($option_set);
+  $cid = _personalize_fields_get_cid_for_field($field_info['entity_type'], $field_info['entity_id'], $field_info['field_name']);
+  cache_clear_all($cid, PERSONALIZE_FIELDS_CACHE_BIN);
 }
 
 /**
@@ -709,7 +710,7 @@ function personalize_fields_personalize_option_set_load($option_sets) {
     if ($option_set->plugin != 'fields') {
       continue;
     }
-    $option_set->field_info = _personalize_fields_get_field_info_from_option_set($option_set->osid);
+    $option_set->field_info = _personalize_fields_get_field_info_from_option_set($option_set);
   }
 }
 
@@ -717,22 +718,13 @@ function personalize_fields_personalize_option_set_load($option_sets) {
  * Implements hook_field_attach_view_alter().
  */
 function personalize_fields_field_attach_view_alter(&$output, $context) {
-  $my_pseudo_entity_fields_cache = array(
-    'node:71:field_personalized_headline' => 13,
-    'node:72:field_personalized_headline' => 14,
-  );
-
   $entity = $context['entity'];
   if (!isset($entity->entity_type)) {
     return;
   }
-  dpm($entity);
-
+  $wrapper = entity_metadata_wrapper($entity->entity_type, $entity);
   foreach ($output as $field_name => &$element) {
-    $cid = $entity->entity_type . ':' . $entity->nid . ':' . $field_name;
-    if (isset($my_pseudo_entity_fields_cache[$cid])) {
-      $osid = $my_pseudo_entity_fields_cache[$cid];
-      $option_set = personalize_option_set_load($osid);
+    if ($option_set = _personalize_fields_get_option_set_for_field($entity->entity_type, $wrapper->getIdentifier(), $field_name)) {
       personalize_element_with_option_set($output[$field_name], $option_set);
       $element['#first_option'] = $element[0];
       $element['#personalize_option_set'] = $option_set;
@@ -747,28 +739,6 @@ function personalize_fields_field_attach_view_alter(&$output, $context) {
       }
     }
   }
-
-/*  if (!isset($entity->option_sets)) {
-    return;
-  }
-  foreach ($entity->option_sets as $field_name => $option_set) {
-    if (isset($output[$field_name])) {
-      $element = &$output[$field_name];
-
-      $element['#first_option'] = $element[0];
-      $element['#personalize_option_set'] = $option_set;
-      $element['#theme_wrappers'][] = 'personalize_options_wrapper';
-      $element['#personalize_options'] = array();
-      // Use a counter variable because the option keys may not always be
-      // sequential but the element array keys are.
-      $counter = 0;
-      foreach($option_set->options as $i => $option) {
-        $element['#personalize_options'][$option['option_id']] = $element[$counter];
-        $counter++;
-      }
-
-    }
-  }*/
 }
 
 /**
@@ -896,33 +866,64 @@ function _personalize_fields_entity_from_form($form, $form_state) {
  * @return A fully loaded option set or NULL if none exists for this field.
  */
 function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $field_name) {
-  $name = implode('__', array($entity_type, $entity_id, $field_name));
+  $cid = _personalize_fields_get_cid_for_field($entity_type, $entity_id, $field_name);
   $option_sets = &drupal_static(__FUNCTION__, array());
-  if (isset($option_sets[$name])) {
-    return $option_sets[$name];
+  if (isset($option_sets[$cid])) {
+    return $option_sets[$cid];
   }
 
-  if ($osid = db_query("SELECT osid FROM {personalize_fields_option_sets} WHERE entity_type = :entity_type AND entity_id = :entity_id AND field_name = :field_name", array(':entity_type' => $entity_type, ':entity_id' => $entity_id, ':field_name' => $field_name))->fetchField()) {
-    $option_sets[$name] = personalize_option_set_load($osid);
-    return $option_sets[$name];
+  if ($osid = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN)) {
+    $option_sets[$cid] = personalize_option_set_load($osid);
+    return $option_sets[$cid];
   }
-  $option_sets[$name] = FALSE;
-  return FALSE;
+  else {
+    $option_sets[$cid] = FALSE;
+    // This should hardly ever have to be done.
+    $all_fields_option_sets = personalize_option_set_load_by_type('fields');
+    foreach ($all_fields_option_sets as $os) {
+      $data = $os->data;
+      foreach (array('personalize_fields_entity_type', 'personalize_fields_entity_id', 'personalize_fields_field_name') as $key) {
+        if (empty($data[$key])) {
+          continue;
+        }
+        $this_cid = _personalize_fields_get_cid_for_field($data['personalize_fields_entity_type'], $data['personalize_fields_entity_id'], $data['personalize_fields_field_name']);
+        if ($this_cid == $cid) {
+          $option_sets[$cid] = $os;
+          // Now save to the persistent cache so we don't have to do this again.
+          cache_set($cid, $os->osid, PERSONALIZE_FIELDS_CACHE_BIN);
+        }
+      }
+    }
+  }
+  return $option_sets[$cid];
 }
 
 /**
  * Helper function to retrieve field info for a given option set.
  *
- * @param $osid
- *   The osid of the option set.
+ * @param $option_set
+ *   The osid of the option set, or a loaded option set.
  * @return An array of information with the following keys:
  *   - field_name The field name
  *   - entity_type The type of entity, e.g. 'node'
  *   - entity_id The unique ID of the entity
  */
-function _personalize_fields_get_field_info_from_option_set($osid) {
-  $record = db_query("SELECT entity_type, entity_id, field_name FROM {personalize_fields_option_sets} WHERE osid = :osid", array(':osid' => $osid))->fetchAssoc();
-  return empty($record) ? array() : $record;
+function _personalize_fields_get_field_info_from_option_set($option_set) {
+  if (is_numeric($option_set)) {
+
+    $option_set = personalize_option_set_load($option_set);
+    die($option_set);
+  }
+  if ($option_set) {
+    $data = $option_set->data;
+    foreach (array('personalize_fields_entity_type', 'personalize_fields_entity_id', 'personalize_fields_field_name') as $key) {
+      if (empty($data[$key])) {
+        return array();
+      }
+    }
+    return array('entity_type' => $data['personalize_fields_entity_type'], 'entity_id' => $data['personalize_fields_entity_id'], 'field_name' => $data['personalize_fields_field_name']);
+  }
+  return array();
 }
 
 /**
@@ -938,6 +939,10 @@ function _personalize_fields_get_entity_link_from_option_set($option_set) {
     return $entity_link['path'];
   }
   return '';
+}
+
+function _personalize_fields_get_cid_for_field($entity_type, $entity_id, $field_name) {
+  return implode(':', array($entity_type, $entity_id, $field_name));
 }
 
 /**
