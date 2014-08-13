@@ -2402,6 +2402,55 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       1 => 'On',
     ), $match_element['#options']);
   }
+
+  function testAgentList() {
+
+    module_disable(array('personalize_test'));
+    $this->resetAll();
+
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+
+    // There should just be a message saying there are no agents.
+    $this->drupalGet('admin/structure/personalize');
+    $this->assertText(t('No agents available.'));
+    $this->assertNoText('Not started');
+    $this->assertNoText('Running');
+    $this->assertNoText('Paused');
+    $this->assertNoText('Completed');
+
+    module_enable(array('personalize_test'));
+    $this->resetAll();
+
+    $this->drupalGet('admin/structure/personalize');
+    $this->assertNoText(t('No agents available.'));
+    // "Not started" should be the only section on the page.
+    $this->assertText('Not started');
+    $this->assertNoText('Running');
+    $this->assertNoText('Paused');
+    $this->assertNoText('Completed');
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+    // There should now be a "Running" section on the page.
+    $this->drupalGet('admin/structure/personalize');
+    $this->assertNoText(t('No agents available.'));
+    $this->assertText('Not started');
+    $this->assertText('Running');
+    $this->assertNoText('Paused');
+    $this->assertNoText('Completed');
+
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_PAUSED);
+    personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
+    personalize_agent_set_status('test-agent-3', PERSONALIZE_STATUS_RUNNING);
+    // There should now be a "Paused" section and a "Running" section only.
+    $this->resetAll();
+    $this->drupalGet('admin/structure/personalize');
+    $this->assertNoText(t('No agents available.'));
+    $this->assertNoText('Not started');
+    $this->assertText('Running');
+    $this->assertText('Paused');
+    $this->assertNoText('Completed');
+  }
 }
 
 /**

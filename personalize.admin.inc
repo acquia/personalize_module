@@ -219,12 +219,17 @@ function personalize_agent_list() {
   $header = array(
     array('data' => t('Campaign name')),
     array('data' => t('Type')),
-    array('data' => t('Status')),
-    array('data' => t('Start/stop')),
+    array('data' => t('Start/pause')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
   $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
-
+  if (empty($agents)) {
+    return array(
+      'no_agents' => array(
+        '#markup' => '<div>' . t('No agents available.') . '</div>'
+      )
+    );
+  }
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
     PERSONALIZE_STATUS_RUNNING => array(),
@@ -239,6 +244,9 @@ function personalize_agent_list() {
 
   $build = array();
   foreach ($sorted_agents as $status => $agents) {
+    if (empty($agents)) {
+      continue;
+    }
     $build['status_' . $status] = array(
       '#markup' => '<h2>' . $status_map[$status] . '</h2>'
     );
@@ -274,20 +282,15 @@ function personalize_agent_list() {
       $tablerow = array(
         array('data' => check_plain($agent->label)),
         array('data' => $agent->plugin),
-        array('data' => $status_map[$agent_status]),
         array('data' => drupal_render($status_toggle_form)),
         //array('data' => $storage),
         array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($agent_status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
       );
       $rows[] = $tablerow;
-    }
-
-    if (empty($rows)) {
-      $rows[] = array(array('data' => t('No agents available.'), 'colspan' => 6));
     }
 
     $build['table_' . $status] = array(
