@@ -67,11 +67,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
 
-    // Now assert that this option set gets loaded onto the node.
-    $node = node_load(1);
-    $this->assertTrue(isset($node->option_sets));
-    $option_sets = $node->option_sets;
-    $this->assertEqual($option_set, $option_sets['article_headline']);
+    // Confirm that there's also a corresponding record in the cache table.
+    $cid = _personalize_fields_get_cid_for_field('node', 1, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertEqual(1, $cached->data);
 
     // Create another node with a personalized headline
     // Set up two headline fields
@@ -139,7 +138,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertText(t('The campaign has been paused because you have made changes.'));
     unset($edit['article_headline[und][2][value]']);
 
-
     unset($options[2]);
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual($options, $option_set->options);
@@ -186,14 +184,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertFalse($option_set);
 
-    // Confirm that the record has also been deleted from the table
-    // personalize_fields_option_sets.
-    $result = db_select('personalize_fields_option_sets', 'f')
-      ->fields('f', array('osid'))
-      ->condition('f.osid', 1)
-      ->execute()
-      ->fetchField();
-    $this->assertFalse($result);
+    // Confirm that the record has also been deleted from the cache.
+    $cid = _personalize_fields_get_cid_for_field('node', 1, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertFalse($cached);
 
     // Confirm that the other option set still exists.
     $option_set = personalize_option_set_load(2, TRUE);
@@ -205,11 +199,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
 
-    // Now assert that this option set gets loaded onto the node.
-    $node = node_load(2);
-    $this->assertTrue(isset($node->option_sets));
-    $option_sets = $node->option_sets;
-    $this->assertEqual($option_set, $option_sets['article_headline']);
+    // Confirm that there's also a corresponding record in the cache table.
+    $cid = _personalize_fields_get_cid_for_field('node', 2, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertEqual(2, $cached->data);
 
     // Create a node but only add one value for the headline. It should not
     // create an Option Set.
@@ -266,14 +259,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(2);
     $this->assertFalse($option_set);
 
-    // Confirm that the record has also been deleted from the table
-    // personalize_fields_option_sets.
-    $result = db_select('personalize_fields_option_sets', 'f')
-      ->fields('f', array('osid'))
-      ->condition('f.osid', 2)
-      ->execute()
-      ->fetchField();
-    $this->assertFalse($result);
+    // Confirm that the record has also been deleted from the cache.
+    $cid = _personalize_fields_get_cid_for_field('node', 2, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertFalse($cached);
 
   }
 
@@ -312,9 +301,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['agent_select'] = 'test-agent';
     $this->drupalPost('node/add/article', $edit, t('Save'));
 
-    // Assert that the option set has been created.
-    $node = node_load(1);
-    $this->assertTrue(isset($node->option_sets));
+    // Confirm that there's also a corresponding record in the cache table.
+    $cid = _personalize_fields_get_cid_for_field('node', 1, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertEqual(1, $cached->data);
 
 
     // Create a second node, adding just one value in the headline, so it is not
@@ -325,9 +315,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][0][value]'] = 'only option';
     $edit['agent_select'] = 'test-agent';
     $this->drupalPost('node/add/article', $edit, t('Save'));
-    // Assert that no option set has been created.
-    $node = node_load(2);
-    $this->assertFalse(isset($node->option_sets));
+
 
     $this->drupalLogout();
     // Now log in as another admin user, but one who does not have the 'manage

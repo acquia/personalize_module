@@ -5,57 +5,13 @@
  * Sets up the table to link entities with option sets.
  */
 
-
 /**
  * Implements hook_schema().
  */
 function personalize_fields_schema() {
-  $schema = array();
-
-  $schema['personalize_fields_option_sets'] = array(
-    'description' => 'Stores Option Sets linked to Entities.',
-    'fields' => array(
-      'osid' => array(
-        'description' => 'The ID of the option set',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'entity_type' => array(
-        'description' => 'The Entity Type of the entity.',
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'entity_id' => array(
-        'type' => 'varchar',
-        'length' => 128,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'The Entity ID of this entity.',
-      ),
-      'field_name' => array(
-        'type' => 'varchar',
-        'length' => 32,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => 'The field name.',
-      ),
-    ),
-    'primary key' => array('osid'),
-    'foreign keys' => array(
-      'field_osid' => array(
-        'table' => 'personalize_option_set',
-        'columns' => array('osid' => 'osid'),
-      ),
-    ),
-    'unique keys' => array(
-      'eif' => array('entity_type', 'entity_id', 'field_name'),
-    ),
+  return array(
+    'cache_personalize_fields' => personalize_fields_get_cache_table_schema()
   );
-
-  return $schema;
 }
 
 /**
@@ -91,4 +47,38 @@ function personalize_fields_uninstall() {
       ->condition('id', $row->id)
       ->execute();
   }
+}
+
+/**
+ * Add a cache table for reporting data.
+ */
+function personalize_fields_update_7001() {
+  $schema = personalize_fields_get_cache_table_schema();
+  db_create_table('cache_personalize_fields', $schema);
+
+  // Now get all existing fields-based option sets and convert their field info
+  // to the new storage.
+  $result = db_select('personalize_fields_option_sets', 'pf')
+    ->fields('pf')
+    ->execute();
+  foreach ($result as $row) {
+    $option_set = personalize_option_set_load($row->osid);
+    $option_set->data['personalize_fields_entity_type'] = $row->entity_type;
+    $option_set->data['personalize_fields_entity_id'] = $row->entity_id;
+    $option_set->data['personalize_fields_field_name'] = $row->field_name;
+    personalize_option_set_save($option_set);
+    $cid = _personalize_fields_get_cid_for_field($row->entity_type, $row->entity_id, $row->field_name);
+    cache_set($cid, $option_set->osid, 'cache_personalize_fields');
+  }
+  // Now drop the old table.
+  db_drop_table('personalize_fields_option_sets');
+}
+
+/**
+ * Helper to get the schema for the cache table.
+ */
+function personalize_fields_get_cache_table_schema() {
+  $table_schema = drupal_get_schema_unprocessed('system', 'cache');
+  $table_schema['description'] = 'Cache table for storing option set IDs for field instances.';
+  return $table_schema;
 }
