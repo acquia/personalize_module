@@ -636,29 +636,9 @@ function personalize_fields_entity_presave($entity, $type) {
  * Implements hook_entity_load().
  */
 function personalize_fields_entity_load($entities, $type) {
-  // First load any option sets associated with these entities.
-  $result = db_select('personalize_fields_option_sets', 'o')
-    ->fields('o')
-    ->condition('o.entity_type', $type)
-    ->condition('o.entity_id', array_keys($entities), 'IN')
-    ->execute();
-
-  // Load results into an array keyed by entity ids.
-  $option_sets = array();
-  foreach ($result as $record) {
-    if(!isset($option_sets[$record->entity_id])) {
-      $option_sets[$record->entity_id] = array();
-    }
-    $option_set = personalize_option_set_load($record->osid);
-    $option_sets[$record->entity_id][$record->field_name] = $option_set;
-  }
-
   // Add Option Sets to the entity.
   foreach ($entities as $entity) {
-    list($entity_id) = entity_extract_ids($type, $entity);
-    if (isset($option_sets[$entity_id])) {
-      $entity->option_sets = $option_sets[$entity_id];
-    }
+    $entity->entity_type = $type;
   }
 }
 
@@ -737,8 +717,38 @@ function personalize_fields_personalize_option_set_load($option_sets) {
  * Implements hook_field_attach_view_alter().
  */
 function personalize_fields_field_attach_view_alter(&$output, $context) {
+  $my_pseudo_entity_fields_cache = array(
+    'node:71:field_personalized_headline' => 13,
+    'node:72:field_personalized_headline' => 14,
+  );
+
   $entity = $context['entity'];
-  if (!isset($entity->option_sets)) {
+  if (!isset($entity->entity_type)) {
+    return;
+  }
+  dpm($entity);
+
+  foreach ($output as $field_name => &$element) {
+    $cid = $entity->entity_type . ':' . $entity->nid . ':' . $field_name;
+    if (isset($my_pseudo_entity_fields_cache[$cid])) {
+      $osid = $my_pseudo_entity_fields_cache[$cid];
+      $option_set = personalize_option_set_load($osid);
+      personalize_element_with_option_set($output[$field_name], $option_set);
+      $element['#first_option'] = $element[0];
+      $element['#personalize_option_set'] = $option_set;
+      $element['#theme_wrappers'][] = 'personalize_options_wrapper';
+      $element['#personalize_options'] = array();
+      // Use a counter variable because the option keys may not always be
+      // sequential but the element array keys are.
+      $counter = 0;
+      foreach($option_set->options as $i => $option) {
+        $element['#personalize_options'][$option['option_id']] = $element[$counter];
+        $counter++;
+      }
+    }
+  }
+
+/*  if (!isset($entity->option_sets)) {
     return;
   }
   foreach ($entity->option_sets as $field_name => $option_set) {
@@ -758,7 +768,7 @@ function personalize_fields_field_attach_view_alter(&$output, $context) {
       }
 
     }
-  }
+  }*/
 }
 
 /**
