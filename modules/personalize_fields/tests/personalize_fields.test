@@ -264,6 +264,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
     $this->assertFalse($cached);
 
+    // @todo Add a test to show that personalizable fields with no value get a
+    // cache entry with osid '0' after the first time they're looked up.
   }
 
   /**

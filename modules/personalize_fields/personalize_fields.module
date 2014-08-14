@@ -647,11 +647,15 @@ function personalize_fields_entity_load($entities, $type) {
 function personalize_fields_entity_delete($entity, $type) {
   $wrapper = entity_metadata_wrapper($type, $entity);
   $entity_id = $wrapper->getIdentifier();
-  $partial_cid = $type . ':' . $entity_id;
+  // Look for entries in the cache table with a cid starting with
+  // [entity_type]:[entity_id]:
+  $partial_cid = _personalize_fields_get_cid_for_field($type, $entity_id, '');
   $result = db_select('cache_personalize_fields', 'pf')
     ->fields('pf', array('data'))
     ->condition('pf.cid', $partial_cid . '%', 'LIKE')
     ->execute();
+  // Delete the option sets. Cache table entries will get deleted during
+  // hook_personalize_option_set_delete below.
   foreach ($result as $row) {
     personalize_option_set_delete($row->data);
   }
@@ -850,13 +854,19 @@ function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, 
   if (isset($option_sets[$cid])) {
     return $option_sets[$cid];
   }
-
+  // Before we go checking the persistent cache, first check that this is
+  // even a personalizable field.
+  $field = field_info_field($field_name);
+  if (!isset($field['settings']['personalizable']) || !$field['settings']['personalizable']) {
+    return FALSE;
+  }
   if ($cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN)) {
     $option_sets[$cid] = personalize_option_set_load($cached->data);
     return $option_sets[$cid];
   }
   else {
      $option_sets[$cid] = FALSE;
+     $osid = 0;
      // This should hardly ever have to be done.
      $all_fields_option_sets = personalize_option_set_load_by_type('fields');
      foreach ($all_fields_option_sets as $os) {
@@ -868,11 +878,12 @@ function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, 
          $this_cid = _personalize_fields_get_cid_for_field($data['personalize_fields_entity_type'], $data['personalize_fields_entity_id'], $data['personalize_fields_field_name']);
          if ($this_cid == $cid) {
            $option_sets[$cid] = $os;
-           // Now save to the persistent cache so we don't have to do this again.
-           cache_set($cid, $os->osid, PERSONALIZE_FIELDS_CACHE_BIN);
+           $osid = $os->osid;
          }
        }
      }
+    // Now save to the persistent cache so we don't have to do this again.
+    cache_set($cid, $osid, PERSONALIZE_FIELDS_CACHE_BIN);
    }
    return $option_sets[$cid];
 }
