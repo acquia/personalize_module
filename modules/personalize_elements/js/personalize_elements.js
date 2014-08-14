@@ -17,15 +17,23 @@
           document.location.href = base + path + '?' + param + '=' + osid + '--' + choice_name;
         }
         else {
-          var choices = Drupal.settings.personalize.option_sets[osid].options,  choiceNames = Drupal.settings.personalize.option_sets[osid].option_names, choiceIndex = choiceNames.indexOf(choice_name), selectedContent = null, isControl = false;
+          var choices = Drupal.settings.personalize.option_sets[osid].options,  selectedChoice = null, selectedContent = null, isControl = false;
+          if (choice_name) {
+            for (var choice in choices) {
+              if (choice.option_id == choice) {
+                selectedChoice = choice;
+                break;
+              }
+            }
+          }
           // This might be a "do nothing" option, either because it is the control option
           // or because it is an option with no content, in which case we treat is as the
           // control option.
-          if (choice_name == Drupal.settings.personalize.controlOptionName || !choices[choiceIndex].hasOwnProperty('personalize_elements_content')) {
+          if (choice_name == Drupal.settings.personalize.controlOptionName || !selectedChoice || !selectedChoice.hasOwnProperty('personalize_elements_content')) {
             isControl = true;
           }
           else {
-            selectedContent = choices[choiceIndex]['personalize_elements_content'];
+            selectedContent = selectedChoice.personalize_elements_content;
           }
           if ($option_set.length == 0 && element.variation_type != 'runJS') {
             // Only the runJS can do something with an empty Option Set.
