@@ -2689,7 +2689,7 @@ function personalize_goal_load($goal_id = NULL, $reset = FALSE){
  * @return array
  *   An array of Goal objects.
  */
-function personalize_goal_load_multiple($ids = array(), $conditions = array(), $reset = FALSE){
+function personalize_goal_load_multiple($ids = FALSE, $conditions = array(), $reset = FALSE){
   return entity_load('personalize_campaign_goal', $ids, $conditions, $reset);
 }
 

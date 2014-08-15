@@ -382,7 +382,7 @@ function personalize_option_set_list_ajax_callback($form, &$form_state) {
  * Menu callback for displaying a list of campaign goals.
  */
 function personalize_goals_list($form, &$form_state) {
-  $goals = personalize_goal_load_by_conditions();
+  $goals = personalize_goal_load_multiple();
   $actions = personalize_goals_options();
 
   $header = array(
@@ -397,11 +397,11 @@ function personalize_goals_list($form, &$form_state) {
   foreach($goals as $goal) {
     $campaign = personalize_agent_load($goal->agent);
     $rows[] = array(
-      $actions[$goal['action']],
+      $actions[$goal->action],
       $campaign->label,
-      $goal['value'],
-      l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent, array('query' => array('goal' => $goal['id']))),
-      l(t('delete'), 'admin/structure/personalize/goals/' . $goal['id'] . '/delete'),
+      $goal->value,
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent, array('query' => array('goal' => $goal->id))),
+      l(t('delete'), 'admin/structure/personalize/goals/' . $goal->id . '/delete'),
     );
   }
 
