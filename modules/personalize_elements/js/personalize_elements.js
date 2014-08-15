@@ -17,10 +17,11 @@
           document.location.href = base + path + '?' + param + '=' + osid + '--' + choice_name;
         }
         else {
-          var choices = Drupal.settings.personalize.option_sets[osid].options,  selectedChoice = null, selectedContent = null, isControl = false;
+          var choices = Drupal.settings.personalize.option_sets[osid].options,  selectedChoice = null, selectedContent = null, isControl = false, choiceIndex = null, choice = null;
           if (choice_name) {
-            for (var choice in choices) {
-              if (choice.option_id == choice) {
+            for (choiceIndex in choices) {
+              choice = choices[choiceIndex];
+              if (choice.option_id == choice_name) {
                 selectedChoice = choice;
                 break;
               }
