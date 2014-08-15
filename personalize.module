@@ -1509,9 +1509,11 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
   // If we have campaigns with client-side triggered goals, we need to add
   // this information to Drupal.settings so that our client-side goal
   // listener can process them.
-  $action_listeners = $agent_map = array();
+  $action_listeners = $agent_map = $client_side_goals = array();
   if (!empty($actions)) {
-    $client_side_goals = personalize_goal_load_by_conditions(array('action' => $actions));
+    foreach ($actions as $action) {
+      $client_side_goals += personalize_goal_load_by_action($action);
+    }
     foreach ($client_side_goals as $goal) {
       if ($agent = personalize_agent_load_agent($goal->agent)) {
         // Don't include goal information for campaigns that aren't running.
@@ -2667,7 +2669,7 @@ function personalize_process_goals(&$page) {
 
 
 /**
- * Load a single Goal based on Option Set ID
+ * Load a single goal by ID
  */
 function personalize_goal_load($goal_id = NULL, $reset = FALSE){
   $ids = (isset ($goal_id) ? array($goal_id) : array());
