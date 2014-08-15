@@ -1896,35 +1896,37 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     }
     $expected = array(
       $first_agent_machine_name => array(
-        'goals' => NULL,
+        'name' => $first_agent_machine_name,
         'label' => $first_agent_name,
+        'type' => 'test_agent',
+        'status' => PERSONALIZE_STATUS_NOT_STARTED,
+        'nextStatus' => array(
+          'status' => PERSONALIZE_STATUS_RUNNING,
+          'text' => t('Start'),
+        ),
         'links' => array(
           'edit' => '/admin/structure/personalize/manage/' . $first_agent_machine_name . '/edit',
           'report' => '/admin/structure/personalize/manage/' . $first_agent_machine_name . '/report',
           'view' => '/admin/structure/personalize/manage/' . $first_agent_machine_name,
         ),
-        'name' => $first_agent_machine_name,
+        'goals' => NULL,
+        'verified' => TRUE,
+      ),
+      $second_agent_machine_name => array(
+        'name' => $second_agent_machine_name,
+        'label' => $second_agent_name,
+        'type' => 'test_extra_agent',
+        'status' => PERSONALIZE_STATUS_NOT_STARTED,
         'nextStatus' => array(
           'status' => PERSONALIZE_STATUS_RUNNING,
           'text' => t('Start'),
         ),
-        'status' => PERSONALIZE_STATUS_NOT_STARTED,
-        'verified' => TRUE,
-      ),
-      $second_agent_machine_name => array(
-        'goals' => NULL,
-        'label' => $second_agent_name,
         'links' => array(
           'edit' => '/admin/structure/personalize/manage/' . $second_agent_machine_name . '/edit',
           'report' => '',
           'view' => '/admin/structure/personalize/manage/' . $second_agent_machine_name,
         ),
-        'name' => $second_agent_machine_name,
-        'nextStatus' => array(
-          'status' => PERSONALIZE_STATUS_RUNNING,
-          'text' => t('Start'),
-        ),
-        'status' => PERSONALIZE_STATUS_NOT_STARTED,
+        'goals' => NULL,
         'verified' => TRUE,
       ),
     );
