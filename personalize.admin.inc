@@ -322,6 +322,10 @@ function personalize_option_set_list($form, &$form_state) {
   $rows = array();
   $filter = isset($form_state['values']['filter']) ? $form_state['values']['filter'] : '';
   foreach($option_sets as $option_set) {
+    $campaign = personalize_agent_load($option_set->agent);
+    if (!$campaign) {
+      continue;
+    }
     $types[$option_set->plugin] = $option_set->plugin;
     if (!empty($filter) && $filter != $option_set->plugin) {
       continue;
@@ -329,7 +333,6 @@ function personalize_option_set_list($form, &$form_state) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $edit_link = module_hook($option_set_plugin['module'], 'personalize_edit_link') ? module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set) : '';
     $delete_link = module_hook($option_set_plugin['module'], 'personalize_delete_link') ? module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set) : '';
-    $campaign = personalize_agent_load($option_set->agent);
     $rows[] = array(
       $option_set->label,
       $option_set->plugin,
