@@ -2178,8 +2178,8 @@ function personalize_page_variation_create($variation_set_name, $option_set, $op
 
   $option_set->decision_name = $variation_set_name;
   $has_control_option = FALSE;
-  $option_id = 'variation-' . $variation_number;
-  $option_label = t('Variation #@num', array('@num' => $variation_number));
+  $new_option_id = 'variation-' . $variation_number;
+  $new_option_label = t('Variation #@num', array('@num' => $variation_number));
   $i = 0;
   foreach ($option_set->options as $i => $option) {
     // Check for the control variation.
@@ -2196,10 +2196,11 @@ function personalize_page_variation_create($variation_set_name, $option_set, $op
   $next_option = $i + 1;
   // Add any missing options before adding the one for this variation.
   for ($j = $next_option; $j < $variation_number; $j++) {
-    $option_set->options[$j] = array('option_id' => 'variation-' . $j, 'option_label' => t('Variation #@num', array('@num' => $j)));
+    $option_label = empty($first_os) || !isset($first_os->options[$j]) ? t('Variation #@num', array('@num' => $j)) : $first_os->options[$j]['option_label'];
+    $option_set->options[$j] = array('option_id' => 'variation-' . $j, 'option_label' => $option_label);
   }
   // Now add the option for this variation.
-  $option_set->options[$variation_number] = array('option_id' => $option_id, 'option_label' => $option_label) + $option_info;
+  $option_set->options[$variation_number] = array('option_id' => $new_option_id, 'option_label' => $new_option_label) + $option_info;
   $control_option = array('option_label' => PERSONALIZE_CONTROL_OPTION_LABEL, 'option_id' => PERSONALIZE_CONTROL_OPTION_ID);
   if (!$has_control_option) {
     array_unshift($option_set->options, $control_option);
@@ -2208,7 +2209,8 @@ function personalize_page_variation_create($variation_set_name, $option_set, $op
   // sure options exist in this option set for those variation numbers.
   for ($k = $variation_number + 1; $k < $max_variation_number; $k++) {
     if (!isset($option_set->options[$k])) {
-      $option_set->options[$k] = array('option_id' => 'variation-' . $k, 'option_label' => t('Variation #@num', array('@num' => $k)));
+      $option_label = empty($first_os) || !isset($first_os->options[$k]) ? t('Variation #@num', array('@num' => $k)) : $first_os->options[$k]['option_label'];
+      $option_set->options[$k] = array('option_id' => 'variation-' . $k, 'option_label' => $option_label);
     }
   }
 
@@ -2227,7 +2229,7 @@ function personalize_page_variation_create($variation_set_name, $option_set, $op
     for ($i = 1; $i <= $variation_number; $i++) {
       if (!isset($os->options[$i])) {
         $op_id = 'variation-' . $i;
-        $op_label = t('Variation #@num', array('@num' => $i));
+        $op_label = empty($first_os) || !isset($first_os->options[$i]) ? t('Variation #@num', array('@num' => $i)) : $first_os->options[$i]['option_label'];
         $os->options[$i] = array('option_id' => $op_id, 'option_label' => $op_label);
       }
     }
