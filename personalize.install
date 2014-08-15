@@ -231,6 +231,12 @@ function personalize_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'uuid' => array(
+        'type' => 'char',
+        'length' => 36,
+        'default' => '',
+        'description' => 'The Universally Unique Identifier.',
+      ),
     ),
     'primary key' => array('id'),
     'indexes' => array(
@@ -560,6 +566,16 @@ function personalize_update_7013() {
   // Make sure to add UUID field
   if (!db_field_exists('personalize_option_sets', 'uuid')) {
     db_add_field('personalize_option_sets', 'uuid', array('type' => 'char', 'length' => 36, 'default' => '', 'description' => 'The Universally Unique Identifier.'));
+  }
+}
+
+/**
+ * Add UUID support for campaign goals.
+ */
+function personalize_update_7014() {
+  // Make sure to add UUID field
+  if (!db_field_exists('personalize_campaign_goals', 'uuid')) {
+    db_add_field('personalize_campaign_goals', 'uuid', array('type' => 'char', 'length' => 36, 'default' => '', 'description' => 'The Universally Unique Identifier.'));
   }
 }
 
