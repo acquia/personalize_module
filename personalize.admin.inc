@@ -395,12 +395,12 @@ function personalize_goals_list($form, &$form_state) {
 
   $rows = array();
   foreach($goals as $goal) {
-    $campaign = personalize_agent_load($goal['agent']);
+    $campaign = personalize_agent_load($goal->agent);
     $rows[] = array(
       $actions[$goal['action']],
       $campaign->label,
       $goal['value'],
-      l(t('edit'), 'admin/structure/personalize/manage/' . $goal['agent'], array('query' => array('goal' => $goal['id']))),
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent, array('query' => array('goal' => $goal['id']))),
       l(t('delete'), 'admin/structure/personalize/goals/' . $goal['id'] . '/delete'),
     );
   }
@@ -425,17 +425,17 @@ function personalize_goals_list($form, &$form_state) {
  */
 function personalize_admin_goal_delete($form, &$form_state, $goal) {
   $options = personalize_goals_options();
-  $campaign = personalize_agent_load($goal['agent']);
+  $campaign = personalize_agent_load($goal->agent);
   if (personalize_agent_get_status($campaign->machine_name) == PERSONALIZE_STATUS_RUNNING) {
     $description = t('The %goal goal will no longer be tracked in the currently running %campaign campaign.', array(
       '%campaign' => $campaign->label,
-      '%goal' => $options[$goal['action']]
+      '%goal' => $options[$goal->action]
     ));
   }
   else {
     $description = t('The %goal goal will no longer be tracked when the %campaign campaign is started.', array(
       '%campaign' => $campaign->label,
-      '%goal' => $options[$goal['action']]
+      '%goal' => $options[$goal->action]
     ));
   }
   $form['goal'] = array(
@@ -443,7 +443,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
     '#value' => $goal,
   );
   return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
-    '%goal' => $options[$goal['action']],
+    '%goal' => $options[$goal->action],
     '%campaign' => $campaign->label,
   )), 'admin/structure/personalize/goals', $description);
 }
@@ -987,7 +987,10 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     }
   }
   else {
-    $goals = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+    $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+    foreach ($goal_entities as $obj) {
+      $goals[] = (array) $obj;
+    }
   }
 
   // If the "Remove" button was clicked for a goal, we need to remove that goal
@@ -2184,7 +2187,7 @@ function personalize_agent_goals_form_submit($form, &$form_state) {
   foreach (personalize_goal_load_by_conditions(array('agent' => $agent_name)) as $goal) {
     // We can only have one goal with a given action per agent, so
     // we key the array of existing goals by action name.
-    $existing_goals[$goal['action']] = $goal['id'];
+    $existing_goals[$goal->action] = $goal->id;
   }
   foreach ($form_values as $goal) {
     if (!empty($goal['action_name'])) {
