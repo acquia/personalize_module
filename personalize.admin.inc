@@ -646,6 +646,11 @@ function personalize_agent_page($agent_data) {
     ),
   );
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  if ($agent_instance instanceof PersonalizePageVariationInterface) {
+    $build['return_link'] = array(
+      '#markup' => l(t('Go to %campaign campaign', array('%campaign' => $agent_data->label)), personalize_page_variation_get_path($agent_data->machine_name, $agent_data->machine_name), array('html' => TRUE)),
+    );
+  }
   $build['agent'] = drupal_get_form('personalize_agent_form', $agent_data);
   $build['option_sets'] = drupal_get_form('personalize_agent_option_sets_form', $agent_data, $agent_instance);
   if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
@@ -665,6 +670,9 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
   }
+  if (isset($agent_data->machine_name)) {
+    $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  }
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
   $form['agent_form'] = array(
@@ -675,7 +683,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'fieldset',
     '#collapsible' => !empty($agent_data->machine_name),
-    '#collapsed' => !empty($agent_data->machine_name),
+    '#collapsed' => isset($agent_instance) && !($agent_instance instanceof PersonalizePageVariationInterface),
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
     '#theme_wrappers' => array('personalize_admin_content'),
@@ -1195,6 +1203,9 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
  * Builds a form for editing the Option Sets of an agent.
  */
 function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $agent_instance) {
+  if ($agent_instance instanceof PersonalizePageVariationInterface) {
+    return array();
+  }
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";

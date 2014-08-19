@@ -37,6 +37,11 @@ interface PersonalizeAgentInterface {
    */
   public function getStatus();
 
+  /**
+   * Accessor for the type property.
+   *
+   * @return string
+   */
   public function getType();
 
   /**
@@ -180,6 +185,12 @@ interface PersonalizeAgentReportInterface {
    */
   public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
 }
+
+/**
+ * An interface to implement when an agent handles page-level variations such
+ * as a simple A/B test.
+ */
+interface PersonalizePageVariationInterface extends PersonalizeAgentInterface { };
 
 /**
  * An interface to implement when an agent supports explicit targeting for

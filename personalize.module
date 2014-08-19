@@ -2292,6 +2292,20 @@ function personalize_page_variation_get_name($variation_set_name, $agent_name, $
 }
 
 /**
+ * Gets the page for the variations within a variation set.
+ *
+ * Assumption: All page variations are on the same path for a single variation set.
+ */
+function personalize_page_variation_get_path($variation_set_name, $agent_name) {
+  $option_sets = personalize_option_set_load_multiple(array(), array('decision_name' => $variation_set_name, 'agent' => $agent_name));
+  $option_set = current($option_sets);
+  if ($option_set && isset($option_set->data)) {
+    return isset($option_set->data['pages']) ? $option_set->data['pages'] : '';
+  }
+  return '';
+}
+
+/**
  * Delete a page variation.
  *
  * @param string $variation_set_name
