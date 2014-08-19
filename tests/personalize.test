@@ -1495,6 +1495,29 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertNoFieldByName('agent_basic_info[title]');
     $agent = personalize_agent_load_agent($machine_name);
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
+
+    // Verify that the agent does not have an end date specified.
+    $end_variable = _personalize_agent_get_stoptime_variable($machine_name);
+    $end_date = variable_get($end_variable, 0);
+    $this->assertEqual($end_variable, 0);
+
+    // Set the end date via the form.
+    $end_date = strtotime('+1 month midnight');
+    $edit = array(
+      'campaign_end' => 'specified',
+      'campaign_end_date[month]' => intval(date('m', $end_date)),
+      'campaign_end_date[day]' => date('d', $end_date),
+      'campaign_end_date[year]' => date('Y', $end_date),
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertEqual($end_date, variable_get($end_variable, 0));
+
+    // Reset the end date.
+    $edit = array(
+      'campaign_end' => 'none',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertEqual(0, variable_get($end_variable, 10));
   }
 
   /**
