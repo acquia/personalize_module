@@ -643,17 +643,13 @@ function personalize_agent_page($agent_data) {
     ),
   );
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  if ($agent_instance instanceof PersonalizePageVariationInterface) {
-    $build['return_link'] = array(
-      '#markup' => l(t('Go to %campaign campaign', array('%campaign' => $agent_data->label)), acquia_lift_page_variation_get_path($agent_data->machine_name, $agent_data->machine_name), array('html' => TRUE)),
-    );
-  }
   $build['agent'] = drupal_get_form('personalize_agent_form', $agent_data);
   $build['option_sets'] = drupal_get_form('personalize_agent_option_sets_form', $agent_data, $agent_instance);
   if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
     $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
   }
   $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  drupal_alter('personalize_agent_page', $build, $agent_data);
   return $build;
 }
 
