@@ -645,7 +645,7 @@ function personalize_agent_page($agent_data) {
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   if ($agent_instance instanceof PersonalizePageVariationInterface) {
     $build['return_link'] = array(
-      '#markup' => l(t('Go to %campaign campaign', array('%campaign' => $agent_data->label)), personalize_page_variation_get_path($agent_data->machine_name, $agent_data->machine_name), array('html' => TRUE)),
+      '#markup' => l(t('Go to %campaign campaign', array('%campaign' => $agent_data->label)), acquia_lift_page_variation_get_path($agent_data->machine_name, $agent_data->machine_name), array('html' => TRUE)),
     );
   }
   $build['agent'] = drupal_get_form('personalize_agent_form', $agent_data);
