@@ -37,7 +37,20 @@ interface PersonalizeAgentInterface {
    */
   public function getStatus();
 
+  /**
+   * Accessor for the type property.
+   *
+   * @return string
+   */
   public function getType();
+
+  /**
+   * Accessor for the specific type property.
+   *
+   * @return string
+   */
+  public function getSpecificType();
+
 
   /**
    * Access for agent start property.
@@ -332,6 +345,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    */
   public function getAssets() {
     return array();
+  }
+
+  /**
+   * Implements PersonalizeAgentinterface::getSpecificType().
+   */
+  public function getSpecificType() {
+    return $this->getType();
   }
 
   /**
