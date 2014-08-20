@@ -2108,9 +2108,6 @@ function personalize_option_set_delete($osid) {
   // Pause the campaign because changes have been made.
   personalize_pause_if_running($option_set->agent);
 
-  // Make sure the static cache for this agent is reset.
-  personalize_agent_load($option_set->agent, TRUE);
-
   module_invoke_all('personalize_option_set_delete', $option_set);
 }
 
