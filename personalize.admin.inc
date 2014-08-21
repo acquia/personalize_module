@@ -676,7 +676,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'fieldset',
     '#collapsible' => !empty($agent_data->machine_name),
-    '#collapsed' => isset($agent_instance) && !($agent_instance instanceof PersonalizePageVariationInterface),
+    '#collapsed' => isset($agent_instance),
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
     '#theme_wrappers' => array('personalize_admin_content'),
@@ -1282,9 +1282,6 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
  * Builds a form for editing the Option Sets of an agent.
  */
 function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $agent_instance) {
-  if ($agent_instance instanceof PersonalizePageVariationInterface) {
-    return array();
-  }
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}/edit";
