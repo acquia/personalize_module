@@ -1061,33 +1061,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
 
     $this->drupalLogout();
   }
-
-  /**
-   * Creates the required number of custom blocks.
-   *
-   * @param int $num
-   *   The number of blocks to create.
-   *
-   * @return array
-   *   An array of block deltas for use in personalized blocks.
-   */
-  protected function createCustomBlocks($num = 1) {
-    $deltas = array();
-    module_load_include('inc', 'personalize_blocks', 'personalize_blocks.admin');
-    for ($i = 1; $i <= $num; $i++) {
-      $title = t('Custom block @num', array('@num' => $i));
-      $values = array(
-        'title' => $title,
-        'info' => $title,
-        'body' => array(
-          'format' => 'filtered_html',
-          'value' => 'Some value',
-        )
-      );
-      $deltas[] = _personalize_blocks_add_custom_block($values);
-    }
-    return $deltas;
-  }
 }
 
 /**
