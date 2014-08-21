@@ -217,6 +217,11 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // Assert that no option sets are loaded onto the node.
     $node = node_load(3);
     $this->assertFalse(isset($node->option_sets));
+    // Confirm that there is a cache entry for this field.
+    $cid = _personalize_fields_get_cid_for_field('node', 3, 'article_headline');
+    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    $this->assertNotNull($cached);
+    $this->assertEqual(0, $cached->data);
 
     // Create another node with a personalized headline
     // Set up two headline fields
@@ -251,23 +256,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $status = personalize_agent_get_status('test-agent');
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
 
-    // Create an article but don't add a value for the headline. It should not
-    // create an Option Set but there should be a cache entry for the field.
-    $edit = array();
-    $edit['title'] = $this->randomName(8);
-    $edit['agent_select'] = 'test-agent';
-    $this->drupalPost('node/add/article', $edit, t('Save'));
-
-    // Confirm that there is no fourth option set.
-    $option_set = personalize_option_set_load(4);
-    $this->assertFalse($option_set);
-    $this->drupalGet('node/5');
-    $this->resetAll();
-    // Confirm that there is a cache entry for this field.
-    $cid = _personalize_fields_get_cid_for_field('node', 5, 'article_headline');
-    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
-    $this->assertEqual(0, $cached->data);
-
     // Now delete the field instance from the article content type.
     $instance = field_info_instance('node', 'article_headline', 'article');
     field_delete_instance($instance);
@@ -278,10 +266,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Confirm that the records have also been deleted from the cache.
     $cid = _personalize_fields_get_cid_for_field('node', 2, 'article_headline');
-    $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
-    $this->assertFalse($cached);
-    // Confirm that there is a cache entry for this field.
-    $cid = _personalize_fields_get_cid_for_field('node', 5, 'article_headline');
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
     $this->assertFalse($cached);
 

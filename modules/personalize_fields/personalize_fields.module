@@ -849,7 +849,11 @@ function _personalize_fields_entity_from_form($form, $form_state) {
  * @return A fully loaded option set or NULL if none exists for this field.
  */
 function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $field_name) {
+  if (empty($entity_id)) {
+    return FALSE;
+  }
   $cid = _personalize_fields_get_cid_for_field($entity_type, $entity_id, $field_name);
+
   $option_sets = &drupal_static(__FUNCTION__, array());
   if (isset($option_sets[$cid])) {
     return $option_sets[$cid];

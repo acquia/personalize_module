@@ -50,7 +50,7 @@ function personalize_fields_uninstall() {
 }
 
 /**
- * Add a cache table for reporting data.
+ * Add a cache table for entity fields.
  */
 function personalize_fields_update_7001() {
   $schema = personalize_fields_get_cache_table_schema();
