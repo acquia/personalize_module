@@ -663,9 +663,6 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
   }
-  if (isset($agent_data->machine_name)) {
-    $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  }
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
   $form['agent_form'] = array(
@@ -676,7 +673,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   $form['agent_form']['agent_fieldset'] = array(
     '#type' => 'fieldset',
     '#collapsible' => !empty($agent_data->machine_name),
-    '#collapsed' => isset($agent_instance),
+    '#collapsed' => !empty($agent_data->machine_name),
     '#tree' => FALSE,
     '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
     '#theme_wrappers' => array('personalize_admin_content'),
