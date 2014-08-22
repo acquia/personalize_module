@@ -285,6 +285,15 @@ function personalize_entity_info() {
       ),
       'uuid' => TRUE,
     ),
+    'personalize_campaign_goal' => array(
+      'label' => t('Personalize Goals'),
+      'base table' => 'personalize_campaign_goals',
+      'entity keys' => array(
+        'id' => 'id',
+        'uuid' => 'uuid',
+      ),
+      'uuid' => TRUE,
+    ),
   );
 }
 
@@ -439,8 +448,8 @@ function personalize_agent_get_settings() {
   // List the campaigns in Drupal.settings.
   foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
     foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
-      if (isset($actions[$goal['action']])) {
-        $goals[$goal['action']] = $actions[$goal['action']]['label'];
+      if (isset($actions[$goal->action])) {
+        $goals[$goal->action] = $actions[$goal->action]['label'];
       }
     }
     $plugin = personalize_agent_load_agent($agent->machine_name);
@@ -1500,32 +1509,34 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
   // If we have campaigns with client-side triggered goals, we need to add
   // this information to Drupal.settings so that our client-side goal
   // listener can process them.
-  $action_listeners = $agent_map = array();
+  $action_listeners = $agent_map = $client_side_goals = array();
   if (!empty($actions)) {
-    $client_side_goals = personalize_goal_load_by_conditions(array('action' => $actions));
+    foreach ($actions as $action) {
+      $client_side_goals += personalize_goal_load_by_action($action);
+    }
     foreach ($client_side_goals as $goal) {
-      if ($agent = personalize_agent_load_agent($goal['agent'])) {
+      if ($agent = personalize_agent_load_agent($goal->agent)) {
         // Don't include goal information for campaigns that aren't running.
         if ($agent->getStatus() != PERSONALIZE_STATUS_RUNNING) {
           continue;
         }
-        if (!isset($action_listeners[$goal['action']])) {
-          $action_listeners[$goal['action']] = array();
+        if (!isset($action_listeners[$goal->action])) {
+          $action_listeners[$goal->action] = array();
         }
 
-        $action_listeners[$goal['action']][] = array(
-          'agent' => $goal['agent'],
-          'value' => $goal['value'],
+        $action_listeners[$goal->action][] = array(
+          'agent' => $goal->agent,
+          'value' => $goal->value,
         );
 
         // Add the agent to the agent_map setting so that the JavaScript
         // knows what function to call for sending the goal.
-        $agent_map[$goal['agent']] = array(
+        $agent_map[$goal->agent] = array(
           'type' => $agent->getType(),
         );
         // We also need to ensure any assets required for that agent's client-side
         // functioning are loaded.
-        $page['page_top'][$goal['agent']] = array(
+        $page['page_top'][$goal->agent] = array(
           '#attached' => $agent->getAssets()
         );
       }
@@ -2656,16 +2667,30 @@ function personalize_process_goals(&$page) {
   }
 }
 
+
 /**
- * Loads a goal by id.
- *
+ * Load a single goal by ID
  */
-function personalize_goal_load($goal_id) {
-  $goals = personalize_goal_load_by_conditions(array('id' => $goal_id));
-  if (count($goals) > 0) {
-    return $goals[0];
-  }
-  return NULL;
+function personalize_goal_load($goal_id = NULL, $reset = FALSE){
+  $ids = (isset ($goal_id) ? array($goal_id) : array());
+  $goals = personalize_goal_load_multiple($ids, array(), $reset);
+  return $goals ? reset ($goals) : FALSE;
+}
+
+/**
+ * Loads all goals, or a set as constrained by the ids or conditions passed in.
+ *
+ * @param array $ids
+ *   An array of Goal IDs to load.
+ * @param array $conditions
+ *   An array of conditions to constrain the query to.
+ * @param bool $reset
+ *   Whether to reset the cache and load fresh from the DB.
+ * @return array
+ *   An array of Goal objects.
+ */
+function personalize_goal_load_multiple($ids = FALSE, $conditions = array(), $reset = FALSE){
+  return entity_load('personalize_campaign_goal', $ids, $conditions, $reset);
 }
 
 
@@ -2673,14 +2698,7 @@ function personalize_goal_load($goal_id) {
  * Loads all goals satisfying the specified conditions.
  */
 function personalize_goal_load_by_conditions($conditions = array()) {
-  $query = db_select('personalize_campaign_goals', 'g', array('fetch' => PDO::FETCH_ASSOC))
-    ->fields('g');
-  foreach ($conditions as $key => $value) {
-    $operator = is_array($value) ? 'IN' : NULL;
-    $query->condition($key, $value, $operator);
-  }
-  $result = $query->execute();
-  return $result->fetchAll();
+  return personalize_goal_load_multiple(array(), $conditions);
 }
 
 /**
@@ -2774,10 +2792,10 @@ function personalize_goal_action_subscriber($name, $context) {
   $campaign_goals = personalize_goal_load_by_action($name);
 
   foreach ($campaign_goals as $goal) {
-    if (empty($goal['value']) && isset($context['value']) && !empty($context['value'])) {
-      $goal['value'] = $context['value'];
+    if (empty($goal->value) && isset($context['value']) && !empty($context['value'])) {
+      $goal->value = $context['value'];
     }
-    personalize_set_goal($goal['agent'], $goal['action'], $goal['value']);
+    personalize_set_goal($goal->agent, $goal->action, $goal->value);
   }
 }
 
@@ -2803,18 +2821,26 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
     ->key(array('agent' => $agent_name, 'action' => $action_name))
     ->fields(array('agent' => $agent_name, 'action' => $action_name, 'value' => $goal_value))
     ->execute();
-  if (!$exists) {
-    visitor_actions_clear_subscribers($action_name);
-  }
+
   $goal_array = array(
     'agent' => $agent_name,
     'name' => $action_name,
     'value' => $goal_value
   );
+  $goal_entity = (object) $goal_array;
+  if (!$exists) {
+    visitor_actions_clear_subscribers($action_name);
+    module_invoke_all('entity_insert', $goal_entity, 'personalize_campaign_goal');
+  }
+  else {
+    $goal_entity->id = $exists;
+    module_invoke_all('entity_update', $goal_entity, 'personalize_campaign_goal');
+  }
 
   // Clear the agent's verification status.
   _personalize_agent_verification_cache_clear($agent_name);
   module_invoke_all('personalize_goal_save', $goal_array);
+
 }
 
 /**
