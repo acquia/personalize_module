@@ -364,63 +364,6 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertFalse(isset($personalize_elements['contextualVariationTypes']['runJS']));
   }
 
-  function testPersonalizeElementsVariationSets() {
-    $agent_name = 'test-agent';
-    // Variation 1 (only one element).
-    $os1 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
-    personalize_create_page_variation('my_first_varset', $os1, array('personalize_elements_content' => 'test-class'));
-
-    // Variation 2 (2 elements).
-    $os2 = personalize_elements_get_option_set_for_variation('my second os', $agent_name, 'div.some-class', 'appendHtml', 'node');
-    personalize_create_page_variation('my_first_varset', $os2, array('personalize_elements_content' => 'appended html'));
-    $os3 = personalize_elements_get_option_set_for_variation('my first os', $agent_name, 'div.some-class', 'addClass', 'node');
-    personalize_create_page_variation('my_first_varset', $os3, array('personalize_elements_content' => 'other-class'), 2);
-
-
-    $this->resetAll();
-    $option_sets = personalize_option_set_load_multiple(array(), array('agent' => $agent_name));
-    $this->assertEqual(2, count($option_sets));
-    foreach ($option_sets as $osid => $option_set) {
-      $this->assertEqual('my_first_varset', $option_set->decision_name);
-      $this->assertEqual(3, count($option_set->options));
-    }
-    $expected_options_os1 = array(
-      array(
-        'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
-        'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
-        'personalize_elements_content' => '',
-      ),
-      array(
-        'option_id' => 'variation-1',
-        'option_label' => 'Variation #1',
-        'personalize_elements_content' => 'test-class'
-      ),
-      array(
-        'option_id' => 'variation-2',
-        'option_label' => 'Variation #2',
-        'personalize_elements_content' => 'other-class'
-      ),
-    );
-    $this->assertEqual($expected_options_os1, $option_sets[1]->options);
-    $expected_options_os2 = array(
-      array(
-        'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
-        'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
-        'personalize_elements_content' => '',
-      ),
-      array(
-        'option_id' => 'variation-1',
-        'option_label' => 'Variation #1',
-      ),
-      array(
-        'option_id' => 'variation-2',
-        'option_label' => 'Variation #2',
-        'personalize_elements_content' => 'appended html'
-      ),
-    );
-    $this->assertEqual($expected_options_os2, $option_sets[2]->options);
-  }
-
   /**
    * Helper method to create a Personalize Elements Option Set.
    *
