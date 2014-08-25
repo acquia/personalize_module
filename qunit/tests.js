@@ -114,3 +114,9 @@ QUnit.asyncTest( "get visitor contexts test", function( assert ) {
   };
   Drupal.personalize.getVisitorContexts(contexts, callback);
 });
+
+QUnit.test( "executor test", function( assert ) {
+  var $option_set = $('.personalize-osid-1');
+  Drupal.personalize.executors.show($option_set, 'first-choice', 1);
+
+});

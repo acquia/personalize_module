@@ -6,16 +6,41 @@
     <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.14.0.css">
 </head>
 <body>
+
 <div id="qunit"></div>
-<div id="qunit-fixture"></div>
+<div id="qunit-fixture">
+    <!-- HTML required for DOM tests -->
+    <div class="region-page-top"></div>
+    <div id="personalized-content">
+        <div class="personalize-option-set personalize-osid-1">
+            <noscript>ohai</noscript>
+            <script type="text/template">
+                {"first-choice":{"html":"<div class=""this is the first choice","index":0},"second-choice":{"html":"this is the second choice","index":1}}
+            </script>
+        </div>
+        <div class="personalize-option-set personalize-osid-1">
+            <noscript>ohai</noscript>
+            <script type="text/template">
+                {"first-choice":{"html":"this is the first choice","index":0},"second-choice":{"html":"this is the second choice","index":1}}
+            </script>
+        </div>
+    </div>
+    <div id="nowatch">No DOM watching allowed here.</div>
+</div>
+
+
 <script src="//code.jquery.com/qunit/qunit-1.14.0.js"></script>
-<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//code.jquery.com/jquery-1.4.4.js"></script>
+
+
 <script type="text/javascript">
     var Drupal = Drupal || {};
     Drupal.behaviors = Drupal.behaviors || {};
     Drupal.settings = Drupal.settings || {};
+    Drupal.theme = Drupal.theme || {};
     Drupal.settings.personalize = Drupal.settings.personalize || {};
 </script>
+
 <script src="../js/personalize.js"></script>
 <script src="tests.js"></script>
 </body>
