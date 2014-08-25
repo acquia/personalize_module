@@ -2467,18 +2467,22 @@ function _personalize_agent_verification_cache_get($agent_name) {
  * particular agent.
  *
  * @param string $agent_name
- *   The machine name of the agent that should have cache cleared.
+ *   The machine name of the agent that should have cache cleared.  If not
+ *   passed, entire cache will be cleared.
  */
-function _personalize_agent_verification_cache_clear($agent_name) {
+function _personalize_agent_verification_cache_clear($agent_name = NULL) {
   $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
   if (!$cache) {
     return;
   }
   $verification = $cache->data;
-  if (isset($verification[$agent_name])) {
-    unset($verification[$agent_name]);
-    cache_set(PERSONALIZE_AGENT_VERIFY_CACHE, $verification);
+  if (empty($agent_name)) {
+    $verification = array();
   }
+  else if (isset($verification[$agent_name])) {
+    unset($verification[$agent_name]);
+  }
+  cache_set(PERSONALIZE_AGENT_VERIFY_CACHE, $verification);
 }
 
 /**
