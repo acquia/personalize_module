@@ -37,6 +37,11 @@ interface PersonalizeAgentInterface {
    */
   public function getStatus();
 
+  /**
+   * Accessor for the type property.
+   *
+   * @return string
+   */
   public function getType();
 
   /**
