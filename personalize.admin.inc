@@ -452,7 +452,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
  * Form submission handler to delete a specific goal.
  */
 function personalize_admin_goal_delete_submit($form, &$form_state) {
-  personalize_goal_delete($form_state['values']['goal']['id']);
+  personalize_goal_delete($form_state['values']['goal']->id);
   $form_state['redirect'] = 'admin/structure/personalize/goals';
 }
 
@@ -811,7 +811,7 @@ function personalize_agent_end_date_form($agent_name = NULL) {
  *   An array of values to validate.
  */
 function personalize_agent_end_date_form_validate($values) {
-  if ($values['campaign_end'] === 'specified') {
+  if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
     $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
     if ($end_date < time()) {
       form_set_error('campaign_end_date', t('When provided, the end date for the campaign must be in the future.'));
@@ -828,6 +828,9 @@ function personalize_agent_end_date_form_validate($values) {
  *   An array of campaign end date values.
  */
 function personalize_agent_end_date_form_submit($agent_name, $values) {
+  if (empty($values['campaign_end'])) {
+    return;
+  }
   // Set the end date.
   if ($values['campaign_end'] === 'specified') {
     $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
