@@ -485,6 +485,60 @@ function personalize_agent_get_settings() {
 }
 
 /**
+ * Generate the agent map settings for an agent.
+ */
+function personalize_agent_get_map_settings($agent_name, $option_set = NULL) {
+  $agent = personalize_agent_load_agent($agent_name);
+  // Bail if for some reason the agent could not be instantiated.
+  if (!$agent) {
+    return;
+  }
+
+  $assets = $agent->getAssets();
+  $data = $agent->getData();
+  // Add visitor context assets.
+  $visitor_context = array();
+
+  // Find the possible visitor context based on the agent (auto-targeting) and
+  // on the selected option set's options (fixed targeting).
+  $all_contexts = !empty($data['visitor_context']) ? $data['visitor_context'] : array();
+  // If no option set passed, then just get the contexts for all.
+  $option_sets = empty($option_set) ? personalize_option_set_load_by_agent($agent_name) : array($option_set);
+  foreach ($option_sets as $option_set) {
+    foreach ($option_set->options as $option) {
+      if (!empty($option['fixed_targeting_rules'])) {
+        foreach($option['fixed_targeting_rules'] as $rule) {
+          // Doesn't matter if we overwrite an existing value as they are all the
+          // same key/value pairs.
+          $all_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
+        }
+      }
+    }
+  }
+
+  foreach ($all_contexts as $name => $contexts) {
+    $selected_context = array_filter($contexts);
+    if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
+      if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
+        // Ensure js assets for visitor_context plugins are loaded.
+        $assets = array_merge_recursive($assets, $plugin->getAssets());
+        // Keep track of which visitor_context plugins are enabled for this agent.
+        $visitor_context[$name] = $selected_context;
+      }
+    }
+  }
+
+  return array(
+    'type' => $agent->getType(),
+    // We just need a boolean indicating whether or not the campaign is
+    // currently running.
+    'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
+    'enabled_contexts' => $visitor_context,
+    'cache_decisions' => isset($data['cache_decisions']) && $data['cache_decisions'],
+  );
+}
+
+/**
  * Implements hook_overlay_child_initialize().
  */
 function personalize_overlay_child_initialize() {
@@ -809,41 +863,6 @@ function personalize_element_with_option_set(&$element, $option_set) {
   }
 
 
-  $agent = personalize_agent_load_agent($agent_name);
-  // Bail if for some reason the agent could not be instantiated.
-  if (!$agent) {
-    return;
-  }
-
-  $assets = $agent->getAssets();
-  $data = $agent->getData();
-  // Add visitor context assets.
-  $visitor_context = array();
-
-  // Find the possible visitor context based on the agent (auto-targeting) and
-  // on the selected option set's options (fixed targeting).
-  $all_contexts = !empty($data['visitor_context']) ? $data['visitor_context'] : array();
-  foreach ($option_set->options as $option) {
-    if (!empty($option['fixed_targeting_rules'])) {
-      foreach($option['fixed_targeting_rules'] as $rule) {
-        // Doesn't matter if we overwrite an existing value as they are all the
-        // same key/value pairs.
-        $all_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
-      }
-    }
-  }
-
-  foreach ($all_contexts as $name => $contexts) {
-    $selected_context = array_filter($contexts);
-    if (!empty($selected_context) && $class = ctools_plugin_load_class('personalize', 'visitor_context', $name, 'handler')) {
-      if ($plugin = call_user_func_array(array($class, 'create'), array($agent, array_keys($selected_context)))) {
-        // Ensure js assets for visitor_context plugins are loaded.
-        $assets = array_merge_recursive($assets, $plugin->getAssets());
-        // Keep track of which visitor_context plugins are enabled for this agent.
-        $visitor_context[$name] = $selected_context;
-      }
-    }
-  }
   // Now add a js setting to map the agent name to information about its type
   // and enabled visitor contexts.
   if (!isset($assets['js'])) {
@@ -854,14 +873,7 @@ function personalize_element_with_option_set(&$element, $option_set) {
     'data' => array(
       'personalize' => array(
         'agent_map' => array(
-          $agent_name => array(
-            'type' => $agent->getType(),
-            // We just need a boolean indicating whether or not the campaign is
-            // currently running.
-            'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
-            'enabled_contexts' => $visitor_context,
-            'cache_decisions' => isset($data['cache_decisions']) && $data['cache_decisions'],
-          ),
+          $agent_name => personalize_agent_get_map_settings($agent_name, $option_set),
         ),
         'option_sets' => _personalize_convert_option_set_to_js_setting($option_set)
       )
