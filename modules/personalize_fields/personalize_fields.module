@@ -645,8 +645,7 @@ function personalize_fields_entity_load($entities, $type) {
  * Implements hook_entity_delete().
  */
 function personalize_fields_entity_delete($entity, $type) {
-  $wrapper = entity_metadata_wrapper($type, $entity);
-  $entity_id = $wrapper->getIdentifier();
+  list($entity_id) = entity_extract_ids($type, $entity);
   // Look for entries in the cache table with a cid starting with
   // [entity_type]:[entity_id]:
   $partial_cid = _personalize_fields_get_cid_for_field($type, $entity_id, '');
@@ -703,11 +702,10 @@ function personalize_fields_field_attach_view_alter(&$output, $context) {
   if (!isset($entity->entity_type)) {
     return;
   }
-  $wrapper = entity_metadata_wrapper($entity->entity_type, $entity);
-
+  list($entity_id) = entity_extract_ids($entity->entity_type, $entity);
   foreach (element_children($output) as $field_name) {
     $element = &$output[$field_name];
-    if ($option_set = _personalize_fields_get_option_set_for_field($entity->entity_type, $wrapper->getIdentifier(), $field_name)) {
+    if ($option_set = _personalize_fields_get_option_set_for_field($entity->entity_type, $entity_id, $field_name)) {
       personalize_element_with_option_set($output[$field_name], $option_set);
       $element['#first_option'] = $element[0];
       $element['#personalize_option_set'] = $option_set;
@@ -869,27 +867,28 @@ function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, 
     return $option_sets[$cid];
   }
   else {
-     $option_sets[$cid] = FALSE;
-     $osid = 0;
-     // This should hardly ever have to be done.
-     $all_fields_option_sets = personalize_option_set_load_by_type('fields');
-     foreach ($all_fields_option_sets as $os) {
-       $data = $os->data;
-       foreach (array('personalize_fields_entity_type', 'personalize_fields_entity_id', 'personalize_fields_field_name') as $key) {
-         if (empty($data[$key])) {
-           continue;
-         }
-         $this_cid = _personalize_fields_get_cid_for_field($data['personalize_fields_entity_type'], $data['personalize_fields_entity_id'], $data['personalize_fields_field_name']);
-         if ($this_cid == $cid) {
-           $option_sets[$cid] = $os;
-           $osid = $os->osid;
-         }
-       }
-     }
+    $option_sets[$cid] = FALSE;
+    $osid = 0;
+    // This should hardly ever have to be done.
+    $all_fields_option_sets = personalize_option_set_load_by_type('fields');
+
+    foreach ($all_fields_option_sets as $os) {
+      $data = $os->data;
+      foreach (array('personalize_fields_entity_type', 'personalize_fields_entity_id', 'personalize_fields_field_name') as $key) {
+        if (empty($data[$key])) {
+          continue;
+        }
+        $this_cid = _personalize_fields_get_cid_for_field($data['personalize_fields_entity_type'], $data['personalize_fields_entity_id'], $data['personalize_fields_field_name']);
+        if ($this_cid == $cid) {
+          $option_sets[$cid] = $os;
+          $osid = $os->osid;
+        }
+      }
+    }
     // Now save to the persistent cache so we don't have to do this again.
     cache_set($cid, $osid, PERSONALIZE_FIELDS_CACHE_BIN);
-   }
-   return $option_sets[$cid];
+  }
+  return $option_sets[$cid];
 }
 
 /**

@@ -1,7 +1,6 @@
 name = Personalize Fields
 description = Allows the ability to Personalize any Fields.
 dependencies[] = personalize
-dependencies[] = entity
 package = Personalization
 core = 7.x
 
