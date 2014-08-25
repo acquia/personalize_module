@@ -678,6 +678,9 @@ function personalize_fields_field_delete_instance($instance) {
  */
 function personalize_fields_personalize_option_set_delete($option_set) {
   $field_info = _personalize_fields_get_field_info_from_option_set($option_set);
+  if (empty($field_info)) {
+    return;
+  }
   $cid = _personalize_fields_get_cid_for_field($field_info['entity_type'], $field_info['entity_id'], $field_info['field_name']);
   cache_clear_all($cid, PERSONALIZE_FIELDS_CACHE_BIN);
 }
