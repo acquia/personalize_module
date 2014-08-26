@@ -18,15 +18,10 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    *
    * @param int $osid
    *   The Option Set ID.
-   * @param string $agent_name
-   *   The name of the agent the Option Set belongs to.
-   * @param string $option_names
-   *   A string of comma-separated option IDs, e.g 'option-A,option-B'.
    */
   protected function assertOptionSet($osid) {
-    $elements = $this->xpath('//div[@id=:id]', array(':id' => 'personalize-' . $osid));
-    $this->assertEqual(1, count($elements), 'Found one element with the specified id');
-    $this->assertEqual('personalize-option-set',  $elements[0]['class']);
+    $elements = $this->xpath('//div[contains(@class,:class)]', array(':class' => 'personalize-' . $osid));
+    $this->assertTrue(count($elements), 'Found an element with the specified class');
   }
 
   /**
@@ -938,7 +933,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     // Verify on page there isn't a template script tag for the option set.
-    $show_pattern = '/<div class="personalize-option-set" id="personalize-osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
+    $show_pattern = '/<div class="personalize-option-set personalize-osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
 
     $this->drupalGet('');
     $this->assertNoPattern($show_pattern);
