@@ -114,44 +114,7 @@
       // Clear out any expired local storage.
       Drupal.personalize.storage.utilities.maintain();
 
-      // Prepare MVTs and option sets for processing.
-      var optionSets = prepareOptionSets(settings);
-
-      // Gets the agent data for any option sets requiring decisions.
-      // Any decisions that can be rendered early are handled here and only
-      // those agents that require decisions are returned.
-      var agents = processOptionSets(optionSets);
-
-      if (!$.isEmptyObject(agents)) {
-        // Get a consolidation of all visitor contexts to be retrieved for all agents.
-        var contexts = getAgentsContexts(agents);
-
-        // Set up a callback for when all visitor contexts have been resolved.
-        var callback = function(contextValues) {
-          for (var agentName in agents) {
-            if (!agents.hasOwnProperty(agentName)) {
-              continue;
-            }
-            var agent = agents[agentName];
-            var agentContexts = {};
-            // Apply the context values to each of the agent's enabled contexts
-            // which essentially means limiting the agent's contexts to those
-            // returned here.
-            for (var plugin in agent.enabledContexts) {
-              if (agent.enabledContexts.hasOwnProperty(plugin)) {
-                if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
-                  agentContexts[plugin] = contextValues[plugin];
-                }
-              }
-            }
-            // Evaluate the contexts.
-            agent.visitorContext = Drupal.personalize.evaluateContexts(agent.agentType, agentContexts, agent.fixedTargeting);
-          }
-          // Trigger decision calls on the agents.
-          triggerDecisions(agents);
-        };
-        Drupal.personalize.getVisitorContexts(contexts, callback);
-      }
+      Drupal.personalize.personalizePage(settings);
 
       // This part is not dependent upon decisions so it can run prior to
       // fulfillment of Promise.
@@ -162,6 +125,47 @@
 
       // Add an action listener for client-side goals.
       addActionListener(settings);
+    }
+  };
+
+  Drupal.personalize.personalizePage = function(settings) {
+    // Prepare MVTs and option sets for processing.
+    var optionSets = prepareOptionSets(settings);
+
+    // Gets the agent data for any option sets requiring decisions.
+    // Any decisions that can be rendered early are handled here and only
+    // those agents that require decisions are returned.
+    var agents = processOptionSets(optionSets);
+
+    if (!$.isEmptyObject(agents)) {
+      // Get a consolidation of all visitor contexts to be retrieved for all agents.
+      var contexts = getAgentsContexts(agents);
+
+      // Set up a callback for when all visitor contexts have been resolved.
+      var callback = function(contextValues) {
+        for (var agentName in agents) {
+          if (!agents.hasOwnProperty(agentName)) {
+            continue;
+          }
+          var agent = agents[agentName];
+          var agentContexts = {};
+          // Apply the context values to each of the agent's enabled contexts
+          // which essentially means limiting the agent's contexts to those
+          // returned here.
+          for (var plugin in agent.enabledContexts) {
+            if (agent.enabledContexts.hasOwnProperty(plugin)) {
+              if (contextValues.hasOwnProperty(plugin) && !$.isEmptyObject(contextValues[plugin])) {
+                agentContexts[plugin] = contextValues[plugin];
+              }
+            }
+          }
+          // Evaluate the contexts.
+          agent.visitorContext = Drupal.personalize.evaluateContexts(agent.agentType, agentContexts, agent.fixedTargeting);
+        }
+        // Trigger decision calls on the agents.
+        triggerDecisions(agents);
+      };
+      Drupal.personalize.getVisitorContexts(contexts, callback);
     }
   };
 
