@@ -119,20 +119,20 @@ QUnit.test( "executor test", function( assert ) {
   // Test the executor for a regular option set.
   assert.equal(0, $('.osid-1-first-option').length);
   assert.equal(0, $('.osid-1-second-option').length);
-  Drupal.personalize.executors.show.execute($('.personalize-osid-1'), 'first-choice', 1);
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-1]'), 'first-choice', 1);
   assert.equal(1, $('.osid-1-first-option').length);
   assert.equal(0, $('.osid-1-second-option').length);
-  Drupal.personalize.executors.show.execute($('.personalize-osid-1'), 'second-choice', 1);
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-1]'), 'second-choice', 1);
   assert.equal(0, $('.osid-1-first-option').length);
   assert.equal(1, $('.osid-1-second-option').length);
 
   // Test an option set that appears multiple times on the page.
   assert.equal(0, $('.osid-2-first-option').length);
   assert.equal(0, $('.osid-2-second-option').length);
-  Drupal.personalize.executors.show.execute($('.personalize-osid-2'), 'first-choice', 2);
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-2]'), 'first-choice', 2);
   assert.equal(2, $('.osid-2-first-option').length);
   assert.equal(0, $('.osid-2-second-option').length);
-  Drupal.personalize.executors.show.execute($('.personalize-osid-2'), 'second-choice', 2);
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-2]'), 'second-choice', 2);
   assert.equal(0, $('.osid-2-first-option').length);
   assert.equal(2, $('.osid-2-second-option').length);
 });
