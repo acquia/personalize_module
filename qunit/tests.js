@@ -1,7 +1,7 @@
 QUnit.test( "evaluate contexts test", function( assert ) {
-  // Set up.
-  Drupal.personalize.agents = Drupal.personalize.agents || {};
   var agentType = 'js_test_agent';
+  Drupal.personalize.agents = Drupal.personalize.agents || {};
+
   Drupal.personalize.agents[agentType] = {
     'featureToContext': function(featureName) {
       var contextArray = featureName.split('--');
@@ -11,8 +11,6 @@ QUnit.test( "evaluate contexts test", function( assert ) {
       };
     }
   };
-  // End of set up.
-
   var visitorContext = {
     'some_plugin': {
       'some-context-key': 'some-value'
@@ -136,3 +134,167 @@ QUnit.test( "executor test", function( assert ) {
   assert.equal(0, $('.osid-2-first-option').length);
   assert.equal(2, $('.osid-2-second-option').length);
 });
+
+
+QUnit.module("Personalize page tests", {
+  'setup': function() {
+    Drupal.personalize.resetAll();
+    Drupal.settings.personalize = {
+      'cacheExpiration': {
+        'decisions': 'session'
+      },
+      'agent_map': {
+        'my-agent': {
+          'active': 1,
+          'cache_decisions': true,
+          'enabled_contexts': [],
+          'type': 'test_agent'
+        }
+      },
+      'option_sets': {
+        'osid-1': {
+          'agent': 'my-agent',
+          'data': [],
+          'decision_name': 'osid-1',
+          'decision_point': 'osid-1',
+          'executor': 'show',
+          'label': 'My Test',
+          'mvt': null,
+          'option_names': ['first-option', 'second-option'],
+          'options': [
+            {
+              'option_id': 'first-option',
+              'option_lablel': 'First Option'
+            },
+            {
+              'option_id': 'second-option',
+              'option_label': 'Second Option'
+            }
+          ],
+          'osid': 'osid-1',
+          'plugin': 'my_os_plugin',
+          'selector': '.some-class',
+          'stateful': 0,
+          'winner': null
+        }
+      }
+    };
+    Drupal.personalize.agents.test_agent = {};
+  }
+});
+
+QUnit.asyncTest("personalize page simple", function( assert ) {
+  QUnit.start();
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.equal(choices['osid-1'][0], 'first-option');
+    assert.equal(choices['osid-1'][1], 'second-option');
+    assert.equal(decision_point, 'osid-1');
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
+QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
+  // The getDecisionsForPoint method should be called twice, once for each option set.
+  expect(6);
+  QUnit.start();
+  // Add a second option set.
+  addOptionSetToDrupalSetings('osid-2', 'osid-2', 'osid-2');
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+    QUnit.start();
+    switch(decision_point) {
+      case 'osid-1':
+        assert.equal(name, 'my-agent');
+        assert.ok($.isEmptyObject(visitor_context));
+        assert.ok(choices.hasOwnProperty('osid-1'), 'Got osid-1');
+        QUnit.stop();
+        break;
+      case 'osid-2':
+        assert.equal(name, 'my-agent');
+        assert.ok($.isEmptyObject(visitor_context));
+        assert.ok(choices.hasOwnProperty('osid-2'), 'Got osid-2');
+        break;
+    }
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
+QUnit.asyncTest("personalize page 2 option sets one decision", function( assert ) {
+  // The getDecisionsForPoint method should be called only once for the two option sets.
+  expect(4)
+  QUnit.start();
+  // Create 2 option sets with the same decision name.
+  addOptionSetToDrupalSetings('osid-2', 'osid-2', 'osid-2');
+  Drupal.settings.personalize.option_sets['osid-1'].decision_name = Drupal.settings.personalize.option_sets['osid-2'].decision_name = 'my_decision';
+  Drupal.settings.personalize.option_sets['osid-1'].decision_point = Drupal.settings.personalize.option_sets['osid-2'].decision_point = 'my_decision_point';
+
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('my_decision'));
+    assert.equal(decision_point, 'my_decision_point');
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
+QUnit.asyncTest("personalize page with visitor context", function( assert ) {
+  // The getDecisionsForPoint method should be called only once for the two option sets.
+  expect(6)
+  QUnit.start();
+  // Set up the agent to have a user profile context enabled.
+  Drupal.settings.personalize.agent_map['my-agent'].enabled_contexts = {'user_profile_context': {'my_user_profile_field': 'my_user_profile_field'}};
+  // Now add a value for that context to the settings.
+  Drupal.settings.personalize_user_profile_context = {
+    'my_user_profile_field': 'my_user_profile_value'
+  };
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.equal(decision_point, 'osid-1');
+    assert.ok(visitor_context.hasOwnProperty('my_user_profile_field'));
+    assert.equal(1, visitor_context.my_user_profile_field.length);
+    assert.equal("my_user_profile_value", visitor_context.my_user_profile_field[0]);
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
+function addOptionSetToDrupalSetings(osid, decision_name, decision_point) {
+  Drupal.settings.personalize.option_sets[osid] = {
+    'agent': 'my-agent',
+    'data': [],
+    'decision_name': decision_name,
+    'decision_point': decision_point,
+    'executor': 'show',
+    'label': 'My Test',
+    'mvt': null,
+    'option_names': ['first-option', 'second-option'],
+    'options': [
+      {
+        'option_id': 'first-option',
+        'option_lablel': 'First Option'
+      },
+      {
+        'option_id': 'second-option',
+        'option_label': 'Second Option'
+      }
+    ],
+    'osid': osid,
+    'plugin': 'my_os_plugin',
+    'selector': '.some-other-class',
+    'stateful': 0,
+    'winner': null
+  };
+}

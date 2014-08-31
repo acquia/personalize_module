@@ -386,7 +386,7 @@
    *   and how the rule was satisfied.
    */
   Drupal.personalize.evaluateContexts = function (agentType, visitorContext, featureRules) {
-    if (!Drupal.personalize.agents.hasOwnProperty(agentType) || typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
+    if (!Drupal.personalize.agents.hasOwnProperty(agentType)) {
       return {};
     }
     // The new visitor context object will hold an array of values for each
@@ -408,6 +408,11 @@
           }
         }
       }
+    }
+    // If our agent type does not support translating feature strings back into contexts
+    // then we can't use feature rules.
+    if (typeof Drupal.personalize.agents[agentType].featureToContext !== 'function') {
+      return newVisitorContext;
     }
     // Use the rules to set values on the visitor context which can then be used
     // for explicit targeting. It is up to the agent how exactly the explicit
@@ -1234,4 +1239,14 @@
     }
   })();
 
+  /**
+   * Helper function to reset variables during tests.
+   */
+  Drupal.personalize.resetAll = function() {
+    sessionId = false;
+    processedDecisions = {};
+    decisionCallbacks = {};
+    processedOptionSets = {};
+    processedListeners = {};
+  };
 })(jQuery);
