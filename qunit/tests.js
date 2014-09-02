@@ -204,7 +204,7 @@ QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
   expect(6);
   QUnit.start();
   // Add a second option set.
-  addOptionSetToDrupalSetings('osid-2', 'osid-2', 'osid-2');
+  addOptionSetToDrupalSettings('osid-2', 'osid-2', 'osid-2');
   Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
     QUnit.start();
     switch(decision_point) {
@@ -231,7 +231,7 @@ QUnit.asyncTest("personalize page 2 option sets one decision", function( assert 
   expect(4)
   QUnit.start();
   // Create 2 option sets with the same decision name.
-  addOptionSetToDrupalSetings('osid-2', 'osid-2', 'osid-2');
+  addOptionSetToDrupalSettings('osid-2', 'osid-2', 'osid-2');
   Drupal.settings.personalize.option_sets['osid-1'].decision_name = Drupal.settings.personalize.option_sets['osid-2'].decision_name = 'my_decision';
   Drupal.settings.personalize.option_sets['osid-1'].decision_point = Drupal.settings.personalize.option_sets['osid-2'].decision_point = 'my_decision_point';
 
@@ -271,7 +271,7 @@ QUnit.asyncTest("personalize page with visitor context", function( assert ) {
   Drupal.personalize.personalizePage(Drupal.settings);
 });
 
-function addOptionSetToDrupalSetings(osid, decision_name, decision_point) {
+function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
   Drupal.settings.personalize.option_sets[osid] = {
     'agent': 'my-agent',
     'data': [],
