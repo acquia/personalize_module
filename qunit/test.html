@@ -6,16 +6,48 @@
     <link rel="stylesheet" href="//code.jquery.com/qunit/qunit-1.14.0.css">
 </head>
 <body>
+
 <div id="qunit"></div>
-<div id="qunit-fixture"></div>
+<div id="qunit-fixture">
+    <!-- HTML required for DOM tests -->
+    <div id="personalized-content">
+        // First option set appears once on the page.
+        <div class="personalize-option-set" data-personalize="osid-1">
+            <noscript>ohai</noscript>
+            <script type="text/template">
+                {"first-choice":{"html":"<div class=\"osid-1-first-option\">this is the first choice<\/div>","index":0},"second-choice":{"html":"<div class=\"osid-1-second-option\">this is the second choice<\/div>","index":1}}
+            </script>
+        </div>
+        // Second option set appears twice on the page.
+        <div class="personalize-option-set" data-personalize="osid-2">
+            <noscript>ohai</noscript>
+            <script type="text/template">
+                {"first-choice":{"html":"<div class=\"osid-2-first-option\">this is the first choice<\/div>","index":0},"second-choice":{"html":"<div class=\"osid-2-second-option\">this is the second choice<\/div>","index":1}}
+            </script>
+        </div>
+        <div class="personalize-option-set" data-personalize="osid-2">
+            <noscript>ohai</noscript>
+            <script type="text/template">
+                {"first-choice":{"html":"<div class=\"osid-2-first-option\">this is the first choice<\/div>","index":0},"second-choice":{"html":"<div class=\"osid-2-second-option\">this is the second choice<\/div>","index":1}}
+            </script>
+        </div>
+    </div>
+</div>
+
+
 <script src="//code.jquery.com/qunit/qunit-1.14.0.js"></script>
-<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//code.jquery.com/jquery-1.4.4.js"></script>
+
+
 <script type="text/javascript">
     var Drupal = Drupal || {};
     Drupal.behaviors = Drupal.behaviors || {};
+    Drupal.attachBehaviors = function(bread, circus){};
     Drupal.settings = Drupal.settings || {};
+    Drupal.theme = Drupal.theme || {};
     Drupal.settings.personalize = Drupal.settings.personalize || {};
 </script>
+
 <script src="../js/personalize.js"></script>
 <script src="tests.js"></script>
 </body>

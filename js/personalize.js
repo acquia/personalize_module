@@ -194,46 +194,50 @@
    * chosen one.
    */
   Drupal.personalize.executors.show = {
-    'execute': function ($option_set, choice_name, osid, preview) {
-      if ($option_set.length == 0 ) {
+    'execute': function ($option_sets, choice_name, osid, preview) {
+      if ($option_sets.length == 0 ) {
         return;
       }
-      var $option_source = $('script[type="text/template"]', $option_set);
-      var element = $option_source.get(0);
-      var json = element.innerText;
-      if (typeof preview === 'undefined') { preview = false; };
-      if (json === undefined || json.length == 0) {
-        json = element.text;
-      }
-      var choices = jQuery.parseJSON(json);
-      var winner = '';
 
-      if (choices == null || choices === false || !choices.hasOwnProperty(choice_name)) {
-        // Invalid JSON in the template.  Just show the noscript option.
-        winner = $(element).prev('noscript').html();
-      }
-      else if (!choices[choice_name].hasOwnProperty('html')) {
-        var controlOptionName = Drupal.settings.personalize.controlOptionName;
-        if (choices.hasOwnProperty(controlOptionName) && choices[controlOptionName].hasOwnProperty('html')) {
-          winner = choices[controlOptionName]['html'];
+      $option_sets.each(function() {
+        var $option_set = $(this);
+        var $option_source = $('script[type="text/template"]', $option_set);
+        var element = $option_source.get(0);
+        var json = element.innerText;
+        if (typeof preview === 'undefined') { preview = false; };
+        if (json === undefined || json.length == 0) {
+          json = element.text;
         }
-        else {
+        var choices = jQuery.parseJSON(json);
+        var winner = '';
+
+        if (choices == null || choices === false || !choices.hasOwnProperty(choice_name)) {
+          // Invalid JSON in the template.  Just show the noscript option.
           winner = $(element).prev('noscript').html();
         }
-      }
-      else {
-        winner = choices[choice_name]['html'];
-      }
+        else if (!choices[choice_name].hasOwnProperty('html')) {
+          var controlOptionName = Drupal.settings.personalize.controlOptionName;
+          if (choices.hasOwnProperty(controlOptionName) && choices[controlOptionName].hasOwnProperty('html')) {
+            winner = choices[controlOptionName]['html'];
+          }
+          else {
+            winner = $(element).prev('noscript').html();
+          }
+        }
+        else {
+          winner = choices[choice_name]['html'];
+        }
 
-      // Remove any previously existing options.
-      $option_set
-        // empty() is necessary to remove text nodes as well as elements.
-        .empty()
-        .append($option_source);
-      // Append the selected option.
-      $option_set.append(winner);
+        // Remove any previously existing options.
+        $option_set
+          // empty() is necessary to remove text nodes as well as elements.
+          .empty()
+          .append($option_source);
+        // Append the selected option.
+        $option_set.append(winner);
 
-      Drupal.personalize.executorCompleted($option_set, choice_name, osid);
+      });
+      Drupal.personalize.executorCompleted($option_sets, choice_name, osid);
       // Lots of Drupal modules expect context to be document on the first pass.
       var bread = document; // context.
       var circus = Drupal.settings; // settings.

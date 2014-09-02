@@ -31,7 +31,7 @@ function theme_personalize_options_wrapper($variables) {
 
   $option_set = $variables['element']['#personalize_option_set'];
   $js_id = personalize_stringify_osid($option_set->osid);
-  $prefix = '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" id="personalize-' . $js_id . '">';
+  $prefix = '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" data-personalize="' . $js_id . '">';
   if (isset($variables['element']['#first_option'])) {
     $no_script_content = drupal_render($variables['element']['#first_option']);
     // Strip any noscript tags from the content so we don't end up with nested
