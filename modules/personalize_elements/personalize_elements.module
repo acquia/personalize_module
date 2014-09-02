@@ -229,6 +229,7 @@ function personalize_elements_personalize_delete_link($option_set) {
 function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE, $filter_active = TRUE) {
   $types = array();
   if (!$filter_active) {
+    // Retired in favor of editHtml below.
     $types['replaceHtml'] = array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
@@ -244,6 +245,21 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
       ),
     );
   }
+  $types['editHtml'] = array(
+    'label' => t('Edit the html'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Edit HTML'),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 6,
+        '#required' => TRUE,
+        '#description' => t('Changing the enclosing element can break variation previews.'),
+      ),
+    ),
+  );
   $types['addClass'] = array(
     'label' => t('Add a class'),
     'needs_selector' => TRUE,

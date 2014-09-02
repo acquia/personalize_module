@@ -56,8 +56,8 @@
      *   The form input element where the value will be specified.
      */
     editInContext: function(type, selector, $contentInput) {
-      if (typeof Drupal.personalizeElements[type] && Drupal.personalizeElements[type].editInContext === 'function') {
-        Drupal.personalizeElements[type].editInContext(selector, $contextInput);
+      if (Drupal.personalizeElements[type] && typeof Drupal.personalizeElements[type].editInContext === 'function') {
+        Drupal.personalizeElements[type].editInContext(selector, $contentInput);
       }
     }
   };
@@ -91,6 +91,35 @@
         Drupal.attachBehaviors($selector);
       }
 
+    }
+  };
+
+  Drupal.personalizeElements.editHtml = {
+    controlContent: {},
+    getOuterHtml: function($element) {
+      if ($element.length > 1) {
+        $element = $element.first();
+      }
+      // jQuery doesn't have an outerHTML so we need to clone the child and
+      // give it a parent so that we can call that parent's html function.
+      // This ensures we get only the html of the $selector and not siblings.
+      return $element.clone().wrap('<div>').parent().html();
+    },
+    execute : function($selector, selectedContent, isControl, osid) {
+      // Keep track of how the element has been changed in order to preview
+      // different options.
+      if (!this.controlContent.hasOwnProperty(osid)) {
+        this.controlContent[osid] = this.getOuterHtml($selector);
+      }
+      if (isControl) {
+        $selector.replaceWith(this.controlContent[osid]);
+      } else {
+        $selector.replaceWith(selectedContent);
+      }
+    },
+    editInContext : function(selector, $contentInput) {
+      var editString = this.getOuterHtml($(selector));
+      $contentInput.val(editString);
     }
   };
 
