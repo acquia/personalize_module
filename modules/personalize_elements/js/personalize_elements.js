@@ -44,6 +44,21 @@
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
         }
       }
+    },
+    /**
+     * Callback for editing or creating a personalized element in context.
+     *
+     * @param type
+     *   The variation type
+     * @param selector
+     *   The jQuery selector to the element being personalized
+     * @param $contentInput
+     *   The form input element where the value will be specified.
+     */
+    editInContext: function(type, selector, $contentInput) {
+      if (typeof Drupal.personalizeElements[type] && Drupal.personalizeElements[type].editInContext === 'function') {
+        Drupal.personalizeElements[type].editInContext(selector, $contextInput);
+      }
     }
   };
 
