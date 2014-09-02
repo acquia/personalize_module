@@ -226,11 +226,13 @@ function personalize_elements_personalize_delete_link($option_set) {
 /**
  * Implements hook_personalize_elements_variation_types().
  */
-function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE) {
-  $types = array(
-    'replaceHtml' => array(
+function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE, $filter_active = TRUE) {
+  $types = array();
+  if (!$filter_active) {
+    $types['replaceHtml'] = array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
+      'active' => FALSE,
       'contextual' => array(
         'label' => t('Edit HTML'),
         'formitem' => array(
@@ -240,43 +242,46 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
           '#required' => TRUE,
         ),
       ),
-    ),
-    'addClass' => array(
-      'label' => t('Add a class'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Add CSS class'),
-        'formitem' => array(
-          '#type' => 'textfield',
-          '#title' => t('New class'),
-          '#required' => TRUE,
-        ),
+    );
+  }
+  $types['addClass'] = array(
+    'label' => t('Add a class'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Add CSS class'),
+      'formitem' => array(
+        '#type' => 'textfield',
+        '#title' => t('New class'),
+        '#required' => TRUE,
       ),
     ),
-    'appendHtml' => array(
+  );
+  $types['appendHtml'] = array(
+    'label' => t('Append HTML'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
       'label' => t('Append HTML'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Append HTML'),
-        'formitem' => array(
-          '#type' => 'textarea',
-          '#title' => t('HTML'),
-          '#rows' => 4,
-          '#required' => TRUE,
-        ),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 4,
+        '#required' => TRUE,
       ),
     ),
-    'prependHtml' => array(
+  );
+  $types['prependHtml'] = array(
+    'label' => t('Prepend HTML'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
       'label' => t('Prepend HTML'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Prepend HTML'),
-        'formitem' => array(
-          '#type' => 'textarea',
-          '#title' => t('HTML'),
-          '#rows' => 4,
-          '#required' => TRUE,
-        ),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 4,
+        '#required' => TRUE,
       ),
     ),
   );
@@ -285,6 +290,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
       'label' => t('Run JavaScript code'),
       'needs_selector' => FALSE,
       'contextual' => FALSE,
+      'active' => TRUE,
     );
   }
   return $types;

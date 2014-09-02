@@ -115,11 +115,15 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
 
   $variation_type_options = array();
   $selector_states = array();
-  $variation_types = module_invoke_all('personalize_elements_variation_types');
+  $variation_types = module_invoke_all('personalize_elements_variation_types', TRUE, FALSE);
   foreach ($variation_types as $type => $info) {
-    $variation_type_options[$type] = $info['label'];
-    if ($info['needs_selector']) {
-      $selector_states[] = array('select[name="variation_type"]' => array("value" => $type));
+    // Show only active types unless it is the current type of an existing
+    // option set.
+    if ($info['active'] || (!empty($option_set->data['personalize_elements_type']) && $option_set->data['personalize_elements_type'] === $type)) {
+      $variation_type_options[$type] = $info['label'];
+      if ($info['needs_selector']) {
+        $selector_states[] = array('select[name="variation_type"]' => array("value" => $type));
+      }
     }
   }
 
