@@ -8,6 +8,13 @@
 define('PERSONALIZE_FIELDS_CACHE_BIN', 'cache_personalize_fields');
 
 /**
+ * Implements hook_flush_caches().
+ */
+function personalize_fields_flush_caches() {
+  return array(PERSONALIZE_FIELDS_CACHE_BIN);
+}
+
+/**
  * Implements hook_help().
  */
 function personalize_fields_help($path, $arg) {
