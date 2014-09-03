@@ -179,6 +179,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
         return t('Delete');
       case 'config':
         return t('Save configuration');
+      case 'add_visitor_action':
+        return t('Save');
       default:
         return t($type);
     }
@@ -2313,6 +2315,61 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       0 => 'Off',
       1 => 'On',
     ), $match_element['#options']);
+  }
+
+  /**
+   * Tests the integration of automatic goal creation from visitor action
+   * forms.
+   */
+  function testVisitorActionGoalForm() {
+    // Enable an agent that does not support goals.
+    module_enable(array('personalize_text_extra_agent'));
+    $this->resetAll();
+
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer visitor actions'));
+    $this->drupalLogin($admin_user);
+
+    // Create a new agent that supports goals.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[machine_name]' => $machine_name,
+      'agent_basic_info[agent_type]' => 'test_agent',
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+    personalize_set_campaign_context($machine_name);
+    $this->drupalGet('admin/structure/visitor_actions/add');
+    $this->assertFieldByName('personalize_goal');
+    $this->assertFieldByName('personalize_goal_value');
+    // Create a goal and verify that it is added to the campaign.
+    $goal_name = $this->randomName();
+    $edit = array(
+      'title' => $goal_name,
+      'machine_name' => personalize_generate_machine_name($goal_name),
+      'actionable_element' => 'page',
+      'event[page]' => 'client::view',
+      'pages' => '<front>',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('add_visitor_action'));
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 1);
+
+    // Now create an agent that does not support goals.
+    $agent_name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
+    $edit = array(
+      'agent_basic_info[title]' => $agent_name,
+      'agent_basic_info[machine_name]' => $machine_name,
+      'agent_basic_info[agent_type]' => 'test_extra_agent',
+    );
+
+    $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
+    personalize_set_campaign_context($machine_name);
+    $this->drupalGet('admin/structure/visitor_actions/add');
+    $this->assertNoFieldByName('personalize_goal');
+    $this->assertNoFieldByName('personalize_goal_value');
   }
 
   function testAgentList() {

@@ -555,6 +555,11 @@ function personalize_overlay_child_initialize() {
  */
 function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
   if ($campaign = personalize_get_campaign_context()) {
+    $agent_instance = personalize_agent_load_agent($campaign);
+    if (!($agent_instance instanceof PersonalizeAgentGoalInterface)) {
+      // This agent doesn't support goals.
+      return;
+    }
     $form['advanced']['personalize_goal'] = array(
       '#type' => 'checkbox',
       '#title' => t('Add as a goal to the @campaign campaign', array('@campaign' => $campaign)),
