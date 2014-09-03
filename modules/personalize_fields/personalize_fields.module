@@ -35,15 +35,6 @@ function personalize_fields_ctools_plugin_api($owner, $api) {
   }
 }
 
-function personalize_fields_field_info_alter(&$info) {
-  // Add a setting to all field types.
-  foreach ($info as $field_type => $field_type_info) {
-    $info[$field_type]['settings'] += array(
-      'personalizable' => FALSE,
-    );
-  }
-}
-
 /**
  * Implements hook_form_FORM_ID_alter().
  *
@@ -61,16 +52,77 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
     if ($form['#instance']['entity_type'] == 'user' && !variable_get('personalize_fields_user_fields', FALSE)) {
       return;
     }
-    $form['field']['settings']['personalizable'] = array(
+    $form['field']['settings']['personalize'] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE
+    );
+    $form['field']['settings']['personalize']['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Make this field personalizable?'),
-      '#default_value' => $field['settings']['personalizable'],
+      '#default_value' => isset($field['settings']['personalize']['enabled']) ? $field['settings']['personalize']['enabled'] : 0,
       '#description' => t("This setting is only valid for multi-value fields."),
       '#states' => array(
         'disabled' => array(':input[name="field[cardinality]"]' => array('value' => 1)),
         'invalid' => array(':input[name="field[cardinality]"]' => array('value' => 1)),
       ),
     );
+
+    module_load_include('inc', 'personalize', 'personalize.admin');
+    // Make sure we have at least one agent type available.
+    $agent_types = personalize_get_agent_types();
+    $agent_type_options = $agent_type_form_options = array();
+    $agent_data = new stdClass();
+
+    foreach ($agent_types as $name => $info) {
+      if (isset($field['settings']['personalize']['agent_type']) && $field['settings']['personalize']['agent_type'] == $name && isset($field['settings']['personalize']['options'][$name])) {
+        $agent_data->data = $field['settings']['personalize']['options'][$name];
+      }
+      if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
+        // Add this option to the options for the "agent type" dropdown.
+        $agent_type_options[$name] = $name;
+        // Get the agent type's options form elements
+        $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, array('field', 'settings', 'personalize', 'options', $name)));
+      }
+    }
+    if (empty($agent_type_options)) {
+      drupal_set_message(t('You don\'t have any agent types enabled. Please enable the personalize_target module or another module that provides an agent type.'), 'error');
+      return;
+    }
+    // Add a state to the form elements to make sure they only appear when the
+    // "Add new" option is selected from teh dropdown.
+    $state = array(':input[name="field[settings][personalize][enabled]"]' => array('checked' => TRUE));
+    ksort($agent_type_options);
+    if (count($agent_type_options) < 2) {
+      // No need to show a dropdown if there's only one available plugin.
+      $form['field']['settings']['personalize']['agent_type'] = array(
+        '#type' => 'hidden',
+        '#value' => key($agent_type_options),
+      );
+    }
+    else {
+      $form['field']['settings']['personalize']['agent_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Agent Type'),
+        '#options' => $agent_type_options,
+        '#default_value' => isset($field['settings']['personalize']['agent_type']) ? $field['settings']['personalize']['agent_type'] : '',
+        '#description' => t('Choose which type of agent to create.'),
+        '#weight' => -7,
+      );
+      personalize_form_element_add_states($state, $form['field']['settings']['personalize']['agent_type']);
+    }
+
+    // Add the agent-type-specific form elements to the form, to be shown only if the
+    // agent type in question is selected.
+    $form['field']['settings']['personalize']['options'] = array('#tree' => TRUE, '#weight' => -6);
+    foreach ($agent_type_form_options as $agent_type => $options) {
+      $children = element_children($options);
+      foreach ($children as $child) {
+        $option = &$options[$child];
+        $option['#states'] = array('visible' => array(':input[name="field[settings][personalize][agent_type]"]' => array('value' => $agent_type)));
+        personalize_form_element_add_states($state, $option);
+      }
+      $form['field']['settings']['personalize']['options'][$agent_type] = $options;
+    }
   }
 }
 
@@ -116,7 +168,7 @@ function personalize_fields_contextual_links_view_alter(&$element, $items) {
     $instances = field_info_instances('node', $element['#element']['#bundle']);
     foreach ($instances as $instance) {
       $field = field_info_field($instance['field_name']);
-      if (isset($field['settings']['personalizable']) && $field['settings']['personalizable']) {
+      if (personalize_fields_field_is_personalizable($field)) {
         $personalizable = TRUE;
         break;
       }
@@ -154,7 +206,7 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
   $languages = array();
   foreach ($form_state['field'] as $key => $field) {
     $languages[$key] = $field_lang = field_language($form['#entity_type'], $entity, $key);
-    if (!empty($field[$field_lang]['field']['settings']['personalizable'])) {
+    if (personalize_fields_field_is_personalizable($field[$field_lang]['field'])) {
       $personalized_fields[$key] = $field[$field_lang];
       $form[$key]['#attributes']['class'][] = 'personalize-fields-personalized';
       drupal_alter('personalize_fields_form_element', $form[$key], $field_lang);
@@ -190,6 +242,7 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
 
     // Load the Option Sets if we have an entity id and entity.
     if ($entity_id && ($option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key))) {
+      personalize_warn_if_running($option_set->agent);
       // Add the content variation field data for each option.
       foreach ($option_set->options as $option) {
         if (isset($limit_option_ids) && !in_array($option['option_id'], $limit_option_ids)) {
@@ -424,13 +477,21 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
       $count = $matches[1];
     }
     $agent_title .= ' ' . $count;
+    $field = field_info_field($field_name);
+    if (!isset($field['settings']['personalize']['agent_type'])) {
+      // @todo what to do here?
+    }
+    $agent_type = $field['settings']['personalize']['agent_type'];
     $agent_info = array(
       'agent_basic_info' => array(
         'title' => $agent_title,
         'machine_name' => $machine_name,
-        'agent_type' => 'personalize_target'
+        'agent_type' => $agent_type,
       )
     );
+    if (isset($field['settings']['personalize']['options'][$agent_type])) {
+      $agent_info['agent_basic_info']['options'][$agent_type] = $field['settings']['personalize']['options'][$agent_type];
+    }
     if ($new_agent = personalize_save_agent_from_form_values($agent_info)) {
       $option_set->agent = $new_agent->machine_name;
     }
@@ -683,7 +744,7 @@ function personalize_fields_personalize_create_new_links() {
   foreach ($instances as $bundle => $fields) {
     foreach ($fields as $field_name => $field_info) {
       $field = field_info_field($field_name);
-      if (isset($field['settings']['personalizable']) && $field['settings']['personalizable']) {
+      if (personalize_fields_field_is_personalizable($field)) {
         $type = node_type_get_type($bundle);
         $bundles[$bundle] = $type->name;
       }
@@ -696,6 +757,18 @@ function personalize_fields_personalize_create_new_links() {
     );
   }
   return $links;
+}
+
+/**
+ * Returns whether or not the passed in field is set as personalizable.
+ *
+ * @param $field
+ *   The field to check.
+ * @return bool
+ *   TRUE if the field is configured to be personalizable, FALSE otherwise.
+ */
+function personalize_fields_field_is_personalizable($field) {
+  return (isset($field['settings']['personalize']) && isset($field['settings']['personalize']['enabled']) && $field['settings']['personalize']['enabled']);
 }
 
 /**
@@ -776,7 +849,7 @@ function _personalize_fields_get_option_set_for_field($entity_type, $entity_id, 
   // Before we go checking the persistent cache, first check that this is
   // even a personalizable field.
   $field = field_info_field($field_name);
-  if (!isset($field['settings']['personalizable']) || !$field['settings']['personalizable']) {
+  if (!personalize_fields_field_is_personalizable($field)) {
     return FALSE;
   }
   if ($cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN)) {

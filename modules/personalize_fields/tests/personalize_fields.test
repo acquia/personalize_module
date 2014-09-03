@@ -34,7 +34,15 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
       'cardinality' => -1,
       'settings' => array(
-        'personalizable' => 1,
+        'personalize' => array(
+          'enabled' => 1,
+          'agent_type' => 'test_agent',
+          'options' => array(
+            'test_agent' => array(
+              'use_client_side_goal_processing' => 1
+            )
+          )
+        ),
       ),
     );
     field_create_field($field);
@@ -51,7 +59,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -60,6 +67,11 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1);
 
     $this->assertEqual('fields', $option_set->plugin);
+    // The agent machine name will have been generated based on the entity type
+    // and field label.
+    $first_agent = 'node-personalizable-headline';
+    $this->assertEqual($first_agent, $option_set->agent);
+
     $field_info = array(
       'entity_type' => 'node',
       'entity_id' => 1,
@@ -67,72 +79,54 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
 
+    $options = array(
+      array(
+        'option_id' => 'first-option',
+        'option_label' => 'first option',
+      ),
+      array(
+        'option_id' => 'second-option',
+        'option_label' => 'second option',
+      ),
+    );
+    $this->assertEqual($options, $option_set->options);
+
     // Confirm that there's also a corresponding record in the cache table.
     $cid = _personalize_fields_get_cid_for_field('node', 1, 'article_headline');
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
     $this->assertEqual(1, $cached->data);
 
     // Create another node with a personalized headline
-    // Set up two headline fields
+    // Set up two headline options
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $edit = array();
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalPost(NULL, $edit, t('Save'));
-
-    // Check the options created
     $option_set = personalize_option_set_load(2);
-    $options = array(
-      array(
-        'option_id' => 'option-a',
-        'option_label' => 'Option A',
-      ),
-      array(
-        'option_id' => 'option-b',
-        'option_label' => 'Option B',
-      ),
-    );
-    $this->assertEqual($options, $option_set->options);
+    $second_agent = 'node-personalizable-headline_2';
+    $this->assertEqual($second_agent, $option_set->agent);
 
-    // Load the node edit form and confirm there is no agent dropdown.
-    $this->drupalGet('node/1/edit');
-    $this->assertFieldByName('article_headline[und][0][value]');
-    $this->assertNoFieldByName('agent_select');
-
-    // Add another personalized field and confirm that the agent is paused.
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
-    unset($edit['agent_select']);
-    $this->drupalPost(NULL, NULL, t('Add another item'));
+    // Add another headline option to the first node and confirm that the agent is paused.
+    personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
+    $this->drupalPost('node/1/edit', NULL, t('Add another item'));
     $edit['article_headline[und][2][value]'] = 'third option';
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
 
     $option_set = personalize_option_set_load(1, TRUE);
     $options[] = array(
-      'option_id' => 'option-c',
-      'option_label' => 'Option C',
+      'option_id' => 'third-option',
+      'option_label' => 'third option',
     );
     $this->assertEqual($options, $option_set->options);
-    $all = personalize_option_set_load_by_agent('test-agent', TRUE);
-
-    // Restart the agent and confirm that changing the option label also pauses.
-    $new_label = $this->randomName();
-    $this->drupalGet('node/1/edit');
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
-    $edit['article_headline[und][0][personalize_fields_option_label]'] = $new_label;
-    $this->drupalPost(NULL, $edit, t('Save'));
-    $this->assertText(t('The campaign has been paused because you have made changes.'));
-
-    $option_set = personalize_option_set_load(1, TRUE);
-    $options[0]['option_label'] = $new_label;
-    $this->assertEqual($options, $option_set->options);
+    personalize_option_set_load_by_agent($first_agent, TRUE);
 
     // Restart the agent and confirm that removing an option pauses the agent.
     $this->drupalGet('node/1/edit');
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $edit['article_headline[und][2][value]'] = '';
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
@@ -144,24 +138,20 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Now restart the agent and add/remove a field in the same form to
     // confirm that it is still detected as a change.
-    $new_label = $this->randomName();
     $this->drupalGet('node/1/edit');
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $edit['article_headline[und][1][value]'] = '';
     $edit['article_headline[und][2][value]'] = $this->randomName();
-    $edit['article_headline[und][2][personalize_fields_option_label]'] = $new_label;
     $this->drupalPost(NULL, $edit, t('Save'));
     $this->assertText(t('The campaign has been paused because you have made changes.'));
 
     $edit['article_headline[und][1][value]'] = $edit['article_headline[und][2][value]'];
-    $edit['article_headline[und][1][personalize_fields_option_label]'] = $edit['article_headline[und][2][personalize_fields_option_label]'];
     unset($edit['article_headline[und][2][value]']);
-    unset($edit['article_headline[und][2][personalize_fields_option_label]']);
 
     unset($options[1]);
     $options[] = array(
-      'option_id' => personalize_generate_machine_name($new_label),
-      'option_label' => $new_label,
+      'option_id' => personalize_generate_machine_name($edit['article_headline[und][1][value]']),
+      'option_label' => $edit['article_headline[und][1][value]'],
     );
     $options = array_values($options);
     $option_set = personalize_option_set_load(1, TRUE);
@@ -169,7 +159,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Restart the agent and make sure that other changes do not cause pausing.
     $this->drupalGet('node/1/edit');
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] .= ': edited';
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -209,7 +199,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'only option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalPost('node/add/article', $edit, t('Save'));
     // Confirm that there is no third option set.
     $option_set = personalize_option_set_load(3);
@@ -231,7 +220,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalPost(NULL, $edit, t('Save'));
     // Confirm that an option set has been created for this node.
     $option_set = personalize_option_set_load(3);
@@ -242,8 +230,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
     );
     $this->assertEqual($field_info, $option_set->field_info);
-    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
-    unset($edit['agent_select']);
+    $third_agent = 'node-personalizable-headline_3';
+    personalize_agent_set_status($third_agent, PERSONALIZE_STATUS_RUNNING);
     // Now remove all but one option.
     $edit['article_headline[und][1][value]'] = '';
     $edit['article_headline[und][2][value]'] = '';
@@ -253,7 +241,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(3, TRUE);
     $this->assertFalse($option_set);
     // Confirm that the campaign has indeed been paused.
-    $status = personalize_agent_get_status('test-agent');
+    $status = personalize_agent_get_status($third_agent);
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
 
     // Now delete the field instance from the article content type.
@@ -284,7 +272,15 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
       'cardinality' => 2,
       'settings' => array(
-        'personalizable' => 1,
+        'personalize' => array(
+          'enabled' => 1,
+          'agent_type' => 'test_agent',
+          'options' => array(
+            'test_agent' => array(
+              'use_client_side_goal_processing' => 1
+            )
+          )
+        ),
       ),
     );
     field_create_field($field);
@@ -303,7 +299,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['title'] = $first_node_title;
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalPost('node/add/article', $edit, t('Save'));
 
     // Confirm that there's also a corresponding record in the cache table.
@@ -318,7 +313,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['title'] = $second_node_title;
     $edit['article_headline[und][0][value]'] = 'only option';
-    $edit['agent_select'] = 'test-agent';
     $this->drupalPost('node/add/article', $edit, t('Save'));
 
 
@@ -418,7 +412,9 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
       'cardinality' => 2,
       'settings' => array(
-        'personalizable' => 0,
+        'personalize' => array(
+          'enabled' => 0,
+        ),
       ),
     );
     field_create_field($field);
@@ -439,7 +435,15 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'personalized_article_headline',
       'cardinality' => 2,
       'settings' => array(
-        'personalizable' => 1,
+        'personalize' => array(
+          'enabled' => 1,
+          'agent_type' => 'test_agent',
+          'options' => array(
+            'test_agent' => array(
+              'use_client_side_goal_processing' => 1
+            )
+          )
+        ),
       ),
     );
     field_create_field($field);
@@ -466,7 +470,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Multivalue image fields should be supported..
     $this->drupalGet('admin/structure/types/manage/article/fields/field_image');
-    $this->assertFieldByName('field[settings][personalizable]');
+    $this->assertFieldByName('field[settings][personalize][enabled]');
 
     // Add a multi-value text field to the article node type.
     $field = array(
@@ -486,7 +490,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // An ordinary text field uses a widget that uses default multi-value handling so
     // the "Make this field personalizable" checkbox should show up.
     $this->drupalGet('admin/structure/types/manage/article/fields/article_headline');
-    $this->assertFieldByName('field[settings][personalizable]');
+    $this->assertFieldByName('field[settings][personalize][enabled]');
 
     $field = array(
       'type' => 'test_field',
@@ -507,6 +511,6 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // The test_field_widget_multiple widget type uses non-default handling for multiple
     // values so we should not get a "Make this field personalizable" checkbox.
     $this->drupalGet('admin/structure/types/manage/article/fields/my_test_field');
-    $this->assertNoFieldByName('field[settings][personalizable]');
+    $this->assertNoFieldByName('field[settings][personalize][enabled]');
   }
 }
