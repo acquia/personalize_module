@@ -20,8 +20,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    *   The Option Set ID.
    */
   protected function assertOptionSet($osid) {
-    $elements = $this->xpath('//div[contains(@class,:class)]', array(':class' => 'personalize-' . $osid));
-    $this->assertTrue(count($elements), 'Found an element with the specified class');
+    $elements = $this->xpath('//div[contains(@data-personalize, :osid)]', array(':osid' => $osid));
+    $this->assertTrue(count($elements), 'Found an element with the specified data attribute');
   }
 
   /**
@@ -933,7 +933,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     // Verify on page there isn't a template script tag for the option set.
-    $show_pattern = '/<div class="personalize-option-set personalize-osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
+    $show_pattern = '/<div class="personalize-option-set" data-personalize="osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
 
     $this->drupalGet('');
     $this->assertNoPattern($show_pattern);
