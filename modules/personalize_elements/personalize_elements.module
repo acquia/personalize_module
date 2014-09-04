@@ -259,6 +259,23 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
       ),
     ),
   );
+  $types['editText'] = array(
+    'label' => t('Edit the text'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Edit text'),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('Text'),
+        '#rows' => 6,
+        '#required' => TRUE,
+      ),
+    ),
+    // Limits this option to selectors that only have children with the nodeType
+    // of 3 (text).
+    'limitByChildrenType' => '3',
+  );
   $types['addClass'] = array(
     'label' => t('Add a class'),
     'needs_selector' => TRUE,
@@ -367,7 +384,10 @@ function personalize_elements_contextual_menu_variations() {
   $options = array();
   foreach ($variation_types as $type => $info) {
     if ($info['contextual'] && $info['contextual'] !== FALSE) {
-      $options[$type] = $info['contextual']['label'];
+      $options[$type] = array(
+        'name' => $info['contextual']['label'],
+        'limitByChildrenType' => isset($info['limitByChildrenType']) ? $info['limitByChildrenType'] : '',
+      );
     }
   }
   return $options;

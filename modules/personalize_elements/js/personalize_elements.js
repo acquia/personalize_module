@@ -155,6 +155,26 @@
     }
   };
 
+  Drupal.personalizeElements.editText = {
+    controlContent: {},
+    execute : function($selector, selectedContent, isControl, osid) {
+      // Keep track of how the element has been changed in order to preview
+      // different options.
+      if (!this.controlContent.hasOwnProperty(osid)) {
+        this.controlContent[osid] = $selector.text();
+      }
+      if (isControl) {
+        $selector.text(this.controlContent[osid]);
+      } else {
+        $selector.text(selectedContent);
+      }
+    },
+    editInContext : function(selector, $contentInput) {
+      var editString = $(selector).text();
+      $contentInput.val(editString);
+    }
+  };
+
   Drupal.personalizeElements.addClass = {
     addedClasses : {},
     execute : function($selector, selectedContent, isControl, osid) {
