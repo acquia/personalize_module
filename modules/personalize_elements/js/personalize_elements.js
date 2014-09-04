@@ -105,8 +105,8 @@
       // This ensures we get only the html of the $selector and not siblings.
       var $element = $element.clone().wrap('<div>').parent();
       // Remove any extraneous acquia lift / visitor actions stuff.
-      var removeClasses = /([a-zA-Z0-9-_]*-processed)|(quickedit-[a-zA-Z0-9_]*)|(acquia-lift-[a-zA-Z0-9\_\-]+)/g;
-      var removeId = /^(visitorActionsUI-)|(visitorActionsUIDialog-)|(panels-ipe-)/;
+      var removeClasses = new RegExp(Drupal.settings.visitor_actions.ignoreClasses, 'g');
+      var removeId = new RegExp(Drupal.settings.visitor_actions.ignoreIds);
       var removeTags = 'script';
 
       // Remove any invalid ids.
