@@ -730,35 +730,6 @@ function personalize_fields_preprocess_field(&$variables, $hook) {
 }
 
 /**
- * Implements hook_personalize_create_new_links().
- */
-function personalize_fields_personalize_create_new_links() {
-  $links = array();
-  // Find all node types with personalizable fields.
-  // @todo If we knew the path to create a new instance of non-node entities
-  //   we could include them here. Anyway to get that without a dependency on
-  //   Entity API module?
-  $instances = field_info_instances('node');
-  $bundles = array();
-  foreach ($instances as $bundle => $fields) {
-    foreach ($fields as $field_name => $field_info) {
-      $field = field_info_field($field_name);
-      if (personalize_fields_field_is_personalizable($field)) {
-        $type = node_type_get_type($bundle);
-        $bundles[$bundle] = $type->name;
-      }
-    }
-  }
-  foreach ($bundles as $bundle => $name) {
-    $links[] = array(
-      'title' => $name,
-      'path' => 'node/add/' . str_replace('_', '-', $bundle),
-    );
-  }
-  return $links;
-}
-
-/**
  * Returns whether or not the passed in field is set as personalizable.
  *
  * @param $field
