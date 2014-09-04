@@ -36,8 +36,9 @@
           else {
             selectedContent = selectedChoice.personalize_elements_content;
           }
-          if ($option_set.length == 0 && element.variation_type != 'runJS') {
-            // Only the runJS can do something with an empty Option Set.
+          // runJS does not require a selector and editHtml can result in an
+          // empty option set if the new html alters the DOM structure.
+          if ($option_set.length == 0 && ['runJS','editHtml'].indexOf(element.variation_type) == -1) {
             return;
           }
           Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
@@ -96,6 +97,7 @@
 
   Drupal.personalizeElements.editHtml = {
     controlContent: {},
+    parentElement: {},
     getOuterHtml: function($element) {
       if ($element.length > 1) {
         $element = $element.first();
@@ -136,10 +138,15 @@
       if (!this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
+      if (!this.parentElement.hasOwnProperty(osid)) {
+        // The selector gets replaced so we need to update based on the parent.
+        this.parentElement[osid] = $selector.parent();
+      }
+      var $parent = this.parentElement[osid];
       if (isControl) {
-        $selector.replaceWith(this.controlContent[osid]);
+        $parent.html(this.controlContent[osid]);
       } else {
-        $selector.replaceWith(selectedContent);
+        $parent.html(selectedContent);
       }
     },
     editInContext : function(selector, $contentInput) {

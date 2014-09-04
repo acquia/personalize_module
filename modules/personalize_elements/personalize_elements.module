@@ -256,7 +256,6 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
         '#title' => t('HTML'),
         '#rows' => 6,
         '#required' => TRUE,
-        '#description' => t('Changing the enclosing element can break variation previews.'),
       ),
     ),
   );
