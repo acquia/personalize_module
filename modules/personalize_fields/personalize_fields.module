@@ -72,7 +72,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
     $agent_types = personalize_get_agent_types();
     $agent_type_options = $agent_type_form_options = array();
     $agent_data = new stdClass();
-
+    $agent_data->data = array();
     foreach ($agent_types as $name => $info) {
       if (isset($field['settings']['personalize']['agent_type']) && $field['settings']['personalize']['agent_type'] == $name && isset($field['settings']['personalize']['options'][$name])) {
         $agent_data->data = $field['settings']['personalize']['options'][$name];

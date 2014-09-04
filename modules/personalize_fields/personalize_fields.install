@@ -84,17 +84,10 @@ function personalize_fields_update_7002() {
   $personalized_fields = array();
   foreach ($option_sets as $option_set) {
     if (!isset($personalized_fields[$option_set->data['personalize_fields_field_name']])) {
-      // We base our default configuration for this field on the configuration of the
+      // We base our default agent type for this field on the agent type of the
       // first existing agent we come to that's used for one of these fields.
       $agent = personalize_agent_load($option_set->agent);
-      $agent_data = $agent->data;
-      unset($agent_data['visitor_context'], $agent_data['cache_decisions']);
-      $personalized_fields[$option_set->data['personalize_fields_field_name']] = array(
-        'agent_type' => $agent->plugin,
-        'options' => array(
-          $agent->plugin => $agent_data
-        )
-      );
+      $personalized_fields[$option_set->data['personalize_fields_field_name']] = $agent->plugin;
     }
   }
 
@@ -111,7 +104,13 @@ function personalize_fields_update_7002() {
       if (isset($personalized_fields[$row->field_name]) && $enabled) {
         $data['settings']['personalize'] = array(
           'enabled' => 1,
-        ) + $personalized_fields[$row->field_name];
+          'agent_type' => $agent->plugin,
+          // There's no way to distinguish the options needed for general configuration
+          // of this type of agent from other data that has been saved with the agent
+          // so we just set an empty options array here. It is up to the agent plugin to
+          // ensure defaults are set when an actual agent is created.
+          'options' => array()
+        );
       }
 
       db_update('field_config')
