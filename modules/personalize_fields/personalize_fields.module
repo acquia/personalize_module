@@ -102,18 +102,17 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
     else {
       $form['field']['settings']['personalize']['agent_type'] = array(
         '#type' => 'select',
-        '#title' => t('Agent Type'),
+        '#title' => t('Campaign Type'),
         '#options' => $agent_type_options,
         '#default_value' => isset($field['settings']['personalize']['agent_type']) ? $field['settings']['personalize']['agent_type'] : '',
         '#description' => t('Choose which type of agent to create.'),
-        '#weight' => -7,
       );
       personalize_form_element_add_states($state, $form['field']['settings']['personalize']['agent_type']);
     }
 
     // Add the agent-type-specific form elements to the form, to be shown only if the
     // agent type in question is selected.
-    $form['field']['settings']['personalize']['options'] = array('#tree' => TRUE, '#weight' => -6);
+    $form['field']['settings']['personalize']['options'] = array('#tree' => TRUE);
     foreach ($agent_type_form_options as $agent_type => $options) {
       $children = element_children($options);
       foreach ($children as $child) {

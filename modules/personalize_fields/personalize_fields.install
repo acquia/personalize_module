@@ -75,6 +75,54 @@ function personalize_fields_update_7001() {
 }
 
 /**
+ * Switch to the new configuration settings for personalizable fields.
+ */
+function personalize_fields_update_7002() {
+  // For all fields set as personalizable we need to switch them to
+  // the new settings structure.
+  $option_sets = personalize_option_set_load_by_type('fields');
+  $personalized_fields = array();
+  foreach ($option_sets as $option_set) {
+    if (!isset($personalized_fields[$option_set->data['personalize_fields_field_name']])) {
+      // We base our default configuration for this field on the configuration of the
+      // first existing agent we come to that's used for one of these fields.
+      $agent = personalize_agent_load($option_set->agent);
+      $agent_data = $agent->data;
+      unset($agent_data['visitor_context'], $agent_data['cache_decisions']);
+      $personalized_fields[$option_set->data['personalize_fields_field_name']] = array(
+        'agent_type' => $agent->plugin,
+        'options' => array(
+          $agent->plugin => $agent_data
+        )
+      );
+    }
+  }
+
+  $result = db_select('field_config', 'f')
+    ->fields('f', array('id', 'field_name', 'data'))
+    ->execute();
+  foreach ($result as $row) {
+    $data = unserialize($row->data);
+    if (isset($data['settings']['personalizable'])) {
+      $enabled = $data['settings']['personalizable'];
+      unset($data['settings']['personalizable']);
+      // We can only set this as personalizable if we have default agent configuration
+      // to copy from an existing option set.
+      if (isset($personalized_fields[$row->field_name]) && $enabled) {
+        $data['settings']['personalize'] = array(
+          'enabled' => 1,
+        ) + $personalized_fields[$row->field_name];
+      }
+
+      db_update('field_config')
+        ->fields(array('data' => serialize($data)))
+        ->condition('id', $row->id)
+        ->execute();
+    }
+  }
+}
+
+/**
  * Helper to get the schema for the cache table.
  */
 function personalize_fields_get_cache_table_schema() {
