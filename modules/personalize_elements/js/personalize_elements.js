@@ -73,6 +73,7 @@
       }
       else {
         $selector.html(selectedContent);
+        Drupal.attachBehaviors($selector);
       }
 
     }
@@ -104,6 +105,7 @@
       $('#' + id).remove();
       if (!isControl) {
         $selector.append('<span id="' + id + '">' + selectedContent + '</span>');
+        Drupal.attachBehaviors($selector);
       }
     }
   };
@@ -114,6 +116,7 @@
       $('#' + id).remove();
       if (!isControl) {
         $selector.prepend('<span id="' + id + '">' + selectedContent + '</span>');
+        Drupal.attachBehaviors($selector);
       }
     }
   };
