@@ -915,6 +915,9 @@ function _personalize_fields_get_field_info_from_option_set($option_set) {
 function _personalize_fields_get_entity_link_from_option_set($option_set) {
   if ($entity_info = _personalize_fields_get_field_info_from_option_set($option_set->osid)) {
     $entities = entity_load($entity_info['entity_type'], array($entity_info['entity_id']));
+    if (empty($entities)) {
+      return '';
+    }
     $entity_link = entity_uri($entity_info['entity_type'], $entities[$entity_info['entity_id']]);
     return $entity_link['path'];
   }
