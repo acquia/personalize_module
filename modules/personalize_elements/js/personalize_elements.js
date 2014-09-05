@@ -41,7 +41,7 @@
           if ($option_set.length == 0 && ['runJS','editHtml'].indexOf(element.variation_type) == -1) {
             return;
           }
-          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid, choice_name);
+          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
         }
       }
@@ -117,18 +117,17 @@
       // Now return the cleaned up html.
       return $element.html();
     },
-    execute : function($selector, selectedContent, isControl, osid, choice_name) {
+    execute : function($selector, selectedContent, isControl, osid) {
       // Keep track of how the element has been changed in order to preview
       // different options.
       if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
-      this.parentElement[osid] = this.parentElement[osid] || {};
-      if (!this.parentElement[osid].hasOwnProperty(choice_name)) {
+      if (!this.parentElement.hasOwnProperty(osid)) {
         // The selector gets replaced so we need to update based on the parent.
-        this.parentElement[osid][choice_name] = $selector.parent();
+        this.parentElement[osid] = $selector.parent();
       }
-      var $parent = this.parentElement[osid][choice_name];
+      var $parent = this.parentElement[osid];
       if (isControl) {
         $parent.html(this.controlContent[osid]);
       } else {
