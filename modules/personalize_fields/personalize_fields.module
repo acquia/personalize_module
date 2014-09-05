@@ -212,7 +212,8 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
   $entity = _personalize_fields_entity_from_form($form, $form_state);
   list($entity_id) = entity_extract_ids($entity_type, $entity);
   $languages = array();
-  foreach ($form_state['field'] as $key => $field) {
+  foreach (element_children($form_state['field']) as $key) {
+    $field = $form_state['field'][$key];
     $languages[$key] = $field_lang = field_language($form['#entity_type'], $entity, $key);
     if (personalize_fields_field_is_personalizable($field[$field_lang]['field'])) {
       $personalized_fields[$key] = $field[$field_lang];
