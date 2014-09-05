@@ -234,7 +234,7 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
       $subfields = field_info_instances('field_collection_item', $key);
       foreach($subfields as $field_name => $subfield) {
         $field_info = field_info_field($field_name);
-        if (!empty($field_info['settings']['personalizable'])) {
+        if (personalize_fields_field_is_personalizable($field_info)) {
           // The current sub-field has been identified as personalizable, so add
           // personalization form elements here.
 
