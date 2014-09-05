@@ -256,7 +256,132 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $cid = _personalize_fields_get_cid_for_field('node', 2, 'article_headline');
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
     $this->assertFalse($cached);
+  }
 
+  /**
+   * Tests creation of multiple personalized fields on the same entity.
+   */
+  function testPersonalizeFieldsMultiple() {
+    // Enable our other test module that provides an extra agent type.
+    module_enable(array('personalize_test_extra_agent'));
+    $this->resetAll();
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    $fields = array(
+      'article_headline' => array(
+        'agent_type' => 'test_agent',
+        'label' => 'Personalizable Headline',
+        'cardinality' => -1
+      ),
+      'article_abstract' => array(
+        'agent_type' => 'test_extra_agent',
+        'label' => 'Personalizable Abstract',
+        'cardinality' => 2
+      )
+    );
+    foreach ($fields as $field_name => $info) {
+      // Add personalizable field to the article node type.
+      $field = array(
+        'type' => 'text',
+        'field_name' => $field_name,
+        'cardinality' => $info['cardinality'],
+        'settings' => array(
+          'personalize' => array(
+            'enabled' => 1,
+            'agent_type' => $info['agent_type'],
+            'options' => array()
+          ),
+        ),
+      );
+      field_create_field($field);
+      $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => $info['label'],
+        'bundle' => 'article',
+        'required' => FALSE
+      );
+      field_create_instance($instance);
+    }
+
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first headline option';
+    $edit['article_headline[und][1][value]'] = 'second headline option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Assert that we can load the new option set from the db.
+    $option_set = personalize_option_set_load(1);
+    // The agent machine name will have been generated based on the entity type
+    // and field label.
+    $first_agent = 'node-personalizable-headline';
+    $this->assertEqual($first_agent, $option_set->agent);
+    $this->assertEqual(array(
+      'entity_type' => 'node',
+      'entity_id' => 1,
+      'field_name' => 'article_headline',
+    ), $option_set->field_info);
+    $this->assertEqual(array(
+      array(
+        'option_id' => 'first-headline-option',
+        'option_label' => 'first headline option',
+      ),
+      array(
+        'option_id' => 'second-headline-option',
+        'option_label' => 'second headline option',
+      ),
+    ), $option_set->options);
+
+    // Now edit the node and enter values for the second personalizable field.
+    $edit['article_abstract[und][0][value]'] = 'first abstract option';
+    $edit['article_abstract[und][1][value]'] = 'second abstract option';
+    $this->drupalPost('node/1/edit', $edit, t('Save'));
+    $option_sets = personalize_option_set_load_by_type('fields');
+    $this->assertEqual(2, count($option_sets));
+    $option_set_2 = personalize_option_set_load(2);
+    $second_agent = 'node-personalizable-abstract';
+    $this->assertEqual($second_agent, $option_set_2->agent);
+    $this->assertEqual(array(
+      'entity_type' => 'node',
+      'entity_id' => 1,
+      'field_name' => 'article_abstract',
+    ), $option_set_2->field_info);
+    $this->assertEqual(array(
+      array(
+        'option_id' => 'first-abstract-option',
+        'option_label' => 'first abstract option',
+      ),
+      array(
+        'option_id' => 'second-abstract-option',
+        'option_label' => 'second abstract option',
+      ),
+    ), $option_set_2->options);
+    // Confirm the two different agent types that were created.
+    $agents = personalize_agent_load_multiple(array(), array(), TRUE);
+    // There should be 5 agents altogether: the 3 default agents provided by the
+    // test module, plus the 2 created for the 2 fields.
+    $this->assertEqual(5, count($agents));
+    $this->assertEqual('test_agent', $agents['node-personalizable-headline']->plugin);
+    $this->assertEqual('test_extra_agent', $agents['node-personalizable-abstract']->plugin);
+
+    // Now create another article with both fields populated and test the names
+    // generated for the new agents.
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first headline option';
+    $edit['article_headline[und][1][value]'] = 'second headline option';
+    $edit['article_abstract[und][0][value]'] = 'first abstract option';
+    $edit['article_abstract[und][1][value]'] = 'second abstract option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $agents = personalize_agent_load_multiple(array(), array(), TRUE);
+    // There should now be 7 agents altogether.
+    $this->assertEqual(7, count($agents));
+    $this->assertTrue(isset($agents['node-personalizable-headline_2']));
+    $this->assertTrue(isset($agents['node-personalizable-abstract_2']));
   }
 
   /**
