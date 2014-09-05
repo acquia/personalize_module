@@ -143,6 +143,11 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
  *   TRUE if the instance is supported, FALSE otherwise.
  */
 function personalize_fields_is_supported_field_instance($field, $instance) {
+  // We can support personalized fields attached to field_collections, but
+  // currently not personalized fields that are themselves field_collections.
+  if ($field['module'] == 'field_collection') {
+    return FALSE;
+  }
   return in_array($field['type'], array('image', 'text')) || field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT;
 }
 
