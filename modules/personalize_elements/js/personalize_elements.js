@@ -91,30 +91,8 @@
       // give it a parent so that we can call that parent's html function.
       // This ensures we get only the html of the $selector and not siblings.
       var $element = $element.clone().wrap('<div>').parent();
-      // Remove any extraneous acquia lift / visitor actions stuff.
-      var removeClasses = new RegExp(Drupal.settings.visitor_actions.ignoreClasses, 'g');
-      var removeId = new RegExp(Drupal.settings.visitor_actions.ignoreIds);
-      var removeTags = 'script';
 
-      // Remove any invalid ids.
-      $element.find('[id]').filter(function() {
-        return removeId.test(this.id);
-      }).removeAttr('id');
-
-      // Remove any classes that are marked for ignore.
-      $element.find('[class]').each(function() {
-        var stripClasses = this.className.match(removeClasses) || [];
-        $(this).removeClass(stripClasses.join(' '));
-        if (this.className.length == 0) {
-          $(this).removeAttr('class');
-        }
-      });
-      // Remove any styling added directly from jQuery.
-      $element.find('[style]').removeAttr('style');
-      // Remove any inappropriate tags
-      $element.find(removeTags).remove();
-
-      // Now return the cleaned up html.
+      // Now return the child html of our wrapper parent tag.
       return $element.html();
     },
     execute : function($selector, selectedContent, isControl, osid) {
