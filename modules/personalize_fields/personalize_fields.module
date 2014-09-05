@@ -8,6 +8,11 @@
 define('PERSONALIZE_FIELDS_CACHE_BIN', 'cache_personalize_fields');
 
 /**
+ * Class FieldException
+ */
+class PersonalizeFieldsException extends Exception {}
+
+/**
  * Implements hook_help().
  */
 function personalize_fields_help($path, $arg) {
@@ -67,7 +72,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
       ),
     );
 
-    module_load_include('inc', 'personalize', 'personalize.admin');
+    ctools_include('plugins');
     // Make sure we have at least one agent type available.
     $agent_types = personalize_get_agent_types();
     $agent_type_options = $agent_type_form_options = array();
@@ -89,7 +94,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
       return;
     }
     // Add a state to the form elements to make sure they only appear when the
-    // "Add new" option is selected from teh dropdown.
+    // personalizable checkbox is checked.
     $state = array(':input[name="field[settings][personalize][enabled]"]' => array('checked' => TRUE));
     ksort($agent_type_options);
     if (count($agent_type_options) < 2) {
@@ -400,7 +405,12 @@ function personalize_fields_form_submit($form, &$form_state) {
       // hook_entity_update.  Otherwise we add the info to the entity so that
       // it will be processed on hook_entity_insert.
       if ($entity_id && isset($option_set->is_new)) {
-        personalize_fields_option_set_save($option_set, $entity_type, $entity, $key);
+        try {
+          personalize_fields_option_set_save($option_set, $entity_type, $entity, $key);
+        }
+        catch(PersonalizeFieldsException $e) {
+          drupal_set_message($e->getMessage(), 'error');
+        }
       }
       else {
         $form_state[$entity_type]->option_sets[$key] = $option_set;
@@ -409,7 +419,17 @@ function personalize_fields_form_submit($form, &$form_state) {
   }
 }
 
-function personalize_fields_generate_option_label($delta, $field_values) {
+/**
+ * Generates a label for an option in a fields-based option set.
+ *
+ * @param $index
+ *   THe index of the field.
+ * @param $field_values
+ *   The submitted form values for the field.
+ * @return string
+ *   A string to be used as the option label.
+ */
+function personalize_fields_generate_option_label($index, $field_values) {
   // Use filename as default for image multivalue fields.
   if (!empty($field_values['fid']) && (int) $field_values['fid'] > 0) {
     $file = file_load($field_values['fid']);
@@ -421,7 +441,7 @@ function personalize_fields_generate_option_label($delta, $field_values) {
   }
   // Just generate a generic option label.
   else {
-    return personalize_generate_option_label($delta);
+    return personalize_generate_option_label($index);
   }
 }
 
@@ -472,13 +492,21 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
     $machine_name = personalize_generate_machine_name($agent_title, 'personalize_agent_machine_name_exists');
     $matches = array();
     $count = 1;
+    // If this was the second or subsequent option set for this entity type and field
+    // combination, there will be a count suffix on the machine name generated. We
+    // need to add that count to the agent title.
     if (preg_match('/^[a-zA-Z0-9-_]+_([0-9]+)$/', $machine_name, $matches)) {
       $count = $matches[1];
     }
     $agent_title .= ' ' . $count;
     $field = field_info_field($field_name);
+
     if (!isset($field['settings']['personalize']['agent_type'])) {
-      // @todo what to do here?
+      throw new PersonalizeFieldsException(t('No campaign type has been configured for this field. Please go to the field settings and specify the campaign type to use.'));
+    }
+    $plugin = personalize_get_agent_type($field['settings']['personalize']['agent_type']);
+    if (empty($plugin)) {
+      throw new PersonalizeFieldsException(t('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.'));
     }
     $agent_type = $field['settings']['personalize']['agent_type'];
     $agent_info = array(
@@ -540,7 +568,12 @@ function personalize_fields_generate_option_set_label($entity_type, $entity_id, 
 function personalize_fields_entity_insert($entity, $type) {
   if (isset($entity->option_sets)) {
     foreach($entity->option_sets as $field_name => $option_set) {
-      personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+      try {
+        personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+      }
+      catch(PersonalizeFieldsException $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
     }
   }
 }
@@ -557,7 +590,12 @@ function personalize_fields_entity_update($entity, $type) {
   if (isset($entity->option_sets)) {
     foreach($entity->option_sets as $field_name => $option_set) {
       if (!empty($updates[$field_name])) {
-        personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+        try {
+          personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+        }
+        catch(PersonalizeFieldsException $e) {
+          drupal_set_message($e->getMessage(), 'error');
+        }
       }
     }
   }

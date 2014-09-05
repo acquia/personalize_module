@@ -22,6 +22,76 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     personalize_agent_save($agent);
   }
 
+  function testPersonalizeFieldsConfig() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Add personalizable field to the article node type.
+    $field = array(
+      'type' => 'text',
+      'field_name' => 'article_headline',
+      'cardinality' => -1,
+      'settings' => array(
+        'personalize' => array(
+          'enabled' => 1,
+        ),
+      ),
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'article_headline',
+      'entity_type' => 'node',
+      'label' => 'Personalizable Headline',
+      'bundle' => 'article',
+      'required' => FALSE
+    );
+    field_create_instance($instance);
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first option';
+    $edit['article_headline[und][1][value]'] = 'second option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText('No campaign type has been configured for this field. Please go to the field settings and specify the campaign type to use.');
+
+    $old_instance = field_info_instance('node', 'article_headline', 'article');
+    field_delete_instance($old_instance);
+    field_delete_field('article_headline');
+    // Now change the field settings to use an existing agent type.
+    $field['settings']['personalize']['agent_type'] = 'non_existent_agent';
+    field_create_field($field);
+    field_create_instance($instance);
+
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first option';
+    $edit['article_headline[und][1][value]'] = 'second option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertText('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.');
+
+    $old_instance = field_info_instance('node', 'article_headline', 'article');
+    field_delete_instance($old_instance);
+    field_delete_field('article_headline');
+    // Now change the field settings to use an existing agent type.
+    $field['settings']['personalize']['agent_type'] = 'test_agent';
+    field_create_field($field);
+    field_create_instance($instance);
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first option';
+    $edit['article_headline[und][1][value]'] = 'second option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $this->assertNoText('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.');
+    $this->assertNoText('No campaign type has been configured for this field. Please go to the field settings and specify the campaign type to use.');
+    // Assert that we can load the new option set from the db.
+    $option_set = personalize_option_set_load(1);
+    $this->assertEqual('node-personalizable-headline', $option_set->agent);
+  }
+
   /**
    * Tests adding a personalized field to a node and deleting the node.
    */
@@ -62,7 +132,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $this->drupalPost(NULL, $edit, t('Save'));
-
+    $this->assertNoText('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.');
     // Assert that we can load the new option set from the db.
     $option_set = personalize_option_set_load(1);
 
