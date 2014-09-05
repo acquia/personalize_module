@@ -41,24 +41,9 @@
           if ($option_set.length == 0 && ['runJS','editHtml'].indexOf(element.variation_type) == -1) {
             return;
           }
-          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
+          Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid, choice_name);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
         }
-      }
-    },
-    /**
-     * Callback for editing or creating a personalized element in context.
-     *
-     * @param type
-     *   The variation type
-     * @param selector
-     *   The jQuery selector to the element being personalized
-     * @param $contentInput
-     *   The form input element where the value will be specified.
-     */
-    editInContext: function(type, selector, $contentInput) {
-      if (Drupal.personalizeElements[type] && typeof Drupal.personalizeElements[type].editInContext === 'function') {
-        Drupal.personalizeElements[type].editInContext(selector, $contentInput);
       }
     }
   };
@@ -81,7 +66,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // We need to keep track of how we've changed the element, if only
       // to support previewing different options.
-      if (!this.controlContent.hasOwnProperty(osid)) {
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.html();
       }
       if (isControl) {
@@ -132,26 +117,23 @@
       // Now return the cleaned up html.
       return $element.html();
     },
-    execute : function($selector, selectedContent, isControl, osid) {
+    execute : function($selector, selectedContent, isControl, osid, choice_name) {
       // Keep track of how the element has been changed in order to preview
       // different options.
-      if (!this.controlContent.hasOwnProperty(osid)) {
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
-      if (!this.parentElement.hasOwnProperty(osid)) {
+      this.parentElement[osid] = this.parentElement[osid] || {};
+      if (!this.parentElement[osid].hasOwnProperty(choice_name)) {
         // The selector gets replaced so we need to update based on the parent.
-        this.parentElement[osid] = $selector.parent();
+        this.parentElement[osid][choice_name] = $selector.parent();
       }
-      var $parent = this.parentElement[osid];
+      var $parent = this.parentElement[osid][choice_name];
       if (isControl) {
         $parent.html(this.controlContent[osid]);
       } else {
         $parent.html(selectedContent);
       }
-    },
-    editInContext : function(selector, $contentInput) {
-      var editString = this.getOuterHtml($(selector));
-      $contentInput.val(editString);
     }
   };
 
@@ -160,7 +142,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // Keep track of how the element has been changed in order to preview
       // different options.
-      if (!this.controlContent.hasOwnProperty(osid)) {
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.text();
       }
       if (isControl) {
@@ -168,10 +150,6 @@
       } else {
         $selector.text(selectedContent);
       }
-    },
-    editInContext : function(selector, $contentInput) {
-      var editString = $(selector).text();
-      $contentInput.val(editString);
     }
   };
 
