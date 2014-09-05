@@ -47,7 +47,10 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
       'entity_type' => 'node',
       'label' => 'Test Field Collection',
       'bundle' => 'article',
-      'required' => FALSE
+      'required' => FALSE,
+      'widget' => array(
+        'type' => 'field_collection_embed'
+      ),
     );
     field_create_instance($instance);
 
@@ -71,9 +74,9 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
     field_create_field($field);
     $instance = array(
       'field_name' => 'article_test_field',
-      'entity_type' => 'node',
+      'entity_type' => 'field_collection_item',
       'label' => 'Personalizable Test Collection Subfield',
-      'bundle' => 'article',
+      'bundle' => 'container',
       'required' => FALSE
     );
     field_create_instance($instance);
@@ -81,13 +84,42 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
     // Create a test node, fill in 2 variations on a single field collection.
     $edit = array();
     $edit['title'] = $this->randomName(8);
-    $edit['article_test_field[und][0][value]'] = 'first variation';
-    $edit['article_test_field[und][1][value]'] = 'second variation';
+    $edit['container[und][0][article_test_field][und][0][value]'] = 'first variation';
+    $edit['container[und][0][article_test_field][und][1][value]'] = 'second variation';
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $this->drupalPost(NULL, $edit, t('Save'));
 
-    // Verify something personalizable about it
+    // Assert that we can load the new option set from the db.
+    $option_set = personalize_option_set_load(1);
+
+    $this->assertEqual('fields', $option_set->plugin);
+
+    // The agent machine name will have been generated based on the entity type
+    // and field label.
+    $first_agent = 'field-collection-item-personalizable-test-collection-subfield';
+    $this->assertEqual($first_agent, $option_set->agent);
+
+    $field_info = array(
+      'entity_type' => 'field_collection_item',
+      'entity_id' => 1,
+      'field_name' => 'article_test_field',
+    );
+    $this->assertEqual($field_info, $option_set->field_info);
+
+    $options = array(
+      array(
+        'option_id' => 'first-variation',
+        'option_label' => 'first variation',
+      ),
+      array(
+        'option_id' => 'second-variation',
+        'option_label' => 'second variation',
+      ),
+    );
+    $this->assertEqual($options, $option_set->options);
+
+    // @todo Verify something personalizable about it
   }
 
 }
