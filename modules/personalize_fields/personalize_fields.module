@@ -178,6 +178,19 @@ function personalize_fields_contextual_links_view_alter(&$element, $items) {
         $personalizable = TRUE;
         break;
       }
+      // Do an additional check for the case that a node has all of its
+      // personalizable fields on field collections, so that we can add
+      // contextual links also in this case.
+      if (!empty($field['module']) && $field['module'] == 'field_collection') {
+        $sub_instances = field_info_instances('field_collection_item', $field['field_name']);
+        foreach ($sub_instances as $sub_instance) {
+          $sub_field = field_info_field($sub_instance['field_name']);
+          if (personalize_fields_field_is_personalizable($sub_field)) {
+            $personalizable = TRUE;
+            break 2;
+          }
+        }
+      }
     }
     if (!$personalizable) {
       return;
