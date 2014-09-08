@@ -72,7 +72,7 @@ interface PersonalizeAgentInterface {
    * @return array
    *   A FAPI array.
    */
-  public static function optionsForm($agent_data);
+  public static function optionsForm($agent_data, $option_parents = array());
 
   /**
    * Validates the form data.
@@ -337,7 +337,7 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   /**
    * Implements PersonalizeAgentInterface::optionsForm().
    */
-  public static function optionsForm($agent_data) {
+  public static function optionsForm($agent_data, $option_parents = array()) {
     return array();
   }
 

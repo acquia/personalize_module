@@ -43,7 +43,7 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
   /**
    * Implements PersonalizeAgentInterface::optionsForm().
    */
-  public static function optionsForm($agent_data) {
+  public static function optionsForm($agent_data, $option_parents = array()) {
     $form = array();
     $form['use_client_side_goal_processing'] = array(
       '#type' => 'checkbox',
