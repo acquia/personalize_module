@@ -390,11 +390,6 @@ function personalize_elements_get_option_for_variation($option_id, $option_label
     'option_id' => $option_id,
     'option_label' => $option_label,
   );
-  // The execution of personalize elements assumes that if the content attribute
-  // is missing then it is the control option.
-  if ($option_id !== PERSONALIZE_CONTROL_OPTION_ID) {
-    $option['personalize_elements_content'] = '';
-  }
   return $option;
 }
 
