@@ -89,7 +89,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertNoText('No campaign type has been configured for this field. Please go to the field settings and specify the campaign type to use.');
     // Assert that we can load the new option set from the db.
     $option_set = personalize_option_set_load(1);
-    $this->assertEqual('node-personalizable-headline', $option_set->agent);
+    $this->assertEqual('article-personalizable-headline', $option_set->agent);
   }
 
   /**
@@ -139,7 +139,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertEqual('fields', $option_set->plugin);
     // The agent machine name will have been generated based on the entity type
     // and field label.
-    $first_agent = 'node-personalizable-headline';
+    $first_agent = 'article-personalizable-headline';
     $this->assertEqual($first_agent, $option_set->agent);
 
     $field_info = array(
@@ -176,7 +176,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][1][value]'] = 'second option';
     $this->drupalPost(NULL, $edit, t('Save'));
     $option_set = personalize_option_set_load(2);
-    $second_agent = 'node-personalizable-headline_2';
+    $second_agent = 'article-personalizable-headline_2';
     $this->assertEqual($second_agent, $option_set->agent);
 
     // Add another headline option to the first node and confirm that the agent is paused.
@@ -300,7 +300,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
     );
     $this->assertEqual($field_info, $option_set->field_info);
-    $third_agent = 'node-personalizable-headline_3';
+    $third_agent = 'article-personalizable-headline_3';
     personalize_agent_set_status($third_agent, PERSONALIZE_STATUS_RUNNING);
     // Now remove all but one option.
     $edit['article_headline[und][1][value]'] = '';
@@ -386,7 +386,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1);
     // The agent machine name will have been generated based on the entity type
     // and field label.
-    $first_agent = 'node-personalizable-headline';
+    $first_agent = 'article-personalizable-headline';
     $this->assertEqual($first_agent, $option_set->agent);
     $this->assertEqual(array(
       'entity_type' => 'node',
@@ -411,7 +411,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $option_sets = personalize_option_set_load_by_type('fields');
     $this->assertEqual(2, count($option_sets));
     $option_set_2 = personalize_option_set_load(2);
-    $second_agent = 'node-personalizable-abstract';
+    $second_agent = 'article-personalizable-abstract';
     $this->assertEqual($second_agent, $option_set_2->agent);
     $this->assertEqual(array(
       'entity_type' => 'node',
@@ -433,8 +433,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // There should be 5 agents altogether: the 3 default agents provided by the
     // test module, plus the 2 created for the 2 fields.
     $this->assertEqual(5, count($agents));
-    $this->assertEqual('test_agent', $agents['node-personalizable-headline']->plugin);
-    $this->assertEqual('test_extra_agent', $agents['node-personalizable-abstract']->plugin);
+    $this->assertEqual('test_agent', $agents['article-personalizable-headline']->plugin);
+    $this->assertEqual('test_extra_agent', $agents['article-personalizable-abstract']->plugin);
 
     // Now create another article with both fields populated and test the names
     // generated for the new agents.
@@ -450,8 +450,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $agents = personalize_agent_load_multiple(array(), array(), TRUE);
     // There should now be 7 agents altogether.
     $this->assertEqual(7, count($agents));
-    $this->assertTrue(isset($agents['node-personalizable-headline_2']));
-    $this->assertTrue(isset($agents['node-personalizable-abstract_2']));
+    $this->assertTrue(isset($agents['article-personalizable-headline_2']));
+    $this->assertTrue(isset($agents['article-personalizable-abstract_2']));
   }
 
   /**

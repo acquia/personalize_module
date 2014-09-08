@@ -90,7 +90,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
       }
     }
     if (empty($agent_type_options)) {
-      drupal_set_message(t('You don\'t have any agent types enabled. Please enable the personalize_target module or another module that provides an agent type.'), 'error');
+      drupal_set_message(t('You don\'t have any campaign types enabled. Please enable the personalize_target module or another module that provides a campaign type.'), 'error');
       return;
     }
     // Add a state to the form elements to make sure they only appear when the
@@ -326,7 +326,7 @@ function personalize_fields_form_submit($form, &$form_state) {
     // Extract information about the entity from the form.
     $entity_type = $form['#entity_type'];
     $entity = _personalize_fields_entity_from_form($form, $form_state);
-    list($entity_id) = entity_extract_ids($entity_type, $entity);
+    list($entity_id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
     if(!isset($form_state[$entity_type]->option_sets)) {
       $form_state[$entity_type]->option_sets = array();
     }
@@ -338,7 +338,7 @@ function personalize_fields_form_submit($form, &$form_state) {
         $option_set->data = array();
         $option_set->options = array();
         $option_set->plugin = 'fields';
-        $option_set->new_agent_title = ucfirst($entity_type) . ' ' . $field['instance']['label'];
+        $option_set->new_agent_title = ucfirst($bundle) . ' ' . $field['instance']['label'];
       } else {
         // Changes are made to the option set to reflect the user's changes and
         // compared against the option set for the entity in entity hooks.

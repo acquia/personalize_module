@@ -1830,8 +1830,8 @@ function personalize_generate_machine_name($name, $exists_callback = NULL) {
   $i = 1;
   while ($exists_callback($machine_name)) {
     if (isset($suffix)) {
+      // If we already have a suffix, replace it.
       $suffix_length = strlen($suffix);
-      // Strip 4 characters off the end to allow for generating a suffix.
       $machine_name = substr($machine_name, 0, -$suffix_length);
     }
     else {
