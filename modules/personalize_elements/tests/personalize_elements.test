@@ -76,7 +76,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText('You must choose an operation');
 
-    $edit['variation_type'] = 'replaceHtml';
+    $edit['variation_type'] = 'appendHtml';
     $this->assertFieldByName('options[0][option_label]', PERSONALIZE_CONTROL_OPTION_LABEL);
     $this->drupalPost('admin/structure/personalize/variations/personalize-elements/add', $edit, $this->getButton('save'));
     $this->assertText($options_count_error);
@@ -214,7 +214,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'agent_select' => 'test-agent',
       'title' => $this->randomName(),
       'selector' => '#some-id',
-      'variation_type' => 'replaceHtml',
+      'variation_type' => 'appendHtml',
       'options[1][option_label]' => 'first-option',
       'options[1][personalize_elements_content]' => '<script type="text/javascript">alert("xss");</script>',
     );
@@ -276,7 +276,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'agent_basic_info[title]' => $agent_name,
       'agent_basic_info[options][test_agent][use_client_side_goal_processing]' => FALSE,
       'title' => $this->randomName(),
-      'variation_type' => 'replaceHtml',
+      'variation_type' => 'appendHtml',
       'selector' => '#some-id',
       'add_control_option' => TRUE,
       'options[1][option_label]' => 'first-option',
@@ -315,6 +315,57 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $option_set = personalize_option_set_load(1, TRUE);
     $this->assertEqual('ohai', $option_set->options[1]['personalize_elements_content']);
     $this->assertEqual('<a href="/">kthxbai</a>', $option_set->options[2]['personalize_elements_content']);
+  }
+
+  /**
+   * Tests that inactive variation types are only available for backwards
+   * compatibility.
+   */
+  function testPersonalizeElementsStatus() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+
+    // First verify that the retired variation type is not available in a
+    // new form.
+    $this->drupalGet('admin/structure/personailze/variations/personalize-elements/add');
+    $this->assertNoRaw('<option value="replaceHtml">Replace the html</option>');
+
+    // Create an option set of an inactive variation type.
+    $option_set = array(
+      'label' => $this->randomName(),
+      'plugin' => 'elements',
+      'agent' => 'test-agent',
+      'executor' => 'personalizeElements',
+      'options' => array(
+        array(
+          'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
+          'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
+          'personalize_elements_content' => '',
+        ),
+        array(
+          'option_id' => personalize_generate_option_label(1),
+          'option_label' => $this->randomName(),
+          'personalize_elements_content' => $this->randomString(),
+        ),
+      ),
+      'data' => array(
+        'personalize_elements_selector' => '.some-class-name',
+        'personalize_elements_type' => 'replaceHtml',
+        'pages' => '',
+      ),
+    );
+    $option_set = personalize_option_set_save((object) $option_set);
+
+    // Edit the option set and verify that the inactive type is available in the
+    // variation type select list.
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/' . $option_set->osid . '/edit');
+    $this->assertOptionSelected('edit-variation-type', 'replaceHtml');
+
+    // Create a new element with an active variation type and verify that the
+    // edit page does not include the inactive variation type.
+    $active_option_set = $this->createPersonalizedElement(array('selector' => '.some-other-class-name', 'variation_type' => 'addClass'));
+    $this->drupalGet('admin/structure/personalize/variations/personalize-elements/manage/' . $active_option_set->osid . '/edit');
+    $this->assertNoRaw('<option value="replaceHtml">Replace the html</option>');
   }
 
   /**
@@ -360,7 +411,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertEqual($expected, $personalize_elements_settings['elements']);
 
     // Check for the contextual settings for a few of the variation types.
-    $this->assertEqual(t("Add CSS class"), $personalize_elements_settings['contextualVariationTypes']['addClass']);
+    $this->assertEqual(t("Add CSS class"), $personalize_elements_settings['contextualVariationTypes']['addClass']['name']);
     $this->assertFalse(isset($personalize_elements['contextualVariationTypes']['runJS']));
   }
 
@@ -388,7 +439,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
       'agent_select' => 'test-agent',
       'title' => $this->randomName(),
       'selector' => '#some-id',
-      'variation_type' => 'replaceHtml',
+      'variation_type' => 'appendHtml',
       'add_control_option' => TRUE,
       'pages' => '',
       'options[1][option_label]' => personalize_generate_option_label(1),

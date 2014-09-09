@@ -226,11 +226,14 @@ function personalize_elements_personalize_delete_link($option_set) {
 /**
  * Implements hook_personalize_elements_variation_types().
  */
-function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE) {
-  $types = array(
-    'replaceHtml' => array(
+function personalize_elements_personalize_elements_variation_types($filter_by_perms = TRUE, $filter_active = TRUE) {
+  $types = array();
+  if (!$filter_active) {
+    // Retired in favor of editHtml below.
+    $types['replaceHtml'] = array(
       'label' => t('Replace the html'),
       'needs_selector' => TRUE,
+      'active' => FALSE,
       'contextual' => array(
         'label' => t('Edit HTML'),
         'formitem' => array(
@@ -240,43 +243,77 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
           '#required' => TRUE,
         ),
       ),
-    ),
-    'addClass' => array(
-      'label' => t('Add a class'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Add CSS class'),
-        'formitem' => array(
-          '#type' => 'textfield',
-          '#title' => t('New class'),
-          '#required' => TRUE,
-        ),
+    );
+  }
+  $types['editHtml'] = array(
+    'label' => t('Edit the html'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Edit HTML'),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 6,
+        '#required' => TRUE,
       ),
     ),
-    'appendHtml' => array(
+  );
+  $types['editText'] = array(
+    'label' => t('Edit the text'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Edit text'),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('Text'),
+        '#rows' => 6,
+        '#required' => TRUE,
+      ),
+    ),
+    // Limits this option to selectors that only have children with the nodeType
+    // of 3 (text).
+    'limitByChildrenType' => '3',
+  );
+  $types['addClass'] = array(
+    'label' => t('Add a class'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Add CSS class'),
+      'formitem' => array(
+        '#type' => 'textfield',
+        '#title' => t('New class'),
+        '#required' => TRUE,
+      ),
+    ),
+  );
+  $types['appendHtml'] = array(
+    'label' => t('Append HTML'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
       'label' => t('Append HTML'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Append HTML'),
-        'formitem' => array(
-          '#type' => 'textarea',
-          '#title' => t('HTML'),
-          '#rows' => 4,
-          '#required' => TRUE,
-        ),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 4,
+        '#required' => TRUE,
       ),
     ),
-    'prependHtml' => array(
+  );
+  $types['prependHtml'] = array(
+    'label' => t('Prepend HTML'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
       'label' => t('Prepend HTML'),
-      'needs_selector' => TRUE,
-      'contextual' => array(
-        'label' => t('Prepend HTML'),
-        'formitem' => array(
-          '#type' => 'textarea',
-          '#title' => t('HTML'),
-          '#rows' => 4,
-          '#required' => TRUE,
-        ),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 4,
+        '#required' => TRUE,
       ),
     ),
   );
@@ -285,6 +322,7 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
       'label' => t('Run JavaScript code'),
       'needs_selector' => FALSE,
       'contextual' => FALSE,
+      'active' => TRUE,
     );
   }
   return $types;
@@ -338,6 +376,24 @@ function personalize_elements_get_option_set_for_variation($title, $agent_name, 
 }
 
 /**
+ * Generates an empty option to be included in a page variation.
+ *
+ * @param $option_id
+ *   The id for the option
+ * @param $option_label
+ *   The label for the option
+ * @return array
+ *   An option array
+ */
+function personalize_elements_get_option_for_variation($option_id, $option_label) {
+  $option = array(
+    'option_id' => $option_id,
+    'option_label' => $option_label,
+  );
+  return $option;
+}
+
+/**
  * Gets the variation types available for use within a contextual menu
  * specific to an element.
  */
@@ -346,7 +402,10 @@ function personalize_elements_contextual_menu_variations() {
   $options = array();
   foreach ($variation_types as $type => $info) {
     if ($info['contextual'] && $info['contextual'] !== FALSE) {
-      $options[$type] = $info['contextual']['label'];
+      $options[$type] = array(
+        'name' => $info['contextual']['label'],
+        'limitByChildrenType' => isset($info['limitByChildrenType']) ? $info['limitByChildrenType'] : '',
+      );
     }
   }
   return $options;

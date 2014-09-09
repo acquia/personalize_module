@@ -36,8 +36,9 @@
           else {
             selectedContent = selectedChoice.personalize_elements_content;
           }
-          if ($option_set.length == 0 && element.variation_type != 'runJS') {
-            // Only the runJS can do something with an empty Option Set.
+          // runJS does not require a selector and editHtml can result in an
+          // empty option set if the new html alters the DOM structure.
+          if ($option_set.length == 0 && ['runJS','editHtml'].indexOf(element.variation_type) == -1) {
             return;
           }
           Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
@@ -65,7 +66,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // We need to keep track of how we've changed the element, if only
       // to support previewing different options.
-      if (!this.controlContent.hasOwnProperty(osid)) {
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.html();
       }
       if (isControl) {
@@ -76,6 +77,56 @@
         Drupal.attachBehaviors($selector);
       }
 
+    }
+  };
+
+  Drupal.personalizeElements.editHtml = {
+    controlContent: {},
+    parentElement: {},
+    getOuterHtml: function($element) {
+      if ($element.length > 1) {
+        $element = $element.first();
+      }
+      // jQuery doesn't have an outerHTML so we need to clone the child and
+      // give it a parent so that we can call that parent's html function.
+      // This ensures we get only the html of the $selector and not siblings.
+      var $element = $element.clone().wrap('<div>').parent();
+
+      // Now return the child html of our wrapper parent tag.
+      return $element.html();
+    },
+    execute : function($selector, selectedContent, isControl, osid) {
+      // Keep track of how the element has been changed in order to preview
+      // different options.
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
+        this.controlContent[osid] = this.getOuterHtml($selector);
+      }
+      if (!this.parentElement.hasOwnProperty(osid)) {
+        // The selector gets replaced so we need to update based on the parent.
+        this.parentElement[osid] = $selector.parent();
+      }
+      var $parent = this.parentElement[osid];
+      if (isControl) {
+        $parent.html(this.controlContent[osid]);
+      } else {
+        $parent.html(selectedContent);
+      }
+    }
+  };
+
+  Drupal.personalizeElements.editText = {
+    controlContent: {},
+    execute : function($selector, selectedContent, isControl, osid) {
+      // Keep track of how the element has been changed in order to preview
+      // different options.
+      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
+        this.controlContent[osid] = $selector.text();
+      }
+      if (isControl) {
+        $selector.text(this.controlContent[osid]);
+      } else {
+        $selector.text(selectedContent);
+      }
     }
   };
 
