@@ -245,20 +245,6 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
       ),
     );
   }
-  $types['editHtml'] = array(
-    'label' => t('Edit the html'),
-    'needs_selector' => TRUE,
-    'active' => TRUE,
-    'contextual' => array(
-      'label' => t('Edit HTML'),
-      'formitem' => array(
-        '#type' => 'textarea',
-        '#title' => t('HTML'),
-        '#rows' => 6,
-        '#required' => TRUE,
-      ),
-    ),
-  );
   $types['editText'] = array(
     'label' => t('Edit the text'),
     'needs_selector' => TRUE,
@@ -275,6 +261,20 @@ function personalize_elements_personalize_elements_variation_types($filter_by_pe
     // Limits this option to selectors that only have children with the nodeType
     // of 3 (text).
     'limitByChildrenType' => '3',
+  );
+  $types['editHtml'] = array(
+    'label' => t('Edit the html'),
+    'needs_selector' => TRUE,
+    'active' => TRUE,
+    'contextual' => array(
+      'label' => t('Edit HTML'),
+      'formitem' => array(
+        '#type' => 'textarea',
+        '#title' => t('HTML'),
+        '#rows' => 6,
+        '#required' => TRUE,
+      ),
+    ),
   );
   $types['addClass'] = array(
     'label' => t('Add a class'),
