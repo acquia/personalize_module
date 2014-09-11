@@ -487,14 +487,14 @@ function personalize_agent_get_settings() {
 /**
  * Generate the agent map settings for an agent.
  */
-function personalize_agent_get_map_settings($agent_name, $option_set = NULL) {
+function personalize_agent_get_map_settings($agent_name, $option_set = NULL, &$assets = array()) {
   $agent = personalize_agent_load_agent($agent_name);
   // Bail if for some reason the agent could not be instantiated.
   if (!$agent) {
     return;
   }
 
-  $assets = $agent->getAssets();
+  $assets = array_merge_recursive($assets, $agent->getAssets());
   $data = $agent->getData();
   // Add visitor context assets.
   $visitor_context = array();
@@ -843,9 +843,11 @@ function _personalize_loaded_object_sort(&$objects, $sort) {
  *   The Option Set the element corresponds to.
  */
 function personalize_element_with_option_set(&$element, $option_set) {
+  $loaded_mvts = &drupal_static(__FUNCTION__, array());
   $attached = isset($element['#attached']) ? $element['#attached'] : array();
   $agent_name = $option_set->agent;
-  if (isset($option_set->mvt) && $mvt = personalize_mvt_load($option_set->mvt)) {
+  if (isset($option_set->mvt) && !in_array($option_set->mvt, $loaded_mvts) && $mvt = personalize_mvt_load($option_set->mvt)) {
+    $loaded_mvts[] = $option_set->mvt;
     if (count($mvt->option_sets) > 1) {
       // Always use the agent specified in the MVT rather than the Option
       // Set's agent, in case these are somehow different.
@@ -862,7 +864,6 @@ function personalize_element_with_option_set(&$element, $option_set) {
     }
   }
 
-
   // Now add a js setting to map the agent name to information about its type
   // and enabled visitor contexts.
   if (!isset($assets['js'])) {
@@ -873,7 +874,7 @@ function personalize_element_with_option_set(&$element, $option_set) {
     'data' => array(
       'personalize' => array(
         'agent_map' => array(
-          $agent_name => personalize_agent_get_map_settings($agent_name, $option_set),
+          $agent_name => personalize_agent_get_map_settings($agent_name, $option_set, $assets),
         ),
         'option_sets' => _personalize_convert_option_set_to_js_setting($option_set)
       )

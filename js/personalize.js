@@ -736,7 +736,7 @@
           agents[agentName] = agentData;
         } else {
           // Merge in decision point data.
-          $.extend(agents[agentName].decisionPoints, agentData.decisionPoints);
+          $.extend(true, agents[agentName].decisionPoints, agentData.decisionPoints);
           // Merge in fixed targeting data.
           $.extend(agents[agentName].fixedTargeting, agentData.fixedTargeting);
         }
@@ -808,7 +808,7 @@
 
     agentData.decisionPoints[decision_point].choices[decision_name] = choices;
     agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
-    addDecisionCallback(executor, agent_name, decision_point, $option_set, osid);
+    addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid);
 
     // Check to see if this decision is already in storage.
     var decisions = readDecisionsFromStorage(agent_name, decision_point);
@@ -883,7 +883,7 @@
    * @param osid
    *   The option set id.
    */
-  function addDecisionCallback(executor, agent_name, decision_point, $option_set, osid) {
+  function addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid) {
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid) {
       return function(decision) {
@@ -894,8 +894,9 @@
     }(executor, $option_set, osid));
     // Now add it to the array for this decision name.
     decisionCallbacks[agent_name] = decisionCallbacks[agent_name] || {};
-    decisionCallbacks[agent_name][decision_point] = decisionCallbacks[agent_name][decision_point] || [];
-    decisionCallbacks[agent_name][decision_point].push(callback);
+    decisionCallbacks[agent_name][decision_point] = decisionCallbacks[agent_name][decision_point] || {};
+    decisionCallbacks[agent_name][decision_point][decision_name] = decisionCallbacks[agent_name][decision_point][decision_name] || {};
+    decisionCallbacks[agent_name][decision_point][decision_name][osid] = callback;
   }
 
   /**
@@ -914,21 +915,22 @@
     var callbacks = {};
     if (decisionCallbacks.hasOwnProperty(agent_name) &&
       decisionCallbacks[agent_name].hasOwnProperty(decision_point)) {
-      callbacks[decision_point] = decisionCallbacks[agent_name][decision_point];
+      callbacks = decisionCallbacks[agent_name][decision_point];
     }
     // Call each executor callback.
-    for (var decision_point in decisions) {
-      if (decisions.hasOwnProperty(decision_point) && callbacks.hasOwnProperty(decision_point)) {
-        var num = callbacks[decision_point].length;
-        for (var j=0; j < num; j++) {
-          callbacks[decision_point][j].call(undefined, decisions[decision_point]);
-        }
-        // If the option set is shareable, push the decision to the
-        // URL.
-        if (optionSetIsStateful(decision_point)) {
-          var state = {};
-          state[decision_point] = decisions[decision_point];
-          $.bbq.pushState(state);
+    for (var decision in decisions) {
+      if (decisions.hasOwnProperty(decision) && callbacks.hasOwnProperty(decision)) {
+        for (var osid in callbacks[decision]) {
+          if (callbacks[decision].hasOwnProperty(osid)) {
+            callbacks[decision][osid].call(undefined, decisions[decision]);
+            // If the option set is shareable, push the decision to the
+            // URL.
+            if (optionSetIsStateful(osid)) {
+              var state = {};
+              state[osid] = decisions[decision];
+              $.bbq.pushState(state);
+            }
+          }
         }
       }
     }
