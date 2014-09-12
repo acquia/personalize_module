@@ -51,6 +51,84 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
+   * Asserts that the expected settings are present for an option set.
+   *
+   * @param $personalize_settings
+   *   The settings to check
+   * @param $osid
+   *   The id of hte Option Set to check for.
+   * @param $decision_name
+   *   The decision name expected to be on the option set.
+   * @param $decision_point
+   *   The decision point expected to be on the option set.
+   * @param $agent_name
+   *   The agent name expected to be on the option set.
+   * @param $num_options
+   *   THe number of options that option set should have
+   */
+  public function assertOptionSetSettings($personalize_settings, $osid, $decision_name, $decision_point, $agent_name, $num_options) {
+    $this->assertTrue(isset($personalize_settings['option_sets'][$osid]));
+    $this->assertEqual($agent_name, $personalize_settings['option_sets'][$osid]['agent']);
+    $this->assertEqual($decision_name, $personalize_settings['option_sets'][$osid]['decision_name']);
+    $this->assertEqual($decision_point, $personalize_settings['option_sets'][$osid]['decision_point']);
+    $expected_options = $expected_option_names = array();
+    for ($j = 1; $j <= $num_options; $j++) {
+      // Get the character corresponding to the option
+      // index.
+      $char = chr($j + 64);
+      $expected_options[] = array(
+        'option_id' => 'option-' . $char,
+        'option_label' => 'Option ' . $char,
+      );
+      $expected_option_names[] = 'option-' . $char;
+    }
+    $this->assertEqual($expected_options, $personalize_settings['option_sets'][$osid]['options']);
+    $this->assertEqual($expected_option_names, $personalize_settings['option_sets'][$osid]['option_names']);
+  }
+
+  /**
+   * Asserts that the expected settings are present for an MVT.
+   *
+   * @param $personalize_settings
+   *   The settings to check
+   * @param $mvt_name
+   *   The name of the MVT to check for
+   * @param $option_set_counts
+   *   An array of option set counts indicating the number of options
+   *   expected to be found in each of the MVT's option sets.
+   */
+  public function assertMVTSettings($personalize_settings, $mvt_name, $option_set_counts) {
+    $num_option_sets = count($option_set_counts);
+    // Confirm that the MVT settings have been loaded as expected.
+    $this->assertTrue(isset($personalize_settings['mvt']));
+    $this->assertTrue(isset($personalize_settings['mvt'][$mvt_name]));
+    $this->assertEqual($num_option_sets, count($personalize_settings['mvt'][$mvt_name]['option_sets']));
+    // Assert that each Option Set is represented in the MVT settings.
+    $delta_num = 1;
+    foreach ($option_set_counts as $i => $count) {
+      $osid = 'osid-' . ($i + 1);
+      $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']['option_sets'][$osid]));
+      $this->assertEqual('test-mvt', $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['decision_point']);
+      $this->assertEqual($osid, $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['decision_name']);
+      $expected_options = $expected_option_names = array();
+      for ($j = 1; $j <= $count; $j++) {
+        // Get the character corresponding to the option
+        // index.
+        $char = chr($j + 64);
+        $expected_options[] = array(
+          'bid' => 'block_delta_' . $delta_num,
+          'option_id' => 'option-' . $char,
+          'option_label' => 'Option ' . $char,
+        );
+        $expected_option_names[] = 'option-' . $char;
+        $delta_num++;
+      }
+      $this->assertEqual($expected_options, $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['options']);
+      $this->assertEqual($expected_option_names, $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['option_names']);
+    }
+  }
+
+  /**
    * Helper function to assert that explicit targeting for a particular option
    * set matches the expected rules.
    *
@@ -225,6 +303,34 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
     field_create_instance($instance);
     return $field;
   }
+
+  /**
+   * Creates the required number of custom blocks.
+   *
+   * @param int $num
+   *   The number of blocks to create.
+   *
+   * @return array
+   *   An array of block deltas for use in personalized blocks.
+   */
+  protected function createCustomBlocks($num = 1) {
+    $deltas = array();
+    module_load_include('inc', 'personalize_blocks', 'personalize_blocks.admin');
+    for ($i = 1; $i <= $num; $i++) {
+      $title = t('Custom block @num', array('@num' => $i));
+      $values = array(
+        'title' => $title,
+        'info' => $title,
+        'body' => array(
+          'format' => 'filtered_html',
+          'value' => 'Some value',
+        )
+      );
+      $deltas[] = _personalize_blocks_add_custom_block($values);
+    }
+    return $deltas;
+  }
+
 }
 
 /**
@@ -265,7 +371,9 @@ class PersonalizeTest extends PersonalizeBaseTest {
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
     $this->resetAll();
-
+    $this->drupalGet('');
+    // Confirm that there is no js file loaded for the test agent.
+    $this->assertNoRaw('personalize_test.js');
     // Call the test page with no params - results in just one Option Set
     // with two options being output.
     $this->drupalGet('personalize-test/personalized-page');
@@ -280,11 +388,12 @@ class PersonalizeTest extends PersonalizeBaseTest {
       )
     );
     $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
+    // Assert that the js for the agent has been loaded.
+    $this->assertRaw('personalize_test.js');
 
     // Assert that the option set has been output.
     $this->assertOptionSet('test-os-1');
-    // @todo Add more tests for the option set settings info.
-
+    $this->assertOptionSetSettings($personalize_settings, 'test-os-1', 'test-os-1', 'test-os-1', 'test-agent', 2);
     // Call the test page specifying one option set with 3 option, and one
     // goal with the name 'my-goal'.
     $this->drupalGet('personalize-test/personalized-page/3/my-goal');
@@ -546,34 +655,33 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $mvt->agent = 'test-agent';
     $mvt->machine_name = 'test-mvt';
     $mvt->option_sets = array();
-    $block_ids = array('comment_delta_recent', 'system_delta_powered-by', 'user_delta_online', 'user_delta_new');
+    // Create some custom blocks to use as variations.
+    $block_ids = $this->createCustomBlocks(8);
+    $option_counts = array(2, 3, 3);
     for ($i = 0; $i < 3; $i++) {
-      // Each option set will have 2 options.
-      $options = array(
-        array('bid' => array_shift($block_ids)),
-        array('bid' => array_shift($block_ids)),
-      );
+      // Add different numbers of options to the option sets.
+      $options = array();
+      for($j = 0; $j < $option_counts[$i]; $j++) {
+        $options[] = array('bid' => array_shift($block_ids));
+      }
       $option_set = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => 'test-agent', 'options' => $options, 'data' => array('block_title' => $this->randomName())));
       $mvt->option_sets[$option_set->osid] = $option_set;
     }
     personalize_mvt_save($mvt);
-    // Call the test page specifying 3 Option Sets with 3, 4 and 2 options respectively,
-    // with 1 goal to process and specifying that the option sets should form a multi-
-    // variate test.
+    // Call the test page specifying the multivariate test to be rendered.
     $this->drupalGet('personalize-test/personalized-page/test-mvt/my-goal/0');
     $settings = $this->drupalGetSettings();
     $personalize_settings = $settings['personalize'];
+    $this->assertMVTSettings($personalize_settings, 'test-mvt', $option_counts);
 
-    // Confirm that we have settings for 3 Option Sets.
-    $this->assertEqual(3, count($personalize_settings['option_sets']));
-    // Confirm that the MVT settings have been loaded as expected.
-    $this->assertTrue(isset($personalize_settings['mvt']));
-    $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']));
-    $this->assertEqual(3, count($personalize_settings['mvt']['test-mvt']['option_sets']));
-    // Assert that each Option Set is represented in the MVT settings.
-    $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']['option_sets']['osid-1']));
-    $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']['option_sets']['osid-2']));
-    $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']['option_sets']['osid-3']));
+    // Now call the test page specifying the MVT test plus a regular option
+    // set that is not part of the MVT.
+    $this->drupalGet('personalize-test/personalized-page/test-mvt,2/my-goal/0');
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    // The MVT settings should be exactly the same.
+    $this->assertMVTSettings($personalize_settings, 'test-mvt', $option_counts);
+    $this->assertOptionSetSettings($personalize_settings, 'test-os-2', 'test-os-2', 'test-os-2', 'test-agent', 2);
   }
 
   /**

@@ -131,13 +131,14 @@ function personalize_test_personalized_page($personalized_content = NULL, $goal_
  * @return
  *   A stdClass object representing an option set.
  */
-function create_dummy_option_set($osid, $agent, $num_options, $decision_name = NULL) {
+function create_dummy_option_set($osid, $agent, $num_options, $decision_name = NULL, $decision_point = NULL) {
   $option_set = array(
     'osid' => $osid,
     'plugin' => 'test',
     'label' => 'Option Set ' . $osid,
     'agent' => $agent,
-    'decision_name' => $decision_name ? $decision_name : '',
+    'decision_name' => $decision_name ? $decision_name : $osid,
+    'decision_point' => $decision_point ? $decision_point : $osid,
     'executor' => 'show',
     'stateful' => 1,
   );

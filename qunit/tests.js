@@ -137,6 +137,7 @@ QUnit.test( "executor test", function( assert ) {
 
 
 QUnit.module("Personalize page tests", {
+  'restore': {},
   'setup': function() {
     Drupal.personalize.resetAll();
     Drupal.settings.personalize = {
@@ -146,7 +147,7 @@ QUnit.module("Personalize page tests", {
       'agent_map': {
         'my-agent': {
           'active': 1,
-          'cache_decisions': true,
+          'cache_decisions': false,
           'enabled_contexts': [],
           'type': 'test_agent'
         }
@@ -180,12 +181,20 @@ QUnit.module("Personalize page tests", {
       }
     };
     Drupal.personalize.agents.test_agent = {};
+    this.restore.execute = Drupal.personalize.executors.show.execute;
+  },
+  'teardown': function() {
+    if (this.restore.hasOwnProperty('execute')) {
+      Drupal.personalize.executors.show.execute = this.restore.execute;
+    }
+    $.bbq.removeState();
   }
 });
 
 QUnit.asyncTest("personalize page simple", function( assert ) {
+  expect(7);
   QUnit.start();
-  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
     QUnit.start();
     assert.equal(name, 'my-agent');
     assert.ok($.isEmptyObject(visitor_context));
@@ -193,6 +202,10 @@ QUnit.asyncTest("personalize page simple", function( assert ) {
     assert.equal(choices['osid-1'][0], 'first-option');
     assert.equal(choices['osid-1'][1], 'second-option');
     assert.equal(decision_point, 'osid-1');
+    callback.call(null, {'osid-1': 'second-option'});
+  };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    assert.equal('second-option', choice_name);
   };
 
   QUnit.stop();
@@ -201,24 +214,33 @@ QUnit.asyncTest("personalize page simple", function( assert ) {
 
 QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
   // The getDecisionsForPoint method should be called twice, once for each option set.
-  expect(6);
+  expect(8);
   QUnit.start();
   // Add a second option set.
   addOptionSetToDrupalSettings('osid-2', 'osid-2', 'osid-2');
-  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
-    QUnit.start();
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
     switch(decision_point) {
       case 'osid-1':
         assert.equal(name, 'my-agent');
         assert.ok($.isEmptyObject(visitor_context));
         assert.ok(choices.hasOwnProperty('osid-1'), 'Got osid-1');
-        QUnit.stop();
+        callback.call(null, {'osid-1': 'second-option'});
         break;
       case 'osid-2':
         assert.equal(name, 'my-agent');
         assert.ok($.isEmptyObject(visitor_context));
         assert.ok(choices.hasOwnProperty('osid-2'), 'Got osid-2');
+        callback.call(null, {'osid-2': 'first-option'});
+        QUnit.start();
         break;
+    }
+  };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    if (osid == 'osid-1') {
+      assert.equal('second-option', choice_name);
+    }
+    if (osid == 'osid-2') {
+      assert.equal('first-option', choice_name);
     }
   };
 
@@ -228,28 +250,60 @@ QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
 
 QUnit.asyncTest("personalize page 2 option sets one decision", function( assert ) {
   // The getDecisionsForPoint method should be called only once for the two option sets.
-  expect(4)
+ expect(6);
   QUnit.start();
   // Create 2 option sets with the same decision name.
   addOptionSetToDrupalSettings('osid-2', 'osid-2', 'osid-2');
   Drupal.settings.personalize.option_sets['osid-1'].decision_name = Drupal.settings.personalize.option_sets['osid-2'].decision_name = 'my_decision';
   Drupal.settings.personalize.option_sets['osid-1'].decision_point = Drupal.settings.personalize.option_sets['osid-2'].decision_point = 'my_decision_point';
 
-  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
     QUnit.start();
     assert.equal(name, 'my-agent');
     assert.ok($.isEmptyObject(visitor_context));
     assert.ok(choices.hasOwnProperty('my_decision'));
     assert.equal(decision_point, 'my_decision_point');
+    callback.call(null, {'my_decision': 'first-option'});
   };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    assert.equal('first-option', choice_name);
+  };
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
 
+QUnit.asyncTest("personalize page MVT", function( assert ) {
+  // The getDecisionsForPoint method should be called only once for the two option sets.
+  expect(7);
+  QUnit.start();
+  // Create an MVT.
+  var mvt_name = 'mymvt';
+  addMVTToDrupalSettings(mvt_name, 2);
+
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.ok(choices.hasOwnProperty('osid-2'));
+    assert.equal(decision_point, mvt_name);
+    callback.call(null, {'osid-1': 'second-option', 'osid-2': 'first-option'});
+  };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    if (osid == 'osid-1') {
+      assert.equal('second-option', choice_name);
+    }
+    if (osid == 'osid-2') {
+      assert.equal('first-option', choice_name);
+    }
+  };
   QUnit.stop();
   Drupal.personalize.personalizePage(Drupal.settings);
 });
 
 QUnit.asyncTest("personalize page with visitor context", function( assert ) {
   // The getDecisionsForPoint method should be called only once for the two option sets.
-  expect(6)
+  expect(7);
   QUnit.start();
   // Set up the agent to have a user profile context enabled.
   Drupal.settings.personalize.agent_map['my-agent'].enabled_contexts = {'user_profile_context': {'my_user_profile_field': 'my_user_profile_field'}};
@@ -257,7 +311,7 @@ QUnit.asyncTest("personalize page with visitor context", function( assert ) {
   Drupal.settings.personalize_user_profile_context = {
     'my_user_profile_field': 'my_user_profile_value'
   };
-  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, callback) {
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
     QUnit.start();
     assert.equal(name, 'my-agent');
     assert.ok(choices.hasOwnProperty('osid-1'));
@@ -265,13 +319,56 @@ QUnit.asyncTest("personalize page with visitor context", function( assert ) {
     assert.ok(visitor_context.hasOwnProperty('my_user_profile_field'));
     assert.equal(1, visitor_context.my_user_profile_field.length);
     assert.equal("my_user_profile_value", visitor_context.my_user_profile_field[0]);
+    callback.call(null, {'osid-1': 'second-option'});
   };
-
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    assert.equal('second-option', choice_name);
+  };
   QUnit.stop();
   Drupal.personalize.personalizePage(Drupal.settings);
 });
 
+QUnit.asyncTest("stateful option set", function( assert ) {
+  expect(8);
+  QUnit.start();
+  // Add a stop call for each asynchronous function we want to put
+  // an assertion in.
+  QUnit.stop();
+  QUnit.stop();
+  QUnit.stop();
+  Drupal.settings.personalize.option_sets['osid-1'].stateful = 1;
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.equal(choices['osid-1'][0], 'first-option');
+    assert.equal(choices['osid-1'][1], 'second-option');
+    assert.equal(decision_point, 'osid-1');
+    callback.call(null, {'osid-1': 'second-option'});sss
+  };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    assert.equal('second-option', choice_name);
+    QUnit.start();
+  };
+
+  Drupal.personalize.personalizePage(Drupal.settings);
+  $(window).bind( 'hashchange', function(e) {
+    var state = $.param.fragment();
+    if (state == 'osid-1=second-option') {
+      // This assertion may seem meaningless given the condition
+      // above, but we declare at the start of the test how many
+      // assertions we expect, so the test will fail if we don't
+      // get here.
+      assert.ok(state, 'stateful option set works');
+      QUnit.start();
+    }
+  });
+
+});
+
 function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
+
   Drupal.settings.personalize.option_sets[osid] = {
     'agent': 'my-agent',
     'data': [],
@@ -297,4 +394,35 @@ function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
     'stateful': 0,
     'winner': null
   };
+}
+
+function addMVTToDrupalSettings(name, num_option_sets) {
+  for (var i = 0; i < num_option_sets; i++) {
+    var osid = 'osid-' + (i+1);
+    Drupal.settings.personalize.option_sets[osid] = {
+      'agent': 'my-agent',
+      'data': [],
+      'decision_name': osid,
+      'decision_point': name,
+      'executor': 'show',
+      'label': 'My Test',
+      'mvt': name,
+      'option_names': ['first-option', 'second-option'],
+      'options': [
+        {
+          'option_id': 'first-option',
+          'option_lablel': 'First Option'
+        },
+        {
+          'option_id': 'second-option',
+          'option_label': 'Second Option'
+        }
+      ],
+      'osid': osid,
+      'plugin': 'my_os_plugin',
+      'selector': '.some-class',
+      'stateful': 0,
+      'winner': null
+    };
+  }
 }
