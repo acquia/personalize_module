@@ -2280,11 +2280,17 @@ function personalize_agent_goals_form_submit($form, &$form_state) {
   }
   foreach ($form_values as $goal) {
     if (!empty($goal['action_name'])) {
-      personalize_goal_save($agent_name, $goal['action_name'], $goal['value']);
-      // Add this to the array of saved goals so that at the end
-      // we know that anything in $existing_goals but not in $saved_goals
-      // needs to be deleted.
-      $saved_goals[$goal['action_name']] = isset($existing_goals[$goal['action_name']]) ? $existing_goals[$goal['action_name']] : 'new';
+      try {
+        personalize_goal_save($agent_name, $goal['action_name'], $goal['value']);
+
+        // Add this to the array of saved goals so that at the end
+        // we know that anything in $existing_goals but not in $saved_goals
+        // needs to be deleted.
+        $saved_goals[$goal['action_name']] = isset($existing_goals[$goal['action_name']]) ? $existing_goals[$goal['action_name']] : 'new';
+      }
+      catch (Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
     }
   }
   // The difference between existing goals and saved goals are the ones

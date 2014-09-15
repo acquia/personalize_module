@@ -150,6 +150,11 @@ interface PersonalizeAgentGoalInterface {
   public function sendGoal($goal_name, $value = NULL);
 }
 
+/**
+ * Exceptions specific to personalize functionality.
+ */
+class PersonalizeException extends Exception {};
+
 interface PersonalizeAgentReportInterface {
 
   /**

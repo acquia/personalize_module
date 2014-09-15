@@ -1392,6 +1392,8 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
    * Tests adding and editing goals for a campaign.
    */
   function testAgentGoalEdit() {
+    module_enable(array('personalize_test_extra_agent'));
+
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
 
@@ -1432,6 +1434,18 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertOptionSelected('edit-goals-0-action-name', 'user_login');
     $this->assertOptionSelected('edit-goals-1-action-name', 'user_register');
     $this->assertNoFieldByName('goals[2][action_name]');
+
+    // Verify that we cannot add goals to agents that do not support them.
+    $agent = $this->createTestAgent(array('agent_type' => 'test_extra_agent'));
+    $agent_name = $agent->getMachineName();
+    try {
+      personalize_goal_save($agent_name, 'user_login', 1);
+      $this->fail('Should not get here.');
+    }
+    catch (Exception $e) {
+      $this->assertTrue($e instanceof PersonalizeException);
+      $this->assertEqual($e->getMessage(), t('Goals are not supported by this campaign.'));
+    }
   }
 
   /**
@@ -1823,6 +1837,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'report' => '/admin/structure/personalize/manage/' . $first_agent_machine_name . '/report',
           'view' => '/admin/structure/personalize/manage/' . $first_agent_machine_name,
         ),
+        'supportsGoals' => TRUE,
         'goals' => NULL,
         'verified' => TRUE,
       ),
@@ -1840,6 +1855,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'report' => '',
           'view' => '/admin/structure/personalize/manage/' . $second_agent_machine_name,
         ),
+        'supportsGoals' => FALSE,
         'goals' => NULL,
         'verified' => TRUE,
       ),

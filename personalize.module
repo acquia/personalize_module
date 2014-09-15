@@ -447,14 +447,17 @@ function personalize_agent_get_settings() {
   $actions = visitor_actions_get_actions();
   // List the campaigns in Drupal.settings.
   foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
-    foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
-      if (isset($actions[$goal->action])) {
-        $goals[$goal->action] = $actions[$goal->action]['label'];
-      }
-    }
     $plugin = personalize_agent_load_agent($agent->machine_name);
     if (!$plugin) {
       continue;
+    }
+    $supports_goals = $plugin instanceof PersonalizeAgentGoalInterface;
+    if ($supports_goals) {
+      foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
+        if (isset($actions[$goal->action])) {
+          $goals[$goal->action] = $actions[$goal->action]['label'];
+        }
+      }
     }
     $current_status = personalize_agent_get_status($agent->machine_name);
     list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
@@ -473,6 +476,7 @@ function personalize_agent_get_settings() {
         'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
         'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
       ),
+      'supportsGoals' => $supports_goals,
       'goals' => (isset($goals)) ? $goals : NULL,
       'verified' => $verified,
     );
@@ -594,7 +598,12 @@ function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
 function personalize_visitor_action_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   if (isset($values['personalize_campaign']) && isset($values['personalize_goal']) && $values['personalize_goal']) {
-    personalize_goal_save($values['personalize_campaign'], $values['machine_name'], $values['personalize_goal_value']);
+    try {
+      personalize_goal_save($values['personalize_campaign'], $values['machine_name'], $values['personalize_goal_value']);
+    }
+    catch (Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+    }
   }
 }
 
@@ -2747,6 +2756,10 @@ function personalize_goal_action_subscriber($name, $context) {
  *   The reward value to send when the goal is triggered.
  */
 function personalize_goal_save($agent_name, $action_name, $goal_value) {
+  $agent = personalize_agent_load_agent($agent_name);
+  if (!($agent instanceof PersonalizeAgentGoalInterface)) {
+    throw new PersonalizeException(t('Goals are not supported by this campaign.'));
+  }
   // If this is the first campaign that uses this action as a goal, the
   // action subscribers cache will need to be rebuilt.
   $exists = db_select('personalize_campaign_goals', 'g')
