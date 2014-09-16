@@ -573,7 +573,6 @@ function personalize_fields_process_form_option_sets($entity_type, $entity, $fie
   // hook_entity_update.  Otherwise we add the info to the entity so that
   // it will be processed on hook_entity_insert.
   if ($entity_id && isset($option_set->is_new)) {
-    personalize_fields_option_set_save($option_set, $entity_type, $entity, $field_name);
     try {
       personalize_fields_option_set_save($option_set, $entity_type, $entity, $field_name);
     }
