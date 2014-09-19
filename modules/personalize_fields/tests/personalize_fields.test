@@ -176,7 +176,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][1][value]'] = 'second option';
     $this->drupalPost(NULL, $edit, t('Save'));
     $option_set = personalize_option_set_load(2);
-    $second_agent = 'article-personalizable-headline_2';
+    $second_agent = 'article-personalizable-headline-2';
     $this->assertEqual($second_agent, $option_set->agent);
 
     // Add another headline option to the first node and confirm that the agent is paused.
@@ -300,7 +300,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
       'field_name' => 'article_headline',
     );
     $this->assertEqual($field_info, $option_set->field_info);
-    $third_agent = 'article-personalizable-headline_3';
+    $third_agent = 'article-personalizable-headline-3';
     personalize_agent_set_status($third_agent, PERSONALIZE_STATUS_RUNNING);
     // Now remove all but one option.
     $edit['article_headline[und][1][value]'] = '';
@@ -450,8 +450,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $agents = personalize_agent_load_multiple(array(), array(), TRUE);
     // There should now be 7 agents altogether.
     $this->assertEqual(7, count($agents));
-    $this->assertTrue(isset($agents['article-personalizable-headline_2']));
-    $this->assertTrue(isset($agents['article-personalizable-abstract_2']));
+    $this->assertTrue(isset($agents['article-personalizable-headline-2']));
+    $this->assertTrue(isset($agents['article-personalizable-abstract-2']));
   }
 
   /**
