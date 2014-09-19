@@ -1854,7 +1854,7 @@ function personalize_generate_machine_name($name, $exists_callback = NULL) {
       $machine_name = substr($machine_name, 0, PERSONALIZE_MACHINE_NAME_MAXLENGTH - 4);
     }
 
-    $suffix = ('_' . ++$i);
+    $suffix = ('-' . ++$i);
     $machine_name .= $suffix;
   }
   return $machine_name;
