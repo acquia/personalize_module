@@ -838,13 +838,26 @@ function personalize_fields_entity_delete($entity, $type) {
   // [entity_type]:[entity_id]:
   $partial_cid = _personalize_fields_get_cid_for_field($type, $entity_id, '');
   $result = db_select('cache_personalize_fields', 'pf')
-    ->fields('pf', array('data'))
+    ->fields('pf', array('cid', 'data'))
     ->condition('pf.cid', $partial_cid . '%', 'LIKE')
     ->execute();
-  // Delete the option sets. Cache table entries will get deleted during
-  // hook_personalize_option_set_delete below.
   foreach ($result as $row) {
-    personalize_option_set_delete($row->data);
+    $osid = $row->data;
+    if (!is_numeric($osid)) {
+      $osid = unserialize($osid);
+    }
+    if (!$osid) {
+      // This was a cache table entry for a personalizable field on the entity
+      // that did not have an option set associated wtih it (because it either
+      // had no values or only a single value). Just remove it from the cache
+      // table.
+      cache_clear_all($row->cid, PERSONALIZE_FIELDS_CACHE_BIN);
+    }
+    else {
+      // Delete the option set. The cache table entry will get deleted during
+      // hook_personalize_option_set_delete below.
+      personalize_option_set_delete($row->data);
+    }
   }
 }
 

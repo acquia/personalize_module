@@ -2148,14 +2148,15 @@ function personalize_option_set_ajax($decision_name, $choice_name) {
  *   The ID of the option set to delete.
  */
 function personalize_option_set_delete($osid) {
-  $option_set = personalize_option_set_load($osid);
-  db_delete('personalize_option_sets')
-    ->condition('osid', $osid)
-    ->execute();
-  // Pause the campaign because changes have been made.
-  personalize_pause_if_running($option_set->agent);
+  if ($option_set = personalize_option_set_load($osid)) {
+    db_delete('personalize_option_sets')
+      ->condition('osid', $osid)
+      ->execute();
+    // Pause the campaign because changes have been made.
+    personalize_pause_if_running($option_set->agent);
 
-  module_invoke_all('personalize_option_set_delete', $option_set);
+    module_invoke_all('personalize_option_set_delete', $option_set);
+  }
 }
 
 /**
