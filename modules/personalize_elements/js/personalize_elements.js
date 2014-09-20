@@ -17,6 +17,10 @@
           document.location.href = base + path + '?' + param + '=' + osid + '--' + choice_name;
         }
         else {
+          // Add the personalize data attribute for the option set.
+          if ($option_set.length > 0) {
+            $option_set.attr('data-personalize', osid);
+          }
           var choices = Drupal.settings.personalize.option_sets[osid].options,  selectedChoice = null, selectedContent = null, isControl = false, choiceIndex = null, choice = null;
           if (choice_name) {
             for (choiceIndex in choices) {
@@ -82,7 +86,6 @@
 
   Drupal.personalizeElements.editHtml = {
     controlContent: {},
-    parentElement: {},
     getOuterHtml: function($element) {
       if ($element.length > 1) {
         $element = $element.first();
@@ -101,15 +104,20 @@
       if (isControl && !this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
-      if (!this.parentElement.hasOwnProperty(osid)) {
-        // The selector gets replaced so we need to update based on the parent.
-        this.parentElement[osid] = $selector.parent();
+      if ($selector.length === 0) {
+        $selector = $('[data-personalize="' + osid + '"]');
       }
-      var $parent = this.parentElement[osid];
       if (isControl) {
-        $parent.html(this.controlContent[osid]);
+        $selector.replaceWith(this.controlContent[osid]);
       } else {
-        $parent.html(selectedContent);
+        if (selectedContent.charAt(0) != '<') {
+          // We need this content to be wrapped in a tag so that it can be
+          // marked with the osid for later selection.
+          selectedContent = '<span>' + selectedContent + '</span>';
+        }
+        var $newContent = $(selectedContent).replaceAll($selector);
+        // Add the data attribute to the new content.
+        $newContent.attr('data-personalize', osid);
       }
     }
   };
