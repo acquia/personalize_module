@@ -504,7 +504,6 @@ function personalize_fields_process_form_option_sets($entity_type, $entity, $fie
     $option_set->data = array();
     $option_set->options = array();
     $option_set->plugin = 'fields';
-    $option_set->new_agent_title = ucfirst($entity_type) . ' ' . $label;
     $option_set->new_agent_title = ucfirst($bundle) . ' ' . $label;
   }
   else {
@@ -671,7 +670,7 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
     // If this was the second or subsequent option set for this entity type and field
     // combination, there will be a count suffix on the machine name generated. We
     // need to add that count to the agent title.
-    if (preg_match('/^[a-zA-Z0-9-_]+_([0-9]+)$/', $machine_name, $matches)) {
+    if (preg_match('/^[a-zA-Z0-9-_]+\-([0-9]+)$/', $machine_name, $matches)) {
       $count = $matches[1];
     }
     $agent_title .= ' ' . $count;

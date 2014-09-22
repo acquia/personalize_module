@@ -142,6 +142,10 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $first_agent = 'article-personalizable-headline';
     $this->assertEqual($first_agent, $option_set->agent);
 
+    // Confirm that the agent's human-readable name has been generated correctly.
+    $agent = personalize_agent_load($first_agent);
+    $this->assertEqual('Article Personalizable Headline 1', $agent->label);
+
     $field_info = array(
       'entity_type' => 'node',
       'entity_id' => 1,
@@ -179,6 +183,9 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $second_agent = 'article-personalizable-headline-2';
     $this->assertEqual($second_agent, $option_set->agent);
 
+    // Confirm that the agent's human-readable name has been generated correctly.
+    $agent = personalize_agent_load($second_agent);
+    $this->assertEqual('Article Personalizable Headline 2', $agent->label);
     // Add another headline option to the first node and confirm that the agent is paused.
     personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $this->drupalPost('node/1/edit', NULL, t('Add another item'));
