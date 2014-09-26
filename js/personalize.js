@@ -665,6 +665,8 @@
         }
       }
     }
+    // Let other code know that we have finished requesting decisions for the current page.
+    $(document).trigger('personalizeDecisionsEnd');
   }
 
   /**
