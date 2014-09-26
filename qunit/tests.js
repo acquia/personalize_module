@@ -367,6 +367,41 @@ QUnit.asyncTest("stateful option set", function( assert ) {
 
 });
 
+QUnit.asyncTest('decision caching', function( assert ) {
+  // Since decision caching is turned on for this test, make sure we remove anything we
+  // add to session storage at the start of the test.
+  sessionStorage.removeItem("Drupal.personalize:decisions:my-agent:osid-1");
+  // Set decision caching to true for our test agent.
+  Drupal.settings.personalize.agent_map['my-agent'].cache_decisions = true;
+
+  expect(8);
+  QUnit.start();
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.equal(choices['osid-1'][0], 'first-option');
+    assert.equal(choices['osid-1'][1], 'second-option');
+    assert.equal(decision_point, 'osid-1');
+    callback.call(null, {'osid-1': 'second-option'});
+  };
+  var reran = false;
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    // This should be called twice.
+    assert.equal('second-option', choice_name, 'Executor got the expected option');
+    if (!reran) {
+      reran = true;
+      Drupal.personalize.resetAll();
+      Drupal.personalize.personalizePage(Drupal.settings);
+    }
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+
+});
+
 function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
 
   Drupal.settings.personalize.option_sets[osid] = {

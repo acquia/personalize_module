@@ -386,7 +386,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
-        'cache_decisions' => FALSE,
+        'cache_decisions' => TRUE,
       )
     );
     $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
@@ -455,13 +455,13 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
-        'cache_decisions' => FALSE,
+        'cache_decisions' => TRUE,
       ),
       'test-agent-2' => array(
         'type' => 'test_agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
-        'cache_decisions' => FALSE,
+        'cache_decisions' => TRUE,
       )
     );
     $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
@@ -1165,6 +1165,25 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-4'));
 
     $this->drupalLogout();
+  }
+
+  /**
+   * Tests that the cache decision setting is turned on when not specified.
+   */
+  function testDecisionCacheSetting() {
+    $name = $this->randomName();
+    $machine_name = personalize_generate_machine_name($name, 'personalize_agent_machine_name_exists');
+    $form_values = array(
+      'agent_basic_info' => array(
+        'machine_name' => $machine_name,
+        'title' => $name,
+        'agent_type' => 'test_agent',
+      )
+    );
+    personalize_save_agent_from_form_values($form_values);
+    $this->resetAll();
+    $agent = personalize_agent_load($machine_name);
+    $this->assertTrue($agent->data['cache_decisions']);
   }
 }
 

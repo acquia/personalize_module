@@ -1875,7 +1875,10 @@ function personalize_agent_save($agent) {
     $agent = (object) $agent_array;
   }
   module_invoke_all('personalize_agent_presave', $agent);
-
+  // Default to caching decisions if not specified.
+  if (!isset($agent->data['cache_decisions'])) {
+    $agent->data['cache_decisions'] = 1;
+  }
   db_merge('personalize_agent')
     ->key(array('machine_name' => $agent->machine_name))
     ->fields(array(
