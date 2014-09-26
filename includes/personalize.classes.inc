@@ -176,14 +176,16 @@ interface PersonalizeAgentReportInterface {
    *
    * Each report is returned as a render array.
    *
-   * @param $decision_name
-   *   A optionally preselected decision to display.
-   * @param $date_from
-   *   The start date of the report, if empty then the start date of the agent.
-   * @param $date_to
-   *   The end date of the report, if empty then current date.
+   * @param $options
+   * An array of report filter options.
+   * - decision: Preselected decision to display.
+   * - start: The start date of the report.
+   * - from: The end date of the report.
+   * - goal: (optional) A selected goal for reporting; defaults to all.
+   * - conversion_metric: (optional) Metric to display within the conversion report.  One
+   *   of 'rate' (conversion rate) or 'value' (conversion value).
    */
-  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL);
+  public function buildCampaignReports($options);
 }
 
 /**

@@ -75,7 +75,7 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
   /**
    * Implements PersonalizeAgentReportInterface::buildCampaignReports().
    */
-  public function buildCampaignReports($decision_name = NULL, $date_from = NULL, $date_to = NULL) {
+  public function buildCampaignReports($options) {
     return array(
       'report' => NULL,
     );
