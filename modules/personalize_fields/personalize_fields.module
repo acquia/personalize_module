@@ -117,7 +117,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
         '#title' => t('Campaign Type'),
         '#options' => $agent_type_options,
         '#default_value' => isset($field['settings']['personalize']['agent_type']) ? $field['settings']['personalize']['agent_type'] : '',
-        '#description' => t('Choose which type of agent to create.'),
+        '#description' => t('Choose which type of campaign to create.'),
       );
       personalize_form_element_add_states($state, $form['field']['settings']['personalize']['agent_type']);
     }
