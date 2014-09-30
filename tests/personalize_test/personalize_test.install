@@ -21,6 +21,8 @@ function personalize_test_install() {
       'class' => 'PersonalizeTestAgent',
     ),
   );
+  // Force loading of default agents.
+  personalize_agent_load_multiple(array(), array(), TRUE);
   // Set the form_submit action as a goal on our test agent.
   personalize_goal_save('test-agent', 'form_submit', 2);
   // Create a new client-side action.
