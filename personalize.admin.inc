@@ -2376,6 +2376,9 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       if (isset($values['advanced']['preview_link'])) {
         $option_set->preview_link = $values['advanced']['preview_link'];
       }
+      if (isset($values['winner'])) {
+        $option_set->winner = $values['winner'];
+      }
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
         continue;
