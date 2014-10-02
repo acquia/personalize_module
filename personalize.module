@@ -471,6 +471,7 @@ function personalize_agent_get_settings() {
         'status' => $next_status,
         'text' => $status_text,
       ),
+      'includeNavigation' => personalize_agent_include_in_navigation($agent->machine_name),
       'links' => array(
         'view' => '/admin/structure/personalize/manage/' . $agent->machine_name,
         'edit' => '/admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
@@ -486,6 +487,42 @@ function personalize_agent_get_settings() {
     unset($goals);
   }
   return $campaigns;
+}
+
+/**
+ * Determines if a campaign should be included in navigation campaign lists.
+ *
+ * @param $agent_name
+ *   The machine name of the campaign.
+ * @param $compare_path
+ *   (Optional) The page where the campaign may be shown.  Defaults to the
+ *   current page.
+ * @return bool
+ *   True to include in navigation, false to exclude.
+ */
+function personalize_agent_include_in_navigation($agent_name, $compare_path = NULL) {
+  $path = empty($compare_path) ? drupal_strtolower(drupal_get_path_alias($_GET['q'])) : $compare_path;
+
+  // A campaign should be shown if any of its option sets should be shown.
+  $option_sets = personalize_option_set_load_by_agent($agent_name);
+
+  // Show a campaign with no option sets because it needs to be set up.
+  if (empty($option_sets)) {
+    return TRUE;
+  }
+  foreach ($option_sets as $option_set) {
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    // If a module doesn't implement this hook, then it is assumed that the
+    // option set should be shown (and therefore the campaign).
+    if (!module_implements('personalize_option_set_show_in_navigation')) {
+      return TRUE;
+    }
+    $show = module_invoke($option_set_plugin['module'], 'personalize_option_set_show_in_navigation', $option_set, $path);
+    if ($show) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**

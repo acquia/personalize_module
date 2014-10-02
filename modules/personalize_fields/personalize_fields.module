@@ -39,6 +39,20 @@ function personalize_fields_personalize_option_set_type() {
 }
 
 /**
+ * Implements hook_personalize_option_set_show_in_navigation().
+ */
+function personalize_fields_personalize_option_set_show_in_navigation($option_set, $path) {
+  // An node's personalize fields option set should be shown in the navigation only for that node's page.
+  if (empty($option_set->data['personalize_fields_entity_type']) || $option_set->data['personalize_fields_entity_type'] !== 'node' || empty($option_set->data['personalize_fields_entity_id'])) {
+    return TRUE;
+  }
+
+  // Check if the $path to check matches the node path.
+  $node_path = drupal_get_path_alias('node/'. $option_set->data['personalize_fields_entity_id']);
+  return drupal_get_path_alias($path) == $node_path;
+}
+
+/**
  * Implements hook_ctools_plugin_api().
  */
 function personalize_fields_ctools_plugin_api($owner, $api) {
