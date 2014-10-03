@@ -47,9 +47,15 @@ function personalize_fields_personalize_option_set_show_in_navigation($option_se
     return TRUE;
   }
 
-  // Check if the $path to check matches the node path.
-  $node_path = drupal_get_path_alias('node/'. $option_set->data['personalize_fields_entity_id']);
-  return drupal_get_path_alias($path) == $node_path;
+  // Check if the $path to check matches the entity path.
+  // @todo - this will not match the edit path, however you really don't need to
+  // manage the campaign in context there, nor can you preview.
+  $entity_type = $option_set->data['personalize_fields_entity_type'];
+  $entity_id = $option_set->data['personalize_fields_entity_id'];
+  $entities = entity_load($entity_type, array($entity_id));
+  $entity_url = entity_uri($entity_type, $entities[$entity_id]);
+  $check_path = drupal_get_path_alias($path);
+  return $check_path == drupal_get_path_alias($entity_url['path']);
 }
 
 /**
