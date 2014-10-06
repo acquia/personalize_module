@@ -801,6 +801,7 @@ function personalize_agent_end_date_form($agent_name = NULL) {
       ),
     ),
   );
+  drupal_alter('personalize_agent_end_date_form', $form, $agent_name);
   return $form;
 }
 
