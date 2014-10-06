@@ -831,6 +831,9 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks', 'administer personalize configuration'));
     $this->drupalLogin($admin_user);
 
+    // Additional agent types aren't available until we reset.
+    $this->resetAll();
+
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
@@ -1133,11 +1136,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
         'machine_name' => personalize_generate_machine_name('agent-3', 'personalize_agent_machine_name_exists'),
         'agent_type' => 'test_agent'
       ),
-      array(
-        'name' => 'agent-4',
-        'machine_name' => personalize_generate_machine_name('agent-4', 'personalize_agent_machine_name_exists'),
-        'agent_type' => 'test_extra_agent'
-      ),
     );
     foreach ($agent_data as $data) {
       $this->createTestAgent($data);
@@ -1161,8 +1159,6 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
     // The third agent's status should still be running.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-3'));
-    // The fourth agent's status should be paused.
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-4'));
 
     $this->drupalLogout();
   }
