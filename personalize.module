@@ -534,7 +534,7 @@ function personalize_agent_get_map_settings($agent_name, $option_set = NULL, &$a
 
   return array(
     'type' => $agent->getType(),
-    'title' => $agent->getTitle(),
+    'label' => $agent->getTitle(),
     // We just need a boolean indicating whether or not the campaign is
     // currently running.
     'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
@@ -1560,8 +1560,7 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
         // Add the agent to the agent_map setting so that the JavaScript
         // knows what function to call for sending the goal.
         $agent_map[$goal->agent] = array(
-          'type' => $agent->getType(),
-          'title' => $agent->getTitle()
+          'type' => $agent->getType()
         );
         // We also need to ensure any assets required for that agent's client-side
         // functioning are loaded.
