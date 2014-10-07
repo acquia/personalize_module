@@ -86,7 +86,7 @@
 
   Drupal.personalizeElements.editHtml = {
     controlContent: {},
-    getOuterHtml: function($element) {
+    getOuterHtml: function ($element) {
       if ($element.length > 1) {
         $element = $element.first();
       }
@@ -98,6 +98,36 @@
       // Now return the child html of our wrapper parent tag.
       return $element.html();
     },
+    // JQuery does not provide a public way to find events so we have to resort
+    // to semi-documented structures.
+    // http://blog.jquery.com/2011/11/08/building-a-slimmer-jquery/
+    getElementEvents: function ($element) {
+      if ($element.length === 0) return {};
+      if ($._data) {
+        // jQuery 1.8 and higher.
+        return $._data($element.get(0), "events");
+      } else if ($element.data) {
+        // Older jQuery version.
+        return $element.data('events');
+      }
+      return {};
+    },
+    addElementEvents: function($element, events) {
+      for (var type in events) {
+        var i, num = events[type].length;
+        for (i = 0; i < num;  i++) {
+          var event = events[type][i];
+          if (event.handler) {
+            var eventBind = (event.namespace && event.namespace.length > 0) ? type + '.' + event.namespace : type;
+            var dataBind = event.data ? event.data : {};
+            $element.bind(eventBind, dataBind, event.handler);
+          }
+        }
+      }
+    },
+    getElement: function (osid) {
+      return $('[data-personalize="' + osid + '"]');
+    },
     execute : function($selector, selectedContent, isControl, osid) {
       // Keep track of how the element has been changed in order to preview
       // different options.
@@ -105,10 +135,14 @@
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
       if ($selector.length === 0) {
-        $selector = $('[data-personalize="' + osid + '"]');
+        $selector = this.getElement(osid);
       }
+      var events = this.getElementEvents($selector);
       if (isControl) {
         $selector.replaceWith(this.controlContent[osid]);
+        // Reset the $selector variable to the new element.
+        $selector = this.getElement(osid);
+        this.addElementEvents($selector, events);
       } else {
         if (selectedContent.charAt(0) != '<') {
           // We need this content to be wrapped in a tag so that it can be
@@ -118,6 +152,7 @@
         var $newContent = $(selectedContent).replaceAll($selector);
         // Add the data attribute to the new content.
         $newContent.attr('data-personalize', osid);
+        this.addElementEvents($newContent, events);
       }
     }
   };
