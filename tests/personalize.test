@@ -384,6 +384,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $expected_agent_map = array(
       'test-agent' => array(
         'type' => 'test_agent',
+        'label' => 'My Test Agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
         'cache_decisions' => TRUE,
@@ -453,12 +454,14 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $expected_agent_map = array(
       'test-agent' => array(
         'type' => 'test_agent',
+        'label' => 'My Test Agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
         'cache_decisions' => TRUE,
       ),
       'test-agent-2' => array(
         'type' => 'test_agent',
+        'label' => 'My Second Test Agent',
         'active' => PERSONALIZE_STATUS_RUNNING,
         'enabled_contexts' => array(),
         'cache_decisions' => TRUE,
