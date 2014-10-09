@@ -331,7 +331,7 @@ function personalize_option_set_list($form, &$form_state) {
     $delete_link = module_hook($option_set_plugin['module'], 'personalize_delete_link') ? module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set) : '';
     $campaign = personalize_agent_load($option_set->agent);
     $rows[] = array(
-      $option_set->label,
+      filter_xss($option_set->label),
       $option_set->plugin,
       l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent),
       !empty($edit_link) ? l(t('edit'), $edit_link) : '',
@@ -398,7 +398,7 @@ function personalize_goals_list($form, &$form_state) {
     $campaign = personalize_agent_load($goal->agent);
     $rows[] = array(
       $actions[$goal->action],
-      $campaign->label,
+      filter_xss($campaign->label),
       $goal->value,
       l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent, array('query' => array('goal' => $goal->id))),
       l(t('delete'), 'admin/structure/personalize/goals/' . $goal->id . '/delete'),
@@ -610,7 +610,7 @@ function personalize_status_toggle_message($agent_name, $current_status) {
     }
     // Generate the message shown for each 'winning' option.
     $theme_variables['option_sets'][] = array(
-      'label' => (isset($option_set->label) ? $option_set->label : t('Option @id', array('@id' => $option_set->osid))),
+      'label' => (isset($option_set->label) ? filter_xss($option_set->label) : t('Option @id', array('@id' => $option_set->osid))),
       'counter' => 'V' . $v,
       'winner_label' => $winner['option_label'],
       'alert' => (!empty($winner['fixed_targeting']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
@@ -675,7 +675,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
     '#collapsible' => !empty($agent_data->machine_name),
     '#collapsed' => !empty($agent_data->machine_name),
     '#tree' => FALSE,
-    '#title' => !empty($agent_data->label) ? $agent_data->label : t('New Campaign'),
+    '#title' => !empty($agent_data->label) ? filter_xss($agent_data->label) : t('New Campaign'),
     '#theme_wrappers' => array('personalize_admin_content'),
   );
 
@@ -1314,7 +1314,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   foreach($option_sets as $option_set) {
     $option_sets_labels[$option_set->osid] = theme('personalize_admin_enumerated_item', array(
       'enum' => t('Set @delta', array('@delta' => $counter)),
-      'title' => isset($option_set->label) ? $option_set->label : t('Option Set @id', array('@id' => $option_set->osid)),
+      'title' => isset($option_set->label) ? filter_xss($option_set->label) : t('Option Set @id', array('@id' => $option_set->osid)),
     ));
     $collapsed .= $option_sets_labels[$option_set->osid];
     $counter++;
@@ -2092,7 +2092,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
   foreach($mvts as $delta => &$mvt) {
     $mvt->display_label = theme('personalize_admin_enumerated_item', array(
       'enum' => t('Test @delta', array('@delta' => ($delta + 1))),
-      'title' => $mvt->label,
+      'title' => filter_xss($mvt->label),
     ));
     $collapsed .= $mvt->display_label;
   }
@@ -2114,7 +2114,7 @@ function personalize_agent_mvt_form($form, &$form_state, $agent_data) {
     foreach ($mvts as $delta => $existing) {
       $os_names = array();
       foreach ($existing->option_sets as $os) {
-        $os_names[] = $os->label;
+        $os_names[] = filter_xss($os->label);
       }
       $label = $existing->display_label;
       if (!empty($os_names)) {
@@ -2670,7 +2670,7 @@ function personalize_mvt_form_elements($mvt = NULL, $agent) {
   $form['mvt_basic_info']['label'] = array(
     '#title' => t('Administrative title'),
     '#type' => 'textfield',
-    '#default_value' => isset($mvt->label) ? $mvt->label : '',
+    '#default_value' => isset($mvt->label) ? filter_xss($mvt->label) : '',
     '#weight' => -9,
     '#required' => TRUE,
   );
@@ -2690,7 +2690,7 @@ function personalize_mvt_form_elements($mvt = NULL, $agent) {
   $option_sets = personalize_option_set_load_by_agent($agent);
   $option_set_options = array();
   foreach ($option_sets as $osid => $option_set) {
-    $option_set_options[$osid] = $option_set->label;
+    $option_set_options[$osid] = filter_xss($option_set->label);
   }
   $default = isset($mvt->option_sets) ? array_keys($mvt->option_sets) : array();
   $form['mvt_basic_info']['option_sets'] = array(
@@ -2801,7 +2801,7 @@ function personalize_goals_options() {
   $actions = visitor_actions_get_actions();
   $options = array();
   foreach($actions as $name => $info) {
-    $options[$name] = isset($info['label']) ? $info['label'] : $name;
+    $options[$name] = isset($info['label']) ? filter_xss($info['label']) : $name;
   }
   return $options;
 }
