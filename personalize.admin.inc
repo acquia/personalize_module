@@ -914,10 +914,7 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   // do so asynchronously. They can implement this hook to sync the changes during
   // ajax submit of these forms, so they don't have to wait for a new page load.
   module_invoke_all('personalize_form_ajax_submit', $agent_data);
-  return array(
-    '#type' => 'ajax',
-    '#commands' => $commands,
-  );
+  return personalize_ajax_commands_deliver($commands, TRUE);
 }
 
 /**

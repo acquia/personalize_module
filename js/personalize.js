@@ -1243,6 +1243,16 @@
     }
   })();
 
+  // A custom Drupal command to merge in settings.  This is required when
+  // there are modules in use, such as advagg, that do not include merge
+  // settings in their altered command output.
+  Drupal.ajax.prototype.commands.personalize_settings_merge = function (ajax, response, status) {
+    // For the settings to merge.
+    response.merge = true;
+    // Call the Drupal settings command to do the actual settings merge.
+    this.settings(ajax, response, status);
+  };
+
   /**
    * Helper function to reset variables during tests.
    */

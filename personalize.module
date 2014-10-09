@@ -701,6 +701,36 @@ function personalize_library() {
 }
 
 /**
+ * A custom page delivery callback to allow processing on any AJAX commands that
+ * are sent as page ajax content.
+ *
+ * @param $commands
+ *   An array of AJAX commands to be returned.
+ * @param $return_output
+ *   True to return the updated page output for custom rendering, false to
+ *   render via Drupal AJAX delivery.
+ */
+function personalize_ajax_commands_deliver($commands, $return_output = FALSE) {
+  // Advagg module removes any merged settings from the ajax delivery so we
+  // need to handle them specially if this module is enabled.
+  if (module_exists('advagg')) {
+    foreach ($commands as &$command) {
+      if ($command['command'] == 'settings'
+        && is_array($command['settings'])
+        && !empty($command['merge'])) {
+        $command['command'] = 'personalize_settings_merge';
+      }
+    }
+  }
+  $page = array('#type' => 'ajax', '#commands' => $commands);
+  if ($return_output) {
+    return $page;
+  }
+  // Otherwise just process it as AJAX content.
+  ajax_deliver($page);
+}
+
+/**
  * =======================================================================
  *  T H E M E   I N F O
  * =======================================================================
