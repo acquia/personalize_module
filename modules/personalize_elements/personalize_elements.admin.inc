@@ -403,6 +403,17 @@ function personalize_elements_form_validate($form, &$form_state) {
     if ($changed) {
       drupal_set_message(t('Disallowed HTML tags were removed from @variations.', array('@variations' => format_plural($changed, '1 variation', '@count variations', array('@count' => $changed)))), 'warning');
     }
+    if ($values['pages_all'] == 0) {
+      foreach(preg_split('~[\r\n]+~', $values['pages']) as $line){
+        if(empty($line)) {
+          continue;
+        }
+        if (!drupal_valid_path($line, TRUE)) {
+          form_set_error('pages', t('The selected pages must contain valid paths.'));
+          break;
+        }
+      }
+    }
   }
 }
 
