@@ -145,7 +145,7 @@ function personalize_elements_element_settings($option_sets) {
   foreach ($option_sets as $osid => $option_set) {
     $js_id = $js_id = personalize_stringify_osid($option_set->osid);
     $elements[$js_id] = array(
-      'selector' => filter_xss($option_set->data['personalize_elements_selector']),
+      'selector' => $option_set->data['personalize_elements_selector'],
       'variation_type' => $option_set->data['personalize_elements_type'],
       // The 'runJS' variation type cannot be previewed in the normal way.
       'previewable' => $option_set->data['personalize_elements_type'] !== 'runJS',
