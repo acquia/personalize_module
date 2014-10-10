@@ -414,6 +414,16 @@ function personalize_elements_form_validate($form, &$form_state) {
         }
       }
     }
+
+    // Validating a CSS selector is generally beyond what REGEX can handle,
+    // and using the Drupal cleaning scripts all update < > to entities
+    // so just make sure that there are no tags.
+    $re = "/<\\/?[a-z][a-z0-9]*[^<>]*>|<!--.*?-->/im";
+    $matched = preg_match_all($re, $form_state['values']['selector']);
+    if ($matched > 0) {
+      form_set_error('selector', t('The selector cannot contain tags.'));
+    }
+
   }
 }
 
