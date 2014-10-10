@@ -534,7 +534,7 @@ function personalize_agent_get_map_settings($agent_name, $option_set = NULL, &$a
 
   return array(
     'type' => $agent->getType(),
-    'label' => $agent->getTitle(),
+    'label' => check_plain($agent->getTitle()),
     // We just need a boolean indicating whether or not the campaign is
     // currently running.
     'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
