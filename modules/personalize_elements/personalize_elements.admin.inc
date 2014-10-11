@@ -408,7 +408,7 @@ function personalize_elements_form_validate($form, &$form_state) {
         if(empty($line)) {
           continue;
         }
-        if (!drupal_valid_path($line, TRUE)) {
+        if (!valid_url($line)) {
           form_set_error('pages', t('The selected pages must contain valid paths.'));
           break;
         }
