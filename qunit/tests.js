@@ -135,7 +135,6 @@ QUnit.test( "executor test", function( assert ) {
   assert.equal(2, $('.osid-2-second-option').length);
 });
 
-
 QUnit.module("Personalize page tests", {
   'restore': {},
   'setup': function() {
@@ -211,6 +210,34 @@ QUnit.asyncTest("personalize page simple", function( assert ) {
   QUnit.stop();
   Drupal.personalize.personalizePage(Drupal.settings);
 });
+
+QUnit.asyncTest( "Invalid selector test", function ( assert ) {
+  expect(7);
+  // Set an option with an invalid selector and test that all data is still
+  // passed up without generating a JavaScript error.
+  Drupal.settings.personalize.option_sets['osid-1']['selector'] = '#myinvalid selector#';
+
+  QUnit.start();
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.equal(choices['osid-1'][0], 'first-option');
+    assert.equal(choices['osid-1'][1], 'second-option');
+    assert.equal(decision_point, 'osid-1');
+    callback.call(null, {'osid-1': 'second-option'});
+  };
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    assert.equal('second-option', choice_name);
+    // Put the selector back to a normal selector.
+    Drupal.settings.personalize.option_sets['osid-1']['selector'] = '.some-class';
+  };
+
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
 
 QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
   // The getDecisionsForPoint method should be called twice, once for each option set.
@@ -345,7 +372,7 @@ QUnit.asyncTest("stateful option set", function( assert ) {
     assert.equal(choices['osid-1'][0], 'first-option');
     assert.equal(choices['osid-1'][1], 'second-option');
     assert.equal(decision_point, 'osid-1');
-    callback.call(null, {'osid-1': 'second-option'});sss
+    callback.call(null, {'osid-1': 'second-option'});
   };
   Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
     assert.equal('second-option', choice_name);

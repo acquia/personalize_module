@@ -767,9 +767,16 @@
       // If we have an empty or undefined decision point, use the decision name.
       decision_point = option_set.decision_point == undefined || option_set.decision_point == '' ? decision_name : option_set.decision_point,
       choices = option_set.option_names,
-      $option_set = $(option_set.selector),
+      $option_set = null,
       fallbackIndex = 0,
       chosenOption = null;
+
+    // Make sure the selector is syntactically valid.
+    try {
+      $option_set = $(option_set.selector);
+    } catch (error) {
+      return;
+    }
 
     // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
