@@ -276,6 +276,24 @@ function hook_personalize_campaign_report($agent_data, $option_set) {
 }
 
 /**
+ * Returns whether or not a campaign should be included in navigation based
+ * on the option set data and a selected page.
+ *
+ * If a module does not implement this hook, then it will be assumed that the
+ * option set should be shown in the navigation for all pages.
+ *
+ * @param stdClass $option_set
+ *   The option set.
+ * @param string $path
+ *   The path where the option set could be shown.
+ * @return boolen
+ *   True if the option set should be shown or false if it should not.
+ */
+function hook_personalize_option_set_show_in_navigation($option_set, $path) {
+
+}
+
+/**
  * Allows alteration the array of available executors.
  *
  * @param array $executors

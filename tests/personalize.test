@@ -1847,6 +1847,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'status' => PERSONALIZE_STATUS_RUNNING,
           'text' => t('Start'),
         ),
+        'includeNavigation' => TRUE,
         'links' => array(
           'edit' => '/admin/structure/personalize/manage/' . $first_agent_machine_name . '/edit',
           'report' => '/admin/structure/personalize/manage/' . $first_agent_machine_name . '/report',
@@ -1865,6 +1866,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'status' => PERSONALIZE_STATUS_RUNNING,
           'text' => t('Start'),
         ),
+        'includeNavigation' => TRUE,
         'links' => array(
           'edit' => '/admin/structure/personalize/manage/' . $second_agent_machine_name . '/edit',
           'report' => '',

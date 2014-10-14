@@ -132,6 +132,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $this->drupalPost(NULL, $edit, t('Save'));
+
     $this->assertNoText('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.');
     // Assert that we can load the new option set from the db.
     $option_set = personalize_option_set_load(1);
@@ -170,6 +171,11 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
     $this->assertEqual(1, $cached->data);
 
+    // Confirm that the campaign is set to be included in the navigation on the article node page.
+    $this->drupalGet('node/1');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$agent->machine_name]['includeNavigation'], TRUE);
+
     // Create another node with a personalized headline
     // Set up two headline options
     $this->drupalGet('node/add/article');
@@ -179,6 +185,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
     $this->drupalPost(NULL, $edit, t('Save'));
+
     $option_set = personalize_option_set_load(2);
     $second_agent = 'article-personalizable-headline-2';
     $this->assertEqual($second_agent, $option_set->agent);
@@ -186,6 +193,13 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     // Confirm that the agent's human-readable name has been generated correctly.
     $agent = personalize_agent_load($second_agent);
     $this->assertEqual('Article Personalizable Headline 2', $agent->label);
+
+    // Confirm that the new campaign is available for the navigation on its node page but not the first campaign.
+    $this->drupalGet('node/2');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$first_agent]['includeNavigation'], FALSE);
+    $this->assertEqual($settings['personalize']['campaigns'][$second_agent]['includeNavigation'], TRUE);
+
     // Add another headline option to the first node and confirm that the agent is paused.
     personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $this->drupalPost('node/1/edit', NULL, t('Add another item'));
@@ -201,8 +215,14 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $this->assertEqual($options, $option_set->options);
     personalize_option_set_load_by_agent($first_agent, TRUE);
 
-    // Restart the agent and confirm that removing an option pauses the agent.
+    // Confirm that the correct campaigns are set to be included in navigation.
+    $this->drupalGet('node/1');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$first_agent]['includeNavigation'], TRUE);
+    $this->assertEqual($settings['personalize']['campaigns'][$second_agent]['includeNavigation'], FALSE);
+
     $this->drupalGet('node/1/edit');
+    // Restart the agent and confirm that removing an option pauses the agent.
     personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $edit['article_headline[und][2][value]'] = '';
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -236,6 +256,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
 
     // Restart the agent and make sure that other changes do not cause pausing.
     $this->drupalGet('node/1/edit');
+
     personalize_agent_set_status($first_agent, PERSONALIZE_STATUS_RUNNING);
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] .= ': edited';
@@ -266,6 +287,12 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
 
+    // Now both campaigns should show on the second node because the first campaign is empty.
+    $this->drupalGet('node/2');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$first_agent]['includeNavigation'], TRUE);
+    $this->assertEqual($settings['personalize']['campaigns'][$second_agent]['includeNavigation'], TRUE);
+
     // Confirm that there's also a corresponding record in the cache table.
     $cid = _personalize_fields_get_cid_for_field('node', 2, 'article_headline');
     $cached = cache_get($cid, PERSONALIZE_FIELDS_CACHE_BIN);
@@ -277,6 +304,13 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'only option';
     $this->drupalPost('node/add/article', $edit, t('Save'));
+
+    // Confirm the correct navigation settings.
+    $this->drupalGet('node/3');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$first_agent]['includeNavigation'], TRUE);
+    $this->assertEqual($settings['personalize']['campaigns'][$second_agent]['includeNavigation'], FALSE);
+
     // Confirm that there is no third option set.
     $option_set = personalize_option_set_load(3);
     $this->assertFalse($option_set);
@@ -298,6 +332,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit['article_headline[und][0][value]'] = 'first option';
     $edit['article_headline[und][1][value]'] = 'second option';
     $this->drupalPost(NULL, $edit, t('Save'));
+
     // Confirm that an option set has been created for this node.
     $option_set = personalize_option_set_load(3);
     $this->assertEqual('fields', $option_set->plugin);
@@ -308,6 +343,14 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     );
     $this->assertEqual($field_info, $option_set->field_info);
     $third_agent = 'article-personalizable-headline-3';
+
+    // Check which campaigns are included in navigation.
+    $this->drupalGet('node/4');
+    $settings = $this->drupalGetSettings();
+    $this->assertEqual($settings['personalize']['campaigns'][$first_agent]['includeNavigation'], TRUE);
+    $this->assertEqual($settings['personalize']['campaigns'][$second_agent]['includeNavigation'], FALSE);
+    $this->assertEqual($settings['personalize']['campaigns'][$third_agent]['includeNavigation'], TRUE);
+
     personalize_agent_set_status($third_agent, PERSONALIZE_STATUS_RUNNING);
     // Now remove all but one option.
     $edit['article_headline[und][1][value]'] = '';
