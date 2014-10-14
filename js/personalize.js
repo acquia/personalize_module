@@ -185,6 +185,7 @@
             if (settings.personalize.goals_attained[agent_name].hasOwnProperty(i) && !settings.personalize.goals_attained[agent_name][i].processed) {
               Drupal.personalize.agents[agent.type].sendGoalToAgent(agent_name, settings.personalize.goals_attained[agent_name][i].name, settings.personalize.goals_attained[agent_name][i].value);
               settings.personalize.goals_attained[agent_name][i].processed = 1;
+              $(document).trigger('sentGoalToAgent', [agent_name, settings.personalize.goals_attained[agent_name][i].name, settings.personalize.goals_attained[agent_name][i].value ]);
             }
           }
         }
@@ -887,13 +888,13 @@
    */
   function addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid) {
     // Define the callback function.
-    var callback = (function(inner_executor, $inner_option_set, inner_osid) {
+    var callback = (function(inner_executor, $inner_option_set, inner_osid, inner_agent_name) {
       return function(decision) {
         Drupal.personalize.executors[inner_executor].execute($inner_option_set, decision, inner_osid);
         // Fire an event so other code can respond to the decision.
-        $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid]);
+        $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid, inner_agent_name ]);
       }
-    }(executor, $option_set, osid));
+    }(executor, $option_set, osid, agent_name));
     // Now add it to the array for this decision name.
     decisionCallbacks[agent_name] = decisionCallbacks[agent_name] || {};
     decisionCallbacks[agent_name][decision_point] = decisionCallbacks[agent_name][decision_point] || {};
@@ -963,6 +964,8 @@
                 var agent = settings.personalize.agent_map[goals[i].agent];
                 if (agent !== undefined) {
                   Drupal.personalize.agents[agent.type].sendGoalToAgent(goals[i].agent, eventName, goals[i].value, jsEvent);
+                  $(document).trigger('sentGoalToAgent', [goals[i].agent, eventName, goals[i].value, jsEvent ]);
+
                 }
               }
             }

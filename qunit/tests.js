@@ -192,8 +192,15 @@ QUnit.module("Personalize page tests", {
 });
 
 QUnit.asyncTest("personalize page simple", function( assert ) {
-  expect(7);
+  expect(10);
   QUnit.start();
+  var simplePersonalizeDecisionFunc = function( e, $option_set, decision, osid, agent_name ) {
+    assert.equal(decision, 'second-option');
+    assert.equal(osid, 'osid-1');
+    assert.equal(agent_name, 'my-agent');
+    $(document).unbind("personalizeDecision", simplePersonalizeDecisionFunc);
+  }
+  $(document).bind("personalizeDecision", simplePersonalizeDecisionFunc);
   Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
     QUnit.start();
     assert.equal(name, 'my-agent');
@@ -214,8 +221,25 @@ QUnit.asyncTest("personalize page simple", function( assert ) {
 
 QUnit.asyncTest("personalize page 2 option sets", function( assert ) {
   // The getDecisionsForPoint method should be called twice, once for each option set.
-  expect(8);
+  expect(12);
   QUnit.start();
+  var personalizeDecisionFuncCount = 0;
+  var twoOptionPersonalizeDecisionFunc = function( e, $option_set, decision, osid, agent_name ) {
+    switch( osid ) {
+      case 'osid-1':
+        assert.equal(decision, 'second-option');
+        break;
+      case 'osid-2':
+        assert.equal(decision, 'first-option');
+        break;
+    }
+    assert.equal(agent_name, 'my-agent');
+    personalizeDecisionFuncCount++;
+    if ( personalizeDecisionFuncCount == 2 ) {
+      $(document).unbind("personalizeDecision", twoOptionPersonalizeDecisionFunc);
+    }
+  }
+  $(document).bind("personalizeDecision", twoOptionPersonalizeDecisionFunc);
   // Add a second option set.
   addOptionSetToDrupalSettings('osid-2', 'osid-2', 'osid-2');
   Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
