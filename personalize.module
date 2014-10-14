@@ -462,6 +462,11 @@ function personalize_agent_get_settings() {
     $current_status = personalize_agent_get_status($agent->machine_name);
     list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
     $verified = _personalize_agent_verification_cache_get($agent->machine_name);
+    $option_sets = personalize_option_set_load_by_agent($agent->machine_name);
+    $option_set_types = array();
+    foreach ($option_sets as $option_set) {
+      $option_set_types[] = $option_set->plugin;
+    }
     $campaigns[$agent->machine_name] = array(
       'name' => $agent->machine_name,
       'label' => check_plain($agent->label),
@@ -477,6 +482,7 @@ function personalize_agent_get_settings() {
         'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? '/admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
       ),
       'supportsGoals' => $supports_goals,
+      'optionSetTypes' => array_unique($option_set_types),
       'goals' => (isset($goals)) ? $goals : NULL,
       'verified' => $verified,
     );
