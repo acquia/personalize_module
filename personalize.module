@@ -1596,7 +1596,7 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
         // Add the agent to the agent_map setting so that the JavaScript
         // knows what function to call for sending the goal.
         $agent_map[$goal->agent] = array(
-          'type' => $agent->getType(),
+          'type' => $agent->getType()
         );
         // We also need to ensure any assets required for that agent's client-side
         // functioning are loaded.
