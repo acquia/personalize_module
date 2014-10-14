@@ -618,12 +618,25 @@ function personalize_fields_generate_option_label($index, $field_values) {
   }
   // Use text as default for text multivalue fields.
   else if (!empty($field_values['value']) && is_string($field_values['value'])) {
-    return $field_values['value'];
+    return _personalize_fields_generate_option_label_from_value($field_values['value']);
   }
   // Just generate a generic option label.
   else {
     return personalize_generate_option_label($index);
   }
+}
+
+/**
+ * Helper function to generate an option label from existing user-entered
+ * text.
+ *
+ * @param $value
+ *   The existing text to use for generation.
+ * @return string
+ *   A string suitable for use as an option label.
+ */
+function _personalize_fields_generate_option_label_from_value($value) {
+  return truncate_utf8(strip_tags($value), 50, TRUE, TRUE, 10);
 }
 
 /**
