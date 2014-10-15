@@ -128,7 +128,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $edit = array();
     $edit['title'] = $this->randomName(8);
     $edit['article_headline[und][0][value]'] = 'first option';
-    $edit['article_headline[und][1][value]'] = 'second option';
+    $edit['article_headline[und][1][value]'] = '<div class="some-stuff">ridiculously long long long long long long long long long long long long long long long.</div><p><a href="test.com">long</a> long long long long</p>long long long long long ridiculous content that should be truncated';
     $this->drupalGet('node/add/article');
     $this->drupalPost(NULL, NULL, t('Add another item'));
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -159,8 +159,8 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
         'option_label' => 'first option',
       ),
       array(
-        'option_id' => 'second-option',
-        'option_label' => 'second option',
+        'option_id' => 'ridiculously-long-long-long-long-long-long-long-',
+        'option_label' => 'ridiculously long long long long long long long...',
       ),
     );
     $this->assertEqual($options, $option_set->options);
