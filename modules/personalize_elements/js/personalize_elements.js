@@ -125,6 +125,12 @@
         }
       }
     },
+    addElementData: function($element, data) {
+      for (var key in data) {
+        $.data($element.get(0), key, data[key]);
+      }
+      return $element;
+    },
     getElement: function (osid) {
       return $('[data-personalize="' + osid + '"]');
     },
@@ -138,11 +144,13 @@
         $selector = this.getElement(osid);
       }
       var events = this.getElementEvents($selector);
+      var data = $selector.data();
       if (isControl) {
         $selector.replaceWith(this.controlContent[osid]);
         // Reset the $selector variable to the new element.
         $selector = this.getElement(osid);
         this.addElementEvents($selector, events);
+        this.addElementData($selector, data);
       } else {
         if (selectedContent.charAt(0) != '<') {
           // We need this content to be wrapped in a tag so that it can be
@@ -153,6 +161,7 @@
         // Add the data attribute to the new content.
         $newContent.attr('data-personalize', osid);
         this.addElementEvents($newContent, events);
+        this.addElementData($newContent, data);
       }
     }
   };
