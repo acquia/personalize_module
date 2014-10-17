@@ -1861,16 +1861,21 @@ function personalize_agent_machine_name_exists($machine_name) {
  *
  * @param $name
  *   The human-readable name of the agent.
+ * @param $exists_callback
+ *   (Optional) the callback function to see if the name is already in use.
+ * @param $replace_character
+ *   (Optional) the replace character to use, defaults to '-'.
  * @return string
  *   The machine-readable name.
  */
-function personalize_generate_machine_name($name, $exists_callback = NULL) {
+function personalize_generate_machine_name($name, $exists_callback = NULL, $replace_character = '-') {
   // Machine names must contain only lower case letters.
   $machine_name = drupal_strtolower($name);
   // Remove any disallowed characters.
-  $machine_name = preg_replace('/' . PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN . '/', '-', $machine_name);
-  // Get rid of instances of multiple '-' characters after replacement.
-  $machine_name = preg_replace('/\-{2,}/', '-', $machine_name);
+  $machine_name = preg_replace('/' . PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN . '/', $replace_character, $machine_name);
+  // Get rid of instances of multiple replace characters after replacement.
+  $re = '\\' . $replace_character . '{2,}';
+  $machine_name = preg_replace('/' . $re . '/', $replace_character, $machine_name);
   // Keep the name within the allowed length.
   $machine_name = substr($machine_name, 0, PERSONALIZE_MACHINE_NAME_MAXLENGTH);
 
@@ -1891,7 +1896,7 @@ function personalize_generate_machine_name($name, $exists_callback = NULL) {
       $machine_name = substr($machine_name, 0, PERSONALIZE_MACHINE_NAME_MAXLENGTH - 4);
     }
 
-    $suffix = ('-' . ++$i);
+    $suffix = ($replace_character . ++$i);
     $machine_name .= $suffix;
   }
   return $machine_name;

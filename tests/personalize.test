@@ -1214,6 +1214,9 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $agent_name = 'Some Name$% with Disallow#d  Ch@racters  that exceeds the max allowed  length';
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
     $this->assertEqual('some-name-with-disallow-d-ch-racters-that-exceeds-the-max-allowe', $machine_name);
+    // Test with a different replace character.
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists', '_');
+    $this->assertEqual('some_name_with_disallow_d_ch_racters_that_exceeds_the_max_allowe', $machine_name);
   }
 
   /**
