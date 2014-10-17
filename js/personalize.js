@@ -266,7 +266,7 @@
     }
     // Set up such that Drupal ajax handling can be utilized without a trigger.
     var custom_settings = {};
-    custom_settings.url = '/personalize/option_set/' + osid + '/' + choice_name + '/ajax';
+    custom_settings.url = Drupal.settings.basePath + 'personalize/option_set/' + osid + '/' + choice_name + '/ajax';
     custom_settings.event = 'onload';
     custom_settings.keypress = false;
     custom_settings.prevent = false;
