@@ -1584,6 +1584,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     );
     $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
     // Create 4 Option Sets for this agent.
+    $osids = array();
     for ($i = 0; $i < 4; $i++) {
       $option_set = new stdClass();
       $option_set->label = $this->randomName(8);
@@ -1594,6 +1595,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
         array('option_id' => 'option-B', 'option_label' => 'Option B')
       );
       personalize_option_set_save($option_set);
+      $osids[] = $option_set->osid;
     }
 
     // Try creating an MVT with just one option set.
@@ -1601,7 +1603,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $mvt_machine_name = personalize_generate_machine_name($mvt_label, 'personalize_mvt_machine_name_exists');
     $edit = array();
     $edit['mvt[add][mvt_basic_info][label]'] = $mvt_label;
-    $edit['mvt[add][mvt_basic_info][option_sets][]'] = array(1);
+    $edit['mvt[add][mvt_basic_info][option_sets][]'] = array($osids[0]);
 
     $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/edit", $edit, $this->getButton('mvt'));
     $this->assertText(t('You must choose at least two option sets to create a new multivariate test.'));
@@ -1612,14 +1614,14 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     // in a row.
     $this->resetAll();
     // Now try with 2 option sets.
-    $edit['mvt[add][mvt_basic_info][option_sets][]'] = array(1, 2);
+    $edit['mvt[add][mvt_basic_info][option_sets][]'] = array($osids[0], $osids[1]);
     $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/edit", $edit, $this->getButton('mvt'));
 
     $mvt = personalize_mvt_load($mvt_machine_name);
     $this->assertEqual(2, count($mvt->option_sets));
 
     // Remove one of the option sets.
-    $option_set = personalize_option_set_load(1, TRUE);
+    $option_set = personalize_option_set_load($osids[0], TRUE);
     $option_set->mvt = NULL;
     personalize_option_set_save($option_set);
 
@@ -1628,7 +1630,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $this->assertEqual(1, count($mvt->option_sets));
 
     // Now add a different option set.
-    $option_set_3 = personalize_option_set_load(3, TRUE);
+    $option_set_3 = personalize_option_set_load($osids[2], TRUE);
     $option_set_3->mvt = $mvt_machine_name;
     personalize_option_set_save($option_set_3);
 
@@ -1638,13 +1640,13 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
     // Confirm that the existing MVT is listed with the two option set names.
-    $option_set_2 = personalize_option_set_load(2, TRUE);
+    $option_set_2 = personalize_option_set_load($osids[1], TRUE);
     $os_names = array($option_set_2->label, $option_set_3->label);
     $existing_mvt_listing = l('edit', "admin/structure/personalize/mvt/manage/{$mvt_machine_name}/edit");
     $this->assertRaw($existing_mvt_listing);
     // Now go to the edit page for this MVT and add another Option Set
     $edit = array(
-      'mvt_basic_info[option_sets][]' => array(2,3,4)
+      'mvt_basic_info[option_sets][]' => array($osids[1],$osids[2],$osids[3])
     );
 
     $this->drupalPost("admin/structure/personalize/mvt/manage/{$mvt_machine_name}/edit", $edit, $this->getButton('Save'));
@@ -1859,6 +1861,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'view' => '/admin/structure/personalize/manage/' . $first_agent_machine_name,
         ),
         'supportsGoals' => TRUE,
+        'optionSetTypes' => array(),
         'goals' => NULL,
         'verified' => TRUE,
       ),
@@ -1877,6 +1880,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
           'view' => '/admin/structure/personalize/manage/' . $second_agent_machine_name,
         ),
         'supportsGoals' => FALSE,
+        'optionSetTypes' => array(),
         'goals' => NULL,
         'verified' => TRUE,
       ),
@@ -1970,8 +1974,8 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     // Now let's place the blocks in a region and make sure the correct js settings
     // show up when they're rendered.
     $edit = array();
-    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
-    $edit['blocks[personalize_blocks_2][region]'] = 'sidebar_first';
+    $edit['blocks[personalize_blocks_' . $option_sets[0]->osid . '][region]'] = 'sidebar_first';
+    $edit['blocks[personalize_blocks_' . $option_sets[1]->osid . '][region]'] = 'sidebar_first';
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
@@ -1991,15 +1995,15 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $settings = $this->drupalGetSettings();
     $option_set_settings = $settings['personalize']['option_sets'];
     // Assert that the name was sanitized.
-    $this->assertEqual('some-non-machine-readable-name', $option_set_settings['osid-1']['decision_name']);
+    $this->assertEqual('some-non-machine-readable-name', $option_set_settings['osid-' . $option_sets[0]->osid]['decision_name']);
     // Assert that both blocks have the same decision name.
-    $this->assertEqual($option_set_settings['osid-1']['decision_name'], $option_set_settings['osid-2']['decision_name']);
+    $this->assertEqual($option_set_settings['osid-' . $option_sets[0]->osid]['decision_name'], $option_set_settings['osid-' . $option_sets[1]->osid]['decision_name']);
     $set_status = personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING);
     // Confirm that there was no problem settings this agent's status to Running.
     $this->assertTrue($set_status);
 
     // Now change one of the option sets so that the two have different numbers of options.
-    $os = personalize_option_set_load(2, TRUE);
+    $os = personalize_option_set_load($option_sets[1]->osid, TRUE);
     $os->options[] = array(
       'option_id' => 'option-C',
       'option_label' => 'Option C',
@@ -2020,7 +2024,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     // Now add a third option to the other option set but give it a different
     // option ID.
-    $os = personalize_option_set_load(1, TRUE);
+    $os = personalize_option_set_load($option_sets[0]->osid, TRUE);
     $os->options[] = array(
       'option_id' => 'my-new-option',
       'option_label' => 'Option C',
