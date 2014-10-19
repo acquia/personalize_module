@@ -97,7 +97,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    *   An array of option set counts indicating the number of options
    *   expected to be found in each of the MVT's option sets.
    */
-  public function assertMVTSettings($personalize_settings, $mvt_name, $option_set_counts) {
+  public function assertMVTBlocks($personalize_settings, $mvt_name, $option_set_counts, $block_ids) {
     $num_option_sets = count($option_set_counts);
     // Confirm that the MVT settings have been loaded as expected.
     $this->assertTrue(isset($personalize_settings['mvt']));
@@ -105,8 +105,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
     $this->assertEqual($num_option_sets, count($personalize_settings['mvt'][$mvt_name]['option_sets']));
     // Assert that each Option Set is represented in the MVT settings.
     $delta_num = 1;
-    foreach ($option_set_counts as $i => $count) {
-      $osid = 'osid-' . ($i + 1);
+    foreach ($option_set_counts as $osid => $count) {
+      $osid = 'osid-' . $osid;
       $this->assertTrue(isset($personalize_settings['mvt']['test-mvt']['option_sets'][$osid]));
       $this->assertEqual('test-mvt', $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['decision_point']);
       $this->assertEqual($osid, $personalize_settings['mvt']['test-mvt']['option_sets'][$osid]['decision_name']);
@@ -116,7 +116,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
         // index.
         $char = chr($j + 64);
         $expected_options[] = array(
-          'bid' => 'block_delta_' . $delta_num,
+          'bid' => array_shift($block_ids),
           'option_id' => 'option-' . $char,
           'option_label' => 'Option ' . $char,
         );
@@ -663,21 +663,27 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // Create some custom blocks to use as variations.
     $block_ids = $this->createCustomBlocks(8);
     $option_counts = array(2, 3, 3);
+    // This array will have osids as keys with the corresponding option count as
+    // the value.
+    $option_set_count_mappings = array();
+    $delta = 0;
     for ($i = 0; $i < 3; $i++) {
       // Add different numbers of options to the option sets.
       $options = array();
       for($j = 0; $j < $option_counts[$i]; $j++) {
-        $options[] = array('bid' => array_shift($block_ids));
+        $options[] = array('bid' => $block_ids[$delta]);
+        $delta++;
       }
       $option_set = $this->createOptionSet($i, array('plugin' => 'block', 'agent' => 'test-agent', 'options' => $options, 'data' => array('block_title' => $this->randomName())));
       $mvt->option_sets[$option_set->osid] = $option_set;
+      $option_set_count_mappings[$option_set->osid] = $option_counts[$i];
     }
     personalize_mvt_save($mvt);
     // Call the test page specifying the multivariate test to be rendered.
     $this->drupalGet('personalize-test/personalized-page/test-mvt/my-goal/0');
     $settings = $this->drupalGetSettings();
     $personalize_settings = $settings['personalize'];
-    $this->assertMVTSettings($personalize_settings, 'test-mvt', $option_counts);
+    $this->assertMVTBlocks($personalize_settings, 'test-mvt', $option_set_count_mappings, $block_ids);
 
     // Now call the test page specifying the MVT test plus a regular option
     // set that is not part of the MVT.
@@ -685,7 +691,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $settings = $this->drupalGetSettings();
     $personalize_settings = $settings['personalize'];
     // The MVT settings should be exactly the same.
-    $this->assertMVTSettings($personalize_settings, 'test-mvt', $option_counts);
+    $this->assertMVTBlocks($personalize_settings, 'test-mvt', $option_set_count_mappings, $block_ids);
     $this->assertOptionSetSettings($personalize_settings, 'test-os-2', 'test-os-2', 'test-os-2', 'test-agent', 2);
   }
 
@@ -743,34 +749,35 @@ class PersonalizeTest extends PersonalizeBaseTest {
       ),
     );
 
-    personalize_option_set_save(_personalize_blocks_convert_form_to_personalized_block($personalized_blocks_form_state));
+    $option_set = personalize_option_set_save(_personalize_blocks_convert_form_to_personalized_block($personalized_blocks_form_state));
+    $osid = $option_set->osid;
 
     // We aren't able to check the set as winner link as it is a button rather
     // than a submit input.
     // We can check that the winning option is properly displayed.
     $this->drupalGet("admin/structure/personalize/manage/$machine_name/edit");
-    $this->assertNoRaw('<button id="edit-option-sets-option-set-1-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
-    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
-    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertNoRaw('<button id="edit-option-sets-option-set-' . $osid. '-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-' . $osid. '-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-' . $osid . '-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
 
-    $option_set = personalize_option_set_load(1);
+    $option_set = personalize_option_set_load($osid);
     $option_set->winner = 'option-C';
     personalize_option_set_save($option_set);
     $this->drupalGet("admin/structure/personalize/manage/$machine_name/edit");
-    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
-    $this->assertRaw('<button id="edit-option-sets-option-set-1-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
-    $this->assertNoRaw('<button id="edit-option-sets-option-set-1-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-' . $osid . '-options-option-A-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertRaw('<button id="edit-option-sets-option-set-' . $osid . '-options-option-B-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
+    $this->assertNoRaw('<button id="edit-option-sets-option-set-' . $osid . '-options-option-C-basic-winner" class="personalize-add-link" title="Click here to set as winning variation.">Set as Fallback/Winner</button>');
 
     // Now let's place the block in a region and make sure the correct js settings
     // show up when it's rendered on a page.
     $edit = array();
-    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $edit['blocks[personalize_blocks_' . $osid . '][region]'] = 'sidebar_first';
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $option_set_settings = $settings['personalize']['option_sets'];
     // Assert that index 2 is provided as the winner in the settings.
-    $this->assertEqual(2, $option_set_settings['osid-1']['winner']);
+    $this->assertEqual(2, $option_set_settings['osid-' . $osid]['winner']);
 
   }
 
@@ -1981,7 +1988,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $settings = $this->drupalGetSettings();
     $option_set_settings = $settings['personalize']['option_sets'];
     // Assert that both blocks have the same decision name.
-    $this->assertEqual($option_set_settings['osid-1']['decision_name'], $option_set_settings['osid-2']['decision_name']);
+    $this->assertEqual($option_set_settings['osid-' . $option_sets[0]->osid]['decision_name'], $option_set_settings['osid-' . $option_sets[1]->osid]['decision_name']);
 
     // Change both decision names to something else. The string should be converted
     // to a machine name.
@@ -2051,14 +2058,12 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
     $agent_name = $agent->getMachineName();
 
-    // Create block-based option set.
-    $option_sets = array();
-    // Each option set will have 2 options.
+    // Create block-based option set. Each option set will have 2 options.
     $options = array(
       array('bid' => 'comment_delta_recent'),
       array('bid' => 'system_delta_powered-by'),
     );
-    $option_sets[] = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $option_set = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
 
     // First verify that no preview links appear when the preview link option
     // is empty.
@@ -2090,7 +2095,7 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
     // settings passed to JavaScript.
     $this->clickLink(t('Preview'), 1);
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($settings['personalize']['preselected']['osid-1'], 'option-B');
+    $this->assertEqual($settings['personalize']['preselected']['osid-' . $option_set->osid], 'option-B');
   }
 
   /**
@@ -2127,18 +2132,19 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       array('bid' => 'system_delta_powered-by'),
     );
     $option_set = $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $osid = $option_set->osid;
 
     // Confirm that we can add a explicit targeting option without setting any auto targeting options.
     $edit = array(
-      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'user_profile_context__test_user_field_1',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
+      "option_sets[option_set_$osid][options][option-A][enable_explicit_targeting]" => 1,
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][context]" => 'user_profile_context__test_user_field_1',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]" => 'starts',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
-    $option_set = personalize_option_set_load(1);
+    $option_set = personalize_option_set_load($osid);
     $expected_targeting = array(
       'option-A' => array(
         'fixed_targeting' => array('test_user_field_1--ss-first-value'),
@@ -2166,14 +2172,14 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     // Confirm that we have the expected visitor contexts.
     $edit = array();
-    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $edit["blocks[personalize_blocks_$osid][region]"] = 'sidebar_first';
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting']);
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting_strategy']);
   }
 
   /**
@@ -2211,11 +2217,12 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
       array('bid' => 'system_delta_powered-by'),
     );
     $option_set = $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $osid = $option_set->osid;
 
     // Confirm that we have visitor context options but cannot set fixed targeting.
     $this->drupalGet("admin/structure/personalize/manage/$machine_name/edit");
-    $this->assertNoField('option_sets[option_set_1][options][option-A][enable_explicit_targeting]');
-    $this->assertNoField('option_sets[option_set_1][options][option-B][enable_explicit_targeting]');
+    $this->assertNoField("option_sets[option_set_$osid][options][option-A][enable_explicit_targeting]");
+    $this->assertNoField("option_sets[option_set_$osid][options][option-B][enable_explicit_targeting]");
 
     // Add some context to the campaign.
     $edit = array('visitor_context[]' => array('user_profile_context__test_user_field_1' => 'user_profile_context__test_user_field_1'));
@@ -2223,15 +2230,15 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     // Confirm that we can add a explicit targeting option now.
     $edit = array(
-      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'user_profile_context__test_user_field_1',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'starts',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => 'first value',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][strategy]' => 'OR',
+      "option_sets[option_set_$osid][options][option-A][enable_explicit_targeting]" => 1,
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][context]" => 'user_profile_context__test_user_field_1',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]" => 'starts',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
+      "option_sets[option_set_$osid][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
-    $option_set = personalize_option_set_load(1);
+    $option_set = personalize_option_set_load($osid);
     $expected_targeting = array(
       'option-A' => array(
         'fixed_targeting' => array('test_user_field_1--ss-first-value'),
@@ -2255,14 +2262,14 @@ class PersonalizeAdministrationTest extends PersonalizeBaseTest {
 
     // Confirm that we have the expected visitor contexts.
     $edit = array();
-    $edit['blocks[personalize_blocks_1][region]'] = 'sidebar_first';
+    $edit["blocks[personalize_blocks_$osid][region]"] = 'sidebar_first';
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting']);
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-1']['options'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting['option-A']['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['options'][0]['fixed_targeting_strategy']);
   }
 
   /**
