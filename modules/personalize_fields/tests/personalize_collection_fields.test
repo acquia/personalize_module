@@ -211,10 +211,12 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
     // and field label.
     $first_agent = 'container-personalizable-test-collection-subfield';
     $this->assertEqual($first_agent, $first_os->agent);
+    $field_collections = entity_load('field_collection_item', FALSE);
 
+    $entity_ids = array_keys($field_collections);
     $field_info = array(
       'entity_type' => 'field_collection_item',
-      'entity_id' => 1,
+      'entity_id' => $entity_ids[0],
       'field_name' => 'article_test_field',
     );
     $this->assertEqual($field_info, $first_os->field_info);
@@ -236,7 +238,7 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
 
     $field_info = array(
       'entity_type' => 'field_collection_item',
-      'entity_id' => 2,
+      'entity_id' => $entity_ids[1],
       'field_name' => 'article_test_field',
     );
     $this->assertEqual($field_info, $second_os->field_info);
