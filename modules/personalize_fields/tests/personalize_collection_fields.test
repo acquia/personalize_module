@@ -16,10 +16,7 @@ class PersonalizeFieldsCollectionTest extends DrupalWebTestCase {
   }
 
   function setUp() {
-    parent::setUp(array('personalize_fields', 'personalize_test', 'field_collection'));
-    // Make sure the default agent is persisted in the database.
-    $agent = personalize_agent_load('test-agent');
-    personalize_agent_save($agent);
+    parent::setUp(array('personalize', 'personalize_fields', 'personalize_test', 'field_collection'));
     $this->admin_user = $this->drupalCreateUser(array(
       'access administration pages',
       'administer site configuration',
