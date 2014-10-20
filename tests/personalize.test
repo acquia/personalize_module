@@ -2339,6 +2339,7 @@ class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
    */
   function testMVTSaveDelete() {
     // Create 4 Option Sets.
+    $osids = array();
     for ($i = 0; $i < 4; $i++) {
       $option_set = new stdClass();
       $option_set->label = $this->randomName(8);
@@ -2348,17 +2349,18 @@ class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
         array('option_id' => 'option-A'),
         array('option_id' => 'option-B')
       );
-      personalize_option_set_save($option_set);
+      $option_set = personalize_option_set_save($option_set);
+      $osids[] = $option_set->osid;
     }
 
-    // Now create an MVT and add the 4 Option Sets to it.
+    // Now create an MVT and add 2 of the Option Sets to it.
     $mvt = new stdClass();
     $mvt->label = 'Test Mvt';
     $mvt->agent = 'test-agent';
     // Only the array keys matter in the option_sets property.
     $mvt->option_sets = array(
-      1 => 1,
-      2 => 2,
+      $osids[0] => $osids[0],
+      $osids[1] => $osids[1],
     );
     personalize_mvt_save($mvt);
 
@@ -2367,7 +2369,7 @@ class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
     // the new MVT while the others still have a null MVT value.
     drupal_static_reset();
     for ($i = 0; $i < 4; $i++) {
-      $option_set = personalize_option_set_load($i + 1);
+      $option_set = personalize_option_set_load($osids[$i]);
       if ($i < 2) {
         $this->assertEqual('test-mvt', $option_set->mvt);
       }
@@ -2382,7 +2384,7 @@ class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
     // confirm that all of them have a null MVT value.
     drupal_static_reset();
     for ($i = 0; $i < 4; $i++) {
-      $option_set = personalize_option_set_load($i + 1);
+      $option_set = personalize_option_set_load($osids[$i]);
       $this->assertNull($option_set->mvt);
     }
   }
