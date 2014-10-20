@@ -408,7 +408,7 @@ function personalize_elements_form_validate($form, &$form_state) {
         if(empty($line)) {
           continue;
         }
-        if (!valid_url($line)) {
+        if (!valid_url($line) && $line !== '<front>') {
           form_set_error('pages', t('The selected pages must contain valid paths.'));
           break;
         }
