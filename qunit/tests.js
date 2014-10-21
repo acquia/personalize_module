@@ -453,7 +453,57 @@ QUnit.asyncTest('decision caching', function( assert ) {
 
 });
 
-function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
+QUnit.asyncTest("MVT decision caching", function( assert ) {
+  // Since decision caching is turned on for this test, make sure we remove anything we
+  // add to session storage at the start of the test.
+  sessionStorage.removeItem("Drupal.personalize:decisions:my-agent:mymvt");
+  // Set decision caching to true for our test agent.
+  Drupal.settings.personalize.agent_map['my-agent'].cache_decisions = true;
+  // The getDecisionsForPoint method should be called only once for the two option sets.
+  expect(9);
+  QUnit.start();
+  // Create an MVT.
+  var mvt_name = 'mymvt';
+  addMVTToDrupalSettings(mvt_name, 2);
+
+  Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {
+    QUnit.start();
+    assert.equal(name, 'my-agent');
+    assert.ok($.isEmptyObject(visitor_context));
+    assert.ok(choices.hasOwnProperty('osid-1'));
+    assert.ok(choices.hasOwnProperty('osid-2'));
+    assert.equal(decision_point, mvt_name);
+    callback.call(null, {'osid-1': 'second-option', 'osid-2': 'first-option'});
+  };
+  var reran = false;
+  var needsStart = false;
+  Drupal.personalize.executors.show.execute = function ($option_sets, choice_name, osid, preview) {
+    // QUnit will not get restarted in the getDecisionsForPoint the second time
+    // because decisions will come from the cache.  It can only be started
+    // once, however for the mvt.
+    if (needsStart) {
+      QUnit.start();
+      needsStart = false;
+    }
+    if (osid == 'osid-1') {
+      assert.equal('second-option', choice_name);
+    }
+    if (osid == 'osid-2') {
+      assert.equal('first-option', choice_name);
+    }
+    if (!reran) {
+      reran = true;
+      Drupal.personalize.resetAll();
+      QUnit.stop();
+      needsStart = true;
+      Drupal.personalize.personalizePage(Drupal.settings);
+    }
+  };
+  QUnit.stop();
+  Drupal.personalize.personalizePage(Drupal.settings);
+});
+
+function addOptionSetToDrupalSettings(osid, decision_name, decision_point, mvt) {
 
   Drupal.settings.personalize.option_sets[osid] = {
     'agent': 'my-agent',
@@ -462,7 +512,7 @@ function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
     'decision_point': decision_point,
     'executor': 'show',
     'label': 'My Test',
-    'mvt': null,
+    'mvt': mvt ? mvt : null,
     'option_names': ['first-option', 'second-option'],
     'options': [
       {
@@ -483,32 +533,20 @@ function addOptionSetToDrupalSettings(osid, decision_name, decision_point) {
 }
 
 function addMVTToDrupalSettings(name, num_option_sets) {
+
+  Drupal.settings.personalize.mvt = Drupal.settings.personalize.mvt || {};
+  Drupal.settings.personalize.mvt[name] = {
+    'agent': 'my-agent',
+    'id': 1,
+    'label': name,
+    'machine_name': name,
+    'option_sets': {},
+    'stateful': 0
+  }
+
   for (var i = 0; i < num_option_sets; i++) {
     var osid = 'osid-' + (i+1);
-    Drupal.settings.personalize.option_sets[osid] = {
-      'agent': 'my-agent',
-      'data': [],
-      'decision_name': osid,
-      'decision_point': name,
-      'executor': 'show',
-      'label': 'My Test',
-      'mvt': name,
-      'option_names': ['first-option', 'second-option'],
-      'options': [
-        {
-          'option_id': 'first-option',
-          'option_lablel': 'First Option'
-        },
-        {
-          'option_id': 'second-option',
-          'option_label': 'Second Option'
-        }
-      ],
-      'osid': osid,
-      'plugin': 'my_os_plugin',
-      'selector': '.some-class',
-      'stateful': 0,
-      'winner': null
-    };
+    addOptionSetToDrupalSettings(osid, osid, name, name);
+    Drupal.settings.personalize.mvt[name]['option_sets'][osid] = Drupal.settings.personalize.option_sets[osid];
   }
 }

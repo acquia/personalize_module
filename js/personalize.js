@@ -720,21 +720,21 @@
    *   The combined agent data for all option sets on the page.
    */
   function processOptionSets (option_sets) {
-    var agents = {};
-    for(var osid in option_sets) {
+    var agents = {}, agentName, agentData, osid, decisionPoint, decisions;
+    for(osid in option_sets) {
       if (processedOptionSets.hasOwnProperty(osid)) {
         continue;
       }
       processedOptionSets[osid] = true;
       if (option_sets.hasOwnProperty(osid)) {
-        var agentData = processOptionSet(option_sets[osid]);
+        agentData = processOptionSet(option_sets[osid]);
         // If agent data is not returned then the decision is not necessary for
         // this option set.
         if (!agentData) {
           continue;
         }
         // Merge in the agent data with other option set agent data.
-        var agentName = agentData.agentName;
+        agentName = agentData.agentName;
         if (!agents.hasOwnProperty(agentName)) {
           agents[agentName] = agentData;
         } else {
@@ -745,6 +745,30 @@
         }
       }
     }
+
+    // Check to see if any of the decisions are already in storage.
+    for(agentName in agents) {
+      if (agents.hasOwnProperty(agentName)) {
+        for(decisionPoint in agents[agentName].decisionPoints) {
+          if (agents[agentName].decisionPoints.hasOwnProperty(decisionPoint)) {
+            decisions = readDecisionsFromStorage(agentName, decisionPoint);
+            // Decisions from localStorage need to be checked against the known valid
+            // set of choices because they may be stale (e.g. if an option has been
+            // removed after being stored in a user's localStorage).
+            if (!decisionsAreValid(decisions, agents[agentName].decisionPoints[decisionPoint].choices)) {
+              decisions = null;
+            }
+            if (decisions != null) {
+              // Execute the decision callbacks and skip processing this agent any further.
+              executeDecisionCallbacks(agentName, decisionPoint, decisions);
+              // Remove this from the decision points to be processed for this agent.
+              delete agents[agentName].decisionPoints[decisionPoint];
+            }
+          }
+        }
+      }
+    }
+
     return agents;
   }
 
@@ -819,20 +843,6 @@
     agentData.decisionPoints[decision_point].choices[decision_name] = choices;
     agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
     addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid);
-
-    // Check to see if this decision is already in storage.
-    var decisions = readDecisionsFromStorage(agent_name, decision_point);
-    // Decisions from localStorage need to be checked against the known valid
-    // set of choices because they may be stale (e.g. if an option has been
-    // removed after being stored in a user's localStorage).
-    if (!decisionsAreValid(decisions, agentData.decisionPoints[decision_point].choices)) {
-      decisions = null;
-    }
-    if (decisions != null) {
-      // Execute the decision callbacks and skip processing this agent any further.
-      executeDecisionCallbacks(agent_name, decision_point, decisions);
-      return;
-    }
 
     // Build up the fixed targeting rules for options within this option set.
     for (var j in option_set.options) {
