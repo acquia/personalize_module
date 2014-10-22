@@ -477,9 +477,9 @@ function personalize_agent_get_settings() {
         'text' => $status_text,
       ),
       'links' => array(
-        'view' => 'admin/structure/personalize/manage/' . $agent->machine_name,
-        'edit' => 'admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
-        'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? 'admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
+        'view' => base_path() . 'admin/structure/personalize/manage/' . $agent->machine_name,
+        'edit' => base_path() . 'admin/structure/personalize/manage/' . $agent->machine_name . '/edit',
+        'report' => $plugin instanceof PersonalizeAgentReportInterface && $verified ? base_path() . 'admin/structure/personalize/manage/' . $agent->machine_name . '/report' : '',
       ),
       'supportsGoals' => $supports_goals,
       'optionSetTypes' => array_unique($option_set_types),
