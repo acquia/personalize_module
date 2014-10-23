@@ -24,6 +24,18 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
     $this->assertTrue(count($elements), 'Found an element with the specified data attribute');
   }
 
+
+  /**
+   * Asserts that no wrapper div for the specified Option Set has been output.
+   *
+   * @param int $osid
+   *   The Option Set ID.
+   */
+  protected function assertNoOptionSet($osid) {
+    $elements = $this->xpath('//div[contains(@data-personalize, :osid)]', array(':osid' => $osid));
+    $this->assertFalse(count($elements), 'Did not find an element with the specified data attribute');
+  }
+
   /**
    * Helper to assert the number of Option Sets of a given type.
    *
@@ -66,22 +78,31 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    * @param $num_options
    *   THe number of options that option set should have
    */
-  public function assertOptionSetSettings($personalize_settings, $osid, $decision_name, $decision_point, $agent_name, $num_options) {
+  public function assertOptionSetSettings($personalize_settings, $osid, $decision_name, $decision_point, $agent_name, $num_options, $expected_options = array()) {
     $this->assertTrue(isset($personalize_settings['option_sets'][$osid]));
     $this->assertEqual($agent_name, $personalize_settings['option_sets'][$osid]['agent']);
     $this->assertEqual($decision_name, $personalize_settings['option_sets'][$osid]['decision_name']);
     $this->assertEqual($decision_point, $personalize_settings['option_sets'][$osid]['decision_point']);
-    $expected_options = $expected_option_names = array();
-    for ($j = 1; $j <= $num_options; $j++) {
-      // Get the character corresponding to the option
-      // index.
-      $char = chr($j + 64);
-      $expected_options[] = array(
-        'option_id' => 'option-' . $char,
-        'option_label' => 'Option ' . $char,
-      );
-      $expected_option_names[] = 'option-' . $char;
+    $expected_option_names = array();
+    if (empty($expected_options)) {
+      $expected_options = array();
+      for ($j = 1; $j <= $num_options; $j++) {
+        // Get the character corresponding to the option
+        // index.
+        $char = chr($j + 64);
+        $expected_options[] = array(
+          'option_id' => 'option-' . $char,
+          'option_label' => 'Option ' . $char,
+        );
+        $expected_option_names[] = 'option-' . $char;
+      }
     }
+    else {
+      foreach ($expected_options as $option_info) {
+        $expected_option_names[] = $option_info['option_id'];
+      }
+    }
+
     $this->assertEqual($expected_options, $personalize_settings['option_sets'][$osid]['options']);
     $this->assertEqual($expected_option_names, $personalize_settings['option_sets'][$osid]['option_names']);
   }
@@ -506,6 +527,70 @@ class PersonalizeTest extends PersonalizeBaseTest {
     $this->assertEqual($expected_action_listeners, $personalize_settings['actionListeners']);
   }
 
+  function testPersonalizePageCompletedCampaign() {
+    // Set initial status of the campaigns.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+    // Call the test page with no params - results in just one Option Set
+    // with two options being output.
+    $this->drupalGet('personalize-test/personalized-page');
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $expected_agent_map = array(
+      'test-agent' => array(
+        'type' => 'test_agent',
+        'label' => 'My Test Agent',
+        'active' => PERSONALIZE_STATUS_RUNNING,
+        'enabled_contexts' => array(),
+        'cache_decisions' => TRUE,
+      )
+    );
+    $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
+    // Assert that the js for the agent has been loaded.
+    $this->assertRaw('personalize_test.js');
+
+    // Assert that the option set has been output.
+    $this->assertOptionSet('test-os-1');
+    $this->assertOptionSetSettings($personalize_settings, 'test-os-1', 'test-os-1', 'test-os-1', 'test-agent', 2);
+
+    // Now set the campaign's status to completed and confirm that it is rendered in
+    // PHP and no js settings are there.
+    personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_COMPLETED);
+    $this->resetAll();
+
+    $this->drupalGet('personalize-test/personalized-page');
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $this->assertFalse(isset($personalize_settings['agent_map']));
+
+    // Assert that the js for the agent has not been loaded.
+    $this->assertNoRaw('personalize_test.js');
+
+    // Assert that the option set has not been output.
+    $this->assertNoOptionSet('test-os-1');
+    $this->assertFalse(isset($personalize_settings['option_sets']));
+
+    // Assert that the content of the first option has been output.
+    $this->assertText('OHAI 0' );
+
+    // Now get a personalized page where the option set has the winner set to option B.
+    variable_set('personalize_test_os_winner_test-os-1', 'option-B');
+    $this->drupalGet('personalize-test/personalized-page');
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $this->assertFalse(isset($personalize_settings['agent_map']));
+
+    // Assert that the js for the agent has been loaded.
+    $this->assertNoRaw('personalize_test.js');
+
+    // Assert that the option set has not been output.
+    $this->assertNoOptionSet('test-os-1');
+    $this->assertFalse(isset($personalize_settings['option_sets']));
+
+    // Assert that the content of the first option has been output.
+    $this->assertNoText('OHAI 0' );
+    $this->assertText('OHAI 1' );
+  }
 
   /**
    * Tests server-side triggering of goals.
@@ -1951,6 +2036,15 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
+
+    // Test setting an agent's status to completed.
+    $time_before = time();
+    personalize_agent_set_status($first_agent_machine_name, PERSONALIZE_STATUS_COMPLETED);
+    $this->resetAll();
+    // Check the end time of the agent, which should now have been set.
+    $time_after = time();
+    $end_time = variable_get(_personalize_agent_get_stoptime_variable($first_agent_machine_name), 0);
+    $this->assertTrue($time_before <= $end_time && $end_time <= $time_after);
 
     // Now test the ajax callback.
     // Expected case to update to next status.

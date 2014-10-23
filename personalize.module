@@ -893,10 +893,14 @@ function _personalize_loaded_object_sort(&$objects, $sort) {
  * @param $option_set
  *   The Option Set the element corresponds to.
  */
-function personalize_element_with_option_set(&$element, $option_set) {
+function personalize_element_with_option_set(&$element, $option_set, $skip_completed = FALSE) {
   $loaded_mvts = &drupal_static(__FUNCTION__, array());
   $attached = isset($element['#attached']) ? $element['#attached'] : array();
   $agent_name = $option_set->agent;
+  if ($skip_completed && personalize_agent_get_status($agent_name) === PERSONALIZE_STATUS_COMPLETED) {
+    return;
+  }
+
   if (isset($option_set->mvt) && !in_array($option_set->mvt, $loaded_mvts) && $mvt = personalize_mvt_load($option_set->mvt)) {
     $loaded_mvts[] = $option_set->mvt;
     if (count($mvt->option_sets) > 1) {
@@ -1049,12 +1053,16 @@ function personalize_agent_set_status($agent_name, $status) {
   if (!$old_status) {
     return FALSE;
   }
-  // The status of a completed agent cannot be changed.
-  if ($old_status & PERSONALIZE_STATUS_COMPLETED) {
-    return FALSE;
-  }
+
   if ($old_status == $status) {
     return TRUE;
+  }
+
+  if ($status == PERSONALIZE_STATUS_COMPLETED) {
+    // Register the end time of the campaign.
+    $end_time_var = _personalize_agent_get_stoptime_variable($agent_name);
+    $now = time();
+    variable_set($end_time_var, $now);
   }
 
   if ($status == PERSONALIZE_STATUS_RUNNING) {
@@ -1074,6 +1082,11 @@ function personalize_agent_set_status($agent_name, $status) {
 
   // Set the new status in variables.
   variable_set(_personalize_agent_get_status_variable($agent_name), $status);
+
+  if ($old_status == PERSONALIZE_STATUS_COMPLETED) {
+    // Remove the variable holding the end time of the campaign.
+    variable_del(_personalize_agent_get_stoptime_variable($agent_name));
+  }
 
   // Clear the visitor context cache settings for running campaigns.
   personalize_visitor_context_expiration_clear();
@@ -1135,7 +1148,7 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
     }
   }
   // Now allow the agent to run a check.
-  $agent_instance = personalize_agent_load_agent($agent_name);
+  $agent_instance = personalize_agent_load_agent($agent_name, FALSE, TRUE);
   if ($agent_instance instanceof PersonalizeAgentInterface) {
     $errors = $agent_instance->errors();
   }
@@ -1828,11 +1841,11 @@ function personalize_get_option_set_types() {
  * @param $agent_name
  * @return PersonalizeAgentInterface | NULL
  */
-function personalize_agent_load_agent($agent_name, $reset = FALSE) {
+function personalize_agent_load_agent($agent_name, $reset = FALSE, $include_completed = FALSE) {
   $loaded = &drupal_static(__FUNCTION__, array());
   if ($reset || !isset($loaded[$agent_name])) {
     $loaded[$agent_name] = FALSE;
-    if ($agent_data = personalize_agent_load($agent_name, $reset)) {
+    if ($agent_data = personalize_agent_load($agent_name, $reset, $include_completed)) {
       ctools_include('plugins');
       if ($agent_class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
         if ($agent = call_user_func_array(array($agent_class, 'create'), array($agent_data))) {
