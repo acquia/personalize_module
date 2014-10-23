@@ -1255,7 +1255,7 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
     '#tree' => FALSE,
   );
   // Load available agents and put them in an options array.
-  $agents = personalize_agent_load_multiple();
+  $agents = personalize_agent_load_multiple(array(), array(), FALSE, FALSE);
   $agent_options = array();
   foreach($agents as $agent) {
     $agent_options[$agent->machine_name] = check_plain($agent->label);
@@ -1701,7 +1701,7 @@ function personalize_get_agent_types() {
 /**
  * Load a particular agent from the database or from code.
  */
-function personalize_agent_load($name, $reset = FALSE, $include_completed = FALSE) {
+function personalize_agent_load($name, $reset = FALSE, $include_completed = TRUE) {
   $agents = personalize_agent_load_multiple(array($name), array(), $reset, $include_completed);
   return isset($agents[$name]) ? $agents[$name] : NULL;
 }
@@ -1724,7 +1724,7 @@ function personalize_agent_load($name, $reset = FALSE, $include_completed = FALS
  * @return array
  *   An array of agents matching the selection criteria keyed by machine name.
  */
-function personalize_agent_load_multiple($names = array(), $conditions = array(), $reset = FALSE, $include_completed = FALSE, $sort = NULL) {
+function personalize_agent_load_multiple($names = array(), $conditions = array(), $reset = FALSE, $include_completed = TRUE, $sort = NULL) {
   ctools_include('export');
   if ($reset) {
     // @todo No way to just reset the cache for agents specified in the $names
@@ -1764,8 +1764,8 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
     if ($limit_status && $current_status != $limit_status) {
       continue;
     }
-    // Skip any completed agents.
-    else if ($current_status & PERSONALIZE_STATUS_COMPLETED) {
+    // Skip completed agents if they should not be included.
+    else if ($current_status & PERSONALIZE_STATUS_COMPLETED && !$include_completed) {
       continue;
     }
     $limited[$name] = $agent;
@@ -1776,7 +1776,7 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
 /**
  * Load all agents of a particular type.
  */
-function personalize_agent_load_by_type($type, $reset = FALSE, $include_completed = FALSE) {
+function personalize_agent_load_by_type($type, $reset = FALSE, $include_completed = TRUE) {
   return personalize_agent_load_multiple(array(), array('plugin' => $type), $reset, $include_completed);
 }
 
@@ -1841,7 +1841,7 @@ function personalize_get_option_set_types() {
  * @param $agent_name
  * @return PersonalizeAgentInterface | NULL
  */
-function personalize_agent_load_agent($agent_name, $reset = FALSE, $include_completed = FALSE) {
+function personalize_agent_load_agent($agent_name, $reset = FALSE, $include_completed = TRUE) {
   $loaded = &drupal_static(__FUNCTION__, array());
   if ($reset || !isset($loaded[$agent_name])) {
     $loaded[$agent_name] = FALSE;
