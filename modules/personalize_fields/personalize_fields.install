@@ -125,22 +125,19 @@ function personalize_fields_update_7002() {
  * Truncate any long option labels created from personalize fields content.
  */
 function personalize_fields_update_7003() {
-  $option_sets = personalize_option_set_load_by_type('fields');
-  foreach ($option_sets as $option_set) {
-    $result = db_select('personalize_option_sets', 'o')
-      ->fields('o', array('osid', 'options'))
-      ->condition('plugin', 'fields', '=')
-      ->execute();
-    foreach ($result as $row) {
-      $options = unserialize($row->options);
-      foreach ($options as &$option) {
-        $option['option_label'] = _personalize_fields_generate_option_label_from_value($option['option_label']);
-      }
-      db_update('personalize_option_sets')
-        ->condition('osid', $row->osid)
-        ->fields(array('options' => serialize($options)))
-        ->execute();
+  $result = db_select('personalize_option_sets', 'o')
+    ->fields('o', array('osid', 'options'))
+    ->condition('plugin', 'fields', '=')
+    ->execute();
+  foreach ($result as $row) {
+    $options = unserialize($row->options);
+    foreach ($options as &$option) {
+      $option['option_label'] = _personalize_fields_generate_option_label_from_value($option['option_label']);
     }
+    db_update('personalize_option_sets')
+      ->condition('osid', $row->osid)
+      ->fields(array('options' => serialize($options)))
+      ->execute();
   }
 }
 
