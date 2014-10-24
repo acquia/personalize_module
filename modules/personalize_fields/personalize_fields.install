@@ -53,6 +53,7 @@ function personalize_fields_uninstall() {
  * Add a cache table for entity fields.
  */
 function personalize_fields_update_7001() {
+  drupal_load('module', 'personalize_fields');
   $schema = personalize_fields_get_cache_table_schema();
   db_create_table('cache_personalize_fields', $schema);
 
