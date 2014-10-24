@@ -63,13 +63,23 @@ function personalize_fields_update_7001() {
     ->fields('pf')
     ->execute();
   foreach ($result as $row) {
-    $option_set = personalize_option_set_load($row->osid);
-    $option_set->data['personalize_fields_entity_type'] = $row->entity_type;
-    $option_set->data['personalize_fields_entity_id'] = $row->entity_id;
-    $option_set->data['personalize_fields_field_name'] = $row->field_name;
-    personalize_option_set_save($option_set);
+    $os = db_query("SELECT osid, data FROM {personalize_option_sets} WHERE osid =
+   :osid", array(':osid' => $row->osid))->fetchObject();
+    if (empty($os)) {
+      continue;
+    }
+    $data = unserialize($os->data);
+    $data['personalize_fields_entity_type'] = $row->entity_type;
+    $data['personalize_fields_entity_id'] = $row->entity_id;
+    $data['personalize_fields_field_name'] = $row->field_name;
+
+    db_update('personalize_option_sets')
+      ->fields(array('data' => serialize($data)))
+      ->condition('osid', $row->osid)
+      ->execute();
+
     $cid = _personalize_fields_get_cid_for_field($row->entity_type, $row->entity_id, $row->field_name);
-    cache_set($cid, $option_set->osid, 'cache_personalize_fields');
+    cache_set($cid, $row->osid, 'cache_personalize_fields');
   }
   // Now drop the old table.
   db_drop_table('personalize_fields_option_sets');
@@ -81,14 +91,19 @@ function personalize_fields_update_7001() {
 function personalize_fields_update_7002() {
   // For all fields set as personalizable we need to switch them to
   // the new settings structure.
-  $option_sets = personalize_option_set_load_by_type('fields');
+  $result = db_select('personalize_option_sets', 'o')
+    ->fields('o', array('agent', 'data'))
+    ->condition('plugin', 'fields')
+    ->execute();
+
   $personalized_fields = array();
-  foreach ($option_sets as $option_set) {
-    if (!isset($personalized_fields[$option_set->data['personalize_fields_field_name']])) {
+  foreach ($result as $row) {
+    $data = unserialize($row->data);
+    if (!isset($personalized_fields[$data['personalize_fields_field_name']])) {
       // We base our default agent type for this field on the agent type of the
       // first existing agent we come to that's used for one of these fields.
-      $agent = personalize_agent_load($option_set->agent);
-      $personalized_fields[$option_set->data['personalize_fields_field_name']] = $agent->plugin;
+      $plugin = db_query("SELECT plugin FROM {personalize_agent} WHERE machine_name = :name", array(':name' => $row->agent))->fetchField();
+      $personalized_fields[$data['personalize_fields_field_name']] = $plugin;
     }
   }
 
