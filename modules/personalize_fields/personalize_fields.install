@@ -39,8 +39,8 @@ function personalize_fields_uninstall() {
     ->execute();
   foreach ($result as $row) {
     $data = unserialize($row->data);
-    if (isset($data['settings']['personalizable'])) {
-      unset($data['settings']['personalizable']);
+    if (isset($data['settings']['personalize'])) {
+      unset($data['settings']['personalize']);
     }
     db_update('field_config')
       ->fields(array('data' => serialize($data)))
