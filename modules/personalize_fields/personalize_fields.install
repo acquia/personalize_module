@@ -126,6 +126,7 @@ function personalize_fields_update_7002() {
  * Truncate any long option labels created from personalize fields content.
  */
 function personalize_fields_update_7003() {
+  drupal_load('module', 'personalize_fields');
   $result = db_select('personalize_option_sets', 'o')
     ->fields('o', array('osid', 'options'))
     ->condition('plugin', 'fields', '=')
