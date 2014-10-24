@@ -104,7 +104,7 @@ function personalize_fields_update_7002() {
       if (isset($personalized_fields[$row->field_name]) && $enabled) {
         $data['settings']['personalize'] = array(
           'enabled' => 1,
-          'agent_type' => $agent->plugin,
+          'agent_type' => $personalized_fields[$row->field_name],
           // There's no way to distinguish the options needed for general configuration
           // of this type of agent from other data that has been saved with the agent
           // so we just set an empty options array here. It is up to the agent plugin to
