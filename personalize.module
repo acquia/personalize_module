@@ -1148,7 +1148,7 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
     }
   }
   // Now allow the agent to run a check.
-  $agent_instance = personalize_agent_load_agent($agent_name, FALSE, TRUE);
+  $agent_instance = personalize_agent_load_agent($agent_name);
   if ($agent_instance instanceof PersonalizeAgentInterface) {
     $errors = $agent_instance->errors();
   }
@@ -1701,8 +1701,8 @@ function personalize_get_agent_types() {
 /**
  * Load a particular agent from the database or from code.
  */
-function personalize_agent_load($name, $reset = FALSE, $include_completed = TRUE) {
-  $agents = personalize_agent_load_multiple(array($name), array(), $reset, $include_completed);
+function personalize_agent_load($name, $reset = FALSE) {
+  $agents = personalize_agent_load_multiple(array($name), array(), $reset);
   return isset($agents[$name]) ? $agents[$name] : NULL;
 }
 
@@ -1841,11 +1841,11 @@ function personalize_get_option_set_types() {
  * @param $agent_name
  * @return PersonalizeAgentInterface | NULL
  */
-function personalize_agent_load_agent($agent_name, $reset = FALSE, $include_completed = TRUE) {
+function personalize_agent_load_agent($agent_name, $reset = FALSE) {
   $loaded = &drupal_static(__FUNCTION__, array());
   if ($reset || !isset($loaded[$agent_name])) {
     $loaded[$agent_name] = FALSE;
-    if ($agent_data = personalize_agent_load($agent_name, $reset, $include_completed)) {
+    if ($agent_data = personalize_agent_load($agent_name, $reset)) {
       ctools_include('plugins');
       if ($agent_class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
         if ($agent = call_user_func_array(array($agent_class, 'create'), array($agent_data))) {
