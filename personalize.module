@@ -445,8 +445,8 @@ function personalize_agent_get_settings() {
   // We need to provide information about all configured campaigns
   // and goals for the control UI.
   $actions = visitor_actions_get_actions();
-  // List the campaigns in Drupal.settings.
-  foreach (personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label') as $agent) {
+  // List the campaigns in Drupal.settings, excluding completed campaigns.
+  foreach (personalize_agent_load_multiple(array(), array(), FALSE, FALSE, 'label') as $agent) {
     $plugin = personalize_agent_load_agent($agent->machine_name);
     if (!$plugin) {
       continue;
