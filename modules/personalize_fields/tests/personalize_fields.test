@@ -5,7 +5,7 @@
  * Tests for Personalize Fields module.
  */
 
-class PersonalizeFieldsTest extends DrupalWebTestCase {
+class PersonalizeFieldsTest extends PersonalizeBaseTest {
 
   public static function getInfo() {
     return array(
@@ -95,7 +95,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
   /**
    * Tests adding a personalized field to a node and deleting the node.
    */
-  function testPersonalizeFields() {
+  function testPersonalizeFieldsCreate() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     // Add personalizable field to the article node type.
@@ -485,7 +485,7 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
    * Tests the behavior of personalized field forms when users don't have permission
    * to personalize content.
    */
-  function testEditingPersonalizeFields() {
+  function testPersonalizeFieldsEdit() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     // Add personalizable field to the article node type.
@@ -624,6 +624,129 @@ class PersonalizeFieldsTest extends DrupalWebTestCase {
     $nid4 = $this->getNidFromCurrentUrl();
 
     $this->assertNull($nid4);
+  }
+
+  /**
+   * Tests rendering of personalized fields.
+   */
+  function testPersonalizeFieldsRender() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'administer content types', 'administer nodes', 'bypass node access', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Add personalizable field to the article node type.
+    $field = array(
+      'type' => 'text',
+      'field_name' => 'article_headline',
+      'cardinality' => -1,
+      'settings' => array(
+        'personalize' => array(
+          'enabled' => 1,
+          'agent_type' => 'test_agent',
+          'options' => array(
+            'test_agent' => array(
+              'use_client_side_goal_processing' => 1
+            )
+          )
+        ),
+      ),
+    );
+    field_create_field($field);
+    $instance = array(
+      'field_name' => 'article_headline',
+      'entity_type' => 'node',
+      'label' => 'Personalizable Headline',
+      'bundle' => 'article',
+      'required' => FALSE
+    );
+    field_create_instance($instance);
+
+    $edit = array();
+    $edit['title'] = $this->randomName(8);
+    $edit['article_headline[und][0][value]'] = 'first option';
+    $edit['article_headline[und][1][value]'] = 'second option';
+    $this->drupalGet('node/add/article');
+    $this->drupalPost(NULL, NULL, t('Add another item'));
+    $this->drupalPost(NULL, $edit, t('Save'));
+    $nid = $this->getNidFromCurrentUrl();
+
+    $agent_name = 'article-personalizable-headline';
+    personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+
+    $option_sets = personalize_option_set_load_by_agent($agent_name);
+    $this->assertEqual(1, count($option_sets));
+    $option_set = reset($option_sets);
+    $osid = $option_set->osid;
+
+    $this->drupalGet('node/' . $nid);
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $expected_agent_map = array(
+      $agent_name => array(
+        'type' => 'test_agent',
+        'label' => 'Article Personalizable Headline 1',
+        'active' => PERSONALIZE_STATUS_RUNNING,
+        'enabled_contexts' => array(),
+        'cache_decisions' => TRUE,
+      )
+    );
+    $this->assertEqual($expected_agent_map, $personalize_settings['agent_map']);
+    // Assert that the js for the agent has been loaded.
+    $this->assertRaw('personalize_test.js');
+
+    // Assert that the option set has been output.
+    $this->assertOptionSet($osid);
+    $expected_options = array(
+      array(
+        'option_id' => 'first-option',
+        'option_label' => 'first option',
+      ),
+      array(
+        'option_id' => 'second-option',
+        'option_label' => 'second option',
+      )
+    );
+    $this->assertOptionSetSettings($personalize_settings, 'osid-' . $osid, 'osid-' . $osid, 'osid-' . $osid, $agent_name, 2, $expected_options);
+
+    // Now set the campaign's status to completed and confirm that it is rendered in
+    // PHP and no js settings are there.
+    personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_COMPLETED);
+    $this->resetAll();
+
+    $this->drupalGet('node/' . $nid);
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    debug($personalize_settings);
+    $this->assertFalse(isset($personalize_settings['agent_map']));
+
+    // Assert that the js for the agent has not been loaded.
+    $this->assertNoRaw('personalize_test.js');
+
+    // Assert that the option set has not been output.
+    $this->assertNoOptionSet($osid);
+    $this->assertFalse(isset($personalize_settings['option_sets']));
+
+    // Assert that the content of the first option has been output.
+    $this->assertText('first option' );
+
+    // Now set the winner of the option set to the second option.
+    $option_set->winner = 'second-option';
+    personalize_option_set_save($option_set);
+
+    $this->drupalGet('node/' . $nid);
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $this->assertFalse(isset($personalize_settings['agent_map']));
+
+    // Assert that the js for the agent has been loaded.
+    $this->assertNoRaw('personalize_test.js');
+
+    // Assert that the option set has not been output.
+    $this->assertNoOptionSet($osid);
+    $this->assertFalse(isset($personalize_settings['option_sets']));
+
+    // Assert that the content of the first option has been output.
+    $this->assertNoText('first option');
+    $this->assertText('second option');
   }
 
   /**

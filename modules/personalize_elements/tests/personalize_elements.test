@@ -5,7 +5,7 @@
  * Tests for Personalize Elements module.
  */
 
-class PersonalizeElementsTest extends DrupalWebTestCase {
+class PersonalizeElementsTest extends PersonalizeBaseTest {
 
   public static function getInfo() {
     return array(
@@ -435,6 +435,47 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
     $this->assertFalse(isset($personalize_elements['contextualVariationTypes']['runJS']));
   }
 
+  function testPersonalizeElementsCompletedCampaign() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'administer site configuration', 'access content', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    $selector = '#my-id .my-class';
+    $variation_type = 'addClass';
+    $option_set = $this->createPersonalizedElement(array('selector' => $selector, 'variation_type' => $variation_type));
+    personalize_agent_set_status($option_set->agent, PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+    $this->drupalGet('');
+    // Make sure the expected js settings are there.
+    $settings = $this->drupalGetSettings();
+    $personalize_elements_settings = $settings['personalize_elements'];
+    $personalize_settings = $settings['personalize'];
+    $js_id = $js_id = personalize_stringify_osid($option_set->osid);
+    $expected = array(
+      $js_id => array(
+        'selector' => $selector,
+        'variation_type' => $variation_type,
+        'previewable' => TRUE,
+      )
+    );
+    $this->assertEqual($expected, $personalize_elements_settings['elements']);
+    // Assert that the option set settings are there.
+    $this->assertOptionSetSettings($personalize_settings, $js_id, $js_id, $js_id, $option_set->agent, 2, $option_set->options);
+    $this->assertTrue($personalize_settings['agent_map'][$option_set->agent]['active']);
+
+    // Now set the campaign's status to completed and confirm that the js settings are still there.
+    personalize_agent_set_status($option_set->agent, PERSONALIZE_STATUS_COMPLETED);
+    $this->resetAll();
+    $this->drupalGet('');
+    // Make sure the expected js settings are still there.
+    $settings = $this->drupalGetSettings();
+    $personalize_elements_settings = $settings['personalize_elements'];
+    $personalize_settings = $settings['personalize'];
+    $this->assertEqual($expected, $personalize_elements_settings['elements']);
+    // Assert that the option set settings are there.
+    $this->assertOptionSetSettings($personalize_settings, $js_id, $js_id, $js_id, $option_set->agent, 2, $option_set->options);
+    $this->assertTrue(isset($personalize_settings['agent_map'][$option_set->agent]['active']));
+    $this->assertFalse($personalize_settings['agent_map'][$option_set->agent]['active']);
+  }
+
   /**
    * Helper method to create a Personalize Elements Option Set.
    *
@@ -494,7 +535,7 @@ class PersonalizeElementsTest extends DrupalWebTestCase {
    * @return string
    *   The text of the button
    */
-  protected function getButton($type) {
+  protected function getButton($type = '') {
     switch ($type) {
       case 'add_another':
         return t('Add variation');

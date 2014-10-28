@@ -30,6 +30,18 @@ function theme_personalize_options_wrapper($variables) {
   }
 
   $option_set = $variables['element']['#personalize_option_set'];
+  if (personalize_agent_get_status($option_set->agent) === PERSONALIZE_STATUS_COMPLETED) {
+    if (isset($option_set->winner)) {
+      return drupal_render($variables['element']['#personalize_options'][$option_set->winner]);
+    }
+    elseif (isset($variables['element']['#first_option'])) {
+      return drupal_render($variables['element']['#first_option']);
+    }
+    else {
+      $first_option = reset($variables['element']['#personalize_options']);
+      return drupal_render($first_option);
+    }
+  }
   $js_id = personalize_stringify_osid($option_set->osid);
   $prefix = '<div class="' . PERSONALIZE_OPTION_SET_CLASS . '" data-personalize="' . $js_id . '">';
   if (isset($variables['element']['#first_option'])) {

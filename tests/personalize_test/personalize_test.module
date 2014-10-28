@@ -68,10 +68,6 @@ function personalize_test_menu() {
  * @see PersonalizeTest::testPersonalizePage()
  */
 function personalize_test_personalized_page($personalized_content = NULL, $goal_names = NULL, $use_multiple_agents = FALSE) {
-  // Set all agent statuses to running.
-  personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
-  personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
-
   if ($personalized_content !== NULL) {
     $personalized_content = explode(',', $personalized_content);
   }
@@ -95,7 +91,8 @@ function personalize_test_personalized_page($personalized_content = NULL, $goal_
     else {
       $test_agent = $i == 0 ? 'test-agent' : ($use_multiple_agents ? 'test-agent-2' : 'test-agent');
       $osid = 'test-os-' . ($i + 1);
-      $option_set = create_dummy_option_set($osid, $test_agent, $value);
+
+      $option_set = create_dummy_option_set($osid, $test_agent, $value, NULL, NULL);
       $loaded_option_sets[$osid] = $option_set;
     }
   }
@@ -132,6 +129,8 @@ function personalize_test_personalized_page($personalized_content = NULL, $goal_
  *   A stdClass object representing an option set.
  */
 function create_dummy_option_set($osid, $agent, $num_options, $decision_name = NULL, $decision_point = NULL) {
+  $winner = variable_get('personalize_test_os_winner_' . $osid, NULL);
+
   $option_set = array(
     'osid' => $osid,
     'plugin' => 'test',
@@ -141,6 +140,7 @@ function create_dummy_option_set($osid, $agent, $num_options, $decision_name = N
     'decision_point' => $decision_point ? $decision_point : $osid,
     'executor' => 'show',
     'stateful' => 1,
+    'winner' => $winner
   );
   $options = array();
   for ($i = 0; $i < $num_options; $i++) {
@@ -176,7 +176,7 @@ function create_renderable_from_option_set($option_set) {
 
   $renderable['#personalize_option_set'] = $option_set;
   $renderable['#theme_wrappers'] = array('personalize_options_wrapper');
-  personalize_element_with_option_set($renderable, $option_set);
+  personalize_element_with_option_set($renderable, $option_set, TRUE);
   return $renderable;
 }
 /**
