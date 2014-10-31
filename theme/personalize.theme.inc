@@ -87,6 +87,8 @@ function theme_personalize_options_callback_wrapper($variables) {
  *
  * @param $variables
  *   Associative array of information to display about the status alert.
+ *   - agent_name: The machine name of the campaign that is being updated.
+ *   - alert_message: An overall alert message to display.
  *   - option_message: A message to show to introduce the winning options.
  *   - option_sets: An associative array of options sets within this campaign.
  *     - label: The label of the option set
@@ -99,7 +101,7 @@ function theme_personalize_campaign_status_update($variables) {
   $option_message = $variables['option_message'];
   $option_sets = $variables['option_sets'];
 
-  $update_message = '';
+  $update_message = empty($variables['alert_message']) ? '' : $variables['alert_message'];
   if (!empty($option_sets)) {
     if (!empty($option_message)) {
       $update_message .= ' ' . $option_message;

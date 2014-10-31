@@ -588,6 +588,7 @@ function personalize_status_toggle_message($agent_name, $current_status) {
     'option_sets' => array(),
     'option_message' => '',
     'alert_message' => '',
+    'agent_name' => $agent_name,
   );
   $option_sets = personalize_option_set_load_by_agent($agent_name);
   foreach($option_sets as $option_set) {
