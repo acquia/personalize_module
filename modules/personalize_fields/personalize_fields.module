@@ -233,6 +233,9 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
 
   // Determine the entity and entity id if they exist.
   $entity = _personalize_fields_entity_from_form($form, $form_state);
+  if ($entity === NULL) {
+    return;
+  }
   list($entity_id) = entity_extract_ids($entity_type, $entity);
   $languages = array();
   foreach (element_children($form_state['field']) as $key) {
