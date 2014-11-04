@@ -44,6 +44,9 @@
           // empty option set if the new html alters the DOM structure.
           if ($option_set.length == 0 && ['runJS','editHtml'].indexOf(element.variation_type) == -1) {
             return;
+          } else if ($option_set.length > 1) {
+            // Cannot perform personalization on sets of matched elements.
+            return;
           }
           Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
