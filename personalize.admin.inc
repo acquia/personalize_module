@@ -1112,7 +1112,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   }
   $form_state['num_goals'] = count($goals);
 
-  $goal_options = personalize_goals_options();
+  $goal_options = personalize_goals_options(TRUE);
   // For new goals, we exclude actions already used.
   $new_goal_options = array_diff_key($goal_options, $exclude);
   // Add the "add new action in context" option if visitor_actions_ui
@@ -2798,11 +2798,13 @@ function personalize_admin_page() {
 /**
  * Retrieves a list of existing actions as goal options.
  *
+ * @param boolean $exclude_limited_use
+ *   Whether to exclude those goals that have been defined as limited use.
  * @return array
  *   An associative array with goal names as keys and labels as values.
  */
-function personalize_goals_options() {
-  $actions = visitor_actions_get_actions();
+function personalize_goals_options($exclude_limited_use = FALSE) {
+  $actions = visitor_actions_get_actions($exclude_limited_use);
   $options = array();
   foreach($actions as $name => $info) {
     $options[$name] = isset($info['label']) ? check_plain($info['label']) : $name;
