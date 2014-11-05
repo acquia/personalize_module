@@ -660,6 +660,9 @@ function personalize_agent_page($agent_data) {
 function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (empty($agent_data)) {
     $agent_data = new stdClass();
+    if (isset($_GET['personalize_agent_type']) && $plugin = personalize_get_agent_type($_GET['personalize_agent_type'])) {
+      $agent_data->plugin = $plugin['name'];
+    }
   }
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
@@ -1012,7 +1015,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
     }
   }
 
-  if (!empty($agent_data->machine_name)) {
+  if (!empty($agent_data->plugin)) {
     // It is not possible to change the type of an agent.
     $form['agent_basic_info']['agent_type'] = array(
       '#type' => 'value',
@@ -1040,7 +1043,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
   // Add the agent-type-specific form elements to the form, to be shown only if the
   // agent type in question is selected.
   $form['agent_basic_info']['options'] = array('#tree' => TRUE, '#weight' => -6);
-  if (!empty($agent_data->machine_name)) {
+  if (!empty($agent_data->plugin)) {
     // If in edit mode, then only show the options for the selected agent.
     $form['agent_basic_info']['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
   }

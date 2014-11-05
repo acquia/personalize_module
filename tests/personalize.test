@@ -208,18 +208,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
-   * Helper function to create and test queue creation of Personalize Agent
-   *
-   * @param array $data
-   *  array (
-   *    'name' => Agent title
-   *    'machine_name' => string processed by personalize_generate_machine_name()
-   *  )
-   * @param bool $cleanQueue Clean or not Drupal queue after 'saveAgent' queue testing
-   * @return NULL|PersonalizeAgentInterface
-   *
-   * @see personalize_generate_machine_name()
-   * @see testSaveAgent()
+   * Creates a test agent for use in tests.
    */
   protected function createTestAgent($data = array()) {
     $data += array(
@@ -1783,6 +1772,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
+    // Go to the agent creation page and assert there is an agent type dropdown.
+    $this->drupalGet('admin/structure/personalize/add');
+    $this->assertFieldByName('agent_basic_info[agent_type]');
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
@@ -1800,6 +1792,11 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // in the form.
     $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
     $this->assertFieldByName('agent_basic_info[title]');
+    $this->assertNoFieldByName('agent_basic_info[agent_type]');
+
+    // Now go to the agent create page but specify the agent type in the querystring.
+    $this->drupalGet('admin/structure/personalize/add', array('query' => array('personalize_agent_type' => 'test_agent')));
+    // Assert there is no agent type dropdown.
     $this->assertNoFieldByName('agent_basic_info[agent_type]');
   }
 
