@@ -301,6 +301,7 @@ function rebuild_subscribers_for_goal_actions() {
  * Add a database column for specifying an agent's status.
  */
 function personalize_update_7001() {
+  drupal_load('module', 'personalize');
   db_add_field('personalize_agent', 'status', array(
     'description' => 'Integer representing the status of this agent.',
     'type' => 'int',
@@ -450,6 +451,7 @@ function personalize_update_7008() {
  * Rename personalize element control fields.
  */
 function personalize_update_7009() {
+  drupal_load('module', 'personalize');
   // Update the option id and label for any control options in personalize
   // elements option sets.
   $result = db_select('personalize_option_sets', 'o')
@@ -475,6 +477,7 @@ function personalize_update_7009() {
  * Delete any goals that belong to campaigns that no longer exist.
  */
 function personalize_update_7010() {
+  drupal_load('module', 'personalize');
   // Get all the current campaigns.
   $all_agents = personalize_agent_load_multiple();
   $agents = array_keys($all_agents);
@@ -496,19 +499,24 @@ function personalize_update_7010() {
  * Update fixed targeting rules to reference the origin context plugin.
  */
 function personalize_update_7011() {
-  // Get all possible targeting values for all context plugins.
-  ctools_include('plugins');
-  $contexts = personalize_get_visitor_contexts();
-  $plugin_options = array();
-  foreach ($contexts as $plugin_name => $info) {
-    if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
-      $context_options = call_user_func(array($class, 'getOptions'));
-      $plugin_options = array_merge($plugin_options, array_fill_keys(array_keys($context_options), $plugin_name));
-    }
+  if (!module_exists('personalize')) {
+    $plugin_options = array();
   }
-  // Add all targeting values from Lift that are allowed for fixed targeting selections.
-  $lift_values = array("c-cen","c-geo-c3","c-geo-cont","c-geo-usr","c-geo-wrg","c-time-gwp","c-time-ldp","c-time-lwp","c-time-tz","c-ua-bb","c-ua-mo","c-ua-os","c-usr-tld","c-wea-cw");
-  $plugin_options = array_merge($plugin_options, array_fill_keys(array_values($lift_values), 'acquia_lift_context'));
+  else {
+    // Get all possible targeting values for all context plugins.
+    ctools_include('plugins');
+    $contexts = personalize_get_visitor_contexts();
+    $plugin_options = array();
+    foreach ($contexts as $plugin_name => $info) {
+      if ($class = ctools_plugin_load_class('personalize', 'visitor_context', $plugin_name, 'handler')) {
+        $context_options = call_user_func(array($class, 'getOptions'));
+        $plugin_options = array_merge($plugin_options, array_fill_keys(array_keys($context_options), $plugin_name));
+      }
+    }
+    // Add all targeting values from Lift that are allowed for fixed targeting selections.
+    $lift_values = array("c-cen","c-geo-c3","c-geo-cont","c-geo-usr","c-geo-wrg","c-time-gwp","c-time-ldp","c-time-lwp","c-time-tz","c-ua-bb","c-ua-mo","c-ua-os","c-usr-tld","c-wea-cw");
+    $plugin_options = array_merge($plugin_options, array_fill_keys(array_values($lift_values), 'acquia_lift_context'));
+  }
 
   // Update any existing fixed targeting rules with the plugin name.
   $result = db_select('personalize_option_sets', 'o')
@@ -526,6 +534,10 @@ function personalize_update_7011() {
             $rule['plugin'] = $plugin_options[$rule['context']];
           }
           else {
+            // Remove this from the list of fixed_targeting features used.
+            $feature_index = array_search($key, $option['fixed_targeting']);
+            unset($option['fixed_targeting'][$feature_index]);
+            // Also remove the rule.
             unset($option['fixed_targeting_rules'][$key]);
           }
         }
@@ -543,6 +555,7 @@ function personalize_update_7011() {
  * Remove campaign status from exportable configuration data.
  */
 function personalize_update_7012() {
+  drupal_load('module', 'personalize');
   // Set the status for all existing campaigns into variables if not already
   // done so via UI.
   $result = db_select('personalize_agent', 'a')
