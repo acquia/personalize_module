@@ -2296,9 +2296,10 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->assertFieldByName('personalize_goal_value');
     // Create a goal and verify that it is added to the campaign.
     $goal_name = $this->randomName();
+    $action_name = personalize_generate_machine_name($goal_name, 'visitor_actions_machine_name_exists', '_');
     $edit = array(
       'title' => $goal_name,
-      'machine_name' => personalize_generate_machine_name($goal_name),
+      'machine_name' => $action_name,
       'actionable_element' => 'page',
       'event[page]' => 'client::view',
       'pages' => '<front>',
@@ -2306,6 +2307,9 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->drupalPost(NULL, $edit, $this->getButton('add_visitor_action'));
     $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
     $this->assertEqual(count($goals), 1);
+    // The limited_use property should have been set via the form_alter.
+    $action = visitor_actions_custom_load($action_name);
+    $this->assertTrue($action['limited_use']);
 
     // Now create an agent that does not support goals.
     $agent_name = $this->randomName();
