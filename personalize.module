@@ -2759,7 +2759,8 @@ function personalize_visitor_actions_delete_action($action) {
 }
 
 /**
- * Deletes a goal from the db.
+ * Deletes a goal from the db.  If the goal's underlying action is a limited
+ * use action then it will be deleted as well.
  *
  * @param $goal_id
  *   THe id of the goal to delete.
@@ -2767,18 +2768,25 @@ function personalize_visitor_actions_delete_action($action) {
  *   TRUE if the action subscribers cache needs to be rebuilt
  */
 function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
-  if ($rebuild_subscribers) {
-    $action_name = db_select('personalize_campaign_goals', 'g')
-      ->fields('g', array('action'))
-      ->condition('id', $goal_id)
-      ->execute()
-      ->fetchField();
-  }
+  $action_name = db_select('personalize_campaign_goals', 'g')
+    ->fields('g', array('action'))
+    ->condition('id', $goal_id)
+    ->execute()
+    ->fetchField();
+
   // Delete the goal.
   db_delete('personalize_campaign_goals')
     ->condition('id', $goal_id)
     ->execute();
-  if (isset($action_name)) {
+
+  $action = visitor_actions_custom_load($action_name);
+  if ($action) {
+    // If the underlying action was a limited usage action, then delete it too.
+    if (!empty($action['limited_use'])) {
+      visitor_actions_delete_action($action_name);
+    }
+  }
+  if ($rebuild_subscribers) {
     // We only need to clear the subscribers cache if we no longer have
     // a goal that uses this action.
     $result = db_select('personalize_campaign_goals', 'g')

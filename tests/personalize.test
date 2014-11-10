@@ -198,6 +198,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
         return t('Save test');
       case 'delete':
         return t('Delete');
+      case 'delete_goal':
+        return t('Remove');
       case 'config':
         return t('Save configuration');
       case 'add_visitor_action':
@@ -2310,6 +2312,14 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     // The limited_use property should have been set via the form_alter.
     $action = visitor_actions_custom_load($action_name);
     $this->assertTrue($action['limited_use']);
+
+    // Now delete the goal and verify that the visitor action is also deleted.
+    $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
+    $this->drupalPostAJAX(NULL, array(), array('edit-goals-0-remove' => $this->getButton('delete_goal')), NULL, array(), array(), 'personalize-agent-goals-form');
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 0);
+    $action = visitor_actions_custom_load($action_name);
+    $this->assertTrue(empty($action));
 
     // Now create an agent that does not support goals.
     $agent_name = $this->randomName();
