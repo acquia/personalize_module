@@ -1219,12 +1219,19 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         'id' => isset($goal['id']) ? "personalize-goal-{$goal['id']}" : "personalize-goal-$delta",
       )
     );
-    $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
+    $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
+    // If the current goal is a limited use visitor action, then it won't be
+    // in the list of options to display.
+    if (!empty($goal['action']) && empty($options[$goal['action']])) {
+      $goal_action = visitor_actions_custom_load($goal['action']);
+      $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+    }
     $section['goals'][$delta]['action_name'] = array(
       '#type' => 'select',
       '#title' => t('Action'),
       '#options' => $options,
       '#default_value' => $goal['action'],
+      '#empty_option' => t('Select an action'),
       '#attributes' => array(
         'class' => array('personalize-goal-action'),
       ),
