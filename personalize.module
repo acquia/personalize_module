@@ -453,7 +453,11 @@ function personalize_agent_get_settings() {
     }
     $supports_goals = $plugin instanceof PersonalizeAgentGoalInterface;
     if ($supports_goals) {
-      $goals = personalize_agent_get_goal_settings($agent->machine_name);
+      foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
+        if (isset($actions[$goal->action])) {
+          $goals[$goal->action] = check_plain($actions[$goal->action]['label']);
+        }
+      }
     }
     $current_status = personalize_agent_get_status($agent->machine_name);
     list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
@@ -488,22 +492,6 @@ function personalize_agent_get_settings() {
     unset($goals);
   }
   return $campaigns;
-}
-
-/**
- * Loads the goals for a campaign and formats for use as JavaScript settings.
- * @param $agent_name
- *   The machine name for the campaign to load
- */
-function personalize_agent_get_goal_settings($agent_name) {
-  $actions = visitor_actions_get_actions();
-  $goals = array();
-  foreach (personalize_goal_load_by_conditions(array('agent' => $agent_name)) as $goal) {
-    if (isset($actions[$goal->action])) {
-      $goals[$goal->action] = check_plain($actions[$goal->action]['label']);
-    }
-  }
-  return $goals;
 }
 
 /**
