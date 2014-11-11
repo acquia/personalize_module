@@ -5,6 +5,8 @@
    * Provides client side page personalization based on a user's context.
    */
   Drupal.personalize = Drupal.personalize || {};
+  // Timeout to retrieve visitor context values in milliseconds.
+  Drupal.personalize.contextTimeout = Drupal.personalize.contextTimeout || 5000;
 
   /**
    * Private variable: Session identifier for decision and goals.
@@ -64,6 +66,44 @@
    */
   var processedDecisions = {}, decisionCallbacks = {}, processedOptionSets = {};
 
+  /**
+   * A decorator for a promise to implement an enforced timeout value.
+   *
+   * @param timeoutMS
+   *   The timeout value in milliseconds.
+   * @param promise
+   *   A JavaScript promise.
+   * @returns Promise
+   *   A promise that will respond with the original promises values
+   *   unless a time out error occurs.
+   */
+  var TimeoutPromise = function(timeoutMS, promise) {
+    var isTimedOut = false, isResolved = false;
+    return new Promise(function (resolve, reject) {
+      // Enforce a timeout error response.
+      setTimeout(function () {
+        isTimedOut = true;
+        if (!isResolved) {
+          reject(new Error("Promise timed out"));
+        }
+      }, timeoutMS);
+
+      // Respond with the wrapped promise's results as long as a time out
+      // has not occurred.
+      promise.then(function (response) {
+        isResolved = true;
+        if (!isTimedOut) {
+          resolve(response)
+        }
+      }, function (error) {
+        isResolved = true;
+        if (!isTimedOut) {
+          reject(error);
+        }
+      });
+    });
+  }
+
   Drupal.personalize.getVisitorContexts = function(contexts, callback) {
 
     // Load and evaluate all contexts.
@@ -77,13 +117,20 @@
         var contextResult = getVisitorContext(plugin, contexts[plugin]);
         if (contextResult instanceof Promise) {
           promisePlugins.push(plugin);
-          contextPromises.push(contextResult);
+          contextPromises.push(new TimeoutPromise(Drupal.personalize.contextTimeout, contextResult));
         } else {
           contextValues[plugin] = contextResult;
         }
       }
     }
-    // Once all the contexts are loaded, evaluate them and load the decisions.
+    // Promise specification doesn't handle an empty array of promises
+    // as automatically completing.
+    if (contextPromises.length == 0) {
+      callback(contextValues);
+      return;
+    }
+    // If there are promises, then wait for them all to complete before calling
+    // back with the context values.
     Promise.all(contextPromises).then(function processLoadedVisitorContexts(loadedContexts) {
       // Results are in the same order as promises were.
       var num = loadedContexts.length;
