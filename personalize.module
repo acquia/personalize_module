@@ -2818,7 +2818,7 @@ function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
     }
   }
   // Clear the agent's goals cache.
-  personalize_goal_load_by_conditions(array('agent' => $fields['agent']), TRUE);
+  $goals = personalize_goal_load_by_conditions(array('agent' => $fields['agent']), TRUE);
 }
 
 /**
