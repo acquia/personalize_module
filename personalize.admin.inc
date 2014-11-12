@@ -1255,6 +1255,10 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         'id' => 'edit-goals-' . $delta . '-remove',
         'class' => array('personalize-delete-goal', 'form-submit',),
         'title' => t('Delete the goal.'),
+        // Adding the name and value attributes allows for targeting within
+        // simpletest.
+        'name' => 'edit-goals-' . $delta . '-remove',
+        'value' => t('Remove'),
       ),
       '#submit' => array('personalize_agent_remove_goal_submit'),
       '#ajax' => array(

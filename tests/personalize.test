@@ -198,6 +198,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
         return t('Save test');
       case 'delete':
         return t('Delete');
+      case 'delete_goal':
+        return t('Remove');
       case 'config':
         return t('Save configuration');
       case 'add_visitor_action':
@@ -2310,6 +2312,41 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     // The limited_use property should have been set via the form_alter.
     $action = visitor_actions_custom_load($action_name);
     $this->assertTrue($action['limited_use']);
+
+    // Now delete the goal and verify that the visitor action is also deleted.
+    $goal = reset($goals);
+    // It would be great to do this via AJAX submit, but the double-ajax submit
+    // on the same page doesn't seem to trigger properly in Simpletest.
+    personalize_goal_delete($goal->id);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 0);
+    $action = visitor_actions_custom_load($action_name);
+    $this->assertTrue(empty($action));
+
+    // Create another reusable goal and add it to the campaign.
+    $reusable_goal_name = $this->randomName();
+    $reusable_action_name = personalize_generate_machine_name($reusable_goal_name, 'visitor_actions_machine_name_exists', '_');
+    $edit = array(
+      'title' => $reusable_goal_name,
+      'machine_name' => $reusable_action_name,
+      'actionable_element' => 'page',
+      'event[page]' => 'client::view',
+      'pages' => '<front>',
+      'limited_use' => FALSE,
+    );
+    $this->drupalPost('admin/structure/visitor_actions/add', $edit, $this->getButton('add_visitor_action'));
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 1);
+    $action = visitor_actions_custom_load($reusable_action_name);
+    // Now delete the goal and verify that the visitor action is also deleted.
+    $goal = reset($goals);
+    // It would be great to do this via AJAX submit, but the double-ajax submit
+    // on the same page doesn't seem to trigger properly in Simpletest.
+    personalize_goal_delete($goal->id);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 0);
+    $action = visitor_actions_custom_load($reusable_action_name);
+    $this->assertTrue(!empty($action));
 
     // Now create an agent that does not support goals.
     $agent_name = $this->randomName();
