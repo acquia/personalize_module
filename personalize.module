@@ -2708,9 +2708,16 @@ function personalize_goal_load_multiple($ids = FALSE, $conditions = array(), $re
 
 /**
  * Loads all goals satisfying the specified conditions.
+ *
+ * @param array $conditions
+ *   An array of conditions to constrain the query to.
+ * @param bool $reset
+ *   Whether to reset the cache and load fresh from the DB.
+ * @return array
+ *   An array of Goal objects.
  */
-function personalize_goal_load_by_conditions($conditions = array()) {
-  return personalize_goal_load_multiple(array(), $conditions);
+function personalize_goal_load_by_conditions($conditions = array(), $reset = FALSE) {
+  return personalize_goal_load_multiple(array(), $conditions, $reset);
 }
 
 /**
@@ -2759,7 +2766,8 @@ function personalize_visitor_actions_delete_action($action) {
 }
 
 /**
- * Deletes a goal from the db.
+ * Deletes a goal from the db.  If the goal's underlying action is a limited
+ * use action then it will be deleted as well.
  *
  * @param $goal_id
  *   THe id of the goal to delete.
@@ -2767,29 +2775,45 @@ function personalize_visitor_actions_delete_action($action) {
  *   TRUE if the action subscribers cache needs to be rebuilt
  */
 function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
-  if ($rebuild_subscribers) {
-    $action_name = db_select('personalize_campaign_goals', 'g')
-      ->fields('g', array('action'))
-      ->condition('id', $goal_id)
-      ->execute()
-      ->fetchField();
-  }
+  $fields = db_select('personalize_campaign_goals', 'g')
+    ->fields('g', array('action', 'agent'))
+    ->condition('id', $goal_id)
+    ->execute()
+    ->fetchAssoc();
+
   // Delete the goal.
   db_delete('personalize_campaign_goals')
     ->condition('id', $goal_id)
     ->execute();
-  if (isset($action_name)) {
+
+  $action = visitor_actions_custom_load($fields['action']);
+  if ($action) {
+    // If the underlying action was a limited usage action, then delete it too.
+    if (!empty($action['limited_use'])) {
+      visitor_actions_delete_action($fields['action']);
+    }
+  }
+  if ($rebuild_subscribers) {
     // We only need to clear the subscribers cache if we no longer have
     // a goal that uses this action.
     $result = db_select('personalize_campaign_goals', 'g')
       ->fields('g', array('action'))
-      ->condition('action', $action_name)
+      ->condition('action', $fields['action'])
       ->execute()
       ->fetchField();
     if (!$result) {
-      visitor_actions_clear_subscribers($action_name);
+      visitor_actions_clear_subscribers($fields['action']);
     }
   }
+  // Clear the agent's goals cache.
+  personalize_goal_load_by_conditions(array('agent' => $fields['agent']), TRUE);
+  // Clear the verification cache so that the campaign can be re-validated.
+  _personalize_agent_verification_cache_clear($fields['agent']);
+  $validated = _personalize_agent_verification_cache_get($fields['agent']);
+  if (!$validated) {
+    personalize_pause_if_running($fields['agent']);
+  }
+
 }
 
 /**
@@ -2856,7 +2880,6 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
   // Clear the agent's verification status.
   _personalize_agent_verification_cache_clear($agent_name);
   module_invoke_all('personalize_goal_save', $goal_array);
-
 }
 
 /**
