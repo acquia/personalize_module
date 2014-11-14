@@ -96,7 +96,7 @@ QUnit.asyncTest( "get visitor contexts test", function( assert ) {
         setTimeout(function() {
           resolve(assignDummyValues(contexts));
           QUnit.start();
-        }, Drupal.personalize.contextTimeout);
+        }, (Drupal.personalize.contextTimeout - 1000));
       });
     }
   }
