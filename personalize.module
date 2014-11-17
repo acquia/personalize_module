@@ -592,8 +592,9 @@ function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
       '#type' => 'value',
       '#value' => $campaign,
     );
-    // Change the default state of the "limited_use" checkbox to "on".
+    // Change the default state of the "reusable" checkbox to "on".
     $form['advanced']['reusable']['#default_value'] = isset($form['#visitor_action']['limited_use']) ? !$form['#visitor_action']['limited_use'] : 0;
+    $form['advanced']['reusable']['#description'] = t('Select this check box to include this goal in the list of predefined goals.');
     // Add a submit handler for saving the goal to the campaign.
     $form['#submit'][] = 'personalize_visitor_action_form_submit';
   }
