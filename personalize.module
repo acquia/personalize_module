@@ -469,7 +469,7 @@ function personalize_agent_get_settings() {
     }
     $campaigns[$agent->machine_name] = array(
       'name' => $agent->machine_name,
-      'label' => check_plain($agent->label),
+      'label' => filter_xss($agent->label),
       'type' => $agent->plugin,
       'status' => $current_status,
       'nextStatus' => array(
@@ -2898,14 +2898,14 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
   $js_id = personalize_stringify_osid($option_set->osid);
   $os_array = (array) $option_set;
   $os_array['osid'] = $js_id;
-  $os_array['label'] = check_plain($os_array['label']);
+  $os_array['label'] = filter_xss($os_array['label']);
   $option_names = array();
   foreach ($option_set->options as $i => $option) {
     $option_names[] = $option['option_id'];
     if (isset($option_set->winner) && $option_set->winner == $option['option_id']) {
       $os_array['winner'] = $i;
     }
-    $os_array['options'][$i]['option_label'] = check_plain($option['option_label']);
+    $os_array['options'][$i]['option_label'] = filter_xss($option['option_label']);
   }
   $os_array['option_names'] = $option_names;
   $os_array += array(
