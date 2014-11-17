@@ -455,7 +455,7 @@ function personalize_agent_get_settings() {
     if ($supports_goals) {
       foreach (personalize_goal_load_by_conditions(array('agent' => $agent->machine_name)) as $goal) {
         if (isset($actions[$goal->action])) {
-          $goals[$goal->action] = check_plain($actions[$goal->action]['label']);
+          $goals[$goal->action] = filter_xss($actions[$goal->action]['label']);
         }
       }
     }
