@@ -44,6 +44,12 @@ function personalize_admin_form($form, &$form_state) {
     '#description' => t('When this box is checked, users with the "Manage personalized content" permission will not trigger any personalization activity such as requests for decisions or the sending of goals.'),
     '#default_value' => variable_get('personalize_use_admin_mode', TRUE),
   );
+  $form['personalize_enable_debug_mode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable debug mode'),
+    '#description' => t('When this box is checked, personalization events will be logged to a message box on the page. These will show up automatically in admin mode, otherwise setting a cookie in the browser will make them show up.'),
+    '#default_value' => variable_get('personalize_enable_debug_mode', FALSE),
+  );
   // Add visitor context configuration.
   $settings = variable_get('personalize_visitor_context_disabled', array());
   $form['personalize_visitor_context_disabled'] = personalize_admin_build_visitor_context_select($settings, FALSE);

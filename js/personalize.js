@@ -59,7 +59,15 @@
       adminMode = Drupal.settings.personalize.hasOwnProperty('adminMode');
     }
     return adminMode;
-  }
+  };
+
+  var debugMode = null;
+  Drupal.personalize.isDebugMode = function() {
+    if (debugMode == null) {
+      debugMode = $.cookie('personalizeDebugMode');
+    }
+    return debugMode;
+  };
 
   /**
    * Private tracking variables across behavior attachments.
@@ -176,6 +184,7 @@
   };
 
   Drupal.personalize.personalizePage = function(settings) {
+
     // Prepare MVTs and option sets for processing.
     var optionSets = prepareOptionSets(settings);
 
@@ -709,6 +718,7 @@
               return;
             }
             decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
+            Drupal.personalize.debug('Getting decision for ' + agent_name + ' :' + point, 'ok');
           }
         }
       }
@@ -808,6 +818,7 @@
             if (decisions != null) {
               // Execute the decision callbacks and skip processing this agent any further.
               executeDecisionCallbacks(agentName, decisionPoint, decisions);
+              Drupal.personalize.debug('Reading decisions from storage: ' + agentName + ': ' + decisionPoint, 'ok');
               // Remove this from the decision points to be processed for this agent.
               delete agents[agentName].decisionPoints[decisionPoint];
             }
@@ -858,11 +869,13 @@
     // use that.
     if (selection = getPreselection(osid)) {
       chosenOption = selection;
+      Drupal.personalize.debug('Preselected option being shown for ' + agent_name, 'ok');
     }
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
     else if (Drupal.personalize.isAdminMode() || !agent_info.active) {
       chosenOption = choices[fallbackIndex];
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name, 'ok');
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {
@@ -954,6 +967,7 @@
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid, inner_agent_name) {
       return function(decision) {
+        Drupal.personalize.debug('Calling the executor for ' + inner_agent_name + ': ' + inner_osid, 'ok');
         Drupal.personalize.executors[inner_executor].execute($inner_option_set, decision, inner_osid);
         // Fire an event so other code can respond to the decision.
         $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid, inner_agent_name ]);
@@ -1330,4 +1344,10 @@
     processedOptionSets = {};
     processedListeners = {};
   };
+
+  Drupal.personalize.debug = function(message, type) {
+    if (Drupal.personalize.isDebugMode() && Drupal.hasOwnProperty('personalizeDebug')) {
+      Drupal.personalizeDebug.log(message, type);
+    }
+  }
 })(jQuery);

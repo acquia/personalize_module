@@ -411,20 +411,27 @@ function personalize_page_build(&$page) {
     $settings['status'] = personalize_get_agent_status_map();
     $settings['campaigns'] = personalize_agent_get_settings();
   }
+  $js = array();
+  // Add JS for debug mode if enabled.
+  if (personalize_debug_mode_enabled()) {
+    $debug_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js'
+    $settings['debugMode'] = TRUE;
+    $js[$debug_file] = array();
+  }
 
+  $js[] = array(
+    'data' => array('personalize' => $settings),
+    'type' => 'setting'
+  );
   $page['page_top']['personalization'] = array(
     '#attached' => array(
-      'js' => array(
-        array(
-          'data' => array('personalize' => $settings),
-          'type' => 'setting'
-        ),
-      ),
+      'js' => $js,
       'library' => array(
         array('personalize', 'personalize'),
       ),
     )
   );
+
   // Process any goals that have been set. This needs to happen when a page is
   // actually being built in preparation for rendering so that there is
   // little chance of a redirect happening, but it can't be so late that
@@ -1194,6 +1201,15 @@ function personalize_admin_mode() {
   return variable_get('personalize_use_admin_mode', TRUE) && user_access('manage personalized content');
 }
 
+/**
+ * Returns whether or not debug mode is enabled.
+ *
+ * @return bool
+ *   TRUE if debug mode is enabled, FALSE otherwise.
+ */
+function personalize_debug_mode_enabled() {
+  return variable_get('personalize_enable_debug_mode', FALSE);
+}
 /**
  * Sets a warning message if the passed in agent is running.
  *
