@@ -660,6 +660,9 @@ function personalize_agent_page($agent_data) {
 function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   if (empty($agent_data)) {
     $agent_data = new stdClass();
+    if (isset($_GET['personalize_agent_type']) && $plugin = personalize_get_agent_type($_GET['personalize_agent_type'])) {
+      $agent_data->plugin = $plugin['name'];
+    }
   }
   if (isset($form_state['values']['agent'])) {
     $agent_data = personalize_agent_load($form_state['values']['agent']);
@@ -1012,7 +1015,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
     }
   }
 
-  if (!empty($agent_data->machine_name)) {
+  if (!empty($agent_data->plugin)) {
     // It is not possible to change the type of an agent.
     $form['agent_basic_info']['agent_type'] = array(
       '#type' => 'value',
@@ -1040,7 +1043,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
   // Add the agent-type-specific form elements to the form, to be shown only if the
   // agent type in question is selected.
   $form['agent_basic_info']['options'] = array('#tree' => TRUE, '#weight' => -6);
-  if (!empty($agent_data->machine_name)) {
+  if (!empty($agent_data->plugin)) {
     // If in edit mode, then only show the options for the selected agent.
     $form['agent_basic_info']['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
   }
@@ -1109,7 +1112,7 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   }
   $form_state['num_goals'] = count($goals);
 
-  $goal_options = personalize_goals_options();
+  $goal_options = personalize_goals_options(TRUE);
   // For new goals, we exclude actions already used.
   $new_goal_options = array_diff_key($goal_options, $exclude);
   // Add the "add new action in context" option if visitor_actions_ui
@@ -1216,12 +1219,19 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         'id' => isset($goal['id']) ? "personalize-goal-{$goal['id']}" : "personalize-goal-$delta",
       )
     );
-    $options = array('' => '(' . t('Select an action') . ')') + ($goal['action'] == '' ? $new_goal_options : $goal_options);
+    $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
+    // If the current goal is a limited use visitor action, then it won't be
+    // in the list of options to display.
+    if (!empty($goal['action']) && empty($options[$goal['action']])) {
+      $goal_action = visitor_actions_custom_load($goal['action']);
+      $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+    }
     $section['goals'][$delta]['action_name'] = array(
       '#type' => 'select',
       '#title' => t('Action'),
       '#options' => $options,
       '#default_value' => $goal['action'],
+      '#empty_option' => t('Select an action'),
       '#attributes' => array(
         'class' => array('personalize-goal-action'),
       ),
@@ -1245,6 +1255,10 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
         'id' => 'edit-goals-' . $delta . '-remove',
         'class' => array('personalize-delete-goal', 'form-submit',),
         'title' => t('Delete the goal.'),
+        // Adding the name and value attributes allows for targeting within
+        // simpletest.
+        'name' => 'edit-goals-' . $delta . '-remove',
+        'value' => t('Remove'),
       ),
       '#submit' => array('personalize_agent_remove_goal_submit'),
       '#ajax' => array(
@@ -2795,11 +2809,13 @@ function personalize_admin_page() {
 /**
  * Retrieves a list of existing actions as goal options.
  *
+ * @param boolean $exclude_limited_use
+ *   Whether to exclude those goals that have been defined as limited use.
  * @return array
  *   An associative array with goal names as keys and labels as values.
  */
-function personalize_goals_options() {
-  $actions = visitor_actions_get_actions();
+function personalize_goals_options($exclude_limited_use = FALSE) {
+  $actions = visitor_actions_get_actions($exclude_limited_use);
   $options = array();
   foreach($actions as $name => $info) {
     $options[$name] = isset($info['label']) ? check_plain($info['label']) : $name;

@@ -198,6 +198,8 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
         return t('Save test');
       case 'delete':
         return t('Delete');
+      case 'delete_goal':
+        return t('Remove');
       case 'config':
         return t('Save configuration');
       case 'add_visitor_action':
@@ -208,18 +210,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
-   * Helper function to create and test queue creation of Personalize Agent
-   *
-   * @param array $data
-   *  array (
-   *    'name' => Agent title
-   *    'machine_name' => string processed by personalize_generate_machine_name()
-   *  )
-   * @param bool $cleanQueue Clean or not Drupal queue after 'saveAgent' queue testing
-   * @return NULL|PersonalizeAgentInterface
-   *
-   * @see personalize_generate_machine_name()
-   * @see testSaveAgent()
+   * Creates a test agent for use in tests.
    */
   protected function createTestAgent($data = array()) {
     $data += array(
@@ -1783,6 +1774,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
+    // Go to the agent creation page and assert there is an agent type dropdown.
+    $this->drupalGet('admin/structure/personalize/add');
+    $this->assertFieldByName('agent_basic_info[agent_type]');
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
@@ -1800,6 +1794,11 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // in the form.
     $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
     $this->assertFieldByName('agent_basic_info[title]');
+    $this->assertNoFieldByName('agent_basic_info[agent_type]');
+
+    // Now go to the agent create page but specify the agent type in the querystring.
+    $this->drupalGet('admin/structure/personalize/add', array('query' => array('personalize_agent_type' => 'test_agent')));
+    // Assert there is no agent type dropdown.
     $this->assertNoFieldByName('agent_basic_info[agent_type]');
   }
 
@@ -2299,9 +2298,10 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->assertFieldByName('personalize_goal_value');
     // Create a goal and verify that it is added to the campaign.
     $goal_name = $this->randomName();
+    $action_name = personalize_generate_machine_name($goal_name, 'visitor_actions_machine_name_exists', '_');
     $edit = array(
       'title' => $goal_name,
-      'machine_name' => personalize_generate_machine_name($goal_name),
+      'machine_name' => $action_name,
       'actionable_element' => 'page',
       'event[page]' => 'client::view',
       'pages' => '<front>',
@@ -2309,6 +2309,44 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->drupalPost(NULL, $edit, $this->getButton('add_visitor_action'));
     $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
     $this->assertEqual(count($goals), 1);
+    // The limited_use property should have been set via the form_alter.
+    $action = visitor_actions_custom_load($action_name);
+    $this->assertTrue($action['limited_use']);
+
+    // Now delete the goal and verify that the visitor action is also deleted.
+    $goal = reset($goals);
+    // It would be great to do this via AJAX submit, but the double-ajax submit
+    // on the same page doesn't seem to trigger properly in Simpletest.
+    personalize_goal_delete($goal->id);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 0);
+    $action = visitor_actions_custom_load($action_name);
+    $this->assertTrue(empty($action));
+
+    // Create another reusable goal and add it to the campaign.
+    $reusable_goal_name = $this->randomName();
+    $reusable_action_name = personalize_generate_machine_name($reusable_goal_name, 'visitor_actions_machine_name_exists', '_');
+    $edit = array(
+      'title' => $reusable_goal_name,
+      'machine_name' => $reusable_action_name,
+      'actionable_element' => 'page',
+      'event[page]' => 'client::view',
+      'pages' => '<front>',
+      'limited_use' => FALSE,
+    );
+    $this->drupalPost('admin/structure/visitor_actions/add', $edit, $this->getButton('add_visitor_action'));
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 1);
+    $action = visitor_actions_custom_load($reusable_action_name);
+    // Now delete the goal and verify that the visitor action is also deleted.
+    $goal = reset($goals);
+    // It would be great to do this via AJAX submit, but the double-ajax submit
+    // on the same page doesn't seem to trigger properly in Simpletest.
+    personalize_goal_delete($goal->id);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
+    $this->assertEqual(count($goals), 0);
+    $action = visitor_actions_custom_load($reusable_action_name);
+    $this->assertTrue(!empty($action));
 
     // Now create an agent that does not support goals.
     $agent_name = $this->randomName();
