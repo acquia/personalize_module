@@ -501,7 +501,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
       personalize_blocks_replace_existing($form_state['values']['original_block'], $pblock);
     }
     else {
-      drupal_goto('admin/structure/personalize/variations/personalize-blocks');
+      $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
     }
   }
 }
