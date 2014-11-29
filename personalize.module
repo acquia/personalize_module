@@ -1271,7 +1271,7 @@ function personalize_pause_if_running($agent_name) {
  *   to create a new agent, hidden with #states until "Add new" is selected
  *   from the dropdown.
  */
-function personalize_get_agent_selection_form($default = '', $allow_add_new = TRUE) {
+function personalize_get_agent_selection_form($default = '', $allow_add_new = TRUE, $limit_to_available = FALSE) {
   if (!user_access('manage personalized content')) {
     // As this form can be embedded in other forms, we do an access
     // check here to make sure only users with the correct permission
@@ -1289,7 +1289,20 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
   $agents = personalize_agent_load_multiple(array(), array(), FALSE, FALSE);
   $agent_options = array();
   foreach($agents as $agent) {
-    $agent_options[$agent->machine_name] = check_plain($agent->label);
+    $include = TRUE;
+    if ($limit_to_available) {
+      // If we only want to include agents that can have a new option set added to them
+      // we need to check whether the agent supports mulitple decision points and if not,
+      // whether it already has an option set.
+      $agent_instance = personalize_agent_load_agent($agent->machine_name);
+      if (!$agent_instance->supportsMultipleDecisionPoints()) {
+        $option_sets = personalize_option_set_load_by_agent($agent->machine_name);
+        $include = empty($option_sets);
+      }
+    }
+    if ($include) {
+      $agent_options[$agent->machine_name] = check_plain($agent->label);
+    }
   }
   if ($allow_add_new) {
     $agent_options[PERSONALIZE_NEW_AGENT_FORM_VALUE] = '< ' . t('Add a new campaign...') . ' >';
@@ -2069,6 +2082,38 @@ function personalize_option_set_save($option_set, $enforce_decision_match = TRUE
         }
       }
       $option_set = (object) $os_array;
+    }
+  }
+  else {
+    // This is a new option set. Make sure the agent can accept a new option set.
+    $allow_new_os = TRUE;
+    $option_sets = personalize_option_set_load_by_agent($option_set->agent, TRUE);
+    if (!empty($option_sets)) {
+      $agent_instance = personalize_agent_load_agent($option_set->agent);
+      // Does this constitute a new decision point or a new decision?
+      $is_new_point = $is_new_decision = TRUE;
+      if (isset($option_set->mvt)) {
+        foreach ($option_sets as $existing_os) {
+          if ($option_set->mvt == $existing_os->mvt) {
+            $is_new_point = FALSE;
+          }
+        }
+      }
+      // If it's a new decision point then of course it's a new decision.
+      if (!$is_new_point) {
+        if (isset($option_set->decision_name)) {
+          foreach ($option_sets as $existing_os) {
+            if ($option_set->decision_name == $existing_os->decision_name) {
+              $is_new_decision = FALSE;
+            }
+          }
+        }
+      }
+      $allow_new_os = personalize_is_new_option_set_allowed($agent_instance->supportsMultipleDecisionPoints(), $agent_instance->supportsMVTs(), $is_new_point, $is_new_decision);
+
+    }
+    if (!$allow_new_os) {
+      throw new PersonalizeException('Cannot add a new option set to this agent!');
     }
   }
 
@@ -3021,4 +3066,61 @@ function personalize_form_element_add_states($state, &$element) {
  */
 function personalize_stringify_osid($osid) {
   return is_numeric($osid) ? PERSONALIZE_OPTION_SET_PREFIX . $osid : $osid;
+}
+
+/**
+ * Whether a new option set should be allowed under the provided circumstances.
+ *
+ * Whether or not a new option set should be allowed on a particular agent depends
+ * on 4 factors (we are assuming the agent already has at least one option set):
+ * - whether the agent supports multiple decision points [mp]
+ * - whether the agent supports multiple decisions per point (i.e. Multivariate tests) [md]
+ * - whether the new option set constitutes a new decision point [newp]
+ * - whether the new option set constitutes a new decision at an existing point [newd]
+ *
+ * The following truth table illustrates the logic implemented in the code here as
+ * to how these 4 factors together determine whether the option set should be allowed.
+ *
+ *   mp |  md  | newp | newd  | allowed
+ * ------------------------------------
+ *   T  |  T   |  T   |  T    |    T
+ *   T  |  T   |  T   |  F    |    T
+ *   T  |  T   |  F   |  T    |    T
+ *   T  |  T   |  F   |  F    |    T
+ *   T  |  F   |  T   |  T    |    T
+ *   T  |  F   |  T   |  F    |    T
+ *   T  |  F   |  F   |  T    |    F
+ *   T  |  F   |  F   |  F    |    T
+ *   F  |  T   |  T   |  T    |    F
+ *   F  |  T   |  T   |  F    |    F
+ *   F  |  T   |  F   |  T    |    T
+ *   F  |  T   |  F   |  F    |    T
+ *   F  |  F   |  T   |  T    |    F
+ *   F  |  F   |  T   |  F    |    F
+ *   F  |  F   |  F   |  T    |    F
+ *   F  |  F   |  F   |  F    |    T
+ *
+ * @param boolean $mp
+ *   Whether multiple decision points are supported
+ * @param boolean $md
+ *   Whether multiple decisions per point (MVTs) are supported
+ * @param boolean $new_p
+ *   Whether the option set in question consitutes a new decision point
+ * @param boolean $new_d
+ *   Whether the option set in question consitutes a new decision
+ */
+function personalize_is_new_option_set_allowed($mp, $md, $new_p, $new_d) {
+  if ($mp) {
+    // Only disallowed if it's a new decision but not a new point and MVTs
+    // are not supported.
+    return !($new_d && !$new_p && !$md);
+  }
+  else {
+    // Allowed if MVTs are supported and it's not a new decision point OR
+    // if neither MVTs nor multiple decision points are supported but the
+    // option set does not constitute a new decision or a new point. This
+    // could happen if you have multiple option sets working off the same
+    // decision, like the Simple A/B test campaign in Acquia Lift.
+    return ($md && !$new_p) || (!$mp && !$md && !$new_p && !$new_d);
+  }
 }
