@@ -409,6 +409,9 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    * Implements PersonalizeAgentInterface::supportsMVTs().
    */
   public function supportsMVTs() {
+    if (!empty($this->data['auto_created'])) {
+      return FALSE;
+    }
     return TRUE;
   }
 
@@ -416,6 +419,9 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    * Implements PersonalizeAgentInterface::supportsMultipleDecisionPoints().
    */
   public function supportsMultipleDecisionPoints() {
+    if (!empty($this->data['auto_created'])) {
+      return FALSE;
+    }
     return TRUE;
   }
 

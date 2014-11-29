@@ -1309,7 +1309,7 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
   }
 
   if (empty($default) && $active_campaign = personalize_get_campaign_context()) {
-    $default = $active_campaign;
+    $default = isset($agent_options[$active_campaign]) ? $active_campaign : '';
   }
 
   //  First create a drop down which will include an option to add a new campaign.
