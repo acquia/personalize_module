@@ -1721,6 +1721,54 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       1 => 'On',
     ), $match_element['#options']);
   }
+
+  function testOptionSetRestrictions() {
+    module_enable(array('personalize_test_extra_agent'));
+    // Create some test agents using plugins that have restrictions on how many
+    // decisions and decision points they can have.
+    $agents = array(
+      'free-agent' => array(
+        'plugin' => 'test_extra_agent'
+      ),
+      'no-mvt' => array(
+        'plugin' => 'test_agent_no_mvt'
+      ),
+      'no-multi-point' => array(
+        'plugin' => 'test_agent_no_multipoint'
+      ),
+      'no-mvt-or-multi-point' => array(
+        'plugin' => 'test_agent_no_mvt_no_mp'
+      ),
+    );
+    // We should be able to add an option set to each agent.
+    $option_sets = array();
+    foreach ($agents as $agent_name => $info) {
+      $this->createTestAgent(array(
+        'machine_name' => $agent_name,
+        'agent_type' => $info['plugin']
+      ));
+      $options = array(
+        array('bid' => 'comment_delta_recent'),
+        array('bid' => 'system_delta_powered-by'),
+      );
+      try {
+        $osids[$agent_name][] = $this->createOptionSet(0, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+      }
+      catch (Exception $e) {
+        $this->fail('Exception thrown when none expected.');
+      }
+      // Now create an MVT and add 2 of the Option Sets to it.
+      $mvt = new stdClass();
+      $mvt->label = 'Test Mvt';
+      $mvt->agent = 'test-agent';
+      // Only the array keys matter in the option_sets property.
+      $mvt->option_sets = array(
+        $osids[0] => $osids[0],
+        $osids[1] => $osids[1],
+      );
+      personalize_mvt_save($mvt);
+    }
+  }
 }
 
 class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
