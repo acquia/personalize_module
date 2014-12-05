@@ -63,8 +63,8 @@
 
   var debugMode = null;
   Drupal.personalize.isDebugMode = function() {
-    if (debugMode == null) {
-      debugMode = $.cookie('personalizeDebugMode');
+    if (debugMode === null) {
+      debugMode = Drupal.settings.personalize.debugMode && (Drupal.personalize.isAdminMode() || $.cookie('personalizeDebugMode'));
     }
     return debugMode;
   };
@@ -185,15 +185,11 @@
       addActionListener(settings);
 
       $(document).bind('visitorActionsBindActions', function(e, boundActions){
-        console.log(boundActions);
-        console.log(processedListeners);
         for (var action in boundActions) {
           if (boundActions.hasOwnProperty(action) && processedListeners.hasOwnProperty(action)) {
             if (boundActions[action] == null || (boundActions[action] instanceof jQuery && boundActions[action].length == 0)) {
-              console.log('oh noes! nothing bound for ' + action);
               Drupal.personalize.debug('Element goal ' + action + ' has no DOM element on this page.', 'warning');
             }
-
           }
         }
       });
@@ -734,8 +730,8 @@
               executeDecisionCallbacks(agent_name, point, decisions);
               return;
             }
-            decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
             Drupal.personalize.debug('Getting decision for ' + agent_name + ' :' + point, 'ok');
+            decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
           }
         }
       }
@@ -834,8 +830,8 @@
             }
             if (decisions != null) {
               // Execute the decision callbacks and skip processing this agent any further.
-              executeDecisionCallbacks(agentName, decisionPoint, decisions);
               Drupal.personalize.debug('Reading decisions from storage: ' + agentName + ': ' + decisionPoint, 'ok');
+              executeDecisionCallbacks(agentName, decisionPoint, decisions);
               // Remove this from the decision points to be processed for this agent.
               delete agents[agentName].decisionPoints[decisionPoint];
             }
@@ -878,10 +874,10 @@
       return;
     }
 
-    if (option_set.selector.length > 0 && $option_set.length == 0) {
+    if (option_set.selector.length > 0 && $option_set.length == 0 && agent_info.active) {
       // Add a debug message to say there's a decision happening for an option set with
       // no DOM element on hte page.
-      Drupal.personalize.debug('Warning: missing DOM element for selector ' + option_set.selector + ' in campaign ' + agent_name);
+      Drupal.personalize.debug('No DOM element for the following selector in the ' + agent_name + ' campaign: "' + option_set.selector + '"', 'warning');
     }
     // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {

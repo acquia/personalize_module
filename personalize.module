@@ -414,9 +414,9 @@ function personalize_page_build(&$page) {
   $js = array();
   // Add JS for debug mode if enabled.
   if (personalize_debug_mode_enabled()) {
-    $debug_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js';
+    $js_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js';
     $settings['debugMode'] = TRUE;
-    $js[$debug_file] = array();
+    $js[$js_file] = array();
   }
 
   $js[] = array(
@@ -550,7 +550,7 @@ function personalize_agent_get_map_settings($agent_name, $option_set = NULL, &$a
     'label' => check_plain($agent->getTitle()),
     // We just need a boolean indicating whether or not the campaign is
     // currently running.
-    'active' => $agent->getStatus() & PERSONALIZE_STATUS_RUNNING,
+    'active' => $agent->getStatus() === PERSONALIZE_STATUS_RUNNING,
     'enabled_contexts' => $visitor_context,
     'cache_decisions' => isset($data['cache_decisions']) && $data['cache_decisions'],
   );
