@@ -414,7 +414,7 @@ function personalize_page_build(&$page) {
   $js = array();
   // Add JS for debug mode if enabled.
   if (personalize_debug_mode_enabled()) {
-    $debug_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js'
+    $debug_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js';
     $settings['debugMode'] = TRUE;
     $js[$debug_file] = array();
   }

@@ -154,6 +154,9 @@
     });
   };
 
+  // Keeps track of processed listeners so we don't subscribe them more than once.
+  var processedListeners = {};
+
   /**
    * Looks for personalized elements and calls the corresponding decision agent
    * for each one.
@@ -180,6 +183,20 @@
 
       // Add an action listener for client-side goals.
       addActionListener(settings);
+
+      $(document).bind('visitorActionsBindActions', function(e, boundActions){
+        console.log(boundActions);
+        console.log(processedListeners);
+        for (var action in boundActions) {
+          if (boundActions.hasOwnProperty(action) && processedListeners.hasOwnProperty(action)) {
+            if (boundActions[action] == null || (boundActions[action] instanceof jQuery && boundActions[action].length == 0)) {
+              console.log('oh noes! nothing bound for ' + action);
+              Drupal.personalize.debug('Element goal ' + action + ' has no DOM element on this page.', 'warning');
+            }
+
+          }
+        }
+      });
     }
   };
 
@@ -861,6 +878,11 @@
       return;
     }
 
+    if (option_set.selector.length > 0 && $option_set.length == 0) {
+      // Add a debug message to say there's a decision happening for an option set with
+      // no DOM element on hte page.
+      Drupal.personalize.debug('Warning: missing DOM element for selector ' + option_set.selector + ' in campaign ' + agent_name);
+    }
     // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
       fallbackIndex = option_set.winner;
@@ -1017,14 +1039,12 @@
     }
   }
 
-  // Keeps track of processed listeners so we don't subscribe them more than once.
-  var processedListeners = {};
-
   /**
    * Add an action listener for client-side goal events.
    */
   function addActionListener(settings) {
-    if (Drupal.hasOwnProperty('visitorActions') && !Drupal.personalize.isAdminMode()) {
+    var adminMode = Drupal.personalize.isAdminMode();
+    if (Drupal.hasOwnProperty('visitorActions')) {
       var events = {}, new_events = 0;
       for (var eventName in settings.personalize.actionListeners) {
         if (settings.personalize.actionListeners.hasOwnProperty(eventName) && !processedListeners.hasOwnProperty(eventName)) {
@@ -1033,7 +1053,7 @@
           new_events++;
         }
       }
-      if (new_events > 0) {
+      if (new_events > 0 && !adminMode) {
         var callback = function(eventName, jsEvent) {
           if (events.hasOwnProperty(eventName)) {
             var goals = events[eventName];
