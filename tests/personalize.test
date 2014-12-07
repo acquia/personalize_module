@@ -1385,36 +1385,24 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       'option_label' => 'Option C',
       'bid' => 'system_delta_powered-by'
     );
-    personalize_option_set_save($os);
+    try {
+      personalize_option_set_save($os);
+      $this->fail('Expected exception not thrown.');
+    }
+    catch (PersonalizeException $e) {
+      $this->assertEqual('This Option Set\'s options do not match the decision you are trying to add it to', $e->getMessage());
+    }
 
-    $status = personalize_agent_get_status($agent_name);
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
-
-    // Go to the campaign page and try to set the status to running. We should get an
-    // error about the number of options.
-    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", array(), t('Resume'));
-    $this->assertText("The Option Set {$second_os->label} has 3 options but uses the decision some-non-machine-readable-name which requires 2 options");
-    // Confirm that the agent is still paused.
-    $status = personalize_agent_get_status($agent_name);
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
-
-    // Now add a third option to the other option set but give it a different
-    // option ID.
-    $os = personalize_option_set_load($option_sets[0]->osid, TRUE);
-    $os->options[] = array(
-      'option_id' => 'my-new-option',
-      'option_label' => 'Option C',
-      'bid' => 'user_delta_online'
-    );
-    personalize_option_set_save($os);
-
-    // Go to the campaign page and try to set the status to running. We should get an
-    // error about the option IDs not being the same.
-    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/edit", array(), t('Resume'));
-    $this->assertText("The Option Set {$second_os->label} uses the decision some-non-machine-readable-name but has different option IDs. Option IDs cannot be changed so you will need to delete the options and recreate them.");
-    // Confirm that the agent is still paused.
-    $status = personalize_agent_get_status($agent_name);
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
+    // Now try to change the option id of one of the options.
+    $os = personalize_option_set_load($option_sets[1]->osid, TRUE);
+    $os->options[1]['option_id'] = 'my-new-option';
+    try {
+      personalize_option_set_save($os);
+      $this->fail('Expected exception not thrown.');
+    }
+    catch (PersonalizeException $e) {
+      $this->assertEqual('This Option Set\'s options do not match the decision you are trying to add it to', $e->getMessage());
+    }
   }
 
   /**
