@@ -2007,22 +2007,6 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $time_after = time();
     $agent = personalize_agent_load($first_agent_machine_name);
     $this->assertTrue($time_before <= $agent->started && $agent->started <= $time_after);
-    // Add an option set to this agent and confirm the agent is then set to paused.
-    $option_set = array(
-      'plugin' => 'some_type',
-      'label' => 'Option Set 1',
-      'agent' => $first_agent_machine_name,
-    );
-    $options = array();
-    for ($j = 0; $j < 3; $j++) {
-      $options[$j] = array(
-        'option_id' => personalize_generate_option_id($j),
-        'option_label' => personalize_generate_option_label($j),
-      );
-    }
-    $option_set['options'] = $options;
-    personalize_option_set_save((object) $option_set);
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
 
     // Now click the start button of the second agent.
     $html_id_second_agent = "personalize-toggle-status-{$second_agent_machine_name}-form";

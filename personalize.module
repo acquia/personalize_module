@@ -1990,7 +1990,7 @@ function personalize_agent_export($agent, $indent = '') {
 /**
  * Saves an Option Set to the database
  */
-function personalize_option_set_save($option_set) {
+function personalize_option_set_save($option_set, $enforce_decision_match = TRUE) {
   if (!isset($option_set->plugin) || !isset($option_set->agent) || !isset($option_set->options) || !is_array($option_set->options)) {
     throw new PersonalizeException('An Option Set must have a type, an agent and an array of options');
   }
@@ -2036,7 +2036,7 @@ function personalize_option_set_save($option_set) {
     // Check that the number of options matches other option sets using this
     // decision name.
     $osid = isset($option_set->osid) ? $option_set->osid : NULL;
-    if (!personalize_option_set_matches_decision($osid, $option_set->agent, $option_set->decision_name, $option_set->options)) {
+    if ($enforce_decision_match && !personalize_option_set_matches_decision($osid, $option_set->agent, $option_set->decision_name, $option_set->options)) {
       throw new PersonalizeException('This Option Set\'s options do not match the decision you are trying to add it to');
     }
   }
@@ -2207,8 +2207,6 @@ function personalize_option_set_delete($osid) {
     db_delete('personalize_option_sets')
       ->condition('osid', $osid)
       ->execute();
-    // Pause the campaign because changes have been made.
-    personalize_pause_if_running($option_set->agent);
 
     // Clear the option set cache.
     personalize_option_set_load(NULL, TRUE);
@@ -2798,10 +2796,15 @@ function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
       visitor_actions_clear_subscribers($goal['action']);
     }
   }
+  $goal_array = array(
+    'agent' => $goal['agent'],
+    'name' => $goal['action'],
+    'value' => $goal['value']
+  );
   // Clear the agent's goals cache.
   personalize_goal_load_by_conditions(array('agent' => $goal['agent']), TRUE);
 
-  module_invoke_all('personalize_goal_delete', $goal);
+  module_invoke_all('personalize_goal_delete', $goal_array);
 }
 
 /**
