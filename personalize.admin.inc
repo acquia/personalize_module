@@ -1579,14 +1579,20 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           $default_executor = $executor_name;
         }
       }
-      if (empty($default_executor)) {
-        $default_executor = array_shift(array_keys($supported_executors));
+
+      if (isset($option_set->executor) && isset($options[$option_set->executor])) {
+        $default_executor = $option_set->executor;
       }
+      if (empty($default_executor)) {
+        reset($supported_executors);
+        $default_executor = key($supported_executors);
+      }
+
       $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
         '#type' => 'radios',
         '#title' => t('Rendering'),
         '#options' => $options,
-        '#default_value' => isset($option_set->executor) ? $option_set->executor : $default_executor,
+        '#default_value' => $default_executor,
         '#title_display' => 'invisible',
       );
       // Add descriptions to the executor options
