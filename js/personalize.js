@@ -188,7 +188,7 @@
         for (var action in boundActions) {
           if (boundActions.hasOwnProperty(action) && processedListeners.hasOwnProperty(action)) {
             if (boundActions[action] == null || (boundActions[action] instanceof jQuery && boundActions[action].length == 0)) {
-              Drupal.personalize.debug('Element goal ' + action + ' has no DOM element on this page.', 'warning');
+              Drupal.personalize.debug('Element goal ' + action + ' has no DOM element on this page.', 3001);
             }
           }
         }
@@ -730,7 +730,7 @@
               executeDecisionCallbacks(agent_name, point, decisions);
               return;
             }
-            Drupal.personalize.debug('Getting decision for ' + agent_name + ' :' + point, 'ok');
+            Drupal.personalize.debug('Requesting decision for ' + agent_name + ' :' + point, 2000);
             decisionAgent.getDecisionsForPoint(agent_name, agent.visitorContext, agent.decisionPoints[point].choices, point, agent.decisionPoints[point].fallbacks, callback);
           }
         }
@@ -830,7 +830,7 @@
             }
             if (decisions != null) {
               // Execute the decision callbacks and skip processing this agent any further.
-              Drupal.personalize.debug('Reading decisions from storage: ' + agentName + ': ' + decisionPoint, 'ok');
+              Drupal.personalize.debug('Reading decisions from storage: ' + agentName + ': ' + decisionPoint, 2001);
               executeDecisionCallbacks(agentName, decisionPoint, decisions);
               // Remove this from the decision points to be processed for this agent.
               delete agents[agentName].decisionPoints[decisionPoint];
@@ -877,7 +877,7 @@
     if (option_set.selector.length > 0 && $option_set.length == 0 && agent_info.active) {
       // Add a debug message to say there's a decision happening for an option set with
       // no DOM element on hte page.
-      Drupal.personalize.debug('No DOM element for the following selector in the ' + agent_name + ' campaign: "' + option_set.selector + '"', 'warning');
+      Drupal.personalize.debug('No DOM element for the following selector in the ' + agent_name + ' campaign: "' + option_set.selector + '"', 3002);
     }
     // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
@@ -887,13 +887,13 @@
     // use that.
     if (selection = getPreselection(osid)) {
       chosenOption = selection;
-      Drupal.personalize.debug('Preselected option being shown for ' + agent_name, 'ok');
+      Drupal.personalize.debug('Preselected option being shown for ' + agent_name, 2002);
     }
     // If we're in admin mode or the campaign is paused, just show the first option,
     // or, if available, the "winner" option.
     else if (Drupal.personalize.isAdminMode() || !agent_info.active) {
       chosenOption = choices[fallbackIndex];
-      Drupal.personalize.debug('Fallback option being shown for ' + agent_name, 'ok');
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name, 2003);
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {
@@ -985,7 +985,7 @@
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid, inner_agent_name) {
       return function(decision) {
-        Drupal.personalize.debug('Calling the executor for ' + inner_agent_name + ': ' + inner_osid, 'ok');
+        Drupal.personalize.debug('Calling the executor for ' + inner_agent_name + ': ' + inner_osid, 2004);
         Drupal.personalize.executors[inner_executor].execute($inner_option_set, decision, inner_osid);
         // Fire an event so other code can respond to the decision.
         $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid, inner_agent_name ]);
@@ -1361,9 +1361,9 @@
     processedListeners = {};
   };
 
-  Drupal.personalize.debug = function(message, type) {
+  Drupal.personalize.debug = function(message, code) {
     if (Drupal.personalize.isDebugMode() && Drupal.hasOwnProperty('personalizeDebug')) {
-      Drupal.personalizeDebug.log(message, type);
+      Drupal.personalizeDebug.log(message, code);
     }
   }
 })(jQuery);

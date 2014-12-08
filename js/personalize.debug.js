@@ -2,12 +2,23 @@
 
   Drupal.personalizeDebug = (function() {
 
+    function getMessageType(code) {
+      if (code < 3000) {
+        return 'OK';
+      }
+      if (code < 4000) {
+        return 'WARNING';
+      }
+      return 'ERROR';
+    }
+
     var debuggedMessages = [];
 
     return {
-      'log': function(message, type) {
+      'log': function(message, code) {
         if (debuggedMessages.indexOf(message) == -1) {
-          console.log(type.toUpperCase() + ': ' + message);
+          var messageType = getMessageType(code);
+          console.log(messageType + ': ' + message + ' [Code ' + code + ']');
           debuggedMessages.push(message);
         }
       }

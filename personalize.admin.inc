@@ -46,8 +46,8 @@ function personalize_admin_form($form, &$form_state) {
   );
   $form['personalize_enable_debug_mode'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Enable debug mode'),
-    '#description' => t('When this box is checked, personalization events will be logged to a message box on the page. These will show up automatically in admin mode, otherwise setting a cookie in the browser will make them show up.'),
+    '#title' => t('Debug mode'),
+    '#description' => t('Select this check box to display Acquia Lift diagnostic information in certain browser consoles. !learnmore.', array('!learnmore' => l(t('Learn more'), 'https://docs.acquia.com/lift/drupal/debug', array('attributes' => array('target' => '_blank'))))),
     '#default_value' => variable_get('personalize_enable_debug_mode', FALSE),
   );
   // Add visitor context configuration.
