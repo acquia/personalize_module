@@ -2332,7 +2332,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
       'actionable_element' => 'page',
       'event[page]' => 'client::view',
       'pages' => '<front>',
-      'limited_use' => FALSE,
+      'reusable' => TRUE,
     );
     $this->drupalPost('admin/structure/visitor_actions/add', $edit, $this->getButton('add_visitor_action'));
     $goals = personalize_goal_load_by_conditions(array('agent' => $machine_name));
