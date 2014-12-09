@@ -930,10 +930,10 @@ class PersonalizeTest extends PersonalizeBaseTest {
 
     // Verify the JSON that would be returned for a specific choice.
     $commands = $this->drupalGetAJAX("personalize/option_set/osid-{$osid}/option-A/ajax");
-    $selector = "personalize-osid-{$osid}";
+    $selector = "[data-personalize=osid-{$osid}]";
     foreach ($commands as $command) {
       if ($command['command'] == 'insert') {
-        $this->assertEqual($command['selector'], "#{$selector}");
+        $this->assertEqual($command['selector'], "{$selector}");
         $this->assertEqual(strpos($command['data'], '<div id="' . $selector . '">'), 0, 'Response begins by replacing the selector.');
       }
     }
