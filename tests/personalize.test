@@ -2569,6 +2569,17 @@ class PersonalizeAdminSettingsTest extends PersonalizeBaseTest {
     // Assert the correct setting is in the js.
     $settings = $this->drupalGetSettings();
     $this->assertEqual('session', $settings['personalize']['cacheExpiration']['decisions']);
+
+    // Enable debug mode and make sure the correct setting shows up in the JS settings.
+    // First assert the setting is not in the JS.
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertFalse(isset($settings['personalize']['debugMode']));
+    $edit['personalize_enable_debug_mode'] = TRUE;
+    $this->drupalPost('admin/config/content/personalize', $edit, $this->getButton('config'));
+    $this->drupalGet('');
+    $settings = $this->drupalGetSettings();
+    $this->assertTrue($settings['personalize']['debugMode']);
   }
 
   /**
