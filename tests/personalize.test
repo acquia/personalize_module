@@ -888,6 +888,14 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // Show should be checked by default.
     $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-show");
 
+    // Save the option set with a non-existent executor.
+    $option_set->executor = 'non-existent';
+    $option_set = personalize_option_set_save($option_set);
+    $this->resetAll();
+    // The "show" option should be checked when we go to the campaign edit page.
+    $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
+    $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-show");
+
     // Now update to callback.
     $edit = array(
       "option_sets[option_set_{$osid}][advanced][executor]" => 'callback',
