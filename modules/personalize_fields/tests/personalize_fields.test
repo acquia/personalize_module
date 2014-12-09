@@ -326,13 +326,10 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
     $edit['article_headline[und][1][value]'] = '';
     $edit['article_headline[und][2][value]'] = '';
     $this->drupalPost("node/$nid4/edit", $edit, t('Save'));
-    $this->assertText(t('The campaign has been paused because you have made changes.'));
+
     // Confirm that the Option Set has been deleted.
     $option_set = personalize_option_set_load($osid3, TRUE);
     $this->assertFalse($option_set);
-    // Confirm that the campaign has indeed been paused.
-    $status = personalize_agent_get_status($third_agent);
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, $status);
 
     // Now delete the field instance from the article content type.
     $instance = field_info_instance('node', 'article_headline', 'article');
