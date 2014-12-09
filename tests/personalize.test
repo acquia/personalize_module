@@ -888,6 +888,14 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // Show should be checked by default.
     $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-show");
 
+    // Save the option set with a non-existent executor.
+    $option_set->executor = 'non-existent';
+    $option_set = personalize_option_set_save($option_set);
+    $this->resetAll();
+    // The "show" option should be checked when we go to the campaign edit page.
+    $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/edit");
+    $this->assertFieldChecked("edit-option-sets-option-set-{$osid}-advanced-executor-show");
+
     // Now update to callback.
     $edit = array(
       "option_sets[option_set_{$osid}][advanced][executor]" => 'callback',
@@ -922,10 +930,10 @@ class PersonalizeTest extends PersonalizeBaseTest {
 
     // Verify the JSON that would be returned for a specific choice.
     $commands = $this->drupalGetAJAX("personalize/option_set/osid-{$osid}/option-A/ajax");
-    $selector = "personalize-osid-{$osid}";
+    $selector = "[data-personalize=osid-{$osid}]";
     foreach ($commands as $command) {
       if ($command['command'] == 'insert') {
-        $this->assertEqual($command['selector'], "#{$selector}");
+        $this->assertEqual($command['selector'], "{$selector}");
         $this->assertEqual(strpos($command['data'], '<div id="' . $selector . '">'), 0, 'Response begins by replacing the selector.');
       }
     }
