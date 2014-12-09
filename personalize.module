@@ -2199,7 +2199,7 @@ function personalize_option_set_ajax($decision_name, $choice_name) {
   $render = module_invoke($plugin['module'], 'personalize_option_load', $option_set, $option);
   $cleaned_decision_name = check_plain($decision_name);
   $commands = array();
-  $commands[] = ajax_command_replace('#personalize-' . $cleaned_decision_name, '<div id="personalize-' . $cleaned_decision_name . '">' . drupal_render($render) . '</div>');
+  $commands[] = ajax_command_replace('[data-personalize=' . $cleaned_decision_name . ']', '<div data-personalize="' . $cleaned_decision_name . '">' . drupal_render($render) . '</div>');
   $page = array('#type' => 'ajax', '#commands' => $commands);
   ajax_deliver($page);
 }
