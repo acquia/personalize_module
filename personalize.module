@@ -1096,7 +1096,7 @@ function personalize_agent_set_status($agent_name, $status) {
   personalize_visitor_context_expiration_clear();
 
   // Clear the agent's verification status.
-  _personalize_agent_verification_cache_clear($agent_name);
+  personalize_agent_clear_verified_status($agent_name);
 
   // Allow modules to act on the fact that this agent's status has changed.
   module_invoke_all('personalize_agent_update_status', $agent_name, $old_status, $status);
@@ -1115,42 +1115,6 @@ function personalize_agent_set_status($agent_name, $status) {
  *   Whether or not the agent passed all the checks.
  */
 function personalize_verify_agent($agent_name, $show_messages = TRUE) {
-  // Check the option sets to make sure they are all valid.
-  $option_sets = personalize_option_set_load_by_agent($agent_name);
-  $decisions = array();
-  foreach ($option_sets as $osid => $option_set) {
-    if (isset($decisions[$option_set->decision_name])) {
-      if (count($decisions[$option_set->decision_name]) != count($option_set->options)) {
-        // Option Sets using the same decision name must have the same number of options.
-        if ($show_messages) {
-          drupal_set_message(t('The Option Set @title has @count options but uses the decision @decision which requires @count2 options', array(
-            '@title' => $option_set->label,
-            '@count' => count($option_set->options),
-            '@decision' => $option_set->decision_name,
-            '@count2' => count($decisions[$option_set->decision_name]))), 'error');
-        }
-        return FALSE;
-      }
-      // The option IDs of the Option Sets must also be the same.
-      foreach ($option_set->options as $option) {
-        if (!in_array($option['option_id'], $decisions[$option_set->decision_name])) {
-          if ($show_messages) {
-            drupal_set_message(t('The Option Set @title uses the decision @decision but has different option IDs. Option IDs cannot be changed so you will need to delete the options and recreate them.', array(
-              '@title' => $option_set->label,
-              '@decision' => $option_set->decision_name)), 'error');
-          }
-          return FALSE;
-        }
-      }
-    }
-    else {
-      // Store this decision name to check subsequent Option Sets against.
-      $decisions[$option_set->decision_name] = array();
-      foreach ($option_set->options as $option) {
-        $decisions[$option_set->decision_name][] = $option['option_id'];
-      }
-    }
-  }
   // Now allow the agent to run a check.
   $agent_instance = personalize_agent_load_agent($agent_name);
   if ($agent_instance instanceof PersonalizeAgentInterface) {
@@ -1170,6 +1134,53 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
   return TRUE;
 }
 
+/**
+ * Checks whether the passed in option set matches the decision it uses.
+ *
+ * Multiple option sets can use the same decision name and then be treated as one
+ * conceptual decision, however in order for this to work the number of options
+ * and the option IDs must match. This function makes sure that an option set
+ * attempting to be added to a decision matches the option sets already tied
+ * to that decision.
+ *
+ * @param $osid
+ *   The Option Set ID or NULL if it's a new Option Set.
+ * @param string $agent
+ *   The agent machine name.
+ * @param string $decision_name
+ *   The decision name.
+ * @param array $options
+ *   The Option Set's options
+ * @return bool
+ *   TRUE if the Option Set matches the existing decision or if there is no
+ *   existing decision, FALSE otherwise.
+ */
+function personalize_option_set_matches_decision($osid, $agent, $decision_name, $options) {
+  $option_sets = personalize_option_set_load_multiple(FALSE, array('agent' => $agent, 'decision_name' => $decision_name));
+
+  if (!empty($osid) && isset($option_sets[$osid])) {
+    // Exclude the option set being checked from the list to check it against.
+    unset($option_sets[$osid]);
+  }
+
+  if (!empty($option_sets)) {
+    // Compare the option set's options with those of the first one in this decision.
+    $check = reset($option_sets);
+    if (count($options) != count($check->options)) {
+      return FALSE;
+    }
+    $option_ids = array();
+    foreach ($check->options as $option) {
+      $option_ids[] = $option['option_id'];
+    }
+    foreach ($options as $option) {
+      if (!in_array($option['option_id'], $option_ids)) {
+        return FALSE;
+      }
+    }
+  }
+  return TRUE;
+}
 /**
  * Returns the current status of the specified agent.
  *
@@ -1210,7 +1221,7 @@ function personalize_warn_if_running($agent_name) {
 /**
  * Pauses the passed in agent if it's running.
  *
- * @param $agent_name
+ * @param string $agent_name
  *   The name of the agent.
  */
 function personalize_pause_if_running($agent_name) {
@@ -1954,13 +1965,15 @@ function personalize_agent_save($agent) {
   // Also reset the visitor context cache.
   personalize_visitor_context_expiration_clear();
 
-  // And reset the verification status of the agent.
-  _personalize_agent_verification_cache_clear($agent->machine_name);
-
   // Call the save callback of the agent type.
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
     if ($agent_instance = call_user_func_array(array($class, 'create'), array($agent))) {
+      // If this is an agent that uses visitor contexts for auto-targeting, clear
+      // the visitor context cache.
+      if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
+        personalize_visitor_context_expiration_clear();
+      }
       $agent_instance->postSave($prior_values);
     }
     else {
@@ -1980,7 +1993,7 @@ function personalize_agent_delete($agent_name) {
   db_query('DELETE FROM {personalize_agent} WHERE machine_name = :machine_name', array(':machine_name' => $agent_name));
   db_query('DELETE FROM {personalize_campaign_goals} WHERE agent = :agent', array(':agent' => $agent_name));
   variable_del(_personalize_agent_get_status_variable($agent_name));
-  _personalize_agent_verification_cache_clear($agent_name);
+  personalize_agent_clear_verified_status($agent_name);
   module_invoke_all('personalize_agent_delete', $agent);
 }
 
@@ -2001,10 +2014,19 @@ function personalize_agent_export($agent, $indent = '') {
 
 /**
  * Saves an Option Set to the database
+ *
+ * @param stdClass $option_set
+ *   The Option Set to save.
+ * @param bool $enforce_decision_match
+ *   Whether or not to check the decision name given, if any, against other option
+ *   sets using this decision. One reason to set this to FALSE would be when knowingly
+ *   making a change to the option sets comprising one conceptual decision, where each
+ *   option set is being updated in turn. In this case it is up to the calling code to
+ *   ensure the final set of option sets for the decision is consistent.
  */
-function personalize_option_set_save($option_set) {
+function personalize_option_set_save($option_set, $enforce_decision_match = TRUE) {
   if (!isset($option_set->plugin) || !isset($option_set->agent) || !isset($option_set->options) || !is_array($option_set->options)) {
-    throw new Exception('An Option Set must have a type, an agent and an array of options');
+    throw new PersonalizeException('An Option Set must have a type, an agent and an array of options');
   }
   if (isset($option_set->osid)) {
     $prior_values = personalize_option_set_load($option_set->osid, TRUE);
@@ -2044,7 +2066,17 @@ function personalize_option_set_save($option_set) {
   module_invoke_all('personalize_option_set_presave', $option_set);
 
   $option_set->mvt = isset($option_set->mvt) ? $option_set->mvt : NULL;
-  $option_set->decision_name = isset($option_set->decision_name) ? $option_set->decision_name : '';
+  if (isset($option_set->decision_name)) {
+    // Check that the number of options matches other option sets using this
+    // decision name.
+    $osid = isset($option_set->osid) ? $option_set->osid : NULL;
+    if ($enforce_decision_match && !personalize_option_set_matches_decision($osid, $option_set->agent, $option_set->decision_name, $option_set->options)) {
+      throw new PersonalizeException('This Option Set\'s options do not match the decision you are trying to add it to');
+    }
+  }
+  else {
+    $option_set->decision_name = '';
+  }
 
   $fields = array(
     'plugin' => $option_set->plugin,
@@ -2083,14 +2115,11 @@ function personalize_option_set_save($option_set) {
   // Make sure the static cache is reset for this option set.
   personalize_option_set_load($option_set->osid, TRUE);
 
-  // Pause the campaign because changes have been made.
-  personalize_pause_if_running($option_set->agent);
+  // Clear the visitor context cache settings for running campaigns.
+  personalize_visitor_context_expiration_clear();
+
   // Set the active campaign to the one this option set was created for.
   personalize_set_campaign_context($option_set->agent);
-
-  // Reset the verification cache for this agent.
-  _personalize_agent_verification_cache_clear($option_set->agent);
-
 
   // Allow modules to act after an option set has been saved.
   module_invoke_all('personalize_option_set_save', $option_set);
@@ -2215,8 +2244,6 @@ function personalize_option_set_delete($osid) {
     db_delete('personalize_option_sets')
       ->condition('osid', $osid)
       ->execute();
-    // Pause the campaign because changes have been made.
-    personalize_pause_if_running($option_set->agent);
 
     // Clear the option set cache.
     personalize_option_set_load(NULL, TRUE);
@@ -2573,7 +2600,7 @@ function _personalize_agent_verification_cache_get($agent_name) {
  *   The machine name of the agent that should have cache cleared.  If not
  *   passed, entire cache will be cleared.
  */
-function _personalize_agent_verification_cache_clear($agent_name = NULL) {
+function personalize_agent_clear_verified_status($agent_name = NULL) {
   $cache = cache_get(PERSONALIZE_AGENT_VERIFY_CACHE);
   if (!$cache) {
     return;
@@ -2776,8 +2803,8 @@ function personalize_visitor_actions_delete_action($action) {
  *   TRUE if the action subscribers cache needs to be rebuilt
  */
 function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
-  $fields = db_select('personalize_campaign_goals', 'g')
-    ->fields('g', array('action', 'agent'))
+  $goal = db_select('personalize_campaign_goals', 'g')
+    ->fields('g')
     ->condition('id', $goal_id)
     ->execute()
     ->fetchAssoc();
@@ -2787,11 +2814,11 @@ function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
     ->condition('id', $goal_id)
     ->execute();
 
-  $action = visitor_actions_custom_load($fields['action']);
+  $action = visitor_actions_custom_load($goal['action']);
   if ($action) {
     // If the underlying action was a limited usage action, then delete it too.
     if (!empty($action['limited_use'])) {
-      visitor_actions_delete_action($fields['action']);
+      visitor_actions_delete_action($goal['action']);
     }
   }
   if ($rebuild_subscribers) {
@@ -2799,22 +2826,22 @@ function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
     // a goal that uses this action.
     $result = db_select('personalize_campaign_goals', 'g')
       ->fields('g', array('action'))
-      ->condition('action', $fields['action'])
+      ->condition('action', $goal['action'])
       ->execute()
       ->fetchField();
     if (!$result) {
-      visitor_actions_clear_subscribers($fields['action']);
+      visitor_actions_clear_subscribers($goal['action']);
     }
   }
+  $goal_array = array(
+    'agent' => $goal['agent'],
+    'name' => $goal['action'],
+    'value' => $goal['value']
+  );
   // Clear the agent's goals cache.
-  personalize_goal_load_by_conditions(array('agent' => $fields['agent']), TRUE);
-  // Clear the verification cache so that the campaign can be re-validated.
-  _personalize_agent_verification_cache_clear($fields['agent']);
-  $validated = _personalize_agent_verification_cache_get($fields['agent']);
-  if (!$validated) {
-    personalize_pause_if_running($fields['agent']);
-  }
+  personalize_goal_load_by_conditions(array('agent' => $goal['agent']), TRUE);
 
+  module_invoke_all('personalize_goal_delete', $goal_array);
 }
 
 /**
@@ -2878,8 +2905,6 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
     module_invoke_all('entity_update', $goal_entity, 'personalize_campaign_goal');
   }
 
-  // Clear the agent's verification status.
-  _personalize_agent_verification_cache_clear($agent_name);
   module_invoke_all('personalize_goal_save', $goal_array);
 }
 
