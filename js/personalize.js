@@ -239,6 +239,13 @@
   };
 
   /**
+   * Helper function for sending a goal to the debugger.
+   */
+  function debugGoal(goal_name, agent_name, value) {
+    Drupal.personalize.debug('Sending goal ' + goal_name + ' to agent ' + agent_name + ' with value ' + value, 2010);
+  }
+
+  /**
    * Sends any goals that have been set server-side.
    */
   Drupal.personalize.sendGoals = function(settings) {
@@ -254,6 +261,7 @@
             if (settings.personalize.goals_attained[agent_name].hasOwnProperty(i) && !settings.personalize.goals_attained[agent_name][i].processed) {
               Drupal.personalize.agents[agent.type].sendGoalToAgent(agent_name, settings.personalize.goals_attained[agent_name][i].name, settings.personalize.goals_attained[agent_name][i].value);
               settings.personalize.goals_attained[agent_name][i].processed = 1;
+              debugGoal(settings.personalize.goals_attained[agent_name][i].name, agent_name, settings.personalize.goals_attained[agent_name][i].value)
               $(document).trigger('sentGoalToAgent', [agent_name, settings.personalize.goals_attained[agent_name][i].name, settings.personalize.goals_attained[agent_name][i].value ]);
             }
           }
@@ -1057,6 +1065,7 @@
               if (goals.hasOwnProperty(i)) {
                 var agent = settings.personalize.agent_map[goals[i].agent];
                 if (agent !== undefined) {
+                  debugGoal(eventName, goals[i].agent, goals[i].value);
                   Drupal.personalize.agents[agent.type].sendGoalToAgent(goals[i].agent, eventName, goals[i].value, jsEvent);
                   $(document).trigger('sentGoalToAgent', [goals[i].agent, eventName, goals[i].value, jsEvent ]);
 
