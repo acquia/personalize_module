@@ -5,7 +5,7 @@
  * and scenarios.
  */
 
-class PersonalizeTestAgentNoMVTNoMVP extends PersonalizeAgentBase {
+class PersonalizeTestAgentNoMVTNoMP extends PersonalizeAgentBase {
 
   /**
    * Implements PersonalizeAgentInterface::create().
@@ -20,7 +20,7 @@ class PersonalizeTestAgentNoMVTNoMVP extends PersonalizeAgentBase {
    */
   public function getType()
   {
-    return 'test_agent_no_mvt_no_mvp';
+    return 'test_agent_no_mvt_no_mp';
   }
 
   public function supportsMVTs() {

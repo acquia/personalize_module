@@ -2057,6 +2057,12 @@ function personalize_option_set_save($option_set, $enforce_decision_match = TRUE
   if (!isset($option_set->plugin) || !isset($option_set->agent) || !isset($option_set->options) || !is_array($option_set->options)) {
     throw new PersonalizeException('An Option Set must have a type, an agent and an array of options');
   }
+  if (!$agent_instance = personalize_agent_load_agent($option_set->agent)) {
+    throw new PersonalizeException('Invalid agent for option set.');
+  }
+  if (isset($option_set->mvt) && !$agent_instance->supportsMVTs()) {
+    throw new PersonalizeException('This agent does not support MVTs.');
+  }
   if (isset($option_set->osid)) {
     $prior_values = personalize_option_set_load($option_set->osid, TRUE);
     if ($prior_values) {
@@ -2084,37 +2090,42 @@ function personalize_option_set_save($option_set, $enforce_decision_match = TRUE
       $option_set = (object) $os_array;
     }
   }
-  else {
-    // This is a new option set. Make sure the agent can accept a new option set.
-    $allow_new_os = TRUE;
-    $option_sets = personalize_option_set_load_by_agent($option_set->agent, TRUE);
-    if (!empty($option_sets)) {
-      $agent_instance = personalize_agent_load_agent($option_set->agent);
-      // Does this constitute a new decision point or a new decision?
-      $is_new_point = $is_new_decision = TRUE;
-      if (isset($option_set->mvt)) {
-        foreach ($option_sets as $existing_os) {
-          if ($option_set->mvt == $existing_os->mvt) {
-            $is_new_point = FALSE;
-          }
-        }
-      }
-      // If it's a new decision point then of course it's a new decision.
-      if (!$is_new_point) {
-        if (isset($option_set->decision_name)) {
-          foreach ($option_sets as $existing_os) {
-            if ($option_set->decision_name == $existing_os->decision_name) {
-              $is_new_decision = FALSE;
-            }
-          }
-        }
-      }
-      $allow_new_os = personalize_is_new_option_set_allowed($agent_instance->supportsMultipleDecisionPoints(), $agent_instance->supportsMVTs(), $is_new_point, $is_new_decision);
 
+  // Check that this option set is allowed by the agent.
+  // This is a new option set. Make sure the agent can accept a new option set.
+  $allowed = TRUE;
+  $option_sets = personalize_option_set_load_by_agent($option_set->agent, TRUE);
+  if (isset($option_set->osid) && isset($option_sets[$option_set->osid])) {
+    // We need to check the option set we're saving against the *other* option
+    // sets this agent may have.
+    unset($option_sets[$option_set->osid]);
+  }
+  if (!empty($option_sets)) {
+    // Does this constitute a new decision point or a new decision?
+    $is_new_point = $is_new_decision = TRUE;
+    if ($decision_point = personalize_get_decision_point_name_for_option_set($option_set)) {
+      foreach ($option_sets as $existing_os) {
+        if ($existing_os->decision_point == $decision_point) {
+          $is_new_point = FALSE;
+        }
+      }
     }
-    if (!$allow_new_os) {
-      throw new PersonalizeException('Cannot add a new option set to this agent!');
+
+    // If it's a new decision point then of course it's a new decision.
+    if (!$is_new_point) {
+      if (isset($option_set->decision_name)) {
+        foreach ($option_sets as $existing_os) {
+          if ($option_set->decision_name == $existing_os->decision_name) {
+            $is_new_decision = FALSE;
+          }
+        }
+      }
     }
+    $allowed = personalize_is_option_set_allowed($agent_instance->supportsMultipleDecisionPoints(), $agent_instance->supportsMVTs(), $is_new_point, $is_new_decision);
+
+  }
+  if (!$allowed) {
+    throw new PersonalizeException('Cannot add a new option set to this agent!');
   }
 
   if (!isset($option_set->data)) {
@@ -2339,6 +2350,9 @@ function personalize_get_decision_point_name_for_option_set($option_set) {
 function personalize_get_decision_name_for_option_set($option_set) {
   if (!empty($option_set->decision_name)) {
     return $option_set->decision_name;
+  }
+  if (!isset($option_set->osid)) {
+    return NULL;
   }
   // Default to a name based on the osid.
   return personalize_stringify_osid($option_set->osid);
@@ -3109,7 +3123,7 @@ function personalize_stringify_osid($osid) {
  * @param boolean $new_d
  *   Whether the option set in question consitutes a new decision
  */
-function personalize_is_new_option_set_allowed($mp, $md, $new_p, $new_d) {
+function personalize_is_option_set_allowed($mp, $md, $new_p, $new_d) {
   if ($mp) {
     // Only disallowed if it's a new decision but not a new point and MVTs
     // are not supported.

@@ -1723,6 +1723,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
   }
 
   function testOptionSetRestrictions() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer blocks'));
+    $this->drupalLogin($admin_user);
     module_enable(array('personalize_test_extra_agent'));
     // Create some test agents using plugins that have restrictions on how many
     // decisions and decision points they can have.
@@ -1748,26 +1750,132 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
         'agent_type' => $info['plugin']
       ));
       $options = array(
-        array('bid' => 'comment_delta_recent'),
-        array('bid' => 'system_delta_powered-by'),
+        array('option_label' => $this->randomName()),
+        array('option_label' => $this->randomName()),
       );
       try {
-        $osids[$agent_name][] = $this->createOptionSet(0, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+        $option_sets[$agent_name][] = $this->createOptionSet(0, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
       }
       catch (Exception $e) {
         $this->fail('Exception thrown when none expected.');
       }
-      // Now create an MVT and add 2 of the Option Sets to it.
-      $mvt = new stdClass();
-      $mvt->label = 'Test Mvt';
-      $mvt->agent = 'test-agent';
-      // Only the array keys matter in the option_sets property.
-      $mvt->option_sets = array(
-        $osids[0] => $osids[0],
-        $osids[1] => $osids[1],
-      );
+    }
+    $this->drupalLogout();
+
+    // Confirm no restrictions for the 'free-agent'.
+
+    // Add a new option set to the 'free-agent' agent. This means multiple decision
+    // points, which should not be a problem
+    $agent_name = 'free-agent';
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+    }
+    catch (Exception $e) {
+      $this->fail('Exception thrown when none expected.');
+    }
+    // Now create an MVT and add the 2 of the Option Sets to it - this means multiple
+    // decisions at one point, which should also not be a problem.
+    $mvt = new stdClass();
+    $mvt->label = 'Test Mvt';
+    $mvt->agent = $agent_name;
+    // Only the array keys matter in the option_sets property.
+    $osid1 = $option_sets[$agent_name][0]->osid;
+    $osid2 = $option_sets[$agent_name][1]->osid;
+    $mvt->option_sets = array(
+      $osid1 => $osid1,
+      $osid2 => $osid2,
+    );
+    try {
       personalize_mvt_save($mvt);
     }
+    catch (Exception $e) {
+      $this->fail('Exception thrown when none expected.');
+    }
+    $os1 = personalize_option_set_load($osid1, TRUE);
+    $os2 = personalize_option_set_load($osid2, TRUE);
+    $this->assertEqual($os1->decision_point, $os2->decision_point);
+
+    // Now try the same for the 'no-mvt' agent.
+
+    // Add a new option set to the 'no-mvt' agent. This means multiple decision
+    // points, which should not be a problem
+    $agent_name = 'no-mvt';
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+    }
+    catch (Exception $e) {
+      $this->fail('Exception thrown when none expected.');
+    }
+    // Now create an MVT and add the 2 of the Option Sets to it - this means multiple
+    // decisions at one point, which should also not be a problem.
+    $mvt = new stdClass();
+    $mvt->label = 'Test Mvt 2';
+    $mvt->agent = $agent_name;
+    // Only the array keys matter in the option_sets property.
+    $osid1 = $option_sets[$agent_name][0]->osid;
+    $osid2 = $option_sets[$agent_name][1]->osid;
+    $mvt->option_sets = array(
+      $osid1 => $osid1,
+      $osid2 => $osid2,
+    );
+    try {
+      personalize_mvt_save($mvt);
+      $this->fail('Should not be able to save an MVT for this agent');
+    }
+    catch (Exception $e) {
+      $this->assertEqual('This agent does not support MVTs.', $e->getMessage());
+    }
+
+    // Now test the 'no-multi-point' agent.
+
+    // Try to add a new option set to the 'no-multi-point' agent. This means multiple decision
+    // points, which should throw an exception.
+    $agent_name = 'no-multi-point';
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+      $this->fail('Should not reach here.');
+    }
+    catch (Exception $e) {
+      $this->assertEqual('Cannot add a new option set to this agent!', $e->getMessage());
+    }
+    $dummy_mvt_name = 'test-mvt';
+    $os1 = personalize_option_set_load($option_sets[$agent_name][0]->osid, TRUE);
+    $os1->mvt = $dummy_mvt_name;
+    personalize_option_set_save($os1);
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'mvt' => $dummy_mvt_name, 'options' => $options));
+    }
+    catch (Exception $e) {
+      $this->fail('Exception thrown when none expected');
+    }
+    // Assert we now have two option sets in this agent with the same decision point.
+    $os1 = personalize_option_set_load($option_sets[$agent_name][0]->osid, TRUE);
+    $os2 = personalize_option_set_load($option_sets[$agent_name][1]->osid, TRUE);
+    $this->assertEqual($os1->decision_point, $os2->decision_point);
+
+    // Now test the 'no-mvt-or-multi-point' agent
+
+    // We should not be able to add an option set representing an additional decision point.
+    $agent_name = 'no-mvt-or-multi-point';
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'options' => $options));
+      $this->fail('Should not reach here.');
+    }
+    catch (Exception $e) {
+      $this->assertEqual('Cannot add a new option set to this agent!', $e->getMessage());
+    }
+    $os1 = personalize_option_set_load($option_sets[$agent_name][0]->osid, TRUE);
+    $os1->decision_name = 'my-decision';
+    personalize_option_set_save($os1);
+    // We should be able to add a new option set that uses the same decision.
+    try {
+      $option_sets[$agent_name][] = $this->createOptionSet(1, array('plugin' => 'some_type', 'agent' => $agent_name, 'decision_name' => 'my-decision', 'options' => $options));
+    }
+    catch (Exception $e) {
+      $this->fail('Exception thrown when none expected');
+    }
+    $option_sets = personalize_option_set_load_by_agent($agent_name, TRUE);
+    $this->assertEqual(2, count($option_sets));
   }
 }
 
