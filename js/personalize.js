@@ -993,7 +993,7 @@
     // Define the callback function.
     var callback = (function(inner_executor, $inner_option_set, inner_osid, inner_agent_name) {
       return function(decision) {
-        Drupal.personalize.debug('Calling the executor for ' + inner_agent_name + ': ' + inner_osid, 2004);
+        Drupal.personalize.debug('Calling the executor for ' + inner_agent_name + ': ' + inner_osid, 2020);
         Drupal.personalize.executors[inner_executor].execute($inner_option_set, decision, inner_osid);
         // Fire an event so other code can respond to the decision.
         $(document).trigger('personalizeDecision', [$inner_option_set, decision, inner_osid, inner_agent_name ]);
