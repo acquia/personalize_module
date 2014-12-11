@@ -655,7 +655,10 @@ function personalize_agent_page($agent_data) {
   if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
     $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
   }
-  $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  if ($agent_instance->supportsMVTs()) {
+    $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  }
+
   drupal_alter('personalize_agent_page', $build, $agent_data);
   return $build;
 }

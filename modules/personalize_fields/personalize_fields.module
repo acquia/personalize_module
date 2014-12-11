@@ -705,6 +705,7 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
     if (isset($field['settings']['personalize']['options'][$agent_type])) {
       $agent_info['agent_basic_info']['options'][$agent_type] = $field['settings']['personalize']['options'][$agent_type];
     }
+    $agent_info['agent_basic_info']['options'][$agent_type]['auto_created'] = 1;
     if ($new_agent = personalize_save_agent_from_form_values($agent_info)) {
       $option_set->agent = $new_agent->machine_name;
     }

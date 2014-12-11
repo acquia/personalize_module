@@ -80,7 +80,7 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
   }
   else {
     $current_agent = isset($pblock->agent) ? $pblock->agent : '';
-    $form += personalize_get_agent_selection_form($current_agent);
+    $form += personalize_get_agent_selection_form($current_agent, TRUE, TRUE);
   }
 
   $path = drupal_get_path('module', 'personalize_blocks');
