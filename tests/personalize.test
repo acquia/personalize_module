@@ -1635,6 +1635,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
   function testFixedTargetingWithBooleanContext() {
     // Enable a test module that provides fixed targeting.
     module_enable(array('personalize_test_extra_agent'));
+    // Cache needs to be cleared twice. Because ctools.
+    $this->resetAll();
     $this->resetAll();
 
     // Create user profile fields that we can use for targeting.
@@ -1660,7 +1662,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       array('bid' => 'comment_delta_recent'),
       array('bid' => 'system_delta_powered-by'),
     );
-    $option_set = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $agent_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $option_set = $this->createOptionSet(0, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
 
     $agent_data = personalize_agent_load($machine_name);
     module_load_include('inc', 'personalize', 'personalize.admin');
@@ -2606,13 +2608,17 @@ class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
    * Tests saving and deleting MVTs.
    */
   function testMVTSaveDelete() {
+    $admin_user = $this->drupalCreateUser(array('manage personalized content', 'access administration pages', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+    $this->drupalLogout();
     // Create 4 Option Sets.
     $osids = array();
     for ($i = 0; $i < 4; $i++) {
       $option_set = new stdClass();
       $option_set->label = $this->randomName(8);
-      $option_set->plugin = 'some_type';
-      $option_set->agent = 'some-agent';
+      $option_set->plugin = 'some-type';
+      $option_set->agent = $agent->getMachineName();
       $option_set->options = array(
         array('option_id' => 'option-A'),
         array('option_id' => 'option-B')

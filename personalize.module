@@ -2421,10 +2421,10 @@ function personalize_mvt_save($mvt) {
     ->execute();
   // Find all option sets that were previously set to this MVT. Passing TRUE
   // as the 3rd param ensures they are loaded fresh from the DB.
-  $options_sets = personalize_option_set_load_multiple(array(), array('mvt' => $mvt->machine_name), TRUE);
+  $option_sets = personalize_option_set_load_multiple(array(), array('mvt' => $mvt->machine_name), TRUE);
 
   // See if there are option sets we need to remove.
-  foreach ($options_sets as $osid => $os) {
+  foreach ($option_sets as $osid => $os) {
     if (!isset($mvt->option_sets[$osid])) {
       $os->mvt = NULL;
       personalize_option_set_save($os);
@@ -2432,7 +2432,7 @@ function personalize_mvt_save($mvt) {
   }
   // Now update the option sets to mark them as belonging to this MVT.
   foreach ($mvt->option_sets as $osid => $os) {
-    if (!isset($options_sets[$osid])) {
+    if (!isset($option_sets[$osid])) {
       // Load the option set fresh from the DB.
       $option_set = personalize_option_set_load($osid, TRUE);
       $option_set->mvt = $mvt->machine_name;
