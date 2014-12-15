@@ -1266,6 +1266,9 @@ function personalize_pause_if_running($agent_name) {
  * @param bool $allow_add_new
  *   Whether to include the "Add new" option in the dropdown and the fields for
  *   new agent creation.
+ * @param bool $limit_to_available
+ *   Whether to limit the list of agents to those available to add a new option
+ *   set to.
  * @return array
  *   An array defining the agent dropdown form element and elements required
  *   to create a new agent, hidden with #states until "Add new" is selected
