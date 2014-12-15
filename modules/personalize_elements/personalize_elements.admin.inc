@@ -553,6 +553,9 @@ function _personalize_elements_get_default_allowed_tags() {
  *   The filtered option content.
  */
 function personalize_elements_filter_personalize_element_option($variation_type, $option_content) {
+  if (user_access('use advanced personalize elements features')) {
+    return $option_content;
+  }
   $allowed_html = variable_get('personalize_elements_allowed_html', _personalize_elements_get_default_allowed_tags());
   $allowed_tags = preg_split('/\s+|<|>/', $allowed_html, -1, PREG_SPLIT_NO_EMPTY);
 
