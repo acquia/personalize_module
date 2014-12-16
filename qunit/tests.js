@@ -150,7 +150,7 @@ QUnit.asyncTest( "get visitor contexts timeout test", function( assert ) {
     return myValues;
   }
   Drupal.personalize = Drupal.personalize || {};
-  Drupal.personalize.contextTimeout = 3000;
+  Drupal.personalize.contextTimeout = 300;
 
   Drupal.personalize.visitor_context = Drupal.personalize.visitor_context || {};
   Drupal.personalize.visitor_context.my_first_plugin = {
@@ -163,7 +163,7 @@ QUnit.asyncTest( "get visitor contexts timeout test", function( assert ) {
       return new Promise(function(resolve, reject) {
         setTimeout(function() {
           resolve(assignDummyValues(contexts));
-        }, (Drupal.personalize.contextTimeout+1000));
+        }, (Drupal.personalize.contextTimeout+100));
       });
     }
   }
