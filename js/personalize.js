@@ -61,7 +61,30 @@
     return adminMode;
   };
 
+  var DNT = null;
+  /**
+   * Returns whether or not do-not-track is enabled.
+   *
+   * @return boolean
+   */
+  Drupal.personalize.DNTenabled = function() {
+    if (DNT == null) {
+      DNT = false;
+      if (typeof window.navigator.doNotTrack != "undefined") {
+        if (window.navigator.doNotTrack == "yes" || window.navigator.doNotTrack == "1") {
+          DNT = true;
+        }
+      }
+    }
+    return DNT;
+  };
+
   var debugMode = null;
+  /**
+   * Returns whether or not debug mode is enabled.
+   *
+   * @return boolean
+   */
   Drupal.personalize.isDebugMode = function() {
     if (debugMode === null) {
       debugMode = Drupal.settings.personalize.debugMode && (Drupal.personalize.isAdminMode() || $.cookie('personalizeDebugMode'));
@@ -897,11 +920,20 @@
       chosenOption = selection;
       Drupal.personalize.debug('Preselected option being shown for ' + agent_name, 2002);
     }
-    // If we're in admin mode or the campaign is paused, just show the first option,
-    // or, if available, the "winner" option.
-    else if (Drupal.personalize.isAdminMode() || !agent_info.active) {
+    // If we're in admin mode just show the first option, or, if available, the "winner" option.
+    else if (Drupal.personalize.isAdminMode()) {
       chosenOption = choices[fallbackIndex];
-      Drupal.personalize.debug('Fallback option being shown for ' + agent_name, 2003);
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name + ' because admin mode is on.', 2003);
+    }
+    // Same for if do-not-track is enabled.
+    else if (Drupal.personalize.DNTenabled()) {
+      chosenOption = choices[fallbackIndex];
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name + ' because DNT is enabled.', 2004);
+    }
+    // ... or if the campaign is not running.
+    else if (!agent_info.active) {
+      chosenOption = choices[fallbackIndex];
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name + ' because the campaign is not running.', 2005);
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {
