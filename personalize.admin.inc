@@ -44,6 +44,12 @@ function personalize_admin_form($form, &$form_state) {
     '#description' => t('When this box is checked, users with the "Manage personalized content" permission will not trigger any personalization activity such as requests for decisions or the sending of goals.'),
     '#default_value' => variable_get('personalize_use_admin_mode', TRUE),
   );
+  $form['personalize_enable_debug_mode'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Debug mode'),
+    '#description' => t('Select this check box to display Acquia Lift diagnostic information in certain browser consoles. !learnmore.', array('!learnmore' => l(t('Learn more'), 'https://docs.acquia.com/lift/drupal/debug', array('attributes' => array('target' => '_blank'))))),
+    '#default_value' => variable_get('personalize_enable_debug_mode', FALSE),
+  );
   // Add visitor context configuration.
   $settings = variable_get('personalize_visitor_context_disabled', array());
   $form['personalize_visitor_context_disabled'] = personalize_admin_build_visitor_context_select($settings, FALSE);
@@ -649,7 +655,10 @@ function personalize_agent_page($agent_data) {
   if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
     $build['goals'] = drupal_get_form('personalize_agent_goals_form', $agent_data);
   }
-  $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  if ($agent_instance->supportsMVTs()) {
+    $build['mvt'] = drupal_get_form('personalize_agent_mvt_form', $agent_data);
+  }
+
   drupal_alter('personalize_agent_page', $build, $agent_data);
   return $build;
 }
