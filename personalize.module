@@ -2874,7 +2874,7 @@ function personalize_goal_delete($goal_id, $rebuild_subscribers = TRUE) {
   }
   $goal_array = array(
     'agent' => $goal['agent'],
-    'name' => $goal['action'],
+    'action' => $goal['action'],
     'value' => $goal['value']
   );
   // Clear the agent's goals cache.
