@@ -579,6 +579,13 @@
    * on subsequent page loads.
    */
   Drupal.personalize.visitor_context = Drupal.personalize.visitor_context || {};
+
+  /**
+   * The User Profile context plugin.
+   *
+   * @todo This context plugin should really be in its own file which would only
+   *   be added when the plugin is being used.
+   */
   Drupal.personalize.visitor_context.user_profile_context = {
     'getContext': function(enabled) {
       if (!Drupal.settings.hasOwnProperty('personalize_user_profile_context')) {
