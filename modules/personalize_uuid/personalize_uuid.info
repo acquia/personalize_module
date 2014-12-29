@@ -1,0 +1,6 @@
+name = Personalize UUID
+description = Adds UUID supports to Personalize Agent, Variation Set and Goals.
+dependencies[] = personalize
+dependencies[] = uuid
+package = Personalization
+core = 7.x
