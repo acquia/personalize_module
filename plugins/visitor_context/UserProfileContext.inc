@@ -91,6 +91,8 @@ class UserProfileContext extends PersonalizeContextBase {
           )
         ),
       ),
+      // @todo Once the js for the user profile context has been split off into its
+      //   own file where it belongs, we'll only need to load that here.
       'library' => array(
         array('personalize', 'personalize')
       )
