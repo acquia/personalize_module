@@ -57,12 +57,18 @@ class PersonalizeOptionSetController extends EntityAPIController {
    * @overridden
    */
   public function save($entity, DatabaseTransaction $transaction = NULL) {
+    // Ensure default values for properties that aren't set.
+
     if (!isset($entity->label)) {
       $entity->label = 'Untitled Option Set';
     }
 
     if (!isset($entity->stateful)) {
       $entity->stateful = 0;
+    }
+
+    if (!isset($entity->executor)) {
+      $entity->executor = 'show';
     }
 
     return parent::save($entity, $transaction);

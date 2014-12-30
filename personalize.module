@@ -920,7 +920,7 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
     return;
   }
 
-  if (isset($option_set->mvt) && !in_array($option_set->mvt, $loaded_mvts) && $mvt = personalize_mvt_load($option_set->mvt)) {
+  if (!empty($option_set->mvt) && !in_array($option_set->mvt, $loaded_mvts) && $mvt = personalize_mvt_load($option_set->mvt)) {
     $loaded_mvts[] = $option_set->mvt;
     if (count($mvt->option_sets) > 1) {
       // Always use the agent specified in the MVT rather than the Option
