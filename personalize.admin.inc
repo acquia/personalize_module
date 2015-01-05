@@ -332,10 +332,13 @@ function personalize_option_set_list($form, &$form_state) {
     if (!empty($filter) && $filter != $option_set->plugin) {
       continue;
     }
+    $campaign = personalize_agent_load($option_set->agent);
+    if (empty($campaign)) {
+      continue;
+    }
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $edit_link = module_hook($option_set_plugin['module'], 'personalize_edit_link') ? module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set) : '';
     $delete_link = module_hook($option_set_plugin['module'], 'personalize_delete_link') ? module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set) : '';
-    $campaign = personalize_agent_load($option_set->agent);
     $rows[] = array(
       check_plain($option_set->label),
       $option_set->plugin,
