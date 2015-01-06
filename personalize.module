@@ -959,6 +959,19 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
       )
     )
   );
+  if (!empty($option_set->execution_rules)) {
+    $rules = $option_set->execution_rules;
+    foreach ($rules as $rule) {
+      if (isset($rule['option_id']) || !isset($rule['osid'])) {
+        continue;
+      }
+      if (isset($rule['osid'])) {
+        $child_os = personalize_option_set_load($rule['osid']);
+        // Make sure the agent assets are available for the child OS.
+        $personalize_settings['data']['personalize']['agent_map'][$child_os->agent] = personalize_agent_get_map_settings($child_os->agent, $child_os, $assets);
+      }
+    }
+  }
   if (isset($mvt_settings)) {
     $personalize_settings['data']['personalize']['mvt'] = $mvt_settings;
   }

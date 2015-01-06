@@ -2684,7 +2684,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // Keep track of feature strings that have already been designated to options,
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
-      $designated_features = $option_features = $feature_rules = array();
+      $designated_features = $execution_rules = array();
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -2711,33 +2711,29 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             $rules[$feature_string]['plugin'] = $plugin_name;
           }
           foreach ($feature_values as $feature) {
-            $option_features[$option_id][] = $feature;
-            $feature_rules[$option_id][$feature] = $rules[$feature];
             // Mark this feature string as already designated.
             if (!in_array($feature, $designated_features)) {
               $designated_features[] = $feature;
             }
             else {
-              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produced the desired effect.'), 'warning');
+              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produce the desired effect.'), 'warning');
             }
-
           }
-        }
-      }
-
-      // Now add the features to the option set's options array.
-      foreach ($option_set->options as &$option) {
-        if (isset($option_features[$option['option_id']])) {
-          $option['fixed_targeting'] = $option_features[$option['option_id']];
-          $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
-
+          $rule = array(
+            'option_id' => $option_id,
+            'fixed_targeting_features' => $feature_values,
+            'fixed_targeting_rules' => $rules,
+          );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
-          if (isset($values['options'][$option['option_id']]['explicit_targeting']['strategy'])) {
-            $option['fixed_targeting_strategy'] = $values['options'][$option['option_id']]['explicit_targeting']['strategy'];
+          if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
+            $rule['fixed_targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
+          $execution_rules[] = $rule;
         }
       }
+
+      $option_set->execution_rules = $execution_rules;
       personalize_option_set_save($option_set);
     }
   }

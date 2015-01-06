@@ -143,6 +143,20 @@ function personalize_schema() {
         'not null' => FALSE,
         'description' => 'The path to a local preview page for the option set.',
       ),
+      'parent' => array(
+        'description' => 'If this is a child Option Set, the osid of its parent.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'execution_rules' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'A serialized array specifying any execution rules for this option set.',
+      )
     ),
     'primary key' => array('osid'),
     'foreign keys' => array(
@@ -581,6 +595,69 @@ function personalize_update_7014() {
   }
 }
 
+/**
+ * Add parent and execution_rules columns for Option Sets.
+ */
+function personalize_update_7015() {
+  // Make sure to add UUID field
+  if (!db_field_exists('personalize_option_sets', 'parent')) {
+    db_add_field('personalize_option_sets', 'parent', array(
+      'description' => 'If this is a child Option Set, the osid of its parent.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
+  }
+  if (!db_field_exists('personalize_option_sets', 'execution_rules')) {
+    db_add_field('personalize_option_sets', 'execution_rules', array(
+      'type' => 'blob',
+      'not null' => FALSE,
+      'size' => 'big',
+      'serialize' => TRUE,
+      'description' => 'A serialized array specifying any execution rules for this option set.',
+    ));
+  }
+
+  // Move any existing fixed targeting rules to the new execution_rules column.
+  $result = db_select('personalize_option_sets', 'o')
+    ->fields('o', array('osid', 'options'))
+    ->execute();
+
+  foreach ($result as $row) {
+    $execution_rules = array();
+    $options = unserialize($row->options);
+    foreach ($options as &$option) {
+      if (!empty($option['fixed_targeting'])) {
+        $execution_rule = array(
+          'option_id' => $option['option_id'],
+          'fixed_targeting_features' => $option['fixed_targeting']
+        );
+
+        if (isset($option['fixed_targeting_rules'])) {
+          $execution_rule['fixed_targeting_rules'] = $option['fixed_targeting_rules'];
+          unset($option['fixed_targeting_rules']);
+        }
+        if (isset($option['fixed_targeting_strategy'])) {
+          $execution_rule['fixed_targeting_strategy'] = $option['fixed_targeting_strategy'];
+          unset($option['fixed_targeting_strategy']);
+        }
+        unset($option['fixed_targeting']);
+        $execution_rules[] = $execution_rule;
+      }
+    }
+    $fields = array('options' => serialize($options));
+    if (!empty($execution_rules)) {
+      $fields['execution_rules'] = serialize($execution_rules);
+    }
+    // Save the updated options back to the database.
+    db_update('personalize_option_sets')
+      ->condition('osid', $row->osid)
+      ->fields($fields)
+      ->execute();
+  }
+
+}
 /**
  * Converts a feature string to an array with 'key' and 'value' elements.
  *
