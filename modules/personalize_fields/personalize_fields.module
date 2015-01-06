@@ -701,12 +701,20 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
       throw new PersonalizeFieldsException(t('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.'));
     }
     $agent_type = $field['settings']['personalize']['agent_type'];
+    $basic_info = array(
+      'title' => $agent_title,
+      'machine_name' => $machine_name,
+    );
+    // Allow other modules to alter the basic info.
+    $context = array(
+      'entity' => $entity,
+      'entity_type' => $entity_type,
+      'entity_id' => $entity_id,
+      'field_name' => $field_name
+    );
+    drupal_alter('personalize_fields_auto_agent_create', $basic_info, $context);
     $agent_info = array(
-      'agent_basic_info' => array(
-        'title' => $agent_title,
-        'machine_name' => $machine_name,
-        'agent_type' => $agent_type,
-      )
+      'agent_basic_info' =>  array_merge($basic_info, array('agent_type' => $agent_type))
     );
     if (isset($field['settings']['personalize']['options'][$agent_type])) {
       $agent_info['agent_basic_info']['options'][$agent_type] = $field['settings']['personalize']['options'][$agent_type];
