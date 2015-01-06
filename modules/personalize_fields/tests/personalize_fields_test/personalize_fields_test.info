@@ -1,0 +1,7 @@
+name = Personalize Fields Test
+description = Module for testing Personalize Fields.
+dependencies[] = personalize
+dependencies[] = personalize_fields
+package = Testing
+core = 7.x
+hidden = TRUE
