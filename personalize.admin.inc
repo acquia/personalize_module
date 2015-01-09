@@ -984,8 +984,10 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
     if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
       // Add this option to the options for the "agent type" dropdown.
       $agent_type_options[$name] = $name;
+      // Form structure for option parents in the current form.
+      $option_parents = array('agent_basic_info', 'options', $name);
       // Get the agent type's options form elements
-      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data));
+      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, $option_parents));
     }
   }
   if (empty($agent_type_options)) {
