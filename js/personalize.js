@@ -70,11 +70,15 @@
   Drupal.personalize.DNTenabled = function() {
     if (DNT == null) {
       DNT = false;
-      if (typeof window.navigator.doNotTrack != "undefined") {
+      // @todo We need a flexible way of allowing site owners to decide how to support the
+      //   idea of Do Not Track. The browser header is not a standard and many site owners
+      //   will prefer to use a custom cookie that they can allow visitors to set. Commenting
+      //   this out until we have a way of configuring how it works.
+/*      if (typeof window.navigator.doNotTrack != "undefined") {
         if (window.navigator.doNotTrack == "yes" || window.navigator.doNotTrack == "1") {
           DNT = true;
         }
-      }
+      }*/
     }
     return DNT;
   };
