@@ -99,7 +99,7 @@
   /**
    * Private tracking variables across behavior attachments.
    */
-  var processedDecisions = {}, decisionCallbacks = {}, processedOptionSets = {};
+  var processedDecisions = {}, decisionCallbacks = {}, processedOptionSets = {}, processingOptionSets = {};
 
   /**
    * A decorator for a promise to implement an enforced timeout value.
@@ -832,13 +832,31 @@
    *   The combined agent data for all option sets on the page.
    */
   function processOptionSets (option_sets) {
-    var agents = {}, agentName, agentData, osid, decisionPoint, decisions;
+    var agents = {}, agentName, agentData, osid, decisionPoint, decisions, optionSetsToProcess = [];
+    // We need an initial loop to add this batch of option sets to the local
+    // optionSetsToProcess variable and to the processingOptionSets closure variable. If
+    // any option set is already in the processingOptionSets closure variable, then it
+    // will not be processed here.
     for(osid in option_sets) {
-      if (processedOptionSets.hasOwnProperty(osid)) {
-        continue;
-      }
-      processedOptionSets[osid] = true;
       if (option_sets.hasOwnProperty(osid)) {
+        if (!processingOptionSets.hasOwnProperty(osid)) {
+          optionSetsToProcess.push(osid);
+          processingOptionSets[osid] = true;
+        }
+      }
+    }
+    // This second loop does the actual processing of each option set, which could result
+    // in an executor being called with a decision (e.g. if the agent is paused), which
+    // would in turn result in processOptionSets being called again with the same batch
+    // of option sets due to the call to Drupal.attachBehaviors. This is why we need the
+    // closure and local variable keeping track of option sets to process.
+    for(osid in option_sets) {
+      if (option_sets.hasOwnProperty(osid)) {
+        if (optionSetsToProcess.indexOf(osid) == -1 || processedOptionSets.hasOwnProperty(osid)) {
+          continue;
+        }
+        processedOptionSets[osid] = true;
+
         agentData = processOptionSet(option_sets[osid]);
         // If agent data is not returned then the decision is not necessary for
         // this option set.
@@ -1410,6 +1428,7 @@
     processedDecisions = {};
     decisionCallbacks = {};
     processedOptionSets = {};
+    processingOptionSets = {};
     processedListeners = {};
   };
 
