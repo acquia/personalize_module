@@ -904,11 +904,17 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
 
   // Update the current agent status.
   if (!empty($agent_data)) {
+    $current_status = personalize_agent_get_status($agent_data->machine_name);
+    list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
     $settings = array(
       'personalize' => array(
         'campaigns' => array(
           $agent_data->machine_name => array(
-            'status' => personalize_agent_get_status($agent_data->machine_name),
+            'status' => $current_status,
+            'nextStatus' => array(
+              'status' => $next_status,
+              'text' => $status_text,
+            ),
           ),
         ),
       ),
