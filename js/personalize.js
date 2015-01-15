@@ -1006,12 +1006,15 @@
     agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
     addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid);
 
-    // Build up the fixed targeting rules for options within this option set.
-    for (var j in option_set.options) {
-      if (option_set.options.hasOwnProperty(j)) {
-        $.extend(agentData.fixedTargeting, getFixedTargetingRules(option_set.options[j]));
+    if (option_set.hasOwnProperty('execution_rules')) {
+      // Build up the fixed targeting rules for this option set.
+      for (var j in option_set.execution_rules) {
+        if (option_set.execution_rules.hasOwnProperty(j)) {
+          $.extend(agentData.fixedTargeting, getFixedTargetingRules(option_set.execution_rules[j]));
+        }
       }
     }
+
     return agentData;
   }
 
@@ -1023,14 +1026,14 @@
    * @return {object}
    *   An object of fixed targeting rules keyed by feature name.
    */
-  function getFixedTargetingRules(option) {
+  function getFixedTargetingRules(rule) {
     var rules = {};
-    if (option.hasOwnProperty('fixed_targeting')) {
-      for (var i in option.fixed_targeting) {
-        if (option.fixed_targeting.hasOwnProperty(i)) {
-          var feature_name = option.fixed_targeting[i];
-          if (option.hasOwnProperty('fixed_targeting_rules') && option.fixed_targeting_rules.hasOwnProperty(feature_name)) {
-            rules[feature_name] = option.fixed_targeting_rules[feature_name];
+    if (rule.hasOwnProperty('fixed_targeting_features')) {
+      for (var i in rule.fixed_targeting_features) {
+        if (rule.fixed_targeting_features.hasOwnProperty(i)) {
+          var feature_name = rule.fixed_targeting_features.[i];
+          if (rule.hasOwnProperty('fixed_targeting_rules') && rule.fixed_targeting_rules.hasOwnProperty(feature_name)) {
+            rules[feature_name] = rule.fixed_targeting_rules[feature_name];
           }
         }
       }

@@ -1682,6 +1682,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     );
 
     $variant_number = 1;
+    $execution_rules = personalize_targeting_get_execution_rules_for_options($option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       $is_control = $variant_number == 1;
@@ -1773,7 +1774,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
           '#title' => t('Show to visitors with specific traits'),
           '#type' => 'checkbox',
-          '#default_value' => !empty($option['fixed_targeting']) ? 1 : 0,
+          '#default_value' => !empty($execution_rules[$option['option_id']]) ? 1 : 0,
           '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
         );
         $states = array(
@@ -1976,6 +1977,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     ),
   );
 
+  // Get an array of execution rules per option id.
+  $execution_rules_for_options = personalize_targeting_get_execution_rules_for_options($option_set);
   // Load from the existing form if passed first, otherwise, load from option
   // set.
   $mappings = array();
@@ -1992,10 +1995,11 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       );
     }
   }
-  else if (isset($option['fixed_targeting'])) {
-    foreach ($option['fixed_targeting'] as $feature) {
-      if (isset($option['fixed_targeting_rules'][$feature])) {
-        $mappings[] = $option['fixed_targeting_rules'][$feature];
+  else if (isset($execution_rules_for_options[$option['option_id']])) {
+    $rule = $execution_rules_for_options[$option['option_id']];
+    foreach ($rule['fixed_targeting_features'] as $feature) {
+      if (isset($rule['fixed_targeting_rules'][$feature])) {
+        $mappings[] = $rule['fixed_targeting_rules'][$feature];
       }
     }
   }
@@ -2167,6 +2171,10 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
 
     // Add radio buttons so the user can select how multiple features for an option
     // should be treated.
+    $default_strategy = 'OR';
+    if (isset($execution_rules_for_options[$option['option_id']]) && isset($execution_rules_for_options[$option['option_id']]['fixed_targeting_strategy'])) {
+      $default_strategy = $execution_rules_for_options[$option['option_id']]['fixed_targeting_strategy'];
+    }
     $form['strategies']['strategy'] = array(
       '#type' => 'select',
       '#multiple' => FALSE,
@@ -2177,7 +2185,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         'OR' => 'any',
         'AND' => 'all'
       ),
-      '#default_value' => isset($option['fixed_targeting_strategy']) ? $option['fixed_targeting_strategy'] : 'OR',
+      '#default_value' => $default_strategy,
       '#parents' => $strategy_parents,
     );
   }
@@ -3139,4 +3147,27 @@ function personalize_targeting_generate_value_code($value_match, $operator) {
     return $value_match;
   }
   return $operator_map[$operator] . PERSONALIZE_TARGETING_OP_SEPARATOR . $value_match;
+}
+
+/**
+ * Returns the execution rules that have been defined for each option in an option set.
+ *
+ * @param $option_set
+ *   The option set to get execution rules for.
+ * @return array
+ *   An associative array, keyed by option_id, whose values are arrays of execution rules
+ *   for the option id in question. If any option does not have execution rules, it will
+ *   not be included in the array.
+ */
+function personalize_targeting_get_execution_rules_for_options($option_set) {
+  // Get an array of execution rules per option id.
+  $execution_rules_for_options = array();
+  if (!empty($option_set->execution_rules)) {
+    foreach ($option_set->execution_rules as $rule) {
+      if (isset($rule['option_id'])) {
+        $execution_rules_for_options[$rule['option_id']] = $rule;
+      }
+    }
+  }
+  return $execution_rules_for_options;
 }
