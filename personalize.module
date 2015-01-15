@@ -308,6 +308,7 @@ function personalize_entity_info() {
  */
 function personalize_cron() {
   personalize_pause_agents();
+  personalize_start_agents();
 }
 
 /**
@@ -324,6 +325,36 @@ function personalize_pause_agents() {
       }
     }
   }
+}
+
+/**
+ * Starts any agent that is due to be started.
+ *
+ * @return array
+ *   An array of two keys:
+ *   - An array of agents that were started
+ *   - An array of agents that were scheduled to start but could not be
+ *     started.
+ */
+function personalize_start_agents() {
+  $started = $error = array();
+  $all_agents = personalize_agent_load_multiple();
+  foreach ($all_agents as $agent_name => $agent) {
+    $status = personalize_agent_get_status($agent_name);
+    if ($status != PERSONALIZE_STATUS_RUNNING && $status !== PERSONALIZE_STATUS_COMPLETED) {
+      if (personalize_agent_start_now($agent)) {
+        if (personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING)) {
+          watchdog('personalize', 'Starting agent @agent based on agent settings', array('@agent' => $agent_name));
+          $started[] = $agent_name;
+        }
+        else {
+          watchdog('personalize', 'Cannot start the agent @agent based on agent settings', array('@agent' => $agent_name), WATCHDOG_ERROR);
+          $error[] = $agent_name;
+        }
+      }
+    }
+  }
+  return array($started, $error);
 }
 
 /**
@@ -353,6 +384,36 @@ function personalize_agent_stop_now($agent_data) {
   // it should be stopped.
   if ($agent = personalize_agent_load_agent($agent_data->machine_name)) {
     return $agent->stopNow();
+  }
+  return FALSE;
+}
+
+/**
+ * Returns whether or not the passed in agent is due to be started.
+ *
+ * @param $agent_data
+ *   An object representing the agent.
+ * @return bool
+ *   TRUE if the agent should be started, FALSE otherwise.
+ */
+function personalize_agent_start_now($agent_data) {
+  // Check if a variable has been set specifying a timestamp for when this
+  // agent should be started.
+  $variable = _personalize_agent_get_starttime_variable($agent_data->machine_name);
+  $start_time = variable_get($variable, 0);
+  if ($start_time > 0) {
+    if ($agent_data->started > 0 && $agent_data->started >= $start_time) {
+      // This agent has already been started once since the start time specified.
+      return FALSE;
+    }
+    // Otherwise if the start time has passed, then the agent should be started.
+    $ts = time();
+    return $ts >= $start_time;
+  }
+  // No start time explicitly set, but the agent plugin might have some logic
+  // to determine that the agent should be started.
+  if ($agent = personalize_agent_load_agent($agent_data->machine_name)) {
+    return $agent->startNow();
   }
   return FALSE;
 }
@@ -994,6 +1055,17 @@ function _personalize_agent_get_status_variable($agent_name) {
  */
 function _personalize_agent_get_stoptime_variable($agent_name) {
   return "personalize_campaign_{$agent_name}_stop";
+}
+
+/**
+ * Helper function to determine the variable name to use for a campaign's start
+ * time variable.
+ *
+ * @param $agent_name
+ *   The name of the campaign to use for name generation.
+ */
+function _personalize_agent_get_starttime_variable($agent_name) {
+  return "personalize_campaign_{$agent_name}_start";
 }
 
 /**
