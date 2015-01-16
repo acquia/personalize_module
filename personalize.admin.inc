@@ -822,6 +822,51 @@ function personalize_agent_end_date_form($agent_name = NULL) {
 }
 
 /**
+ * Generate the form array to set a campaign start date.
+ *
+ * @param $agent_name
+ *   (optional) The machine name for the campaign.
+ * @return array
+ *   The renderable form array for the end date form fields.
+ */
+function personalize_agent_start_date_form($agent_name = NULL) {
+  if (!empty($agent_name)) {
+    $start_variable = _personalize_agent_get_starttime_variable($agent_name);
+    $agent_start = $default_start = variable_get($start_variable, 0);
+  }
+  else {
+    $agent_start = 0;
+  }
+  // Default the start date to one month if the campaign is new or does not yet
+  // have a start date set.
+  if ($agent_start == 0) {
+    $default_start = strtotime('+1 month');
+  }
+
+  $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
+  $form['campaign_start'] = array(
+    '#type' => 'radios',
+    '#title' => t('Campaign start date'),
+    '#options' => array(
+      'none' => t('Start the campaign myself'),
+      'specified' => t('Select date'),
+    ),
+    '#default_value' => $agent_start == 0 ? 'none' : 'specified',
+  );
+  $form['campaign_start_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_start_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_start"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
+  drupal_alter('personalize_agent_start_date_form', $form, $agent_name);
+  return $form;
+}
+
+/**
  * Validate the campaign end date form values.
  *
  * @param $values
