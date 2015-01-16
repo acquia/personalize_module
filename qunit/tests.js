@@ -300,7 +300,6 @@ QUnit.module("Personalize page tests", {
 
 QUnit.asyncTest("Personalize page simple", function( assert ) {
   expect(7);
-
   QUnit.start();
 
   Drupal.personalize.agents.test_agent.getDecisionsForPoint = function(name, visitor_context, choices, decision_point, fallbacks, callback) {

@@ -913,15 +913,19 @@ function _personalize_loaded_object_sort(&$objects, $sort) {
  *   The Option Set the element corresponds to.
  */
 function personalize_element_with_option_set(&$element, $option_set, $skip_completed = FALSE) {
-  $loaded_mvts = &drupal_static(__FUNCTION__, array());
+  $loaded = &drupal_static(__FUNCTION__, array('mvts' => array(), 'osids' => array()));
+  if (in_array($option_set->osid, $loaded['osids'])) {
+    return;
+  }
+  $loaded['osids'][] = $option_set->osid;
   $attached = isset($element['#attached']) ? $element['#attached'] : array();
   $agent_name = $option_set->agent;
   if ($skip_completed && personalize_agent_get_status($agent_name) === PERSONALIZE_STATUS_COMPLETED) {
     return;
   }
 
-  if (!empty($option_set->mvt) && !in_array($option_set->mvt, $loaded_mvts) && $mvt = personalize_mvt_load($option_set->mvt)) {
-    $loaded_mvts[] = $option_set->mvt;
+  if (!empty($option_set->mvt) && !in_array($option_set->mvt, $loaded['mvts']) && $mvt = personalize_mvt_load($option_set->mvt)) {
+    $loaded['mvts'][] = $option_set->mvt;
     if (count($mvt->option_sets) > 1) {
       // Always use the agent specified in the MVT rather than the Option
       // Set's agent, in case these are somehow different.
