@@ -933,9 +933,14 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   $commands[] = ajax_command_replace('#' . $form_div_id, drupal_render($form));
 
   // Any agent type that needs to sync changes to a 3rd party system will probably
-  // do so asynchronously. They can implement this hook to sync the changes during
-  // ajax submit of these forms, so they don't have to wait for a new page load.
+  // do so asynchronously.
+  // Third party agents can modify the commands returned to synchronize
+  // from the client-side.
+  drupal_alter('personalize_form_ajax_commands', $commands);
+  // Third party agents can implements this hook to synchronize from the server
+  // side during ajax submit of these forms.
   module_invoke_all('personalize_form_ajax_submit', $agent_data);
+
   return personalize_ajax_commands_deliver($commands, TRUE);
 }
 
