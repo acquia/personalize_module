@@ -516,6 +516,21 @@ class PersonalizeTest extends PersonalizeBaseTest {
       )
     );
     $this->assertEqual($expected_action_listeners, $personalize_settings['actionListeners']);
+
+    // Call the page that renders option sets multiple times specifying 1 option set, with 2
+    // options, rendered 3 times.
+    $this->drupalGet('personalize-test/multiple-renderings/1/2/3');
+
+    // This the html output for the option set repeated twice.
+    $html = <<<EOT
+<div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div>
+EOT;
+    // Confirm we have two renderings of the option set.
+    $this->assertRaw($html, 'Option Set rendered twice.');
+    // Confirm the options are not druplicated in the settings.
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    $this->assertEqual(2, count($personalize_settings['option_sets']['test-os-1']['options']));
   }
 
   function testPersonalizePageCompletedCampaign() {
