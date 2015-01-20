@@ -402,7 +402,7 @@ function personalize_agent_start_now($agent_data) {
   $variable = _personalize_agent_get_starttime_variable($agent_data->machine_name);
   $start_time = variable_get($variable, 0);
   if ($start_time > 0) {
-    if ($agent_data->started > 0 && $agent_data->started >= $start_time) {
+    if (isset($agent_data->started) && $agent_data->started > 0 && $agent_data->started >= $start_time) {
       // This agent has already been started once since the start time specified.
       return FALSE;
     }

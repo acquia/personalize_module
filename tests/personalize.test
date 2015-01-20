@@ -1950,6 +1950,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // Enable our other test module that provides an extra agent type.
     module_enable(array('personalize_test_extra_agent'));
     $this->resetAll();
+    // Need to call resetAll again to force ctools to load the class files.
+    $this->resetAll();
+
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     // Go to the agent creation page and assert there is an agent type dropdown.
@@ -2082,27 +2085,78 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $agent = personalize_agent_load_agent($machine_name);
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
 
-    // Verify that the agent does not have an end date specified.
+    // Verify that the agent does not have start or end dates specified.
+    $start_variable = _personalize_agent_get_starttime_variable($machine_name);
+    $start_date = variable_get($start_variable, 0);
+    $this->assertEqual($start_date, 0);
     $end_variable = _personalize_agent_get_stoptime_variable($machine_name);
     $end_date = variable_get($end_variable, 0);
-    $this->assertEqual($end_variable, 0);
+    $this->assertEqual($end_date, 0);
 
-    // Set the end date via the form.
-    $end_date = strtotime('+1 month midnight');
+    // Set the start and end dates via the form to invalid values.
+    $start_date = strtotime('-1 month midnight');
+    $end_date = strtotime('-4 days midnight');
+
     $edit = array(
+      'campaign_start' => 'specified',
+      'campaign_start_date[month]' => intval(date('m', $start_date)),
+      'campaign_start_date[day]' => date('d', $start_date),
+      'campaign_start_date[year]' => date('Y', $start_date),
       'campaign_end' => 'specified',
       'campaign_end_date[month]' => intval(date('m', $end_date)),
       'campaign_end_date[day]' => date('d', $end_date),
       'campaign_end_date[year]' => date('Y', $end_date),
     );
     $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertText('When provided, the start date for the campaign must be in the future.');
+    $this->assertText('When provided, the end date for the campaign must be in the future.');
+    // Make sure the variables did not get updated.
+    $this->assertEqual(0, variable_get($start_variable, 0));
+    $this->assertEqual(0, variable_get($end_variable, 0));
+
+    // Set the end date to be before the start date.
+    $start_date = strtotime('+14 days midnight');
+    $end_date = strtotime('+7 days midnight');
+    $edit = array(
+      'campaign_start' => 'specified',
+      'campaign_start_date[month]' => intval(date('m', $start_date)),
+      'campaign_start_date[day]' => date('d', $start_date),
+      'campaign_start_date[year]' => date('Y', $start_date),
+      'campaign_end' => 'specified',
+      'campaign_end_date[month]' => intval(date('m', $end_date)),
+      'campaign_end_date[day]' => date('d', $end_date),
+      'campaign_end_date[year]' => date('Y', $end_date),
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertText('When provided, the end date for the campaign must be after the start date for the campaign.');
+    // Make sure the variables did not get updated.
+    $this->assertEqual(0, variable_get($start_variable, 0));
+    $this->assertEqual(0, variable_get($end_variable, 0));
+
+    // Set the dates appropriately.
+    $start_date = strtotime('+14 days midnight');
+    $end_date = strtotime('+1 month midnight');
+    $edit = array(
+      'campaign_start' => 'specified',
+      'campaign_start_date[month]' => intval(date('m', $start_date)),
+      'campaign_start_date[day]' => date('d', $start_date),
+      'campaign_start_date[year]' => date('Y', $start_date),
+      'campaign_end' => 'specified',
+      'campaign_end_date[month]' => intval(date('m', $end_date)),
+      'campaign_end_date[day]' => date('d', $end_date),
+      'campaign_end_date[year]' => date('Y', $end_date),
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertEqual($start_date, variable_get($start_variable, 0));
     $this->assertEqual($end_date, variable_get($end_variable, 0));
 
-    // Reset the end date.
+    // Reset the dates.
     $edit = array(
+      'campaign_start' => 'none',
       'campaign_end' => 'none',
     );
     $this->drupalPost(NULL, $edit, $this->getButton('agent'));
+    $this->assertEqual(0, variable_get($start_variable, 10));
     $this->assertEqual(0, variable_get($end_variable, 10));
   }
 
@@ -2174,6 +2228,8 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
    */
   function testAgentStatus() {
     module_enable(array('personalize_test_extra_agent'));
+    $this->resetAll();
+    // Need to call resetAll again to force ctools to load the class files.
     $this->resetAll();
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
@@ -2311,6 +2367,55 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
     // The third agent's status should still be running.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-3'));
+
+    $this->drupalLogout();
+  }
+
+  /**
+   * Tests the function that pauses agents that are due to be paused.
+   */
+  function testStartAgents() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    // Create some test agents.
+    $agent_data = array(
+      array(
+        'name' => 'agent-1',
+        'machine_name' => personalize_generate_machine_name('agent-1', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+      array(
+        'name' => 'agent-2',
+        'machine_name' => personalize_generate_machine_name('agent-2', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+      array(
+        'name' => 'agent-3',
+        'machine_name' => personalize_generate_machine_name('agent-3', 'personalize_agent_machine_name_exists'),
+        'agent_type' => 'test_agent'
+      ),
+    );
+    foreach ($agent_data as $data) {
+      $this->createTestAgent($data);
+    }
+    $now = time();
+    // First agent was due to start yesterday.
+    $variable = _personalize_agent_get_starttime_variable('agent-1');
+    variable_set($variable, $now - 86400);
+    // Second agent is due to start tomorrow.
+    $variable = _personalize_agent_get_starttime_variable('agent-2');
+    variable_set($variable, $now + 86400);
+
+    // Call the function that should start all agents that are scheduled to be
+    // started.
+    personalize_start_agents();
+
+    // The first agent's status should be started.
+    $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-1'));
+    // The second agent's status should still be stopped.
+    $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status('agent-2'));
+    // The third agent's status should still be stopped.
+    $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status('agent-3'));
 
     $this->drupalLogout();
   }
