@@ -208,6 +208,17 @@ QUnit.test( "Executor test", function( assert ) {
   Drupal.personalize.executors.show.execute($('[data-personalize=osid-2]'), 'second-choice', 2);
   assert.equal(0, $('.osid-2-first-option').length);
   assert.equal(2, $('.osid-2-second-option').length);
+
+  // Test the executor for an option set with an empty html attribute
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-3]'), 'second-choice', 3);
+  assert.equal(0, $('.osid-3-first-option').length);
+  assert.equal(1, $('.osid-3-noscript-option').length);
+
+  // Test the executor for an option set with an empty html attribute
+  // that is rendered multiple times
+  Drupal.personalize.executors.show.execute($('[data-personalize=osid-4]'), 'second-choice', 4);
+  assert.equal(0, $('.osid-4-first-option').length);
+  assert.equal(2, $('.osid-4-noscript-option').length);
 });
 
 QUnit.module("Personalize page tests", {
