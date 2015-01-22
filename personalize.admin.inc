@@ -822,8 +822,8 @@ function personalize_agent_date_form($agent_name = NULL) {
     '#type' => 'radios',
     '#title' => t('Campaign start date'),
     '#options' => array(
-      'none' => t('Start the campaign myself'),
-      'specified' => t('Select date'),
+      'none' => t('Start manually'),
+      'specified' => t('Start on selected date'),
     ),
     '#default_value' => $agent_start == 0 ? 'none' : 'specified',
   );
@@ -841,8 +841,8 @@ function personalize_agent_date_form($agent_name = NULL) {
     '#type' => 'radios',
     '#title' => t('Campaign end date'),
     '#options' => array(
-      'none' => t('Run until I stop campaign'),
-      'specified' => t('Select date'),
+      'none' => t('End manually'),
+      'specified' => t('End on selected date'),
     ),
     '#default_value' => $agent_end == 0 ? 'none' : 'specified',
   );
