@@ -232,7 +232,7 @@ function personalize_agent_list() {
   if (empty($agents)) {
     return array(
       'no_agents' => array(
-        '#markup' => '<div>' . t('No agents available.') . '</div>'
+        '#markup' => '<div>' . t('No campaigns available.') . '</div>'
       )
     );
   }
@@ -296,12 +296,25 @@ function personalize_agent_list() {
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
       );
+      // Show the scheduled start date for campaigns that aren't running yet.
+      if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+        $start_variable = _personalize_agent_get_starttime_variable($agent->machine_name);
+        $start_date = variable_get($start_variable, 0);
+        array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
+      }
+
       $rows[] = $tablerow;
+    }
+
+    // Add the scheduled start date in to the "not started" table headers.
+    $build_header = $header;
+    if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+      array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
     }
 
     $build['table_' . $status] = array(
       '#theme' => 'table',
-      '#header' => $header,
+      '#header' => $build_header,
       '#rows' => $rows,
       '#attributes' => array('id' => 'personalize'),
     );
