@@ -312,6 +312,7 @@
         var $option_set = $(this);
         var $option_source = $('script[type="text/template"]', $option_set);
         var element = $option_source.get(0);
+        var noscripthtml = $option_source.prev('noscript').text();
         var json = element.innerText;
         if (typeof preview === 'undefined') { preview = false; };
         if (json === undefined || json.length == 0) {
@@ -322,7 +323,7 @@
 
         if (choices == null || choices === false || !choices.hasOwnProperty(choice_name)) {
           // Invalid JSON in the template.  Just show the noscript option.
-          winner = $(element).prev('noscript').html();
+          winner = noscripthtml;
         }
         else if (!choices[choice_name].hasOwnProperty('html')) {
           var controlOptionName = Drupal.settings.personalize.controlOptionName;
@@ -330,8 +331,11 @@
             winner = choices[controlOptionName]['html'];
           }
           else {
-            winner = $(element).prev('noscript').html();
+            winner = noscripthtml;
           }
+        }
+        else if (choices[choice_name]['html'].length == 0) {
+          winner = noscripthtml;
         }
         else {
           winner = choices[choice_name]['html'];
