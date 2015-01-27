@@ -341,7 +341,7 @@ function personalize_start_agents() {
   $all_agents = personalize_agent_load_multiple();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
-    if ($status != PERSONALIZE_STATUS_RUNNING && $status !== PERSONALIZE_STATUS_COMPLETED) {
+    if ($status == PERSONALIZE_STATUS_PAUSED || $status == PERSONALIZE_STATUS_NOT_STARTED) {
       if (personalize_agent_start_now($agent)) {
         if (personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING)) {
           watchdog('personalize', 'Starting agent @agent based on agent settings', array('@agent' => $agent_name));
