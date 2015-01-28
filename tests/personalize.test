@@ -2372,7 +2372,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
   }
 
   /**
-   * Tests the function that pauses agents that are due to be paused.
+   * Tests the function that starts agents that are due to be started.
    */
   function testStartAgents() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
