@@ -2919,6 +2919,8 @@ class PersonalizeAdminSettingsTest extends PersonalizeBaseTest {
   function testCampaignSettings() {
     module_enable(array('personalize_test_extra_agent'));
     $this->resetAll();
+    // Adding an additional resetAll due to ctools.
+    $this->resetAll();
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     // Create two agents of different types.
