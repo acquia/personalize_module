@@ -2424,13 +2424,15 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     module_disable(array('personalize_test'));
     $this->resetAll();
+    // Again for ctools.
+    $this->resetAll();
 
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
 
     // There should just be a message saying there are no agents.
     $this->drupalGet('admin/structure/personalize');
-    $this->assertText(t('No agents available.'));
+    $this->assertText(t('No campaigns available.'));
     $this->assertNoText('Not started');
     $this->assertNoText('Running');
     $this->assertNoText('Paused');
@@ -2440,7 +2442,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
 
     $this->drupalGet('admin/structure/personalize');
-    $this->assertNoText(t('No agents available.'));
+    $this->assertNoText(t('No campaigns available.'));
     // "Not started" should be the only section on the page.
     $this->assertText('Not started');
     $this->assertNoText('Running');
@@ -2450,7 +2452,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     // There should now be a "Running" section on the page.
     $this->drupalGet('admin/structure/personalize');
-    $this->assertNoText(t('No agents available.'));
+    $this->assertNoText(t('No campaigns available.'));
     $this->assertText('Not started');
     $this->assertText('Running');
     $this->assertNoText('Paused');
@@ -2462,7 +2464,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // There should now be a "Paused" section and a "Running" section only.
     $this->resetAll();
     $this->drupalGet('admin/structure/personalize');
-    $this->assertNoText(t('No agents available.'));
+    $this->assertNoText(t('No campaigns available.'));
     $this->assertNoText('Not started');
     $this->assertText('Running');
     $this->assertText('Paused');
