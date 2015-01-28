@@ -232,7 +232,7 @@ function personalize_agent_list() {
   if (empty($agents)) {
     return array(
       'no_agents' => array(
-        '#markup' => '<div>' . t('No agents available.') . '</div>'
+        '#markup' => '<div>' . t('No campaigns available.') . '</div>'
       )
     );
   }
@@ -296,12 +296,25 @@ function personalize_agent_list() {
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
       );
+      // Show the scheduled start date for campaigns that aren't running yet.
+      if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+        $start_variable = _personalize_agent_get_starttime_variable($agent->machine_name);
+        $start_date = variable_get($start_variable, 0);
+        array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
+      }
+
       $rows[] = $tablerow;
+    }
+
+    // Add the scheduled start date in to the "not started" table headers.
+    $build_header = $header;
+    if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+      array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
     }
 
     $build['table_' . $status] = array(
       '#theme' => 'table',
-      '#header' => $header,
+      '#header' => $build_header,
       '#rows' => $rows,
       '#attributes' => array('id' => 'personalize'),
     );
@@ -725,7 +738,7 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   }
 
   // Allow the campaign end date to be set.
-  $form['agent_form']['agent_fieldset']['campaign_end'] = personalize_agent_end_date_form(!empty($agent_data->machine_name) ? $agent_data->machine_name : NULL);
+  $form['agent_form']['agent_fieldset']['campaign_dates'] = personalize_agent_date_form(!empty($agent_data->machine_name) ? $agent_data->machine_name : NULL);
 
   $form['agent_form']['agent_fieldset']['advanced'] = array(
     '#type' => 'fieldset',
@@ -777,34 +790,59 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
 }
 
 /**
- * Generate the form array to set a campaign end date.
+ * Generate the form array to set campaign dates.
  *
  * @param $agent_name
  *   (optional) The machine name for the campaign.
  * @return array
  *   The renderable form array for the end date form fields.
  */
-function personalize_agent_end_date_form($agent_name = NULL) {
+function personalize_agent_date_form($agent_name = NULL) {
   if (!empty($agent_name)) {
     $end_variable = _personalize_agent_get_stoptime_variable($agent_name);
     $agent_end = $default_end = variable_get($end_variable, 0);
+    $start_variable = _personalize_agent_get_starttime_variable($agent_name);
+    $agent_start = $default_start = variable_get($start_variable, 0);
   }
   else {
     $agent_end = 0;
+    $agent_start = 0;
   }
-  // Default the end date to one month if the campaign is new or does not yet
-  // have an end date set.
+  // Default the start date to one month and the end date to one month if the
+  // campaign is new or does not yet have an end date set.
+  if ($agent_start == 0) {
+    $default_start = strtotime('+1 month');
+  }
   if ($agent_end == 0) {
     $default_end = strtotime('+1 month');
   }
 
+  $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
+  $form['campaign_start'] = array(
+    '#type' => 'radios',
+    '#title' => t('Campaign start date'),
+    '#options' => array(
+      'none' => t('Start manually'),
+      'specified' => t('Start on selected date'),
+    ),
+    '#default_value' => $agent_start == 0 ? 'none' : 'specified',
+  );
+  $form['campaign_start_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_start_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_start"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
   $agent_end_date = array('year' => date('Y', $default_end), 'month' => intval(date('m', $default_end)), 'day' => date('d', $default_end));
   $form['campaign_end'] = array(
     '#type' => 'radios',
     '#title' => t('Campaign end date'),
     '#options' => array(
-      'none' => t('Run until I stop campaign'),
-      'specified' => t('Select date'),
+      'none' => t('End manually'),
+      'specified' => t('End on selected date'),
     ),
     '#default_value' => $agent_end == 0 ? 'none' : 'specified',
   );
@@ -817,46 +855,69 @@ function personalize_agent_end_date_form($agent_name = NULL) {
       ),
     ),
   );
-  drupal_alter('personalize_agent_end_date_form', $form, $agent_name);
+  drupal_alter('personalize_agent_date_form', $form, $agent_name);
   return $form;
 }
 
 /**
- * Validate the campaign end date form values.
+ * Validate the campaign date form values.
  *
  * @param $values
  *   An array of values to validate.
  */
-function personalize_agent_end_date_form_validate($values) {
+function personalize_agent_date_form_validate($values) {
+  $start_date = 0;
+  $end_date = 0;
+  if (isset($values['campaign_start']) && $values['campaign_start'] === 'specified') {
+    $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
+    if ($start_date < time()) {
+      form_set_error('campaign_start_date', t('When provided, the start date for the campaign must be in the future.'));
+    }
+  }
   if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
     $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
     if ($end_date < time()) {
       form_set_error('campaign_end_date', t('When provided, the end date for the campaign must be in the future.'));
     }
   }
+  if ($start_date > 0 && $end_date > 0) {
+    if ($end_date <= $start_date) {
+      form_set_error('campaign_end_date', t('When provided, the end date for the campaign must be after the start date for the campaign.'));
+    }
+  }
 }
 
 /**
- * Save an agent campaign end date values.
+ * Save an agent campaign start and end date values.
  *
  * @param $agent_name
  *   The name of the campaign.
  * @param $values
  *   An array of campaign end date values.
  */
-function personalize_agent_end_date_form_submit($agent_name, $values) {
-  if (empty($values['campaign_end'])) {
-    return;
+function personalize_agent_date_form_submit($agent_name, $values) {
+  if (!empty($values['campaign_start'])) {
+    // Set the start date.
+    if ($values['campaign_start'] === 'specified') {
+      $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
+    }
+    else {
+      $start_date = 0;
+    }
+    $varname = _personalize_agent_get_starttime_variable($agent_name);
+    variable_set($varname, $start_date);
   }
-  // Set the end date.
-  if ($values['campaign_end'] === 'specified') {
-    $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+  if (!empty($values['campaign_end'])) {
+    // Set the end date.
+    if ($values['campaign_end'] === 'specified') {
+      $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+    }
+    else {
+      $end_date = 0;
+    }
+    $varname = _personalize_agent_get_stoptime_variable($agent_name);
+    variable_set($varname, $end_date);
   }
-  else {
-    $end_date = 0;
-  }
-  $varname = _personalize_agent_get_stoptime_variable($agent_name);
-  variable_set($varname, $end_date);
 }
 
 /**
@@ -2273,7 +2334,7 @@ function personalize_agent_form_validate($form, &$form_state) {
     // Call the validation callback for the agent type.
     $class::optionsFormValidate($form, $form_state);
   }
-  personalize_agent_end_date_form_validate($form_state['values']);
+  personalize_agent_date_form_validate($form_state['values']);
 }
 
 /**
@@ -2297,7 +2358,7 @@ function personalize_agent_form_submit($form, &$form_state) {
       personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
       personalize_status_toggle_message($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
     }
-    personalize_agent_end_date_form_submit($agent->machine_name, $form_state['values']);
+    personalize_agent_date_form_submit($agent->machine_name, $form_state['values']);
     $form_state['redirect'] = "admin/structure/personalize/manage/{$agent->machine_name}/edit";
   }
   else {
