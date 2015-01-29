@@ -973,6 +973,8 @@ EOT;
 
     // Additional agent types aren't available until we reset.
     $this->resetAll();
+    // Again for ctools page include cache.
+    $this->resetAll();
 
     // Create a new agent via the UI.
     $agent_name = $this->randomName();
@@ -1485,6 +1487,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     // an agent that provides autotargeting without limited values.
     module_enable(array('personalize_test_extra_agent'));
     $this->resetAll();
+    // Call again for ctools file cache.
+    $this->resetAll();
 
     // Create user profile fields that we can use for targeting.
     $this->createUserProfileField('test_user_field_1');
@@ -1569,6 +1573,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     // Enable a test module that provides autotargeting with limited values and
     // an agent that provides autotargeting without limited values.
     module_enable(array('personalize_test_autopersonalize_agent'));
+    $this->resetAll();
+    // Call again for ctools.
     $this->resetAll();
 
     // Create user profile fields that we can use for targeting.
@@ -2513,6 +2519,9 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
    */
   function testAgentGoalEdit() {
     module_enable(array('personalize_test_extra_agent'));
+    // Reset twice to get ctools to clear requested file cache.
+    $this->resetAll();
+    $this->resetAll();
 
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
