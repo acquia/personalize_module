@@ -694,6 +694,21 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   }
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
+  if (isset($agent_data->machine_name)) {
+    $form['#attached']['js'][] = array(
+      'type' => 'setting',
+      'data' => array(
+        'personalize' => array(
+          'campaigns' => array(
+            $agent_data->machine_name => array(
+              'status' => personalize_agent_get_status($agent_data->machine_name),
+            )
+          )
+        )
+      )
+    );
+  }
+
   $form['agent_form'] = array(
     '#tree' => TRUE,
     '#type' => 'personalize_admin_section',
@@ -966,16 +981,11 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   // Update the current agent status.
   if (!empty($agent_data)) {
     $current_status = personalize_agent_get_status($agent_data->machine_name);
-    list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
     $settings = array(
       'personalize' => array(
         'campaigns' => array(
           $agent_data->machine_name => array(
             'status' => $current_status,
-            'nextStatus' => array(
-              'status' => $next_status,
-              'text' => $status_text,
-            ),
           ),
         ),
       ),
