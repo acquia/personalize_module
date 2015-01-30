@@ -521,9 +521,9 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // options, rendered 3 times.
     $this->drupalGet('personalize-test/multiple-renderings/1/2/3');
 
-    // This the html output for the option set repeated twice.
+    // This the html output for the option set repeated three times.
     $html = <<<EOT
-<div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div>
+<div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div>
 EOT;
     // Confirm we have two renderings of the option set.
     $this->assertRaw($html, 'Option Set rendered twice.');
@@ -934,7 +934,7 @@ EOT;
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     // Verify on page there isn't a template script tag for the option set.
-    $show_pattern = '/<div class="personalize-option-set" data-personalize="osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
+    $show_pattern = '/<div class="personalize-option-set" data-personalize="osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template" data-personalize-script="osid-' . $osid . '">/is';
 
     $this->drupalGet('');
     $this->assertNoPattern($show_pattern);
