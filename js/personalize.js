@@ -310,16 +310,27 @@
 
       $option_sets.each(function() {
         var $option_set = $(this);
+        var noscripthtml = '', choices = null, winner = '';
         var $option_source = $('script[type="text/template"]', $option_set);
-        var element = $option_source.get(0);
-        var noscripthtml = $option_source.prev('noscript').text();
-        var json = element.innerText;
-        if (typeof preview === 'undefined') { preview = false; };
-        if (json === undefined || json.length == 0) {
-          json = element.text;
+        if ($option_source.length == 0) {
+          // The script tag may have been moved outside by a jQuery insertion after an
+          // AJAX request - look for it in the entire document by its data attribute.
+          $option_source = $(document).find('script[data-personalize-script=' + osid + ']');
         }
-        var choices = jQuery.parseJSON(json);
-        var winner = '';
+        if ($option_source.length != 0) {
+          var element = $option_source.get(0);
+          noscripthtml = $option_source.prev('noscript').text();
+          var json = element.innerText;
+          if (typeof preview === 'undefined') { preview = false; };
+          if (json === undefined || json.length == 0) {
+            json = element.text;
+          }
+          choices = jQuery.parseJSON(json);
+        }
+        else {
+          // Use the noscript contents.
+          noscripthtml = $option_set.find('noscript').text();
+        }
 
         if (choices == null || choices === false || !choices.hasOwnProperty(choice_name)) {
           // Invalid JSON in the template.  Just show the noscript option.
