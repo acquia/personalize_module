@@ -270,7 +270,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
  * @param PersonalizeAgentInterface $agent_instance
  *   The agent that defines the functionality for the campaign (if set).
  */
-function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance) {
+function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
   module_load_include('inc', 'personalize', 'personalize.admin');
 
   // Load the data used throughout form.
