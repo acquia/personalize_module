@@ -433,9 +433,9 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
             'class' => array('personalize-add-link'),
             'title' => t('Click here to set as winning variation.')
           ),
-          '#submit' => array('personalize_agent_option_sets_winner_submit'),
+          '#submit' => array('personalize_campaign_wizard_ajax_variations_winner_submit'),
           '#ajax' => array(
-            'callback' => 'personalize_agent_option_sets_ajax_callback',
+            'callback' => 'personalize_campaign_wizard_ajax_variations_callback',
             'wrapper' => $replace_option_set_id,
             'effect' => 'fade',
             'progress' => array(
@@ -563,6 +563,30 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   return $form;
 }
 
+/**
+ ********************************************************************
+ *
+ * A J A X  C A L L B A C K S
+ *
+ ********************************************************************
+ */
+
+/**
+ * Ajax submit callback to set the winning variation within an option set.
+ */
+function personalize_campaign_wizard_ajax_variations_winner_submit($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  $form_state['winners']['option_set_' . $osid] = $option_id;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Ajax callback to return a portion of the variations form.
+ */
+function personalize_campaign_wizard_ajax_variations_callback($form, &$form_state) {
+  list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
+  return $form['variations']['option_sets']['option_set_' . $osid];
+}
 
 /**
  ********************************************************************
