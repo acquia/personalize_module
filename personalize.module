@@ -850,6 +850,23 @@ function personalize_theme($existing, $type, $theme, $path) {
         'report_link' => '',
       ),
     ),
+    'personalize_wizard_variations_header' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'variation_title' => t('Variation set'),
+        'variation_count' => 0,
+        'report' => array(),
+        'report_link' => '',
+      ),
+    ),
+    'personalize_wizard_section_title' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'title' => '',
+      ),
+    ),
   );
 }
 

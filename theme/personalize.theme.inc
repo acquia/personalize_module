@@ -184,11 +184,62 @@ function theme_personalize_option_set_report($variables) {
  *   - delete_link: the link to delete the option set.
  * @return string
  *   The themed output.
+ *
+ * @todo Remove when campaign edit page is migrated to wizard process.
  */
 function theme_personalize_option_set_header($variables) {
   $output = '<span class="personalize-option-header-item">';
   $output .= format_plural($variables['variation_count'], '1 variation', '@count variations');
   $output .= '</span>';
+  if (!empty($variables['report'])) {
+    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
+  }
+  if (!empty($variables['report_link'])) {
+    $output .= '<span class="personalize-option-header-item">' . $variables['report_link'] . '</span>';
+  }
+  if (!empty($variables['edit_link'])) {
+    $output .= '<span class="personalize-option-header-item">' . $variables['edit_link'] . '</span>';
+  }
+  if (!empty($variables['delete_link'])) {
+    $output .= '<span class="personalize-option-header-item">' . $variables['delete_link'] . '</span>';
+  }
+  $output = '<span class="personalize-option-header">' . $output . '</span>';
+  return $output;
+}
+
+/**
+ * Theme function to output the header section for a personalize campaign
+ * wizard sub-form.
+ *
+ * @param array $variations
+ *   - title: The title of the section
+ *   - title_summary: The summary for the title section
+ */
+function theme_personalize_wizard_section_title($variables) {
+  $output = '';
+  $output .= '<div class="personalize-wizard-section-title"><h2>' . $variables['title'] . '</h2>' . $variables['title_summary'] . '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to output header information for a variation set.
+ *
+ * @param $variables
+ *   An associative array of variables.
+ *   - variation_title: the title of the variation set.
+ *   - variation_count: the number of variations within the option set.
+ *   - report: an array of reporting statistics for this option set.
+ *   - report_link: the link to the report for this option set.
+ *   - edit_link: the link to edit the option set.
+ *   - delete_link: the link to delete the option set.
+ * @return string
+ *   The themed output.
+ */
+function theme_personalize_wizard_variations_header($variables) {
+  $output = '';
+  $output .= '<h3 class="personalize-option-header-item">';
+  $output .= $variables['variation_title'] . ' ' . format_plural($variables['variation_count'], '1 variation', '@count variations');
+  $output .= '</h3>';
   if (!empty($variables['report'])) {
     $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
   }
