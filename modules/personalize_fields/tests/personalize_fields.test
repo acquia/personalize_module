@@ -957,7 +957,7 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
     // mark-up.
     $this->assertText('first value');
     $this->assertNoText('third value');
-    $this->assertNoRaw('<script type="text/template">');
+    $this->assertNoRaw('<script type="text/template" data-personalize-script="osid-1">');
 
     // Now make the second value non-empty.
     $node->article_headline['und'][1] = array('value' => 'second value');
@@ -970,7 +970,7 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
     // Assert that the normal personalization markup is being output, containing
     // all three field values.
     $html = <<<EOT
-<div class="personalize-option-set" data-personalize="osid-1"><noscript>first value</noscript><script type="text/template">{"first-value":{"html":"first value","index":0},"second-value":{"html":"second value","index":1},"third-value":{"html":"third value","index":2}}</script></div>
+<div class="personalize-option-set" data-personalize="osid-1"><noscript>first value</noscript><script type="text/template" data-personalize-script="osid-1">{"first-value":{"html":"first value","index":0},"second-value":{"html":"second value","index":1},"third-value":{"html":"third value","index":2}}</script></div>
 EOT;
 
     $this->assertRaw($html);
