@@ -16,8 +16,14 @@
 /**
  * Drupal form callback to generate the full campaign wizard.
  */
-function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL) {
-  $form_state['storage']['step'] = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : 'variations';
+function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $selected = NULL) {
+  module_load_include('inc', 'personalize', 'personalize.admin');
+
+  // Read the current step from the parameters unless the form process has
+  // already started.
+  if (!isset($form_state['storage']['step'])) {
+    $form_state['storage']['step'] = empty($selected) ? 'variations' : $selected;
+  }
 
   // Determine the data for the current campaign.
   if (empty($agent_data)) {
