@@ -2269,7 +2269,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($first_agent_machine_name));
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
     // Click the "start" button for the first agent.
-    $html_id_first_agent = "personalize-toggle-status-{$first_agent_machine_name}-form";
+    $html_id_first_agent = "personalize-change-status-{$first_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
     // No error should have been set.
     $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
@@ -2281,7 +2281,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertTrue($time_before <= $agent->started && $agent->started <= $time_after);
 
     // Now click the start button of the second agent.
-    $html_id_second_agent = "personalize-toggle-status-{$second_agent_machine_name}-form";
+    $html_id_second_agent = "personalize-change-status-{$second_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_second_agent);
     // Its verify() method will have returned false so a message should have been set.
     $this->assertText('There is a problem with this campaign and it cannot be run at this time');
@@ -2438,11 +2438,12 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     // There should just be a message saying there are no agents.
     $this->drupalGet('admin/structure/personalize');
-    $this->assertText(t('No campaigns available.'));
-    $this->assertNoText('Not started');
-    $this->assertNoText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+
+    $this->assertText('No campaigns available');
+    $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertNoRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
 
     module_enable(array('personalize_test'));
     $this->resetAll();
@@ -2450,19 +2451,20 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
     $this->assertNoText(t('No campaigns available.'));
     // "Not started" should be the only section on the page.
-    $this->assertText('Not started');
-    $this->assertNoText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertNoRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     $this->resetAll();
     // There should now be a "Running" section on the page.
     $this->drupalGet('admin/structure/personalize');
+
     $this->assertNoText(t('No campaigns available.'));
-    $this->assertText('Not started');
-    $this->assertText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
 
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_PAUSED);
     personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
@@ -2470,11 +2472,13 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // There should now be a "Paused" section and a "Running" section only.
     $this->resetAll();
     $this->drupalGet('admin/structure/personalize');
+
     $this->assertNoText(t('No campaigns available.'));
-    $this->assertNoText('Not started');
-    $this->assertText('Running');
-    $this->assertText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Running</h2>');
+    $this->assertRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
+
   }
 
   /**

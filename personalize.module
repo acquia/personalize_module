@@ -167,6 +167,14 @@ function personalize_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'personalize.admin.inc',
   );
+  $items['admin/structure/personalize/manage/%personalize_agent/complete'] = array(
+    'title' => 'Complete campaign',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_agent_complete_form', 4),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'personalize.admin.inc',
+  );
   $items['admin/structure/personalize/manage/%personalize_agent/clone'] = array(
     'title' => 'Clone campaign',
     'page callback' => 'personalize_agent_clone',
@@ -635,7 +643,7 @@ function personalize_forms() {
   $forms = array();
   // We need a status toggle form for each agent on the site.
   foreach (personalize_agent_load_multiple(array(), array(), TRUE, TRUE) as $agent) {
-    $forms["personalize_toggle_status_{$agent->machine_name}_form"]['callback'] = 'personalize_status_toggle_form';
+    $forms["personalize_change_status_{$agent->machine_name}_form"]['callback'] = 'personalize_status_change_form';
   }
   return $forms;
 }
@@ -1156,6 +1164,36 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
     return FALSE;
   }
   return TRUE;
+}
+
+/**
+ * Returns the allowed next statuses for each status.
+ *
+ * @return array
+ *   An associative array with statuses as keys and an array of statuses,
+ *   representing the set of allowed next statuses for each one, as the value.
+ */
+function personalize_allowed_status_transitions($status = NULL) {
+  $transitions = array(
+    PERSONALIZE_STATUS_NOT_STARTED => array(
+      PERSONALIZE_STATUS_RUNNING
+    ),
+    PERSONALIZE_STATUS_RUNNING => array(
+      PERSONALIZE_STATUS_PAUSED,
+      PERSONALIZE_STATUS_COMPLETED
+    ),
+    PERSONALIZE_STATUS_PAUSED => array(
+      PERSONALIZE_STATUS_RUNNING,
+      PERSONALIZE_STATUS_COMPLETED
+    ),
+    PERSONALIZE_STATUS_COMPLETED => array(
+      PERSONALIZE_STATUS_PAUSED
+    ),
+  );
+  if (!empty($status) && isset($transitions[$status])) {
+    return $transitions[$status];
+  }
+  return $transitions;
 }
 
 /**
@@ -1829,7 +1867,7 @@ function personalize_agent_load_multiple($names = array(), $conditions = array()
       continue;
     }
     // Skip completed agents if they should not be included.
-    else if ($current_status & PERSONALIZE_STATUS_COMPLETED && !$include_completed) {
+    else if (($current_status == PERSONALIZE_STATUS_COMPLETED) && !$include_completed) {
       continue;
     }
     $limited[$name] = $agent;
