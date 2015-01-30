@@ -306,6 +306,15 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     $counter++;
   }
 
+  // Containing element for all option sets.
+  $form['variations']['option_sets'] = array(
+    '#tree' => TRUE,
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-variation-sets'),
+    ),
+  );
+
   $section = &$form['variations']['option_sets'];
   // For any option sets that have been created for this campaign, display
   // advanced options for specifying decision name etc.
@@ -575,6 +584,42 @@ function personalize_campaign_wizard_validate($form, &$form_state) {
 }
 
 /**
+ * Custom validation callback for variations form.
+ *
+ * Clean Explicit targeting if "Enable explicit targeting" is unchecked.
+ * Ensure that preview links are internal and valid.
+ */
+function personalize_campaign_wizard_validate_variations($form, &$form_state) {
+  $form_values = &$form_state['values']['option_sets'];
+
+  $need_form_state_cache_clear = FALSE;
+
+  foreach ($form_values as $option_set_id => $values) {
+    if (!empty($form_values[$option_set_id]['advanced']['preview_link'])) {
+      if ($form_values[$option_set_id]['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
+        form_set_error('option_sets][' . $option_set_id . '][advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
+          '@option_set' => $form_values[$option_set_id]['advanced']['label'],
+        )));
+      }
+    }
+    if (!empty($form_values[$option_set_id]['options'])) {
+      foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
+        if (isset($option['enable_explicit_targeting']) && $option['enable_explicit_targeting'] == 0) {
+          $form_values[$option_set_id]['options'][$option_name]['explicit_targeting']['mapping'] = array();
+          $need_form_state_cache_clear = TRUE;
+        }
+      }
+    }
+  }
+
+  // Drupal caches form_state before validators are triggered, so flush it
+  if ($need_form_state_cache_clear) {
+    cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
+  }
+}
+
+
+/**
  ********************************************************************
  *
  * S U B M I S S I O N
@@ -634,13 +679,104 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
  */
 function personalize_campaign_wizard_submit_base($form, &$form_state) {
   module_load_include('inc', 'personalize', 'personalize.admin');
-  return _personalize_agent_from_form_values($form_state['values']['agent_base_info']);
+  $agent = _personalize_agent_from_form_values($form_state['values']['agent_base_info']);
+  // If it is a new campaign, save the basic information so that it can be
+  // added to in the other subform submit handlers.
+  if (empty($agent->machine_name)) {
+    $agent = personalize_agent_save($agent);
+  }
+  return $agent;
 }
 
 /**
  * Submit handler for the variations section.
  */
-function personalize_campaign_wizard_submit_variations($form, &$form_state) {
+function personalize_campaign_wizard_submit_variations($form, &$form_state, $agent_data) {
+  $form_values = $form_state['values']['option_sets'];
+  foreach ($form_values as $option_set_id => $values) {
+    $osid = (int) str_replace('option_set_', '', $option_set_id);
+    if ($option_set = personalize_option_set_load($osid)) {
+      $option_set->label = $values['advanced']['label'];
+      $option_set->stateful = $values['advanced']['stateful'];
+      if (isset($values['advanced']['executor'])) {
+        $option_set->executor = $values['advanced']['executor'];
+      }
+      if (isset($values['advanced']['decision_name'])) {
+        $option_set->decision_name = personalize_generate_machine_name($values['advanced']['decision_name']);
+      }
+      if (isset($values['advanced']['preview_link'])) {
+        $option_set->preview_link = $values['advanced']['preview_link'];
+      }
+      if (isset($values['winner'])) {
+        $option_set->winner = $values['winner'];
+      }
+      if (!isset($values['options'])) {
+        personalize_option_set_save($option_set);
+        continue;
+      }
+
+      // Keep track of which explicit targeting features have already been
+      // designated as each can only be specified for one option.
+      // Keep track of feature strings that have already been designated to options,
+      // which options they have been designated to, and whether there's a rule
+      // associated with each feature.
+      $designated_features = $option_features = $feature_rules = array();
+      foreach ($values['options'] as $option_id => $settings) {
+        $option_features[$option_id] = $feature_rules[$option_id] = array();
+        $feature_values = $rules = array();
+        if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
+          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $context_values) {
+            if ($context_values['context'] == '') {
+              continue;
+            }
+            list($plugin_name, $context_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context_values['context']);
+            $context_values['match'] = $context_values['value']['match'];
+            $context_values['operator'] = $context_values['value']['operator'];
+            unset($context_values['value'], $context_values['remove']);
+            // Generate a value code based on the operator used.
+            $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
+            // Create a feature string for this context value that can be consumed
+            // by the agent that will be using it.
+            $feature_string = $agent_data->convertContextToFeatureString($context_name, $value);
+            $feature_values[] = $feature_string;
+            // Save the actual rule information as this is what will be used
+            // for evaluating it.
+            $rules[$feature_string] = $context_values;
+            // Override the context to split it into plugin and context parts.
+            $rules[$feature_string]['context'] = $context_name;
+            $rules[$feature_string]['plugin'] = $plugin_name;
+          }
+          foreach ($feature_values as $feature) {
+            $option_features[$option_id][] = $feature;
+            $feature_rules[$option_id][$feature] = $rules[$feature];
+            // Mark this feature string as already designated.
+            if (!in_array($feature, $designated_features)) {
+              $designated_features[] = $feature;
+            }
+            else {
+              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produced the desired effect.'), 'warning');
+            }
+
+          }
+        }
+      }
+
+      // Now add the features to the option set's options array.
+      foreach ($option_set->options as &$option) {
+        if (isset($option_features[$option['option_id']])) {
+          $option['fixed_targeting'] = $option_features[$option['option_id']];
+          $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
+
+          // If a strategy has been specified for how to use the targeting features,
+          // then store this as well.
+          if (isset($values['options'][$option['option_id']]['explicit_targeting']['strategy'])) {
+            $option['fixed_targeting_strategy'] = $values['options'][$option['option_id']]['explicit_targeting']['strategy'];
+          }
+        }
+      }
+      personalize_option_set_save($option_set);
+    }
+  }
   $form_state['new_step'] = 'goals';
 }
 

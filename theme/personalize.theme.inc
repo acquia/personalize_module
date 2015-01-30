@@ -273,6 +273,8 @@ function theme_personalize_admin_info_details($variables) {
 
 /**
  * Theme wrapper for administrative section content.
+ *
+ * @todo: Remove when personalize campaign wizard process is complete.
  */
 function theme_personalize_admin_content($variables) {
   $element = $variables['element'];
@@ -297,6 +299,8 @@ function theme_personalize_admin_content($variables) {
 
 /**
  * Implements hook_personalize_admin_section().
+ *
+ * @todo: Remove when personalize campaign wizard process is complete.
  */
 function personalize_preprocess_personalize_admin_section(&$variables, $hook) {
   // Add general classes.
@@ -305,6 +309,8 @@ function personalize_preprocess_personalize_admin_section(&$variables, $hook) {
 
 /**
  * Implements hook_preprocess_personalize_content_set_item().
+ *
+ * @todo: Remove when personalize campaign wizard process is complete.
  */
 function personalize_preprocess_personalize_content_set_item(&$variables, $hook) {
   // Move elements to the template variables.
