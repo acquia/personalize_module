@@ -255,7 +255,7 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
 }
 
 .personalize-wizard-section .personalize-option-header h3,
-.personalize-wizard-section .personalize-option-header .personalize-admin-enumerated-item {
+.personalize-wizard-section .personalize-admin-enumerated-item {
   display:inline-block;
 }
 .personalize-wizard-section .personalize-admin-enumerated-counter:after {

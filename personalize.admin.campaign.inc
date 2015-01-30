@@ -100,7 +100,12 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
   ksort($agent_type_options);
 
   $form['header'] = array(
-    '#markup' => '<h2>' . t('Create Campaign') . '</h2>',
+    '#markup' => theme('html_tag', array(
+      'element' => array(
+        '#tag' => 'h2',
+        '#value' => 'Create campaign',
+      ),
+    )),
   );
 
   $form['agent_base_info'] = array(
@@ -240,7 +245,8 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       $message = t('Goals for these variations');
       break;
     case 'goals':
-      $message = t('Who\'s going to see what');
+      //$message = t('Who\'s going to see what'); Uncomment when the Who page is created.
+      $message = t('When should this campaign run');
       break;
     case 'targeting':
       $message = t('When should this campaign run');
@@ -277,8 +283,6 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
-
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $campaign_page = "admin/structure/personalize/wizard/{$agent_data->machine_name}";
@@ -293,10 +297,12 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     ),
   );
   $form['variations']['title'] = array(
-    '#markup' => theme('personalize_wizard_section_title', array(
-      'title' => t('Variation sets'),
-      'title_summary' => personalize_get_create_new_links_dropbutton($campaign_page),
-    )),
+    '#type' => 'container',
+    '#title' => t('Variation sets'),
+    '#theme' => 'personalize_wizard_section_title',
+  );
+  $form['variations']['title']['summary'] = array(
+    '#markup' => personalize_get_create_new_links_dropbutton($campaign_page),
   );
   // Determine option set labels.
   $counter = 1;
@@ -570,6 +576,197 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
 }
 
 /**
+ * The subform for add/editing variations.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ */
+function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+  foreach ($goal_entities as $obj) {
+    $goals[] = (array) $obj;
+  }
+
+  // Any action already set as a goal on this campaign should be excluded
+  // from the action dropdown.
+  foreach ($goals as $goal) {
+    $exclude[$goal['action']] = $goal['action'];
+  }
+
+  if (empty($goals)) {
+    $goals[] = array('action' => '', 'value' => 1);
+  }
+
+  // If the "Add another" button was clicked, we need to add goals to get up
+  // to the number indicated.
+  $num_goals = count($goals);
+  if (isset($form_state['num_goals']) && $form_state['num_goals'] > $num_goals) {
+    while ($num_goals < $form_state['num_goals']) {
+      $goals[] = array('action' => '', 'value' => 1, 'collapsed' => FALSE, 'classes' => array('personalize-goal-add'));
+      $num_goals++;
+    }
+  }
+  $form_state['num_goals'] = count($goals);
+
+  $goal_options = personalize_goals_options(TRUE);
+  // For new goals, we exclude actions already used.
+  $new_goal_options = array_diff_key($goal_options, $exclude);
+  // Add the "add new action in context" option if visitor_actions_ui
+  // is enabled.
+  if (module_exists('visitor_actions_ui')) {
+    $link = url('admin/structure/visitor_actions/add-in-context', array(
+      'query' => array('destination' => "admin/structure/personalize/manage/{$agent_data->machine_name}/edit"),
+      'attributes' => array(
+        'class' => array('personalize-add-context', 'button'),
+      ),
+    ));
+    $new_goal_options[$link] = t('[Add new action in context...]');
+  }
+
+  // Begin form generation.
+  $form = array();
+  // Assemble the form in nested containers to allow for easier styling.
+  $form['goals'] = array(
+    '#type' => 'container',
+    '#tree' => FALSE,
+    '#attributes' => array(
+      'class' => array('personalize-wizard-section'),
+    ),
+  );
+
+  $form['goals']['title'] = array(
+    '#type' => 'container',
+    '#title' => t('Goals'),
+    '#theme' => 'personalize_wizard_section_title',
+  );
+  $form['goals']['title']['title_summary'] = array(
+    '#prefix' => '<span class="personalize-add-link-prefix"></span>',
+    '#type' => 'submit',
+    '#value' => t('Add goal'),
+    '#attributes' => array(
+      'class' => array('personalize-add-link'),
+      'title' => t('Click here to add more goals.')
+    ),
+    '#submit' => array('personalize_campaign_wizard_ajax_goal_add_submit'),
+    '#ajax' => array(
+      'callback' => 'personalize_campaign_wizard_ajax_goals_callback',
+      'wrapper' => 'personalize-goals',
+      'effect' => 'fade',
+    ),
+    '#limit_validation_errors' => array(array('goals')),
+  );
+
+  $goal_labels = array();
+  // Use a counter variable as the delta is affected by adding/removing goals.
+  $counter = 1;
+  foreach($goals as $delta => $goal) {
+    if (empty($goal['action'])) {
+      $title = t('New goal');
+    }
+    else {
+      $title = empty($goal_options[$goal['action']]) ? check_plain($goal['action']) : check_plain($goal_options[$goal['action']]);
+    }
+    // Save the display goal title for use later
+    $goal_labels[$delta] = theme('personalize_admin_enumerated_item', array(
+      'enum' => t('Goal @delta', array('@delta' => ($counter))),
+      'title' => $title,
+    ));
+    $counter++;
+  }
+
+  // Now handle the goals input display.
+  $section = &$form['goals'];
+  $section['all_goals'] = array(
+    '#tree' => TRUE,
+    '#theme_wrappers' => array('container'),
+    '#attributes' => array(
+      'id' => 'personalize-goals',
+      'class' => array('personalize-wizard-goals', 'personalize-goals-wrapper'),
+    ),
+  );
+
+  foreach ($goals as $delta => $goal) {
+    $goal_fieldset_classes = array('personalize-admin-collapsed-content', 'personalize-goal');
+    if (isset($goal['classes']) && is_array($goal['classes'])) {
+      $goal_fieldset_classes = array_merge($goal_fieldset_classes, $goal['classes']);
+    }
+    // The goal id should match loaded goals from the database for jumping to
+    // a specific goal on page load.  This will not be available after an AJAX
+    // call, but that doesn't matter in the use case of initial page linkages.
+    $section['all_goals'][$delta] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => isset($goal['collapsed']) ? $goal['collapsed'] : TRUE,
+      '#title' => $goal_labels[$delta],
+      '#tree' => TRUE,
+      '#attributes' => array(
+        'class' => $goal_fieldset_classes,
+        'id' => isset($goal['id']) ? "personalize-goal-{$goal['id']}" : "personalize-goal-$delta",
+      )
+    );
+    $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
+    // If the current goal is a limited use visitor action, then it won't be
+    // in the list of options to display.
+    if (!empty($goal['action']) && empty($options[$goal['action']])) {
+      $goal_action = visitor_actions_custom_load($goal['action']);
+      $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+    }
+    $section['all_goals'][$delta]['action_name'] = array(
+      '#type' => 'select',
+      '#title' => t('Action'),
+      '#options' => $options,
+      '#default_value' => $goal['action'],
+      '#empty_option' => t('Select an action'),
+      '#attributes' => array(
+        'class' => array('personalize-goal-action'),
+      ),
+    );
+    $section['all_goals'][$delta]['value'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Value'),
+      '#size' => 5,
+      '#default_value' => $goal['value']
+    );
+    $section['all_goals'][$delta]['remove'] = array(
+      '#type' => 'submit',
+      '#tag' => 'button',
+      '#text' => t('Remove'),
+      '#value' => 'remove_' . $delta,
+      '#theme_wrappers' => array('personalize_html_tag'),
+      '#attributes' => array(
+        // The ID is necessary for the AJAX replace to function correctly. It
+        // is fragile to declare it like this, essentially hard-coding the
+        // #parents, but I know of no other way to do this programmatically.
+        'id' => 'edit-all-goals-' . $delta . '-remove',
+        'data-personalize-goal-id' => empty($goal['id']) ? '' : $goal['id'],
+        'data-personalize-goal-index' => $delta,
+        'class' => array('personalize-delete-goal', 'form-submit',),
+        'title' => t('Delete the goal.'),
+        // Adding the name and value attributes allows for targeting within
+        // simpletest.
+        'name' => 'edit-goals-' . $delta . '-remove',
+        'value' => t('Remove'),
+      ),
+      '#submit' => array('personalize_campaign_wizard_ajax_goal_remove_submit'),
+      '#ajax' => array(
+        'callback' => 'personalize_campaign_wizard_ajax_goals_callback',
+        'wrapper' => 'personalize-goals',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ),
+      '#limit_validation_errors' => array(array('goals')),
+    );
+  }
+  return $form;
+}
+
+/**
  ********************************************************************
  *
  * A J A X  C A L L B A C K S
@@ -592,6 +789,35 @@ function personalize_campaign_wizard_ajax_variations_winner_submit($form, &$form
 function personalize_campaign_wizard_ajax_variations_callback($form, &$form_state) {
   list($prefix, $osid, $option_id) = explode('_', $form_state['triggering_element']['#value']);
   return $form['variations']['option_sets']['option_set_' . $osid];
+}
+
+/**
+ * Ajax callback for the add goal and remove goal buttons.
+ */
+function personalize_campaign_wizard_ajax_goals_callback($form, $form_state) {
+  return $form['goals']['all_goals'];
+}
+
+/**
+ * Submit handler for the "Add Goal" button.
+ */
+function personalize_campaign_wizard_ajax_goal_add_submit($form, &$form_state) {
+  // Increment the number of goal elements to be rendered.
+  $form_state['num_goals']++;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Submit handler for the "Remove Goal" button.
+ */
+function personalize_campaign_wizard_ajax_goal_remove_submit($form, &$form_state) {
+  // Get the goal delta for the clicked button.
+  $goal_id = $form_state['triggering_element']['#attributes']['data-personalize-goal-id'];
+  $delta = $form_state['triggering_element']['#attributes']['data-personalize-goal-index'];
+  if (!empty($goal_id)) {
+    personalize_goal_delete($goal_id);
+  }
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
@@ -662,6 +888,8 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
  * step.
  */
 function personalize_campaign_wizard_submit($form, &$form_state) {
+  module_load_include('inc', 'personalize', 'personalize.admin');
+
   // Call the base level submit handler.
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
 
@@ -708,7 +936,6 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
  *   The agent/campaign class that is being modified.
  */
 function personalize_campaign_wizard_submit_base($form, &$form_state) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
   $agent = _personalize_agent_from_form_values($form_state['values']['agent_base_info']);
   // If it is a new campaign, save the basic information so that it can be
   // added to in the other subform submit handlers.
@@ -813,21 +1040,55 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, $age
 /**
  * Submit handler for the goals section.
  */
-function personalize_campaign_wizard_submit_goals($form, &$form_state) {
+function personalize_campaign_wizard_submit_goals($form, &$form_state, $agent_data) {
+  // Update the goals for this agent.
+  $form_values = $form_state['values']['all_goals'];
+
+  // Check if any goals have been removed during editing.
+  $saved_goals = $existing_goals = array();
+  foreach (personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name)) as $goal) {
+    // We can only have one goal with a given action per agent, so
+    // we key the array of existing goals by action name.
+    $existing_goals[$goal->action] = $goal->id;
+  }
+  foreach ($form_values as $goal) {
+    if (!empty($goal['action_name'])) {
+      try {
+        personalize_goal_save($agent_data->machine_name, $goal['action_name'], $goal['value']);
+
+        // Add this to the array of saved goals so that at the end
+        // we know that anything in $existing_goals but not in $saved_goals
+        // needs to be deleted.
+        $saved_goals[$goal['action_name']] = isset($existing_goals[$goal['action_name']]) ? $existing_goals[$goal['action_name']] : 'new';
+      }
+      catch (Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+      }
+    }
+  }
+  // The difference between existing goals and saved goals are the ones
+  // that need to be deleted.
+  $to_delete = array_diff_key($existing_goals, $saved_goals);
+  foreach ($to_delete as $goal_id) {
+    personalize_goal_delete($goal_id);
+  }
+  // Redraw the form without any additional new goals included.
+  unset($form_state['num_goals']);
   // $form_state['new_step'] = 'targeting'; Put this back when there is a "who" page.
   $form_state['new_step'] = 'scheduling';
 }
+
 /**
  * Submit handler for the targeting section.
  */
-function personalize_campaign_wizard_submit_targeting($form, &$form_state) {
+function personalize_campaign_wizard_submit_targeting($form, &$form_state, $agent_data) {
   $form_state['new_step'] = 'scheduling';
 }
 
 /**
  * Submit handler for the scheduling section.
  */
-function personalize_campaign_wizard_submit_scheduling($form, &$form_state) {
+function personalize_campaign_wizard_submit_scheduling($form, &$form_state, $agent_data) {
   $form_state['new_step'] = 'review';
 }
 
@@ -836,6 +1097,6 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state) {
  *
  * This really is the form to set the status of the campaign.
  */
-function personalize_campaign_wizard_submit_review($form, &$form_state) {
+function personalize_campaign_wizard_submit_review($form, &$form_state, $agent_data) {
   $form_state['new_step'] = 'review';
 }

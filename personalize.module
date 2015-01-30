@@ -861,11 +861,9 @@ function personalize_theme($existing, $type, $theme, $path) {
       ),
     ),
     'personalize_wizard_section_title' => array(
+      'render element'  => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
-      'variables' => array(
-        'title' => '',
-      ),
     ),
   );
 }

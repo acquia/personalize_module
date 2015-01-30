@@ -212,12 +212,18 @@ function theme_personalize_option_set_header($variables) {
  * wizard sub-form.
  *
  * @param array $variations
- *   - title: The title of the section
- *   - title_summary: The summary for the title section
+ *   - element:  The element to theme.  This element should have a #title
+ *     attribute and may have children to include within the header.
  */
 function theme_personalize_wizard_section_title($variables) {
   $output = '';
-  $output .= '<div class="personalize-wizard-section-title"><h2>' . $variables['title'] . '</h2>' . $variables['title_summary'] . '</div>';
+  if (empty($variables['element']) || empty($variables['element']['#title'])) {
+    return $output;
+  }
+  $element = $variables['element'];
+  $output .= '<div class="personalize-wizard-section-title"><h2>' . $element['#title'] . '</h2>';
+  $output .= drupal_render_children($element);
+  $output .=  '</div>';
   return $output;
 }
 
