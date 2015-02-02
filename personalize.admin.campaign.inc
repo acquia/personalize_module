@@ -153,6 +153,16 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
       '#description' => t('Choose which type of agent to create.'),
     );
   }
+
+  // Add visitor context items to the form for agents that support automatic
+  // targeting.
+  if (!empty($agent_instance) && $agent_instance instanceof PersonalizeAutoTargetingInterface) {
+    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
+    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
+      $form['agent_base_info']['visitor_context'] = $context_element;
+      $form['agent_base_info']['visitor_context']['#size'] = 4;
+    }
+  }
   return $form;
 }
 
@@ -962,6 +972,14 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
  */
 function personalize_campaign_wizard_submit_base($form, &$form_state) {
   $agent = _personalize_agent_from_form_values($form_state['values']['agent_base_info']);
+
+  // Add the visitor context configuration.
+  $visitor_context = array();
+  if (isset($form_state['values']['agent_base_info']['visitor_context'])) {
+    $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['agent_base_info']['visitor_context']);
+  }
+  $agent->data['visitor_context'] = $visitor_context;
+
   // If it is a new campaign, save the basic information so that it can be
   // added to in the other subform submit handlers.
   if (empty($agent->machine_name)) {
