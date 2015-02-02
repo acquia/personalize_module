@@ -134,6 +134,13 @@ function personalize_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'personalize.admin.inc',
   );
+  $items['admin/structure/personalize/wizard'] = array(
+    'title' => t('Create a campaign'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard'),
+    'access arguments' => array('manage personalized content'),
+    'file' => 'personalize.admin.campaign.inc',
+  );
   $items['admin/structure/personalize/wizard/%personalize_agent'] = array(
     'title callback' => 'personalize_campaign_title_callback',
     'title arguments' => array(4),

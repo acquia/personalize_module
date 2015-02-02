@@ -38,6 +38,12 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
       }
     }
   }
+  else {
+    $form['agent'] = array(
+      '#type' => 'value',
+      '#value' => $agent_data->machine_name,
+    );
+  }
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->plugin) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
@@ -179,6 +185,19 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#value' => $button_value,
     '#suffix' => $message,
   );
+
+  // Change campaign status.
+  /*
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
+  $form['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
+  // Add AJAX callback.
+  $form['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
+  $form['status']['actions']['toggle_form']['#ajax'] = array(
+    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
+    'wrapper' => 'edit-agent-basic-info',
+    'effect' => 'fade',
+  );
+  */
   return $form;
 }
 
@@ -281,17 +300,6 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     );
   }
 
-  // Change campaign status.
-  $agent_status = personalize_agent_get_status($agent_data->machine_name);
-  $form['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
-  // Add AJAX callback.
-  $form['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-  $form['status']['actions']['toggle_form']['#ajax'] = array(
-    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
-    'wrapper' => 'edit-agent-basic-info',
-    'effect' => 'fade',
-  );
-
   return $form;
 }
 
@@ -309,9 +317,15 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
  */
 function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
   // Load the data used throughout form.
-  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
-  $campaign_page = "admin/structure/personalize/wizard/{$agent_data->machine_name}";
-  $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
+  if (empty($agent_data->machine_name)) {
+    $option_sets = array();
+    $campaign_page = 'admin/structure/personalize/wizard';
+  }
+  else {
+    $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+    $campaign_page = "admin/structure/personalize/wizard/{$agent_data->machine_name}";
+    $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
+  }
 
   $form = array();
   $form['variations'] = array(
@@ -993,6 +1007,9 @@ function personalize_campaign_wizard_validate($form, &$form_state) {
  */
 function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   $form_values = &$form_state['values']['option_sets'];
+  if (empty($form_values)) {
+    return;
+  }
 
   $need_form_state_cache_clear = FALSE;
 
