@@ -396,8 +396,7 @@ function personalize_agent_list() {
       );
       // Show the scheduled start date for campaigns that aren't running yet.
       if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
-        $start_variable = _personalize_agent_get_starttime_variable($agent->machine_name);
-        $start_date = variable_get($start_variable, 0);
+        $start_date = personalize_agent_get_start_date($agent->machine_name);
         array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
       }
 
@@ -982,10 +981,8 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
  */
 function personalize_agent_date_form($agent_name = NULL) {
   if (!empty($agent_name)) {
-    $end_variable = _personalize_agent_get_stoptime_variable($agent_name);
-    $agent_end = $default_end = variable_get($end_variable, 0);
-    $start_variable = _personalize_agent_get_starttime_variable($agent_name);
-    $agent_start = $default_start = variable_get($start_variable, 0);
+    $agent_end = $default_end = personalize_agent_get_stop_date($agent_name);
+    $agent_start = $default_start = personalize_agent_get_start_date($agent_name);
   }
   else {
     $agent_end = 0;
@@ -1087,8 +1084,7 @@ function personalize_agent_date_form_submit($agent_name, $values) {
     else {
       $start_date = 0;
     }
-    $varname = _personalize_agent_get_starttime_variable($agent_name);
-    variable_set($varname, $start_date);
+    personalize_agent_set_start_date($agent_name, $start_date);
   }
   if (!empty($values['campaign_end'])) {
     // Set the end date.
@@ -1098,8 +1094,7 @@ function personalize_agent_date_form_submit($agent_name, $values) {
     else {
       $end_date = 0;
     }
-    $varname = _personalize_agent_get_stoptime_variable($agent_name);
-    variable_set($varname, $end_date);
+    personalize_agent_set_stop_date($agent_name, $end_date);
   }
 }
 

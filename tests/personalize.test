@@ -2058,11 +2058,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertTrue($agent instanceof PersonalizeTestAgent);
 
     // Verify that the agent does not have start or end dates specified.
-    $start_variable = _personalize_agent_get_starttime_variable($machine_name);
-    $start_date = variable_get($start_variable, 0);
+    $start_date = personalize_agent_get_start_date($machine_name);
     $this->assertEqual($start_date, 0);
-    $end_variable = _personalize_agent_get_stoptime_variable($machine_name);
-    $end_date = variable_get($end_variable, 0);
+    $end_date = personalize_agent_get_stop_date($machine_name);
     $this->assertEqual($end_date, 0);
 
     // Set the start and end dates via the form to invalid values.
@@ -2303,8 +2301,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     // Check the end time of the agent, which should now have been set.
     $time_after = time();
-    $end_time_var = _personalize_agent_get_stoptime_variable($first_agent_machine_name);
-    $end_time = variable_get($end_time_var, 0);
+    $end_time = personalize_agent_get_stop_date($first_agent_machine_name);
     $this->assertTrue($time_before <= $end_time && $end_time <= $time_after);
     // Set the status back to paused and confirm the end time var has been deleted.
     $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_PAUSED), t('Change'), array(), array(), $html_id_first_agent);
@@ -2343,11 +2340,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     }
     $now = time();
     // First agent was due to expire yesterday.
-    $variable = _personalize_agent_get_stoptime_variable('agent-1');
-    variable_set($variable, $now - 86400);
+    personalize_agent_set_stop_date('agent-1', $now - 86400);
     // Second agent is due to expire tomorrow.
-    $variable = _personalize_agent_get_stoptime_variable('agent-2');
-    variable_set($variable, $now + 86400);
+    personalize_agent_set_stop_date('agent-1', $now + 86400);
 
     // Call the function that should complete all agents that are scheduled to be
     // completed.
@@ -2392,11 +2387,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     }
     $now = time();
     // First agent was due to start yesterday.
-    $variable = _personalize_agent_get_starttime_variable('agent-1');
-    variable_set($variable, $now - 86400);
+    personalize_agent_set_start_date('agent-1', $now - 86400);
     // Second agent is due to start tomorrow.
-    $variable = _personalize_agent_get_starttime_variable('agent-2');
-    variable_set($variable, $now + 86400);
+    personalize_agent_set_start_date('agent-2', $now + 86400);
 
     // Call the function that should start all agents that are scheduled to be
     // started.

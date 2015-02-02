@@ -379,8 +379,7 @@ function personalize_start_agents() {
 function personalize_agent_stop_now($agent_data) {
   // First check if a variable has been set specifying a timestamp for
   // when this agent should be paused.
-  $variable = _personalize_agent_get_stoptime_variable($agent_data->machine_name);
-  $stop_time = variable_get($variable, 0);
+  $stop_time = personalize_agent_get_stop_date($agent_data->machine_name);
   if ($stop_time > 0) {
     $ts = time();
     if ($ts >= $stop_time) {
@@ -410,8 +409,7 @@ function personalize_agent_stop_now($agent_data) {
 function personalize_agent_start_now($agent_data) {
   // Check if a variable has been set specifying a timestamp for when this
   // agent should be started.
-  $variable = _personalize_agent_get_starttime_variable($agent_data->machine_name);
-  $start_time = variable_get($variable, 0);
+  $start_time = personalize_agent_get_start_date($agent_data->machine_name);
   if ($start_time > 0) {
     if (isset($agent_data->started) && $agent_data->started > 0 && $agent_data->started >= $start_time) {
       // This agent has already been started once since the start time specified.
@@ -1132,9 +1130,8 @@ function personalize_agent_set_status($agent_name, $status) {
 
   if ($status == PERSONALIZE_STATUS_COMPLETED) {
     // Register the end time of the campaign.
-    $end_time_var = _personalize_agent_get_stoptime_variable($agent_name);
     $now = time();
-    variable_set($end_time_var, $now);
+    personalize_agent_set_stop_date($agent_name, $now);
     // Check if we need to delete all the actions for completed campaigns.
     // @todo expose this setting via the UI
     if (variable_get('personalize_delete_actions_on_campaign_completion', FALSE)) {
@@ -1146,7 +1143,6 @@ function personalize_agent_set_status($agent_name, $status) {
         }
       }
     }
-
   }
 
   if ($status == PERSONALIZE_STATUS_RUNNING) {
@@ -1168,8 +1164,8 @@ function personalize_agent_set_status($agent_name, $status) {
   variable_set(_personalize_agent_get_status_variable($agent_name), $status);
 
   if ($old_status == PERSONALIZE_STATUS_COMPLETED) {
-    // Remove the variable holding the end time of the campaign.
-    variable_del(_personalize_agent_get_stoptime_variable($agent_name));
+    // Indicate that the agent end date should be reset.
+    personalize_agent_set_stop_date($agent_name, 0);
   }
 
   // Clear the visitor context cache settings for running campaigns.
@@ -1303,6 +1299,54 @@ function personalize_option_set_matches_decision($osid, $agent, $decision_name, 
 function personalize_agent_get_status($agent_name) {
   $status = variable_get(_personalize_agent_get_status_variable($agent_name), PERSONALIZE_STATUS_NOT_STARTED);
   return $status;
+}
+
+/**
+ * Helper function to return the current agent scheduled start date.
+ *
+ * @return int
+ *   The timestamp for the date to start or 0 if not set.
+ */
+function personalize_agent_get_start_date($agent_name) {
+  $variable = _personalize_agent_get_starttime_variable($agent_name);
+  return variable_get($variable, 0);
+}
+
+/**
+ * Helper function to set the scheduled start date for an agent.
+ */
+function personalize_agent_set_start_date($agent_name, $start_date) {
+  $variable = _personalize_agent_get_starttime_variable($agent_name);
+  if ($start_date > 0) {
+    variable_set($variable, $start_date);
+  }
+  else {
+    variable_del($variable);
+  }
+}
+
+/**
+ * Helper function to return the current agent scheduled end date.
+ *
+ * @return int
+ *   The timestamp for the date to end or 0 if not set.
+ */
+function personalize_agent_get_stop_date($agent_name) {
+  $variable = _personalize_agent_get_stoptime_variable($agent_name);
+  return variable_get($variable, 0);
+}
+
+/**
+ * Helper function to set the scheduled end date for an agent.
+ */
+function personalize_agent_set_stop_date($agent_name, $end_date) {
+  $variable = _personalize_agent_get_stoptime_variable($agent_name);
+  if ($end_date > 0) {
+    variable_set($variable, $end_date);
+  }
+  else {
+    variable_del($variable);
+  }
 }
 
 /**
