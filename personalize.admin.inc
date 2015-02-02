@@ -339,16 +339,16 @@ function personalize_agent_list() {
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
-        $description = t('Campaigns that have never run.');
+        $description = t('This table lists campaigns that have never been started.');
         break;
       case PERSONALIZE_STATUS_RUNNING:
-        $description = t('Campaigns that are "live" and actively personalizing your content.');
+        $description = t('This table lists campaigns that are displaying personalized content to website visitors for each variation set.');
         break;
       case PERSONALIZE_STATUS_PAUSED:
-        $description = t('The fallback/winner option is being shown for each variation set. Personalization JavaScript is still running to show the option.');
+        $description = t('This table lists campaigns that use personalization JavaScript to display the fallback/winner variation for each variation set.');
         break;
       case PERSONALIZE_STATUS_COMPLETED:
-        $description = t('The fallback/winner option is being shown for each variation set and is rendered in PHP where possible, meaning no personalization JavaScript is running to show the option.');
+        $description = t('This table lists campaigns that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused campaigns.');
         break;
     }
     $build['status_' . $status] = array(
