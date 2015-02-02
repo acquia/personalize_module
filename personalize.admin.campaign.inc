@@ -576,7 +576,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
 }
 
 /**
- * The subform for add/editing variations.
+ * The subform for add/editing goals.
  *
  * @param array $form
  *   The current form array.
@@ -767,6 +767,23 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
 }
 
 /**
+ * Subform for campaign scheduling.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ */
+function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  module_load_include('inc', 'personalize', 'personalize.admin');
+  return personalize_agent_date_form($agent_data->machine_name);
+}
+
+/**
  ********************************************************************
  *
  * A J A X  C A L L B A C K S
@@ -832,6 +849,8 @@ function personalize_campaign_wizard_ajax_goal_remove_submit($form, &$form_state
  * Validate handler for wizard form.
  */
 function personalize_campaign_wizard_validate($form, &$form_state) {
+  module_load_include('inc', 'personalize', 'personalize.admin');
+
   // Call the validation step for the appropriate subform.
   $function = 'personalize_campaign_wizard_validate_' . $form_state['storage']['step'];
   if (function_exists($function)) {
@@ -874,6 +893,12 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   }
 }
 
+/**
+ * Custom validation callback for scheduling form.
+ */
+function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
+  personalize_agent_date_form_validate($form_state['values']);
+}
 
 /**
  ********************************************************************
@@ -1089,6 +1114,7 @@ function personalize_campaign_wizard_submit_targeting($form, &$form_state, $agen
  * Submit handler for the scheduling section.
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, $agent_data) {
+  personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
   $form_state['new_step'] = 'review';
 }
 
