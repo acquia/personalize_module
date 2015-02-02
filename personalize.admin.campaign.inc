@@ -40,7 +40,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->plugin) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
-  $form['#attached']['library'][] = array('personalize', 'admin.campaign');
+  $form['#attached']['library'][] = array('personalize', 'admin.campaign.wizard');
 
   // Add the top level campaign base information.
   $header_form = personalize_campaign_wizard_base($form, $form_state, $agent_data, $agent_instance);

@@ -717,6 +717,22 @@ function personalize_library() {
       array('system', 'jquery.once'),
     ),
   );
+  $libraries['admin.campaign.wizard'] = array(
+    'title' => 'Campaign wizard',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/personalize.campaign.admin.js' => $options,
+    ),
+    'css' => array(
+      $path . '/css/personalize.theme.css' => array(),
+      $path . '/css/personalize.admin.css' => array(),
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+      array('system', 'jquery.once'),
+    ),
+  );
   $libraries['personalize'] = array(
     'title' => 'Personalize capabilities',
     'website' => '',
