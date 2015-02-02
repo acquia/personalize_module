@@ -109,4 +109,18 @@
     });
   }
 
+  /**
+   * Personalize campaign wizard process bar functionality.
+   */
+  Drupal.behaviors.personalizeWizardProcessBar = {
+    attach: function (context, settings) {
+      $('#personalize-campaign-wizard-navigation .personalize-wizard-navigation a', context).once().on('click', function() {
+        var $form = $(this).closest('form');
+        $form.find('input[name="navigation_step"]').val($(this).attr('data-personalize-wizard-section'));
+        $form[0].submit();
+        return false;
+      });
+    }
+  }
+
 })(jQuery);

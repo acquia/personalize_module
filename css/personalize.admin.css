@@ -261,3 +261,59 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
 .personalize-wizard-section .personalize-admin-enumerated-counter:after {
   content: ':';
 }
+
+#personalize-wizard-process-bar {
+  border-top: 1px solid #0074BD;
+  border-bottom: 1px solid #0074BD;
+  margin-bottom: 1.2em;
+}
+#personalize-wizard-process-bar .personalize-wizard-navigation {
+  border-bottom: 1px solid #0074BD;
+}
+#personalize-wizard-process-bar ul {
+  list-style: none;
+  overflow: hidden;
+  margin: 0;
+  display: inline-block;
+  float: left;
+}
+#personalize-wizard-process-bar li {
+  float: left;
+}
+#personalize-wizard-process-bar li a {
+  padding: 1em 1em 1em 3em;
+  position: relative;
+  display: block;
+  float: left;
+}
+#personalize-wizard-process-bar li a.personalize-wizard-navigation-current {
+  color: white;
+  text-decoration: none;
+  background: #0074BD;
+}
+#personalize-wizard-process-bar li a.personalize-wizard-navigation-current:after {
+  content: " ";
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 3em solid transparent;           /* Go big on the size, and let overflow hide */
+  border-bottom: 3em solid transparent;
+  border-left: 2em solid #0074BD;
+  position: absolute;
+  top: 50%;
+  margin-top: -3em;
+  left: 100%;
+  z-index: 2;
+}
+#personalize-wizard-process-bar #personalize-status-toggle-form {
+  display: inline-block;
+}
+#personalize-wizard-process-bar #personalize-status-toggle-form input {
+  margin: .7em 0 .7em 2em;
+}
+#personalize-wizard-process-bar .personalize-wizard-instructions {
+  padding: .5em;
+}
+#personalize-wizard-process-bar .personalize-wizard-section-help {
+  display: none;
+}

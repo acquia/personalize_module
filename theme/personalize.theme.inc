@@ -208,6 +208,68 @@ function theme_personalize_option_set_header($variables) {
 }
 
 /**
+ * Theme function to output the navigation for the personalize campaign wizard.
+ *
+ * @param array $variables
+ *   - element:  The element to theme.  This element should have:
+ *     - #navigation: An array of subform navigation options with keyed by the
+ *       section name with the label to display as the value.
+ *     - #navigation_url: The base path for navigating to this wizard.  The
+ *       navigation section names will be appended to generate a url.
+ *     - #current: Indicates the current step
+ *     - status: Renderable array for the status change button
+ *     - message: Renderable array for the shorter instructional message.
+ *     - help: Renderable array of section help details.
+ */
+function theme_personalize_wizard_process_bar($variables) {
+  if (empty($variables['element'])) {
+    return;
+  }
+  $element = $variables['element'];
+  $navigation = empty($element['#navigation']) ? array() : $element['#navigation'];
+  $navigation_url = empty($element['#navigation_url']) ? 'admin/structure/personalize/wizard' : $element['#navigation_url'];
+  $current = empty($element['#current']) ? '' : $element['#current'];
+  $status = empty($element['status']) ? '' : drupal_render($element['status']);
+  $message = empty($element['message']) ? '' : drupal_render($element['message']);
+  $help = empty($element['help']) ? '' : drupal_render($element['help']);
+
+  if (substr($navigation_url, -1) !== '/') {
+    $navigation_url .= '/';
+  }
+  $output = '';
+  $output .= '<div id="personalize-wizard-process-bar">';
+  // Subform navigation.
+  $output .= '<div class="personalize-wizard-navigation">';
+  if (!empty($navigation)) {
+    $output .= '<ul>';
+    foreach ($navigation as $key => $label) {
+      $class = '';
+      if ($current === $key) {
+        $class = 'personalize-wizard-navigation-current';
+      }
+      $output .= '<li><a href="' . url($navigation_url) . $key . '" data-personalize-wizard-section="' . $key . '" class="' . $class . '">' . $label . '</a></li>';
+    }
+    $output .= '</ul>';
+    // Status form.
+    if (!empty($status)) {
+      $output .= $status;
+    }
+    $output .= '</div>';
+  }
+  // Help
+  if (!empty($message) || !empty($help)) {
+    $output .= '<div class="personalize-wizard-instructions">' . $message;
+    if (!empty($help)) {
+      $output .= '<a href="" class="personalize-wizard-learn-more">' . t('Learn more') . '</a>';
+    }
+    $output .= '</div>';
+    $output .= '<div class="personalize-wizard-section-help">' . $help . '</div>';
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+/**
  * Theme function to output the header section for a personalize campaign
  * wizard sub-form.
  *

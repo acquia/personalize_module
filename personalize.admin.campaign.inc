@@ -87,49 +87,48 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
  */
 function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data, $agent_instance) {
   $form = array();
-  $form['navigation'] = array(
+  $form['process_bar'] = array(
     '#type' => 'container',
     '#attributes' => array(
       'id' => 'personalize-campaign-wizard-navigation',
     ),
+    '#theme' => 'personalize_wizard_process_bar',
+    '#navigation' => array(
+      'variations' => t('What'),
+      'goals' => t('Why'),
+      'targeting' => t('Who'),
+      'scheduling' => t('When'),
+      'review' => t('Review'),
+    ),
+    '#navigation_url' => 'admin/structure/personalize/wizard/' . $agent_data->machine_name,
+    '#current' => $form_state['storage']['step'],
   );
-  // @todo Possibly change these to links and handle submitting the form
-  // via JavaScript.  That way we don't have a problem with the wrong
-  // button being set by the browser as the default submit button for the form.
-  $form['navigation']['variations'] = array(
-    '#type' => 'submit',
-    '#name' => 'variations',
-    '#value' => t('What'),
-  );
-  $form['navigation']['goals'] = array(
-    '#type' => 'submit',
-    '#name' => 'goals',
-    '#value' => t('Why'),
-  );
-  $form['navigation']['targeting'] = array(
-    '#type' => 'submit',
-    '#name' => 'targeting',
-    '#value' => t('Who'),
-  );
-  $form['navigation']['scheduling'] = array(
-    '#type' => 'submit',
-    '#name' => 'scheduling',
-    '#value' => t('When'),
-  );
-  $form['navigation']['review'] = array(
-    '#type' => 'submit',
-    '#name' => 'review',
-    '#value' => t('Review'),
+  // To be filled in by the JavaScript when indicating the next step.
+  $form['navigation_step'] = array(
+    '#type' => 'hidden',
   );
 
-  // Update the display and handling for the current step.
-  $current_step = $form_state['storage']['step'];
-  if (isset($form['navigation'][$current_step])) {
-    $form['navigation'][$current_step]['#attributes'] = array(
-      'class' => array('personalize-campaign-wizard-active'),
-    );
-    $form['navigation'][$current_step]['#disabled'] = TRUE;
+  // Change campaign status.
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
+  $form['process_bar']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
+  // Add AJAX callback.
+  $form['process_bar']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
+  $form['process_bar']['status']['actions']['toggle_form']['#ajax'] = array(
+    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
+    'wrapper' => 'edit-agent-basic-info',
+    'effect' => 'fade',
+  );
+
+  // Instructions and help.
+  $instructions_function = 'personalize_campaign_wizard_instructions_' . $form_state['storage']['step'];
+  if (function_exists($instructions_function)) {
+    $form['process_bar']['message'] = $instructions_function($form, $form_state, $agent_instance);
   }
+  $help_function = 'personalize_campaign_wizard_help_' . $form_state['storage']['step'];
+  if (function_exists($help_function)) {
+    $form['process_bar']['help'] = $help_function($form, $form_state, $agent_data, $agent_instance);
+  }
+
   return $form;
 }
 
@@ -186,18 +185,6 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#suffix' => $message,
   );
 
-  // Change campaign status.
-  /*
-  $agent_status = personalize_agent_get_status($agent_data->machine_name);
-  $form['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
-  // Add AJAX callback.
-  $form['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-  $form['status']['actions']['toggle_form']['#ajax'] = array(
-    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
-    'wrapper' => 'edit-agent-basic-info',
-    'effect' => 'fade',
-  );
-  */
   return $form;
 }
 
@@ -906,6 +893,74 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
   );
 
   return $form;
+}
+
+/**
+ ********************************************************************
+ *
+ * I N S T R U C T I O N S  &  H E L P
+ *
+ ********************************************************************
+ */
+/**
+ * Instructions callback for the variations sub-form.
+
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   A renderable array of instructions.
+ */
+function personalize_campaign_wizard_instructions_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  return array(
+    '#markup' => 'Select or create the variations of the content you want to personalize.',
+  );
+}
+
+/**
+ * Instructions callback for the goals sub-form.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ *
+ * @return array
+ *   A renderable array of instructions.
+ */
+function personalize_campaign_wizard_instructions_goals($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  return array(
+    '#markup' => 'Define the goals for which you created your content variations.',
+  );
+}
+
+/**
+ * Instructions callback for the targeting sub-form.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   A renderable array of instructions.
+ */
+function personalize_campaign_wizard_instructions_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  return array(
+    '#markup' => 'Test experiences for a segment or associate two experiments that...',
+  );
 }
 
 /**
