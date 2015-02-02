@@ -138,6 +138,9 @@
 #personalize-agent-option-sets-form .personalize-ctools-dropdown .ctools-dropdown-container-wrapper .ctools-dropdown-container {
   left: -6em;
 }
+.personalize-wizard-section .personalize-ctools-dropdown .ctools-dropdown-container-wrapper .ctools-dropdown-container {
+  left: 12em;
+}
 
 html.js div.ctools-dropdown div.ctools-dropdown-container {
   border: 1px solid #ccc;
