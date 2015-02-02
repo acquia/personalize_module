@@ -20,7 +20,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   module_load_include('inc', 'personalize', 'personalize.admin');
 
   // Set the default step.
-  $selected = empty($selected) ? 'details' : $selected;
+  $selected = empty($selected) ? 'variations' : $selected;
 
   // Read the current step from the parameters unless the form process has
   // already started.
@@ -90,11 +90,6 @@ function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data
   // @todo Possibly change these to links and handle submitting the form
   // via JavaScript.  That way we don't have a problem with the wrong
   // button being set by the browser as the default submit button for the form.
-  $form['navigation']['details'] = array(
-    '#type' => 'submit',
-    '#name' => 'details',
-    '#value' => t('How'),
-  );
   $form['navigation']['variations'] = array(
     '#type' => 'submit',
     '#name' => 'variations',
@@ -105,24 +100,21 @@ function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data
     '#name' => 'goals',
     '#value' => t('Why'),
   );
-  /*
   $form['navigation']['targeting'] = array(
     '#type' => 'submit',
     '#name' => 'targeting',
     '#value' => t('Who'),
-  );*/
+  );
   $form['navigation']['scheduling'] = array(
     '#type' => 'submit',
     '#name' => 'scheduling',
     '#value' => t('When'),
   );
-  /*
   $form['navigation']['review'] = array(
     '#type' => 'submit',
     '#name' => 'review',
     '#value' => t('Review'),
   );
-  */
 
   // Update the display and handling for the current step.
   $current_step = $form_state['storage']['step'];
@@ -155,10 +147,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   $status = empty($agent_data->machine_name) ? PERSONALIZE_STATUS_NOT_STARTED : personalize_agent_get_status($agent_data->machine_name);
   $button_value = t('Next');
   $message = '';
+  $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
+
   switch ($form_state['storage']['step']) {
-    case 'details':
-      $message = t('Variations to test');
-      break;
     case 'variations':
       $message = t('Goals for these variations');
       break;
@@ -170,12 +161,13 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       $message = t('When should this campaign run');
       break;
     case 'scheduling':
-// @todo: Scheduling is the last step in the interim process.
-//      $message = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED ? t('Review personalization settings') : t('Review personalization results');
-      $button_value = t('Save');
+      $message = $not_running ? t('Review personalization settings') : t('Review personalization results');
       break;
     case 'review':
       list($next_status, $button_value) = _personalize_status_toggle_next($status);
+      if ($not_running && personalize_agent_get_start_date($agent_data->machine_name) > 0) {
+        $button_value = t('Save');
+      }
       break;
   }
   $form['actions'] = array(
@@ -289,73 +281,15 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     );
   }
 
-  return $form;
-}
-
-/**
- * Subform for campaign details.
- *
- * @param array $form
- *   The current form array.
- * @param array $form_state
- *   The current drupal form state
- * @param stdClass $agent_data
- *   The current campaign data.
- * @param PersonalizeAgentInterface $agent_instance
- *   The agent that defines the functionality for the campaign (if set).
- */
-function personalize_campaign_wizard_details($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  // Add visitor context items to the form for agents that support automatic
-  // targeting.
-  if (!empty($agent_instance) && $agent_instance instanceof PersonalizeAutoTargetingInterface) {
-    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
-    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
-      $form['visitor_context'] = $context_element;
-      $form['visitor_context']['#size'] = 4;
-    }
-  }
-
-  // Get the agent type specific options form.
-  $agent_types = personalize_get_agent_types();
-  foreach ($agent_types as $name => $info) {
-    if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
-      // Form structure for option parents in the current form.
-      $option_parents = array('options', $name);
-      // Get the agent type's options form elements
-      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, $option_parents));
-    }
-  }
-
-  // Add the agent-type-specific form elements to the form, to be shown only if the
-  // agent type in question is selected.
-  $form['options'] = array('#tree' => TRUE);
-  if (!empty($agent_data->plugin)) {
-    // If in edit mode, then only show the options for the selected agent.
-    $form['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
-  }
-  else {
-    // If in add mode, then show options dynamically using states.
-    foreach ($agent_type_form_options as $agent_type => $options) {
-      foreach ($options as &$option) {
-        $option['#states'] = array('visible' => array(':input[name="agent_basic_info[agent_type]"]' => array('value' => $agent_type)));
-      }
-      $form['options'][$agent_type] = $options;
-    }
-  }
-
-  // Add the advanced settings form.
-  $form['advanced'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Advanced'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#tree' => FALSE,
-  );
-  $form['advanced']['cache_decisions'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Cache decisions made by this agent?',
-    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
-    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  // Change campaign status.
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
+  $form['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
+  // Add AJAX callback.
+  $form['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
+  $form['status']['actions']['toggle_form']['#ajax'] = array(
+    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
+    'wrapper' => 'edit-agent-basic-info',
+    'effect' => 'fade',
   );
 
   return $form;
@@ -667,6 +601,33 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
 }
 
 /**
+ * Subform for campaign targeting.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ */
+function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  // Add visitor context items to the form for agents that support automatic
+  // targeting.
+  if (!empty($agent_instance) && $agent_instance instanceof PersonalizeAutoTargetingInterface) {
+    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
+    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
+      $form['visitor_context'] = $context_element;
+      $form['visitor_context']['#size'] = 4;
+    }
+  }
+
+  return $form;
+}
+
+
+/**
  * The subform for add/editing goals.
  *
  * @param array $form
@@ -875,6 +836,65 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
 }
 
 /**
+ * Subform for campaign detail review.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ */
+function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  // Get the agent type specific options form.
+  $agent_types = personalize_get_agent_types();
+  foreach ($agent_types as $name => $info) {
+    if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
+      // Form structure for option parents in the current form.
+      $option_parents = array('options', $name);
+      // Get the agent type's options form elements
+      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, $option_parents));
+    }
+  }
+
+  // Add the agent-type-specific form elements to the form, to be shown only if the
+  // agent type in question is selected.
+  $form['options'] = array('#tree' => TRUE);
+  if (!empty($agent_data->plugin)) {
+    // If in edit mode, then only show the options for the selected agent.
+    $form['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
+  }
+  else {
+    // If in add mode, then show options dynamically using states.
+    foreach ($agent_type_form_options as $agent_type => $options) {
+      foreach ($options as &$option) {
+        $option['#states'] = array('visible' => array(':input[name="agent_basic_info[agent_type]"]' => array('value' => $agent_type)));
+      }
+      $form['options'][$agent_type] = $options;
+    }
+  }
+
+  // Add the advanced settings form.
+  $form['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => FALSE,
+  );
+  $form['advanced']['cache_decisions'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Cache decisions made by this agent?',
+    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
+    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  );
+
+  return $form;
+}
+
+/**
  ********************************************************************
  *
  * A J A X  C A L L B A C K S
@@ -929,6 +949,22 @@ function personalize_campaign_wizard_ajax_goal_remove_submit($form, &$form_state
 }
 
 /**
+ * Ajax callback for the status toggle button.
+ */
+function personalize_campaign_wizard_ajax_status_callback($form, &$form_state) {
+  return $form['agent_base'];
+}
+
+/**
+ * Submit handler for the status change button.
+ */
+function personalize_campaign_wizard_ajax_status_submit($form, &$form_state) {
+  module_load_include('inc', 'personalize', 'personalize.admin');
+  personalize_status_toggle_form_submit($form, $form_state);
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
  ********************************************************************
  *
  * V A L I D A T I O N
@@ -946,18 +982,6 @@ function personalize_campaign_wizard_validate($form, &$form_state) {
   $function = 'personalize_campaign_wizard_validate_' . $form_state['storage']['step'];
   if (function_exists($function)) {
     $function($form, $form_state);
-  }
-}
-
-/**
- * Custom validation callback for details form.
- */
-function personalize_campaign_wizard_validate_details($form, &$form_state) {
-  $agent_type = $form_state['values']['agent_basic_info']['agent_type'];
-  ctools_include('plugins');
-  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_type, 'handler')) {
-    // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state);
   }
 }
 
@@ -1001,6 +1025,18 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
  */
 function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
   personalize_agent_date_form_validate($form_state['values']);
+}
+
+/**
+ * Custom validation callback for details form.
+ */
+function personalize_campaign_wizard_validate_review($form, &$form_state) {
+  $agent_type = $form_state['values']['agent_basic_info']['agent_type'];
+  ctools_include('plugins');
+  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_type, 'handler')) {
+    // Call the validation callback for the agent type.
+    $class::optionsFormValidate($form, $form_state);
+  }
 }
 
 /**
@@ -1072,23 +1108,6 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
     $agent = personalize_agent_save($agent);
   }
   return $agent;
-}
-
-/**
- * Submit handler for the details section.
- */
-function personalize_campaign_wizard_submit_details($form, &$form_state, &$agent_data) {
-  // Add the visitor context configuration.
-  $visitor_context = array();
-  if (isset($form_state['values']['visitor_context'])) {
-    $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
-  }
-  $agent_data->data['visitor_context'] = $visitor_context;
-
-  // Decision caching advanced setting.
-  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
-
-  $form_state['new_step'] = 'variations';
 }
 
 /**
@@ -1180,7 +1199,21 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       personalize_option_set_save($option_set);
     }
   }
-  $form_state['new_step'] = 'goals';
+  $form_state['new_step'] = 'targeting';
+}
+
+/**
+ * Submit handler for campaign targeting.
+ */
+function personalize_campaign_wizard_submit_targeting($form, &$form_state, &$agent_data) {
+  // Add the visitor context configuration.
+  $visitor_context = array();
+  if (isset($form_state['values']['visitor_context'])) {
+    $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
+  }
+  $agent_data->data['visitor_context'] = $visitor_context;
+
+  $form_state['new_step'] = 'scheduling';
 }
 
 /**
@@ -1225,18 +1258,19 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
 }
 
 /**
- * Submit handler for the targeting section.
- */
-function personalize_campaign_wizard_submit_targeting($form, &$form_state, &$agent_data) {
-  $form_state['new_step'] = 'scheduling';
-}
-
-/**
  * Submit handler for the scheduling section.
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$agent_data) {
   personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
 
   // Since this is the last step, just return to the start of the wizard.
-  $form_state['new_step'] = 'details';
+  $form_state['new_step'] = 'review';
+}
+
+/**
+ * Submit handler for the review section.
+ */
+function personalize_campaign_wizard_submit_details($form, &$form_state, &$agent_data) {
+  // Decision caching advanced setting.
+  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
