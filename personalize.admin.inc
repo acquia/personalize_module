@@ -336,8 +336,23 @@ function personalize_agent_list() {
     if (empty($agents)) {
       continue;
     }
+    $description = '';
+    switch($status) {
+      case PERSONALIZE_STATUS_NOT_STARTED:
+        $description = t('Campaigns that have never run.');
+        break;
+      case PERSONALIZE_STATUS_RUNNING:
+        $description = t('Campaigns that are "live" and actively personalizing your content.');
+        break;
+      case PERSONALIZE_STATUS_PAUSED:
+        $description = t('The fallback/winner option is being shown for each variation set. Personalization JavaScript is still running to show the option.');
+        break;
+      case PERSONALIZE_STATUS_COMPLETED:
+        $description = t('The fallback/winner option is being shown for each variation set and is rendered in PHP where possible, meaning no personalization JavaScript is running to show the option.');
+        break;
+    }
     $build['status_' . $status] = array(
-      '#markup' => '<h2>' . $status_map[$status] . '</h2>'
+      '#markup' => '<h2>' . $status_map[$status] . '</h2><p>' . $description . '</p>'
     );
     $rows = array();
     foreach ($agents as $agent) {
@@ -363,8 +378,8 @@ function personalize_agent_list() {
           $storage = t('Default');
           break;
       }
-      $agent_status = personalize_agent_get_status($agent->machine_name);
-      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $agent_status);
+
+      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $status);
       // @todo We are ignoring the "storage" info and the clone/export functionality
       //   for now. Revisit once we can provide full support for clone/export.
       $plugin = personalize_agent_load_agent($agent->machine_name);
@@ -374,7 +389,7 @@ function personalize_agent_list() {
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
         array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($agent_status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
@@ -451,14 +466,14 @@ function personalize_agent_complete_form($form, &$form_state, $agent) {
     );
   }
   if (!empty($theme_variables['option_sets'])) {
-    $theme_variables['option_message'] = t('All visitors will see the following variations:');
+    $theme_variables['option_message'] = t('All visitors will see the following @variations:', array('@variations' => format_plural(count($option_sets), 'variation', 'variations')));
   }
   $form['message'] = array(
     '#markup' => theme('personalize_campaign_status_update', $theme_variables)
   );
   $form['machine_name'] = array('#type' => 'hidden', '#value' => $agent->machine_name);
   $form['title'] = array('#type' => 'hidden', '#value' => $agent->label);
-  return confirm_form($form, t('Are you sure you want to stop the agent %title?', array('%title' => $agent->label)), 'admin/structure/personalize', '', t('Stop'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to stop the agent %title?', array('%title' => $agent->label)), 'admin/structure/personalize', '', t('Complete'), t('Cancel'));
 }
 
 /**
@@ -871,14 +886,20 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   );
 
   if (!empty($agent_data->machine_name)) {
-    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, personalize_agent_get_status($agent_data->machine_name), TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
-    $form['agent_form']['agent_fieldset']['header'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('personalize-admin-content-header'),
-      ),
-      'toggle_form' => $toggle_form,
-    );
+    $status = personalize_agent_get_status($agent_data->machine_name);
+    if ($status == PERSONALIZE_STATUS_COMPLETED) {
+      drupal_set_message(t('You are editing a completed campaign.'), 'warning');
+    }
+    else {
+      $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+      $form['agent_form']['agent_fieldset']['header'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('personalize-admin-content-header'),
+        ),
+        'toggle_form' => $toggle_form,
+      );
+    }
   }
   $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
   if ($basic_form === FALSE) {
