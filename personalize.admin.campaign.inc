@@ -136,15 +136,17 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
   );
   // Change campaign status.
-  $agent_status = personalize_agent_get_status($agent_data->machine_name);
-  $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
-  // Add AJAX callback.
-  $form['process_bar']['actions']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-  $form['process_bar']['actions']['status']['actions']['toggle_form']['#ajax'] = array(
-    'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
-    'wrapper' => 'personalize-campaign-wizard-process-bar',
-    'effect' => 'fade',
-  );
+  if (!empty($agent_data->machine_name)) {
+    $agent_status = personalize_agent_get_status($agent_data->machine_name);
+    $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
+    // Add AJAX callback.
+    $form['process_bar']['actions']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
+    $form['process_bar']['actions']['status']['actions']['toggle_form']['#ajax'] = array(
+      'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
+      'wrapper' => 'personalize-campaign-wizard-process-bar',
+      'effect' => 'fade',
+    );
+  }
 
   // Instructions and help.
   $instructions_function = 'personalize_campaign_wizard_instructions_' . $form_state['storage']['step'];

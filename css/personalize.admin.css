@@ -161,6 +161,9 @@ div.personalize-target-wrapper div.form-item {
 }
 
 /* Personalize campaign wizard forms */
+#personalize-campaign-wizard #edit-agent-basic-info .form-item {
+  padding: 0;
+}
 .personalize-wizard-section-title * {
   display: inline-block;
 }

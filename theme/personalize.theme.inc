@@ -237,7 +237,7 @@ function theme_personalize_wizard_process_bar($variables) {
   $output = '';
   $output .= '<div id="personalize-wizard-process-bar">';
   // Subform navigation.
-  $output .= '<div class="personalize-wizard-navigation">';
+  $output .= '<div class="personalize-wizard-navigation clearfix">';
   if (!empty($navigation)) {
     $output .= '<ul>';
     $navigation_keys = element_children($navigation);
