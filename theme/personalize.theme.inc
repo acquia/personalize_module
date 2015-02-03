@@ -306,7 +306,7 @@ function personalize_preprocess_personalize_content_set_item(&$variables, $hook)
  *     - #navigation_url: The base path for navigating to this wizard.  The
  *       navigation section names will be appended to generate a url.
  *     - #current: Indicates the current step
- *     - status: Renderable array for the status change button
+ *     - actions: Renderable array for the action buttons
  *     - message: Renderable array for the shorter instructional message.
  *     - help: Renderable array of section help details.
  *
@@ -319,7 +319,7 @@ function theme_personalize_wizard_process_bar($variables) {
   $element = $variables['element'];
   $navigation = empty($element['navigation']) ? array() : $element['navigation'];
   $current = empty($element['#current']) ? '' : $element['#current'];
-  $status = empty($element['status']) ? '' : drupal_render($element['status']);
+  $actions = empty($element['actions']) ? '' : drupal_render($element['actions']);
   $message = empty($element['message']) ? '' : drupal_render($element['message']);
   $help = empty($element['help']) ? '' : drupal_render($element['help']);
 
@@ -339,9 +339,9 @@ function theme_personalize_wizard_process_bar($variables) {
       $output .= '<li class="' . $class . '">' . drupal_render($navigation[$key]) . '</li>';
     }
     $output .= '</ul>';
-    // Status form.
-    if (!empty($status)) {
-      $output .= $status;
+    // Action buttons (status, etc).
+    if (!empty($actions)) {
+      $output .= $actions;
     }
     $output .= '</div>';
   }

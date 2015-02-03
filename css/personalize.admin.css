@@ -320,10 +320,11 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
   left: 100%;
   z-index: 2;
 }
-#personalize-wizard-process-bar #personalize-status-toggle-form {
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions,
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions > div {
   display: inline-block;
 }
-#personalize-wizard-process-bar #personalize-status-toggle-form input {
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions input {
   margin: .7em 0 .7em 2em;
 }
 #personalize-wizard-process-bar .personalize-wizard-instructions {

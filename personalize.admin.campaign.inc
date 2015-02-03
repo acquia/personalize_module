@@ -57,7 +57,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   $form += $header_form;
 
   // Add the form navigation bar.
-  $form += personalize_campaign_wizard_navigation($form, $form_state, $agent_data, $agent_instance);
+  $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
 
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
@@ -85,12 +85,12 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
  * @return array
  *   The form array for the navigation of the multi-step form.
  */
-function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data, $agent_instance) {
+function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_data, $agent_instance) {
   $form = array();
   $form['process_bar'] = array(
     '#type' => 'container',
     '#attributes' => array(
-      'id' => 'personalize-campaign-wizard-navigation',
+      'id' => 'personalize-campaign-wizard-process-bar',
     ),
     '#theme' => 'personalize_wizard_process_bar',
     '#current' => $form_state['storage']['step'],
@@ -128,14 +128,21 @@ function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data
     '#value' => t('Review'),
   );
 
+  // Campaign-specific actions.
+  $form['process_bar']['actions'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-process-bar-actions'),
+    ),
+  );
   // Change campaign status.
   $agent_status = personalize_agent_get_status($agent_data->machine_name);
-  $form['process_bar']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
+  $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
   // Add AJAX callback.
-  $form['process_bar']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-  $form['process_bar']['status']['actions']['toggle_form']['#ajax'] = array(
-    'callback' => 'personalize_campaign_wizard_ajax_status_callback',
-    'wrapper' => 'edit-agent-basic-info',
+  $form['process_bar']['actions']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
+  $form['process_bar']['actions']['status']['actions']['toggle_form']['#ajax'] = array(
+    'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
+    'wrapper' => 'personalize-campaign-wizard-process-bar',
     'effect' => 'fade',
   );
 
@@ -641,7 +648,6 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
     $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
     if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
       $form['visitor_context'] = $context_element;
-      $form['visitor_context']['#size'] = 4;
     }
   }
 
@@ -1110,10 +1116,10 @@ function personalize_campaign_wizard_ajax_goal_remove_submit($form, &$form_state
 }
 
 /**
- * Ajax callback for the status toggle button.
+ * Ajax callback for changing data within the process bar.
  */
-function personalize_campaign_wizard_ajax_status_callback($form, &$form_state) {
-  return $form['agent_base'];
+function personalize_campaign_wizard_ajax_process_bar_callback($form, &$form_state) {
+  return $form['process_bar'];
 }
 
 /**
@@ -1417,8 +1423,7 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
   }
   // Redraw the form without any additional new goals included.
   unset($form_state['num_goals']);
-  // $form_state['new_step'] = 'targeting'; Put this back when there is a "who" page.
-  $form_state['new_step'] = 'scheduling';
+  $form_state['new_step'] = 'targeting';
 }
 
 /**
