@@ -3,17 +3,13 @@
  * Styles for Personalize administrative interfaces.
  */
 
-/** 
- * All 
-*/
-.personalize-goal .form-item label,
-.personalize-admin-content .fieldset-wrapper .form-item label {
-  margin: 0;
-}
-
 /**
  * Goals
  */
+.personalize-goal .form-item label {
+  margin: 0;
+}
+
 .personalize-goals-wrapper {
   margin-bottom: 1.4em;
   -webkit-transition: all 1s ease-in-out;
@@ -91,46 +87,6 @@ div.personalize-variation-row div.personalize-remove-context {
   padding-top: 1.4em;
 }
 
-/* Seven positions the fieldset title absolutely */
-.fieldset-legend.personalize-admin-content-title {
-  position: relative;;
-}
-
-/* Tighten up the rest of the fieldsets */
-.fieldset-legend.personalize-admin-content-title {
-  margin-top: 0;
-}
-.personalize-admin-content fieldset {
-  padding-top: 1em;
-  margin: .5em 0;
-  min-height: 2em;
-}
-.personalize-admin-content > fieldset > legend {
-  padding: 1em 1em 0 1em;
-}
-.personalize-admin-content fieldset legend,
-.personalize-admin-content fieldset .fieldset-legend {
-  position: relative;
-}
-
-/** Trick to allow fieldset not to grow beyond 100% when contents are wide. */
-#personalize-agent-option-sets-form fieldset.personalize-option-set {
-  min-width: 0;
-  display: table-cell;
-}
-
-#personalize-agent-option-sets-form fieldset.personalize-option-set .fieldset-legend {
-  min-height: 1em;
-}
-#personalize-agent-goals-form fieldset.personalize-goal legend .fieldset-title div.personalize-admin-enumerated-item,
-#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
-  display: inline;
-}
-#personalize-agent-option-sets-form fieldset.personalize-option-set legend .fieldset-title div.personalize-admin-enumerated-item {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control,
 .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner {
   display: inline-block;
@@ -143,8 +99,7 @@ div.personalize-variation-row div.personalize-remove-context {
   background-size: 18px 18px;
   padding-left: 22px;
 }
-.personalize-option-header-item,
-.personalize-stat {
+.personalize-option-header-item {
   border-right: 1px solid;
   margin-right: .5em;
   padding-right: .5em;
@@ -177,14 +132,6 @@ div.personalize-target-wrapper div.form-item {
     padding: 0 10px 0 0;
 }
 
-.personalize-admin-content > fieldset > legend {
-  font-size: 1em;
-}
-.personalize-admin-content-content .personalize-admin-content-title .personalize-admin-enumerated-item,
-.personalize-admin-content-content fieldset .fieldset-title .personalize-admin-enumerated-item {
-  display: block; 
-}
-
 #personalize-agent-page-messages .personalize-alert {
   font-weight: bold;
   color: red;
@@ -197,41 +144,8 @@ div.personalize-target-wrapper div.form-item {
   margin-left: 0.4em;
 }
 
-html.js .personalize-admin-content .collapsible .fieldset-legend,
-.personalize-admin-content fieldset legend,
-.personalize-admin-content fieldset .fieldset-legend,
-.personalize-admin-content-title-suffix,
-.personalize-admin-content-title-suffix div,
-#personalize-agent-form #personalize-status-toggle-form,
-#personalize-agent-form #personalize-status-toggle-form div {
-  display: inline-block;
-}
-.personalize-admin-content-title-suffix {
-  vertical-align: middle;
-}
-.personalize-admin-content-title-suffix .personalize-admin-content-header > * {
-  float: left;
-}
-.personalize-admin-content-title-suffix input {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-.personalize-admin-content-title-suffix,
-.personalize-admin-content-title {
-  height: 2.2em;
-  line-height: 2.2em;
-  vertical-align: middle;
-}
 #personalize-agent-option-sets-form .personalize-option-header {
   margin-left: 1em; /* LTR */
-}
-
-/* MVT Form section */
-.personalize-mvt-edit {
-  font-size: 1.25em;
-}
-.personalize-mvt-edit .personalize-admin-enumerated-item {
-  display: inline-block;
 }
 
 /* Configuration settings page */

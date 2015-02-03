@@ -81,10 +81,10 @@ function personalize_menu() {
   $items['admin/structure/personalize/add'] = array(
     'title' => 'Add Personalization Campaign',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_agent_form'),
+    'page arguments' => array('personalize_campaign_wizard'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
-    'file' => 'personalize.admin.inc',
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/variations'] = array(
     'title' => 'Variation sets',
@@ -134,14 +134,7 @@ function personalize_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'personalize.admin.inc',
   );
-  $items['admin/structure/personalize/wizard'] = array(
-    'title' => t('Create a campaign'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_campaign_wizard'),
-    'access arguments' => array('manage personalized content'),
-    'file' => 'personalize.admin.campaign.inc',
-  );
-  $items['admin/structure/personalize/wizard/%personalize_agent'] = array(
+  $items['admin/structure/personalize/manage/%personalize_agent'] = array(
     'title callback' => 'personalize_campaign_title_callback',
     'title arguments' => array(4),
     'page callback' => 'drupal_get_form',
@@ -149,29 +142,21 @@ function personalize_menu() {
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize.admin.campaign.inc',
   );
-  $items['admin/structure/personalize/manage/%personalize_agent'] = array(
+  $items['admin/structure/personalize/manage/%personalize_agent/edit'] = array(
     'title callback' => 'personalize_campaign_title_callback',
     'title arguments' => array(4),
-    'page callback' => 'personalize_agent_page',
-    'page arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard', 4, ''),
     'access arguments' => array('manage personalized content'),
-    'file' => 'personalize.admin.inc',
-  );
-  $items['admin/structure/personalize/manage/%personalize_agent/edit'] = array(
-    'title' => 'Edit campaign',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE,
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/report'] = array(
-    'title' => 'Report',
-    'description' => 'Evaluate your personalization campaign results.',
-    'page callback' => 'personalize_campaign_report',
-    'page arguments' => array(4, 6),
-    'access callback' => 'user_access',
+    'title callback' => 'personalize_campaign_title_callback',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard', 4, 'review'),
     'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE,
-    'file' => 'personalize.admin.inc',
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(
     'title' => 'Delete campaign',
@@ -675,27 +660,6 @@ function personalize_campaign_title_callback($agent_data) {
 
 
 /**
- * Implements hook_element_info().
- */
-function personalize_element_info() {
-  return array(
-    'personalize_admin_section' => array(
-      '#theme_wrappers' => array('personalize_admin_section'),
-    ),
-    'personalize_admin_content' => array(
-      '#theme_wrappers' => array('personalize_admin_content'),
-      '#title' => '',
-      '#collapsible' => 0,
-      '#pre_render' => array('personalize_pre_render_admin_content'),
-    ),
-    'personalize_content_set_item' => array(
-      '#theme_wrappers' => array('personalize_content_set_item'),
-      '#title' => '',
-    ),
-  );
-}
-
-/**
  * Implements hook_library().
  */
 function personalize_library() {
@@ -798,27 +762,10 @@ function personalize_theme($existing, $type, $theme, $path) {
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
     ),
-    'personalize_admin_section' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'template' => 'personalize-admin-section',
-    ),
-    'personalize_admin_content' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-    ),
     'personalize_admin_info_details' => array(
       'render element' => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
-    ),
-    'personalize_content_set_item' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'template' => 'personalize-content-set-item',
     ),
     'personalize_campaign_status_update' => array(
       'path' => $path . '/theme',
@@ -844,15 +791,6 @@ function personalize_theme($existing, $type, $theme, $path) {
         'title_prefix' => '',
         'title_suffix' => '',
         'attributes' => array(),
-      ),
-    ),
-    'personalize_option_set_header' => array(
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'variables' => array(
-        'variation_count' => 0,
-        'report' => array(),
-        'report_link' => '',
       ),
     ),
     'personalize_tabs' => array(

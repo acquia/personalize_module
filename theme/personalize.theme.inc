@@ -185,43 +185,6 @@ function theme_personalize_option_set_report($variables) {
 }
 
 /**
- * Theme function to output header information for an option set.
- *
- * @param $variables
- *   An associative array of variables.
- *   - variation_count: the number of variations within the option set.
- *   - report: an array of reporting statistics for this option set.
- *   - report_link: the link to the report for this option set.
- *   - edit_link: the link to edit the option set.
- *   - delete_link: the link to delete the option set.
- * @return string
- *   The themed output.
- *
- * @todo Remove when campaign edit page is migrated to wizard process.
- *
- * @ingroup themeable
- */
-function theme_personalize_option_set_header($variables) {
-  $output = '<span class="personalize-option-header-item">';
-  $output .= format_plural($variables['variation_count'], '1 variation', '@count variations');
-  $output .= '</span>';
-  if (!empty($variables['report'])) {
-    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
-  }
-  if (!empty($variables['report_link'])) {
-    $output .= '<span class="personalize-option-header-item">' . $variables['report_link'] . '</span>';
-  }
-  if (!empty($variables['edit_link'])) {
-    $output .= '<span class="personalize-option-header-item">' . $variables['edit_link'] . '</span>';
-  }
-  if (!empty($variables['delete_link'])) {
-    $output .= '<span class="personalize-option-header-item">' . $variables['delete_link'] . '</span>';
-  }
-  $output = '<span class="personalize-option-header">' . $output . '</span>';
-  return $output;
-}
-
-/**
  * Theme wrapper for an administrative option that displays optional
  * details beyond the base description.
  *
@@ -236,58 +199,6 @@ function theme_personalize_admin_info_details($variables) {
     return '<div class="personalize-admin-optional">' . $variables['details'] . '</div>';
   }
   return '';
-}
-
-/**
- * Theme wrapper for administrative section content.
- *
- * @todo: Remove when personalize campaign wizard process is complete.
- *
- * @ingroup themeable
- */
-function theme_personalize_admin_content($variables) {
-  $element = $variables['element'];
-  $attrs = drupal_attributes($element['#attributes']);
-  $output = '<fieldset ' . $attrs . '>';
-
-  $output .= '<legend><span class="personalize-fieldset-header"><span class="fieldset-legend personalize-admin-content-title">';
-  $output .= $element['#title'] . '</span>';
-  $output .= '</span></legend>';
-  $output .= '<div class="fieldset-wrapper personalize-admin-content-content">' . $element['#children'] . '</div>';
-  $output .= '</fieldset>';
-
-  // Summary content that is shown beneath the title when collapsed.
-  if (!empty($element['#summary'])) {
-    $output .= '<div class="personalize-admin-content-collapsed">' . $element['#summary'] . '</div>';
-  }
-
-  // Wrap the fieldset content.
-  $output = '<div class="personalize-admin-content personalize-collapsible">' . $output . '</div>';
-  return $output;
-}
-
-/**
- * Implements hook_personalize_admin_section().
- *
- * @todo: Remove when personalize campaign wizard process is complete.
- */
-function personalize_preprocess_personalize_admin_section(&$variables, $hook) {
-  // Add general classes.
-  $variables['classes_array'][] = 'clearfix';
-}
-
-/**
- * Implements hook_preprocess_personalize_content_set_item().
- *
- * @todo: Remove when personalize campaign wizard process is complete.
- */
-function personalize_preprocess_personalize_content_set_item(&$variables, $hook) {
-  // Move elements to the template variables.
-  $variables['title'] = $variables['element']['#title'];
-
-  // Add general classes.
-  $variables['title_attributes_array']['class'][] = 'personalize-content-set-item-title';
-  $variables['content_attributes_array']['class'][] = 'personalize-content-set-item-content';
 }
 
 /********************************************************
