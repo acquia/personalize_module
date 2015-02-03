@@ -314,20 +314,20 @@ function personalize_entity_info() {
  * Implements hook_cron().
  */
 function personalize_cron() {
-  personalize_pause_agents();
+  personalize_complete_agents();
   personalize_start_agents();
 }
 
 /**
  * Pauses any agent that is due to be paused.
  */
-function personalize_pause_agents() {
+function personalize_complete_agents() {
   $all_agents = personalize_agent_load_multiple();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
     if ($status == PERSONALIZE_STATUS_RUNNING) {
       if (personalize_agent_stop_now($agent)) {
-        personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
+        personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_COMPLETED);
         watchdog('personalize', 'Pausing agent @agent via cron', array('@agent' => $agent_name));
       }
     }
