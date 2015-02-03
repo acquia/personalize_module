@@ -278,20 +278,35 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
   float: left;
 }
 #personalize-wizard-process-bar li {
-  float: left;
-}
-#personalize-wizard-process-bar li a {
   padding: 1em 1em 1em 3em;
   position: relative;
   display: block;
   float: left;
 }
-#personalize-wizard-process-bar li a.personalize-wizard-navigation-current {
-  color: white;
-  text-decoration: none;
+#personalize-wizard-process-bar li input {
+  padding: 0;
+  background: none;
+  border-radius: none;
+  margin: 0;
+  border: 0;
+  color: #0074BD;
+}
+#personalize-wizard-process-bar li:hover input {
+  text-decoration: underline;
+  cursor: pointer;
+}
+#personalize-wizard-process-bar li.personalize-wizard-navigation-current {
   background: #0074BD;
 }
-#personalize-wizard-process-bar li a.personalize-wizard-navigation-current:after {
+#personalize-wizard-process-bar li.personalize-wizard-navigation-current input {
+  color: white;
+  text-decoration: none;
+}
+#personalize-wizard-process-bar li.personalize-wizard-navigation-current:hover input {
+  text-decoration: none;
+  cursor: default;
+}
+#personalize-wizard-process-bar li.personalize-wizard-navigation-current:after {
   content: " ";
   display: block;
   width: 0;

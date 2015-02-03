@@ -47,7 +47,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->plugin) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
-  $form['#attached']['library'][] = array('personalize', 'admin.campaign.wizard');
+  $form['#attached']['library'][] = array('personalize', 'admin.campaign');
 
   // Add the top level campaign base information.
   $header_form = personalize_campaign_wizard_base($form, $form_state, $agent_data, $agent_instance);
@@ -93,19 +93,39 @@ function personalize_campaign_wizard_navigation($form, &$form_state, $agent_data
       'id' => 'personalize-campaign-wizard-navigation',
     ),
     '#theme' => 'personalize_wizard_process_bar',
-    '#navigation' => array(
-      'variations' => t('What'),
-      'goals' => t('Why'),
-      'targeting' => t('Who'),
-      'scheduling' => t('When'),
-      'review' => t('Review'),
-    ),
-    '#navigation_url' => 'admin/structure/personalize/wizard/' . $agent_data->machine_name,
     '#current' => $form_state['storage']['step'],
   );
-  // To be filled in by the JavaScript when indicating the next step.
-  $form['navigation_step'] = array(
-    '#type' => 'hidden',
+  // Navigation buttons.
+  $form['process_bar']['navigation'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-navigation'),
+    ),
+  );
+  $form['process_bar']['navigation']['variations'] = array(
+    '#type' => 'submit',
+    '#name' => 'variations',
+    '#value' => t('What'),
+  );
+  $form['process_bar']['navigation']['goals'] = array(
+    '#type' => 'submit',
+    '#name' => 'goals',
+    '#value' => t('Why'),
+  );
+  $form['process_bar']['navigation']['targeting'] = array(
+    '#type' => 'submit',
+    '#name' => 'targeting',
+    '#value' => t('Who'),
+  );
+  $form['process_bar']['navigation']['scheduling'] = array(
+    '#type' => 'submit',
+    '#name' => 'scheduling',
+    '#value' => t('When'),
+  );
+  $form['process_bar']['navigation']['review'] = array(
+    '#type' => 'submit',
+    '#name' => 'review',
+    '#value' => t('Review'),
   );
 
   // Change campaign status.
@@ -159,8 +179,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       $message = t('Goals for these variations');
       break;
     case 'goals':
-      //$message = t('Who\'s going to see what'); Uncomment when the Who page is created.
-      $message = t('When should this campaign run');
+      $message = t('Who\'s going to see what');
       break;
     case 'targeting':
       $message = t('When should this campaign run');
@@ -178,9 +197,11 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   $form['actions'] = array(
     '#type' => 'actions',
   );
+  // TRICKY: Don't name this "submit" or it does crazy things to JS form
+  // submission.
   $form['actions']['submit'] = array(
     '#type' => 'submit',
-    '#name' => 'submit',
+    '#name' => 'wizard_submit',
     '#value' => $button_value,
     '#suffix' => $message,
   );
@@ -964,6 +985,46 @@ function personalize_campaign_wizard_instructions_targeting($form, &$form_state,
 }
 
 /**
+ * Instructions callback for the scheduling sub-form.
+
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   A renderable array of instructions.
+ */
+function personalize_campaign_wizard_instructions_scheduling($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  return array(
+    '#markup' => 'Pellentesque habitant morbi tristique senectus Pellentesque habitant morbi tristique senectus Pellentesque habitant morbi tristique senectus Pellentesque habitant morbi tristique senectus.',
+  );
+}
+
+/**
+ * Instructions callback for the review sub-form.
+
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   A renderable array of instructions.
+ */
+function personalize_campaign_wizard_instructions_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  return array(
+    '#markup' => 'Nam pretium turpis et arcu.',
+  );
+}
+
+/**
  ********************************************************************
  *
  * A J A X  C A L L B A C K S
@@ -1153,7 +1214,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
 
   // If the button that caused the submit is from the navigation, then the next
   // step should be the clicked navigation button regardless of the last step.
-  if ($form_state['triggering_element']['#name'] !== 'submit') {
+  if ($form_state['triggering_element']['#name'] !== 'wizard_submit') {
     $form_state['new_step'] = $form_state['triggering_element']['#name'];
   }
 
