@@ -85,6 +85,89 @@ function personalize_admin_form_submit($form, &$form_state) {
 }
 
 /**
+ * Form for changing the status of an agent.
+ *
+ * @param $agent_name
+ *   THe name of the agent the form is for.
+ * @param array $agent_status
+ *   The current status of the agent.
+ * @return array
+ *   Array representing the status change form.
+ */
+function personalize_status_change_form($form, &$form_state, $agent_name, $agent_status) {
+  $friendly_statuses = personalize_get_agent_status_map();
+  $form = array();
+  $form['agent_name'] = array(
+    '#type' => 'value',
+    '#value' => $agent_name,
+  );
+  switch($agent_status) {
+    case PERSONALIZE_STATUS_NOT_STARTED:
+      // Just present a start button, no need for a dropdown.
+      $form['status'] = array(
+        '#type' => 'value',
+        '#value' => PERSONALIZE_STATUS_RUNNING
+      );
+      $submit_text = t('Start');
+      break;
+    case PERSONALIZE_STATUS_RUNNING:
+      // Just present  Pause button, not need for a dropdown.
+      $form['status'] = array(
+        '#type' => 'value',
+        '#value' => PERSONALIZE_STATUS_PAUSED
+      );
+      $submit_text = t('Pause');
+      break;
+    default:
+      // Present a dropdown of all available next statuses.
+      $allowed_statuses = personalize_allowed_status_transitions($agent_status);
+      $options = array(
+        '' => t('--Select--')
+      );
+      foreach ($allowed_statuses as $status) {
+        $options[$status] = $friendly_statuses[$status];
+      }
+      $form['status'] = array(
+        '#prefix' => '<div class="personalize-status-change-select">',
+        '#suffix' => '</div>',
+        '#type' => 'select',
+        '#options' => $options,
+        '#default_value' => '',
+      );
+      $submit_text = t('Change');
+      break;
+  }
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => $submit_text
+  );
+  return $form;
+}
+
+/**
+ * Submit callback for the status change form.
+ */
+function personalize_status_change_form_submit(&$form, &$form_state) {
+  $agent_name = $form_state['values']['agent_name'];
+  if (!empty($form_state['values']['status'])) {
+    $status = $form_state['values']['status'];
+    if ($status == PERSONALIZE_STATUS_COMPLETED) {
+      // Redirect to a confirm form as this has more serious implications than
+      // other status changes.
+      $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
+    }
+    else {
+      // Otherwise just change the status as requested.
+      $status_map = personalize_get_agent_status_map();
+      if (personalize_agent_set_status($agent_name, $status)) {
+        drupal_set_message(t('Set the status of campaign @campaign to @status', array('@campaign' => $agent_name, '@status' => $status_map[$status])));
+      }
+    }
+  }
+}
+
+/**
  * Returns a visitor context select box.
  *
  * @param $settings
@@ -225,7 +308,7 @@ function personalize_agent_list() {
   $header = array(
     array('data' => t('Campaign name')),
     array('data' => t('Type')),
-    array('data' => t('Start/pause')),
+    array('data' => t('Change status')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
   $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
@@ -253,8 +336,23 @@ function personalize_agent_list() {
     if (empty($agents)) {
       continue;
     }
+    $description = '';
+    switch($status) {
+      case PERSONALIZE_STATUS_NOT_STARTED:
+        $description = t('This table lists campaigns that have never been started.');
+        break;
+      case PERSONALIZE_STATUS_RUNNING:
+        $description = t('This table lists campaigns that are displaying personalized content to website visitors for each variation set.');
+        break;
+      case PERSONALIZE_STATUS_PAUSED:
+        $description = t('This table lists campaigns that use personalization JavaScript to display the fallback/winner variation for each variation set.');
+        break;
+      case PERSONALIZE_STATUS_COMPLETED:
+        $description = t('This table lists campaigns that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused campaigns.');
+        break;
+    }
     $build['status_' . $status] = array(
-      '#markup' => '<h2>' . $status_map[$status] . '</h2>'
+      '#markup' => '<h2>' . $status_map[$status] . '</h2><p>' . $description . '</p>'
     );
     $rows = array();
     foreach ($agents as $agent) {
@@ -280,18 +378,18 @@ function personalize_agent_list() {
           $storage = t('Default');
           break;
       }
-      $agent_status = personalize_agent_get_status($agent->machine_name);
-      $status_toggle_form = drupal_get_form("personalize_toggle_status_{$agent->machine_name}_form", $agent->machine_name, $agent_status);
+
+      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $status);
       // @todo We are ignoring the "storage" info and the clone/export functionality
       //   for now. Revisit once we can provide full support for clone/export.
       $plugin = personalize_agent_load_agent($agent->machine_name);
       $tablerow = array(
         array('data' => check_plain($agent->label)),
         array('data' => $agent->plugin),
-        array('data' => drupal_render($status_toggle_form)),
+        array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
         array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($agent_status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
@@ -305,13 +403,13 @@ function personalize_agent_list() {
 
       $rows[] = $tablerow;
     }
-
     // Add the scheduled start date in to the "not started" table headers.
     $build_header = $header;
     if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
       array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
     }
 
+    $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
     $build['table_' . $status] = array(
       '#theme' => 'table',
       '#header' => $build_header,
@@ -321,6 +419,70 @@ function personalize_agent_list() {
   }
 
   return $build;
+}
+
+/**
+ * Form for setting the status of an agent to "Completed".
+ *
+ * @todo This duplicates code in personalize_status_toggle_message - refactor
+ *   it out to its own function.
+ */
+function personalize_agent_complete_form($form, &$form_state, $agent) {
+  // Display information about the "winner" that will be shown for each option
+  // set in this agent.
+  $option_sets = personalize_option_set_load_by_agent($agent->machine_name);
+  $theme_variables = array(
+    'option_sets' => array(),
+    'option_message' => '',
+    'alert_message' => '',
+    'agent_name' => $agent->machine_name,
+  );
+  foreach($option_sets as $option_set) {
+    $v = 1;
+
+    // No winner selected, so first item is shown as the control item.
+    if (empty($option_set->winner)) {
+      $winner = $option_set->options[0];
+      $winner_type = t('Control');
+    }
+    // Show the selected winning option.
+    else {
+      foreach($option_set->options as $option) {
+        if ($option_set->winner == $option['option_id']) {
+          $winner = $option;
+          $winner_type = t('Winner');
+          break;
+        }
+        $v++;
+      }
+    }
+    // Generate the message shown for each 'winning' option.
+    $theme_variables['option_sets'][] = array(
+      'label' => (isset($option_set->label) ? check_plain($option_set->label) : t('Option @id', array('@id' => $option_set->osid))),
+      'counter' => 'V' . $v,
+      'winner_label' => $winner['option_label'],
+      'alert' => (!empty($winner['fixed_targeting']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
+      'winner_type' => $winner_type,
+    );
+  }
+  if (!empty($theme_variables['option_sets'])) {
+    $theme_variables['option_message'] = t('All visitors will see the following @variations:', array('@variations' => format_plural(count($option_sets), 'variation', 'variations')));
+  }
+  $form['message'] = array(
+    '#markup' => theme('personalize_campaign_status_update', $theme_variables)
+  );
+  $form['machine_name'] = array('#type' => 'hidden', '#value' => $agent->machine_name);
+  $form['title'] = array('#type' => 'hidden', '#value' => $agent->label);
+  return confirm_form($form, t('Are you sure you want to stop the agent %title?', array('%title' => $agent->label)), 'admin/structure/personalize', '', t('Complete'), t('Cancel'));
+}
+
+/**
+ * Submit handler for agent completion form.
+ */
+function personalize_agent_complete_form_submit($form, &$form_state) {
+  personalize_agent_set_status($form_state['values']['machine_name'], PERSONALIZE_STATUS_COMPLETED);
+  drupal_set_message(t('The campaign %name has been stopped.', array('%name' => $form_state['values']['title'])));
+  $form_state['redirect'] = 'admin/structure/personalize';
 }
 
 /**
@@ -694,6 +856,21 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   }
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
+  if (isset($agent_data->machine_name)) {
+    $form['#attached']['js'][] = array(
+      'type' => 'setting',
+      'data' => array(
+        'personalize' => array(
+          'campaigns' => array(
+            $agent_data->machine_name => array(
+              'status' => personalize_agent_get_status($agent_data->machine_name),
+            )
+          )
+        )
+      )
+    );
+  }
+
   $form['agent_form'] = array(
     '#tree' => TRUE,
     '#type' => 'personalize_admin_section',
@@ -709,14 +886,20 @@ function personalize_agent_form($form, &$form_state, $agent_data = NULL) {
   );
 
   if (!empty($agent_data->machine_name)) {
-    $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, personalize_agent_get_status($agent_data->machine_name), TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
-    $form['agent_form']['agent_fieldset']['header'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('personalize-admin-content-header'),
-      ),
-      'toggle_form' => $toggle_form,
-    );
+    $status = personalize_agent_get_status($agent_data->machine_name);
+    if ($status == PERSONALIZE_STATUS_COMPLETED) {
+      drupal_set_message(t('You are editing a completed campaign.'), 'warning');
+    }
+    else {
+      $toggle_form = personalize_status_toggle_form_definition($agent_data->machine_name, $status, TRUE, 'personalize_agent_page_status_toggle_ajax_callback');
+      $form['agent_form']['agent_fieldset']['header'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('personalize-admin-content-header'),
+        ),
+        'toggle_form' => $toggle_form,
+      );
+    }
   }
   $basic_form = personalize_agent_build_basic_form($agent_data, TRUE, array('agent_form', 'agent_fieldset', 'agent_basic'));
   if ($basic_form === FALSE) {
@@ -966,16 +1149,11 @@ function personalize_agent_form_ajax_submit($form, $form_state) {
   // Update the current agent status.
   if (!empty($agent_data)) {
     $current_status = personalize_agent_get_status($agent_data->machine_name);
-    list($next_status, $status_text) = _personalize_status_toggle_next($current_status);
     $settings = array(
       'personalize' => array(
         'campaigns' => array(
           $agent_data->machine_name => array(
             'status' => $current_status,
-            'nextStatus' => array(
-              'status' => $next_status,
-              'text' => $status_text,
-            ),
           ),
         ),
       ),

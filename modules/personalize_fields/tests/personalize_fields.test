@@ -739,8 +739,9 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
     $this->assertNoOptionSet($osid);
     $this->assertFalse(isset($personalize_settings['option_sets']));
 
-    // Assert that the content of the first option has been output.
+    // Assert that the content of only the first option has been output.
     $this->assertText('first option' );
+    $this->assertNoText('second option');
 
     // Now set the winner of the option set to the second option.
     $option_set->winner = 'second-option';
@@ -751,14 +752,14 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
     $personalize_settings = $settings['personalize'];
     $this->assertFalse(isset($personalize_settings['agent_map']));
 
-    // Assert that the js for the agent has been loaded.
+    // Assert that the js for the agent has not been loaded.
     $this->assertNoRaw('personalize_test.js');
 
     // Assert that the option set has not been output.
     $this->assertNoOptionSet($osid);
     $this->assertFalse(isset($personalize_settings['option_sets']));
 
-    // Assert that the content of the first option has been output.
+    // Assert that the content of only the second option has been output.
     $this->assertNoText('first option');
     $this->assertText('second option');
   }
