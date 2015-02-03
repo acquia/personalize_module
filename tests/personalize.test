@@ -2288,23 +2288,30 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
 
-    // Test setting an agent's status to completed.
+    // Set the first agent's status to "paused"
+    $this->drupalPost('admin/structure/personalize', array(), t('Pause'), array(), array(), $html_id_first_agent);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
+    // We should now have the option to set the agent's status to completed.
     $time_before = time();
-    personalize_agent_set_status($first_agent_machine_name, PERSONALIZE_STATUS_COMPLETED);
+    $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_COMPLETED), t('Change'), array(), array(), $html_id_first_agent);
+    $this->drupalPost(NULL, array(), t('Complete'));
+    $this->assertEqual(PERSONALIZE_STATUS_COMPLETED, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
     // Check the end time of the agent, which should now have been set.
     $time_after = time();
-    $end_time = variable_get(_personalize_agent_get_stoptime_variable($first_agent_machine_name), 0);
+    $end_time_var = _personalize_agent_get_stoptime_variable($first_agent_machine_name);
+    $end_time = variable_get($end_time_var, 0);
     $this->assertTrue($time_before <= $end_time && $end_time <= $time_after);
+    // Set the status back to paused and confirm the end time var has been deleted.
+    $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_PAUSED), t('Change'), array(), array(), $html_id_first_agent);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
+    $this->resetAll();
+    $this->assertFalse(variable_get($end_time_var, 0));
 
     // Now test the ajax callback.
     // Expected case to update to next status.
     $expected = array(
       'success' => TRUE,
-      'nextStatus' => array(
-        'status' => PERSONALIZE_STATUS_PAUSED,
-        'text' => t('Pause'),
-      ),
       'currentStatus' => PERSONALIZE_STATUS_RUNNING,
     );
     $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);

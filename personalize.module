@@ -1056,11 +1056,6 @@ function personalize_agent_set_status_ajax($agent, $status) {
   $updated = personalize_agent_set_status($agent->machine_name, $status);
   $return = array('success' => $updated);
   if ($updated) {
-    list($next_status, $text) = _personalize_status_toggle_next($status);
-    $return['nextStatus'] = array(
-      'status' => $next_status,
-      'text' => $text,
-    );
     $return['currentStatus'] = $status;
   }
   return drupal_json_output($return);
@@ -1172,6 +1167,10 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
+ *
+ * @todo This should really replace _personalize_status_toggle_next or they
+ *   should be made to work together. There are too many functions about status
+ *   changes :/
  */
 function personalize_allowed_status_transitions($status = NULL) {
   $transitions = array(
