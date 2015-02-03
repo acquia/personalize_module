@@ -870,6 +870,17 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
+
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
+  $form['review'] = array(
+    '#type' => 'container',
+    '#theme' => 'personalize_tabs',
+  );
+  $form['review']['settings'] = array(
+    '#type' => 'container',
+    '#title' => t('Setup summary'),
+    '#selected' => $agent_status == PERSONALIZE_STATUS_NOT_STARTED || $agent_status == PERSONALIZE_STATUS_PAUSED,
+  );
   // Get the agent type specific options form.
   $agent_types = personalize_get_agent_types();
   foreach ($agent_types as $name => $info) {
@@ -883,10 +894,10 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
 
   // Add the agent-type-specific form elements to the form, to be shown only if the
   // agent type in question is selected.
-  $form['options'] = array('#tree' => TRUE);
+  $form['review']['settings']['options'] = array('#tree' => TRUE);
   if (!empty($agent_data->plugin)) {
     // If in edit mode, then only show the options for the selected agent.
-    $form['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
+    $form['review']['settings']['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
   }
   else {
     // If in add mode, then show options dynamically using states.
@@ -894,25 +905,45 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
       foreach ($options as &$option) {
         $option['#states'] = array('visible' => array(':input[name="agent_basic_info[agent_type]"]' => array('value' => $agent_type)));
       }
-      $form['options'][$agent_type] = $options;
+      $form['review']['settings']['options'][$agent_type] = $options;
     }
   }
 
   // Add the advanced settings form.
-  $form['advanced'] = array(
+  $form['review']['settings']['advanced'] = array(
     '#type' => 'fieldset',
     '#title' => t('Advanced'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#tree' => FALSE,
   );
-  $form['advanced']['cache_decisions'] = array(
+  $form['review']['settings']['advanced']['cache_decisions'] = array(
     '#type' => 'checkbox',
     '#title' => 'Cache decisions made by this agent?',
     '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
     '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
   );
 
+  // Report tab.
+  $form['review']['reports'] = array(
+    '#type' => 'container',
+    '#title' => t('Results'),
+    '#selected' => $agent_status == PERSONALIZE_STATUS_RUNNING || $agent_status == PERSONALIZE_STATUS_COMPLETED,
+  );
+  $plugins = personalize_get_agent_types();
+  if (isset($plugins[$agent_data->plugin])) {
+    $module = $plugins[$agent_data->plugin]['module'];
+    // @todo: Change this so that it does not return it's own form.
+    $report = module_invoke($module, 'personalize_campaign_report', $agent_data, NULL);
+    if (!empty($report)) {
+      $form['review']['reports']['report'] = $report;
+    }
+  }
+  if (empty($report)) {
+    $form['review']['reports']['report'] = array(
+      '#markup' => t('No reports available for the specified campaign'),
+    );
+  }
   return $form;
 }
 

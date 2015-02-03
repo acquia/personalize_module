@@ -332,3 +332,25 @@ html.js .personalize-admin-content .collapsible .fieldset-legend,
 #personalize-wizard-process-bar .personalize-wizard-section-help {
   display: none;
 }
+
+.personalize-tabs-container.ui-tabs .ui-tabs-nav li.ui-tabs-selected a {
+  background: none;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: default;
+}
+
+.personalize-tabs-container.ui-tabs .ui-tabs-nav li.ui-tabs-selected a:hover {
+  text-decoration: none;
+}
+
+.personalize-tabs-container.ui-tabs .ui-tabs-nav li a {
+  background: none;
+  font-weight: normal;
+  color: inherit;
+  cursor: pointer;
+}
+
+.personalize-tabs-container.ui-tabs .ui-tabs-nav li a:hover {
+  text-decoration: underline;
+}
