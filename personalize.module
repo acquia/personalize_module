@@ -323,15 +323,18 @@ function personalize_cron() {
  */
 function personalize_complete_agents() {
   $all_agents = personalize_agent_load_multiple();
+  $completed = array();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
     if ($status == PERSONALIZE_STATUS_RUNNING) {
       if (personalize_agent_stop_now($agent)) {
         personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_COMPLETED);
-        watchdog('personalize', 'Pausing agent @agent via cron', array('@agent' => $agent_name));
+        watchdog('personalize', 'Completing agent @agent based on agent settings', array('@agent' => $agent_name));
+        $completed[] = $agent_name;
       }
     }
   }
+  return $completed;
 }
 
 /**
