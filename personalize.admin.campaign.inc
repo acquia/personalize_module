@@ -36,6 +36,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
       if (isset($_GET['personalize_agent_type']) && $plugin = personalize_get_agent_type($_GET['personalize_agent_type'])) {
         $agent_data->plugin = $plugin['name'];
       }
+      $form_state['storage']['step'] = 'base';
     }
   }
   else {
@@ -55,6 +56,15 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
     return $form;
   }
   $form += $header_form;
+
+  // Create the campaign before being able to add variations/goals/etc.
+  // @todo this should change to allow campaign to be created along with new
+  // variations, etc. and it can from the way this form is structured as long
+  // as the user doesn't leave the page. Once we change the notion of how
+  // variations are added then this can be revisited.
+  if (empty($agent_data->machine_name)) {
+    return $form;
+  }
 
   // Add the form navigation bar.
   $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
@@ -314,6 +324,12 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
       '#options' => $agent_type_options,
       '#default_value' => '',
       '#description' => t('Choose which type of agent to create.'),
+    );
+  }
+  if (empty($agent_data->machine_name)) {
+    $form['agent_basic_info']['create'] = array(
+      '#type' => 'submit',
+      '#value' => t('Create campaign'),
     );
   }
 
@@ -1228,6 +1244,13 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
 
   // Call the base level submit handler.
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
+  if ($form_state['storage']['step'] === 'base') {
+    // Nothing left to do except start with the variations process.
+    $form_state['storage']['step'] = 'variations';
+    $form_state['values']['agent'] = $agent->machine_name;
+    $form_state['rebuild'] = TRUE;
+    return;
+  }
 
   // Call the submit handler that is specific to the current step.
   // Each step submit handler is responsible for setting the
@@ -1242,6 +1265,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   if (personalize_agent_save($agent)) {
     drupal_set_message(t('The campaign has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
     personalize_set_campaign_context($agent->machine_name);
+    // @todo: Is this right???
     if (personalize_agent_get_status($agent->machine_name) == PERSONALIZE_STATUS_RUNNING) {
       personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
       personalize_status_toggle_message($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
@@ -1277,6 +1301,7 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
   // If it is a new campaign, save the basic information so that it can be
   // added to in the other subform submit handlers.
   if (empty($agent->machine_name)) {
+    $agent->machine_name = personalize_generate_machine_name($agent->label, 'personalize_agent_machine_name_exists');
     $agent = personalize_agent_save($agent);
   }
   return $agent;

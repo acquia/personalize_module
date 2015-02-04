@@ -81,7 +81,7 @@ function personalize_menu() {
   $items['admin/structure/personalize/add'] = array(
     'title' => 'Add Personalization Campaign',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_campaign_wizard'),
+    'page arguments' => array('personalize_campaign_wizard', NULL, 'base'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
     'file' => 'personalize.admin.campaign.inc',
