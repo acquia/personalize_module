@@ -687,6 +687,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
  */
 function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+  $goals = $exclude = array();
   foreach ($goal_entities as $obj) {
     $goals[] = (array) $obj;
   }
@@ -1311,7 +1312,7 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
  * Submit handler for the variations section.
  */
 function personalize_campaign_wizard_submit_variations($form, &$form_state, &$agent_data) {
-  $form_values = $form_state['values']['option_sets'];
+  $form_values = is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
   foreach ($form_values as $option_set_id => $values) {
     $osid = (int) str_replace('option_set_', '', $option_set_id);
     if ($option_set = personalize_option_set_load($osid)) {
