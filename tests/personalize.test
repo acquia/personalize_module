@@ -2372,10 +2372,10 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     // Call the function that should pause all agents that are scheduled to be
     // paused.
-    personalize_pause_agents();
+    personalize_complete_agents();
 
     // The first agent's status should be paused.
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-1'));
+    $this->assertEqual(PERSONALIZE_STATUS_COMPLETED, personalize_agent_get_status('agent-1'));
     // The second agent's status should still be running.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
     // The third agent's status should still be running.
