@@ -1492,7 +1492,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
           '#theme_wrappers' => array('personalize_html_tag'),
           '#attributes' => array(
             // The ID is necessary for the AJAX replace to function correctly.
-            'id' => 'edit-option-sets-option-set-' . $option_set->osid . '-options-' . $option['option_id'] . '-basic-winner',
+            'id' => 'edit-option-sets-option-set-' . trim($option_set->osid, ' -') . '-options-' . trim($option['option_id'], ' -') . '-basic-winner',
             'class' => array('personalize-add-link'),
             'title' => t('Click here to set as winning variation.')
           ),
@@ -1868,7 +1868,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#attributes' => array(
         'class' => array('personalize-delete-context', 'form-submit',),
         'title' => t('Delete this context.'),
-        'id' => 'edit-option-sets-option-set-' . $osid . '-options-' . $option['option_id'] . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
+        'id' => 'edit-option-sets-option-set-' . trim($osid, '- ') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
       ),
       '#submit' => array('personalize_targeting_remove_context_submit'),
       '#ajax' => array(
@@ -1887,7 +1887,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     '#value' => 'add_context_' . $osid . '_' . $option['option_id'],
     '#theme_wrappers' => array('personalize_html_tag'),
     '#attributes' => array(
-      'id' => 'edit-option-sets-option-set-' . $osid . '-options-' . $option['option_id'] . '-explicit-targeting-add-new',
+      'id' => 'edit-option-sets-option-set-' . trim($osid, ' -') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-add-new',
       'class' => array('personalize-add-link'),
       'title' => t('Click here to add more contexts.')
     ),
