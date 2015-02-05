@@ -59,7 +59,7 @@ class PersonalizeBlocksTest extends PersonalizeBaseTest {
 
     $this->assertText($edit['agent_basic_info[title]']);
 
-    $this->drupalGet('admin/structure/personalize/manage/' . $pblock->agent . '/edit');
+    $this->drupalGet('admin/structure/personalize/manage/' . $pblock->agent . '');
 
     $this->assertRaw($pblock->agent);
     $this->assertRaw($edit['agent_basic_info[title]']);
