@@ -46,7 +46,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
     );
   }
   $form['#agent'] = $agent_data;
-  $agent_instance = !empty($agent_data->plugin) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
+  $agent_instance = !empty($agent_data->machine_name) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
 
@@ -208,8 +208,11 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       break;
     case 'review':
       list($next_status, $button_value) = _personalize_status_toggle_next($status);
-      if ($not_running && personalize_agent_get_start_date($agent_data->machine_name) > 0) {
-        $button_value = t('Save');
+      if ($not_running) {
+        $button_value = personalize_agent_get_start_date($agent_data->machine_name) > 0 ? t('Save') : t('Start');
+      }
+      else {
+        $button_value = t('Done');
       }
       break;
   }
@@ -961,7 +964,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     // @todo: Change this so that it does not return it's own form.
     $report = module_invoke($module, 'personalize_campaign_report', $agent_data, NULL);
     if (!empty($report)) {
-      $form['review']['reports']['report'] = $report;
+     // $form['review']['reports']['report'] = $report;
     }
   }
   if (empty($report)) {
@@ -1245,6 +1248,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
 
   // Call the base level submit handler.
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
+  personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
     // Nothing left to do except start with the variations process.
     $form_state['storage']['step'] = 'variations';
@@ -1265,12 +1269,6 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $exists = personalize_agent_load($agent->machine_name);
   if (personalize_agent_save($agent)) {
     drupal_set_message(t('The campaign has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
-    personalize_set_campaign_context($agent->machine_name);
-    // @todo: Is this right???
-    if (personalize_agent_get_status($agent->machine_name) == PERSONALIZE_STATUS_RUNNING) {
-      personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
-      personalize_status_toggle_message($agent->machine_name, PERSONALIZE_STATUS_PAUSED);
-    }
   }
   else {
     drupal_set_message(t('There was a problem saving the campaign.'));
@@ -1280,6 +1278,12 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   // step should be the clicked navigation button regardless of the last step.
   if ($form_state['triggering_element']['#name'] !== 'wizard_submit') {
     $form_state['new_step'] = $form_state['triggering_element']['#name'];
+  }
+  else {
+    // If the "Start" button was pressed then start the campaign.
+    if ($form_state['triggering_element']['#value'] === t('Start')) {
+      personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+    }
   }
 
   // Rebuild the form to show the next step.
@@ -1302,6 +1306,7 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
   // If it is a new campaign, save the basic information so that it can be
   // added to in the other subform submit handlers.
   if (empty($agent->machine_name)) {
+    $agent->data['cache_decisions'] = 0;
     $agent->machine_name = personalize_generate_machine_name($agent->label, 'personalize_agent_machine_name_exists');
     $agent = personalize_agent_save($agent);
   }
@@ -1312,6 +1317,7 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
  * Submit handler for the variations section.
  */
 function personalize_campaign_wizard_submit_variations($form, &$form_state, &$agent_data) {
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   $form_values = is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
   foreach ($form_values as $option_set_id => $values) {
     $osid = (int) str_replace('option_set_', '', $option_set_id);
@@ -1357,7 +1363,7 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
             $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
             // Create a feature string for this context value that can be consumed
             // by the agent that will be using it.
-            $feature_string = $agent_data->convertContextToFeatureString($context_name, $value);
+            $feature_string = $agent_instance->convertContextToFeatureString($context_name, $value);
             $feature_values[] = $feature_string;
             // Save the actual rule information as this is what will be used
             // for evaluating it.
@@ -1467,7 +1473,7 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
 /**
  * Submit handler for the review section.
  */
-function personalize_campaign_wizard_submit_details($form, &$form_state, &$agent_data) {
+function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
   // Decision caching advanced setting.
   $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
