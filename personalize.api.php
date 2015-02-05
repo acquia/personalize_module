@@ -336,3 +336,26 @@ function hook_personalize_get_executor_options() {
 function hook_personalize_option_load($option_set, $option) {
 
 }
+
+/**
+ * Allows the alteration of any of the subforms within the personalize
+ * campaign creation/editing flow.
+ *
+ * Options are:
+ * - base
+ * - variations (what)
+ * - goals (why)
+ * - targeting (why)
+ * - scheduling (when)
+ * - summary/reports (review)
+ *
+ * @param array $form
+ *   The form that can be altered (passed by reference).
+ * @param array $form_state
+ *   The unalterable form state for context.
+ * @param stdClass $agent_data
+ *   The unalterable data for the current campaign for context.
+ */
+function hook_personalize_campaign_wizard_OPTION_alter(&$form, $form_state, $agent_data) {
+
+}

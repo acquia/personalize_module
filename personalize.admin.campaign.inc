@@ -55,6 +55,8 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   if ($header_form === FALSE) {
     return $form;
   }
+  // Allow the top level base form to be modified.
+  drupal_alter('personalize_campaign_wizard_base', $form, $form_state, $agent_data);
   $form += $header_form;
 
   // Create the campaign before being able to add variations/goals/etc.
@@ -72,7 +74,10 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
   if (function_exists($function)) {
-    $form += $function($form, $form_state, $agent_data, $agent_instance);
+    $subform = $function($form, $form_state, $agent_data, $agent_instance);
+    // Allow the subform to be modified.
+    drupal_alter($function, $form, $form_state, $agent_data);
+    $form += $subform;
   }
 
   // Add the form action buttons.
