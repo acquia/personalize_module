@@ -723,7 +723,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
   // is enabled.
   if (module_exists('visitor_actions_ui')) {
     $link = url('admin/structure/visitor_actions/add-in-context', array(
-      'query' => array('destination' => "admin/structure/personalize/manage/{$agent_data->machine_name}/edit"),
+      'query' => array('destination' => "admin/structure/personalize/manage/{$agent_data->machine_name}/goals"),
       'attributes' => array(
         'class' => array('personalize-add-context', 'button'),
       ),

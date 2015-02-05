@@ -150,34 +150,6 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
-<<<<<<< HEAD
-=======
-   * Helper function to assert that explicit targeting for a particular option
-   * set matches the expected rules.
-   *
-   * @param stdClass $option_set
-   *   The option set to test.
-   * @param array $expected
-   *   An array of expected targeting for each option.
-   */
-  protected function assertExplicitTargeting($option_set, $expected) {
-
-    $this->assertEqual(count($expected), count($option_set->options));
-    foreach ($option_set->options as $option) {
-      if (isset($option['fixed_targeting'])) {
-        $this->assertEqual($option['fixed_targeting'], $expected[$option['option_id']]['fixed_targeting']);
-        $this->assertEqual($option['fixed_targeting_strategy'], $expected[$option['option_id']]['fixed_targeting_strategy']);
-        $this->assertEqual($option['fixed_targeting_rules'], $expected[$option['option_id']]['fixed_targeting_rules']);
-      }
-      else {
-        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting']));
-        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_strategy']));
-        $this->assertFalse(isset($expected[$option['option_id']]['fixed_targeting_rules']));
-      }
-    }
-  }
-
-  /**
    * Helper function to assert that an option is available within a select
    * input.
    *
@@ -214,7 +186,6 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
->>>>>>> All personalize tests passing (and necessary changes).
    * Helper method to move buttons names to one place to simplify
    * it's maintaining
    *

@@ -142,6 +142,7 @@ function personalize_menu() {
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize.admin.campaign.inc',
   );
+  // This link is now deprecated but included here for backwards compatibility.
   $items['admin/structure/personalize/manage/%personalize_agent/edit'] = array(
     'title callback' => 'personalize_campaign_title_callback',
     'title arguments' => array(4),
@@ -1331,7 +1332,7 @@ function personalize_pause_if_running($agent_name) {
   $status = personalize_agent_get_status($agent_name);
   if ($status & PERSONALIZE_STATUS_RUNNING) {
     personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
-    $campaign_url = "admin/structure/personalize/manage/{$agent_name}/edit";
+    $campaign_url = "admin/structure/personalize/manage/{$agent_name}";
     $current_path = current_path();
     $destination_path = isset($_GET['destination']) ? $_GET['destination'] : $current_path;
     if ($current_path !== $campaign_url && $destination_path != $campaign_url) {

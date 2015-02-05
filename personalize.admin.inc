@@ -388,7 +388,7 @@ function personalize_agent_list() {
         array('data' => $agent->plugin),
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
-        array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/edit')),
+        array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name)),
         array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
         //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
@@ -516,7 +516,7 @@ function personalize_option_set_list($form, &$form_state) {
     $rows[] = array(
       check_plain($option_set->label),
       $option_set->plugin,
-      l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent),
+      l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent . '/variations'),
       !empty($edit_link) ? l(t('edit'), $edit_link) : '',
       !empty($delete_link) ? l(t('delete'), $delete_link) : '',
     );
@@ -583,7 +583,7 @@ function personalize_goals_list($form, &$form_state) {
       $actions[$goal->action],
       check_plain($campaign->label),
       $goal->value,
-      l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent, array('query' => array('goal' => $goal->id))),
+      l(t('edit'), 'admin/structure/personalize/manage/' . $goal->agent . '/goals', array('query' => array('goal' => $goal->id))),
       l(t('delete'), 'admin/structure/personalize/goals/' . $goal->id . '/delete'),
     );
   }
