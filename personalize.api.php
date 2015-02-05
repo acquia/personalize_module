@@ -281,11 +281,15 @@ function hook_personalize_delete_link($option_set) {
  *   A stdClass object representing the loaded agent.
  * @param stdClass $option_set
  *   (optional) The content variation set for filtering report data.
+ * @param array $form
+ *   (optional) The form array if this is called in the context of a form.
+ * @param array $form_state
+ *   (optional) The form_state array if this is called in the context of a form.
  *
  * @return string|array
  *   Either a string of themed output or an array that can be passed to drupal_render.
  */
-function hook_personalize_campaign_report($agent_data, $option_set) {
+function hook_personalize_campaign_report($agent_data, $option_set, $form, &$form_state) {
 
 }
 

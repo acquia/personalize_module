@@ -958,20 +958,8 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     '#title' => t('Results'),
     '#selected' => $agent_status == PERSONALIZE_STATUS_RUNNING || $agent_status == PERSONALIZE_STATUS_COMPLETED,
   );
-  $plugins = personalize_get_agent_types();
-  if (isset($plugins[$agent_data->plugin])) {
-    $module = $plugins[$agent_data->plugin]['module'];
-    // @todo: Change this so that it does not return it's own form.
-    $report = module_invoke($module, 'personalize_campaign_report', $agent_data, NULL);
-    if (!empty($report)) {
-     // $form['review']['reports']['report'] = $report;
-    }
-  }
-  if (empty($report)) {
-    $form['review']['reports']['report'] = array(
-      '#markup' => t('No reports available for the specified campaign'),
-    );
-  }
+  $report = personalize_campaign_report($agent_data, NULL, $form, $form_state);
+  $form['review']['reports']['report'] = personalize_campaign_report($agent_data, NULL, $form, $form_state);
   return $form;
 }
 

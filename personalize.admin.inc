@@ -1531,19 +1531,28 @@ function personalize_get_targeting_options_for_agent($agent_data) {
  *   The campaign class for the report.
  * @param int $osid
  *   (optional) Content variation set id to use for initial display.
+ * @param array $form
+ *   (optional) The form array if this is called in the context of a form.
+ * @param array $form_state
+ *   (optional) The form_state array if this is called in the context of a form.
  */
-function personalize_campaign_report($agent_data, $osid = NULL) {
+function personalize_campaign_report($agent_data, $osid = NULL, $form = NULL, &$form_state = NULL) {
   // The page title of the simple campaign name is taken from
   // personalize_campaign_title_callback().  In order to give the reports tab
   // a specific title, explicitly update the title.
   $report_tab_title = t('@campaign Campaign Report', array('@campaign' => drupal_get_title()));
+  $report = array();
   drupal_set_title($report_tab_title);
 
   $plugins = personalize_get_agent_types();
   if (isset($plugins[$agent_data->plugin])) {
     $module = $plugins[$agent_data->plugin]['module'];
     $option_set = !empty($osid) ? personalize_option_set_load($osid) : NULL;
-    $report = module_invoke($module, 'personalize_campaign_report', $agent_data, $option_set);
+    // Cannot use module_invoke and still pass the form_state by reference.
+    $function = $module . '_personalize_campaign_report';
+    if (function_exists($function)) {
+      $report = call_user_func_array($function, array($agent_data, $option_set, $form, &$form_state));
+    }
     if (!empty($report)) {
       return $report;
     }
