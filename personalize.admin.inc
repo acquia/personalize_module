@@ -1484,11 +1484,19 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
       )
     );
     $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
-    // If the current goal is a limited use visitor action, then it won't be
-    // in the list of options to display.
+
     if (!empty($goal['action']) && empty($options[$goal['action']])) {
-      $goal_action = visitor_actions_custom_load($goal['action']);
-      $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+      if ($goal_action = visitor_actions_custom_load($goal['action'])) {
+        // The current goal was excluded from the list of options because it is
+        // a limited use visitor action, just add it separately here.
+        $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+      }
+      else {
+       // The action for this goal no longer exists - don't include it in the form
+       // and set a warning that it will be removed upon save.
+        drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
+        continue;
+      }
     }
     $section['goals'][$delta]['action_name'] = array(
       '#type' => 'select',

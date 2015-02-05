@@ -1100,6 +1100,14 @@ function personalize_agent_set_status($agent_name, $status) {
     $end_time_var = _personalize_agent_get_stoptime_variable($agent_name);
     $now = time();
     variable_set($end_time_var, $now);
+    // Check if we need to delete all the actions for completed campaigns.
+    if (variable_get('personalize_delete_actions_on_campaign_completion', FALSE)) {
+      $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
+      foreach ($goals as $goal) {
+        visitor_actions_delete_action($goal['action']);
+      }
+    }
+
   }
 
   if ($status == PERSONALIZE_STATUS_RUNNING) {
@@ -2827,17 +2835,20 @@ function personalize_visitor_action_subscribe($name) {
  * Implements hook_visitor_actions_delete_action().
  */
 function personalize_visitor_actions_delete_action($action) {
-  // Delete any goals we have on this action.
-  $result = db_select('personalize_campaign_goals', 'g')
-    ->fields('g', array('id'))
-    ->condition('action', $action['machine_name'])
-    ->execute();
-  foreach ($result as $row) {
-    // We pass in FALSE as the second parameter to tell it not
-    // to rebuild subscribers as that will be done on the
-    // visitor_actions side seeing as this deletion comes from
-    // there.
-    personalize_goal_delete($row->id, FALSE);
+  // Unless configured to allow goals to hang around even after the underlying
+  // action has been deleted, delete any goals we have on this action.
+  if (!variable_get('personalize_allow_orphaned_goals', FALSE)) {
+    $result = db_select('personalize_campaign_goals', 'g')
+      ->fields('g', array('id', 'agent'))
+      ->condition('action', $action['machine_name'])
+      ->execute();
+    foreach ($result as $row) {
+        // We pass in FALSE as the second parameter to tell it not
+        // to rebuild subscribers as that will be done on the
+        // visitor_actions side seeing as this deletion comes from
+        // there.
+        personalize_goal_delete($row->id, FALSE);
+    }
   }
 }
 
