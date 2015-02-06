@@ -1467,6 +1467,9 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
  * Submit handler for the review section.
  */
 function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
+  // Agent-specific options
+  $agent_data->data = isset($form_state['values']['options'][$agent_data->plugin]) ? $form_state['values']['options'][$agent_data->plugin] : array();
+
   // Decision caching advanced setting.
   $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
