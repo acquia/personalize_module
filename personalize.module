@@ -2063,6 +2063,7 @@ function personalize_agent_save($agent) {
     $agent = (object) $agent_array;
   }
 
+  drupal_alter('personalize_agent', $agent, $prior_values);
   entity_save('personalize_agent', $agent);
 
   // Make sure the static cache for this agent is reset.
