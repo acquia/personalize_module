@@ -191,13 +191,6 @@ function personalize_menu() {
     //'type' => MENU_LOCAL_TASK,
     'file' => 'personalize.admin.inc',
   );
-  $items['admin/structure/personalize/manage/%personalize_agent/ajax_status/%'] = array(
-    'page callback' => 'personalize_agent_set_status_ajax',
-    'page arguments' => array(4, 6),
-    'access callback' => 'user_access',
-    'access arguments' => array('manage personalized content'),
-    'type' => MENU_CALLBACK,
-  );
   $items['admin/structure/personalize/mvt'] = array(
     'title' => 'Personalize: Multivariate Tests',
     'description' => 'Manage your multivariate.',
@@ -1045,23 +1038,6 @@ function _personalize_status_toggle_next($current_status) {
       $button_text = '';
   }
   return array($new_status, $button_text);
-}
-
-/**
- * Ajax callback to update an agent status.
- *
- * @param $agent
- *   The agent to update.
- * @param $status
- *   The new status to set.
- */
-function personalize_agent_set_status_ajax($agent, $status) {
-  $updated = personalize_agent_set_status($agent->machine_name, $status);
-  $return = array('success' => $updated);
-  if ($updated) {
-    $return['currentStatus'] = $status;
-  }
-  return drupal_json_output($return);
 }
 
 /**

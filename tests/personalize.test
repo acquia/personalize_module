@@ -2307,31 +2307,6 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
     $this->assertFalse(variable_get($end_time_var, 0));
-
-    // Now test the ajax callback.
-    // Expected case to update to next status.
-    $expected = array(
-      'success' => TRUE,
-      'currentStatus' => PERSONALIZE_STATUS_RUNNING,
-    );
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try an update that doesn't change the status.
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try to update an agent that cannot be verified.
-    $expected = array(
-      'success' => FALSE,
-    );
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $second_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try to call the path without the proper permissions.
-    $this->drupalLogout();
-    $this->drupalGet('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertText(t('Access denied'));
   }
 
   /**
