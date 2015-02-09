@@ -309,7 +309,7 @@ function theme_personalize_wizard_section_title($variables) {
  */
 function theme_personalize_wizard_variations_header($variables) {
   $output = '';
-  $output .= '<h3 class="personalize-option-header-item">';
+  $output .= '<h3>';
   $output .= $variables['variation_title'] . ' ' . format_plural($variables['variation_count'], '1 variation', '@count variations');
   $output .= '</h3>';
   if (!empty($variables['report'])) {
@@ -326,47 +326,4 @@ function theme_personalize_wizard_variations_header($variables) {
   }
   $output = '<span class="personalize-option-header">' . $output . '</span>';
   return $output;
-}
-
-/**
- * Theme function to output content as tabs.
- *
- * This assumes a single personalize tab component per page.
- * @todo Allow multiple.
- *
- * @param $variables
- *   Includes an 'element' key that is the element to render.  All direct
- *   children of the element will be rendered as the tab content.  They
- *   need to have the #title property set in order to allow a tab to be
- *   generated from the content.
- */
-function theme_personalize_tabs($variables) {
-  $element = $variables['element'];
-  $children = element_children($element);
-  if (empty($children)) {
-    return '';
-  }
-
-  $tabs = $content = '';
-  $selected = 0;
-  foreach ($children as $delta => $key) {
-    $tab_pane = $variables['element'][$key];
-    if (isset($tab_pane['#access']) && !$tab_pane['#access']) {
-      continue;
-    }
-    $title = empty($tab_pane['#title']) ? $key : $tab_pane['#title'];
-    if (!empty($tab_pane['#selected'])) {
-      $selected = $delta;
-    }
-
-    $tabs .= '<li><a href="#' . $key . '-tab-' . $delta . '">' . $title . '</a></li>';
-    $content .= '<div id="' . $key . '-tab-' . $delta . '">' . render($tab_pane) . '</div>';
-  }
-  // Note:  jQuery UI 1.8 (ships with d7) uses the 'selected' option to indicate
-  // the tab to be selected, but this changed to 'active' in later versions.
-  $tab_init = '{selected: ' . $selected . ', active: ' . $selected . '}';
-  drupal_add_library('system', 'ui.tabs');
-  drupal_add_js("jQuery(document).ready(function(){ jQuery('.personalize-tabs-container').tabs(" . $tab_init . "); });", 'inline');
-
-  return '<div class="personalize-tabs-container"><ul>' . $tabs . '</ul>' . $content . '</div>';
 }
