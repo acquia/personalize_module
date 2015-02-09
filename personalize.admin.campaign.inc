@@ -59,18 +59,14 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   drupal_alter('personalize_campaign_wizard_base', $form, $form_state, $agent_data);
   $form += $header_form;
 
-  // Create the campaign before being able to add variations/goals/etc.
-  // @todo this should change to allow campaign to be created along with new
-  // variations, etc. and it can from the way this form is structured as long
-  // as the user doesn't leave the page. Once we change the notion of how
-  // variations are added then this can be revisited.
-  if (empty($agent_data->machine_name)) {
-    return $form;
-  }
-
   // Add the form process bar (includes navigation and other campaign
   // level actions).
   $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
+
+  // Create the campaign before being able to add variations/goals/etc.
+  if (empty($agent_data->machine_name)) {
+    return $form;
+  }
 
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
@@ -110,44 +106,48 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
     '#theme' => 'personalize_wizard_process_bar',
     '#current' => $form_state['storage']['step'],
+    '#base_url' => empty($agent_data->machine_name) ? 'admin/structure/personalize/add' : 'admin/structure/personalize/manage/' . $agent_data->machine_name,
   );
+
   // Navigation buttons.
   $form['process_bar']['navigation'] = array(
     '#type' => 'container',
     '#attributes' => array(
       'class' => array('personalize-wizard-navigation'),
     ),
+    '#options' => array(
+      'variations' => array(
+        'label' => t('What'),
+      ),
+      'goals' => array(
+        'label' => t('Why'),
+      ),
+      'targeting' => array(
+        'label' => t('Who'),
+      ),
+      'scheduling' => array(
+        'label' => t('When'),
+      ),
+      'review' => array(
+        'label' => t('Review'),
+      ),
+      'report' => array(
+        'label' => t('Outcome'),
+      ),
+    ),
   );
-  $form['process_bar']['navigation']['variations'] = array(
-    '#type' => 'submit',
-    '#name' => 'variations',
-    '#value' => t('What'),
-  );
-  $form['process_bar']['navigation']['goals'] = array(
-    '#type' => 'submit',
-    '#name' => 'goals',
-    '#value' => t('Why'),
-  );
-  $form['process_bar']['navigation']['targeting'] = array(
-    '#type' => 'submit',
-    '#name' => 'targeting',
-    '#value' => t('Who'),
-  );
-  $form['process_bar']['navigation']['scheduling'] = array(
-    '#type' => 'submit',
-    '#name' => 'scheduling',
-    '#value' => t('When'),
-  );
-  $form['process_bar']['navigation']['review'] = array(
-    '#type' => 'submit',
-    '#name' => 'review',
-    '#value' => t('Review'),
-  );
-  $form['process_bar']['navigation']['report'] = array(
-    '#type' => 'submit',
-    '#name' => 'report',
-    '#value' => t('Outcome'),
-  );
+
+  // Disable all options when creating a campaign for the first time.
+  if (empty($agent_data->machine_name)) {
+    array_walk($form['process_bar']['navigation']['#options'], function(&$item) { $item['disabled'] = TRUE; });
+  }
+  else {
+    // Disable the reporting link if the agent has not yet been started.
+    $agent_status = personalize_agent_get_status($agent_data->machine_name);
+    if ($agent_status == PERSONALIZE_STATUS_NOT_STARTED) {
+      $form['process_bar']['navigation']['#options']['report']['disabled'] = TRUE;
+    }
+  }
 
   // Campaign-specific actions.
   $form['process_bar']['actions'] = array(

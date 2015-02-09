@@ -9,3 +9,12 @@
 .personalize-admin-optional-trigger {
   margin-right: 0.4em; /* RTL */
 }
+
+.personalize-wizard-section-title h2 {
+  margin-left: 1em; /* RTL */
+}
+
+.personalize-wizard-section .personalize-option-header h3,
+.personalize-wizard-section .personalize-admin-enumerated-item {
+  margin-left: 1em; /* RTL */
+}

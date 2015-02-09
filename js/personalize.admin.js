@@ -19,6 +19,31 @@
           }
         })
       });
+
+      // Keep track of if the form has been changed.
+      $('#personalize-campaign-wizard').once('personalize-campaign-wizard-dirty', function() {
+        $(this).find(':input').change(function(e) {
+          $('#personalize-campaign-wizard').data('isDirty', true);
+        })
+      });
+
+      // Handle checking for changes when using the process bar navigation
+      $('#personalize-campaign-wizard-process-bar .personalize-wizard-navigation a').once('personalize-campaign-navigation').click(function(e) {
+        var $parentLi = $(this).parents('li');
+        if ($parentLi.hasClass('personalize-wizard-navigation-disabled') || $parentLi.hasClass('personalize-wizard-navigation-current')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return false;
+        }
+        if ($('#personalize-campaign-wizard').data('isDirty')) {
+          // Show a warning.
+          if (!window.confirm(Drupal.t('You have unsaved changes.  Are you sure you want to continue?'))) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
+          }
+        }
+      });
     }
   };
 

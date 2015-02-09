@@ -233,6 +233,10 @@ function theme_personalize_wizard_process_bar($variables) {
   $actions = empty($element['actions']) ? '' : drupal_render($element['actions']);
   $message = empty($element['message']) ? '' : drupal_render($element['message']);
   $help = empty($element['help']) ? '' : drupal_render($element['help']);
+  $base_path = $element['#base_url'];
+  if (substr($base_path, -1) != '/') {
+    $base_path .= '/';
+  }
 
   $output = '';
   $output .= '<div id="personalize-wizard-process-bar">';
@@ -240,14 +244,18 @@ function theme_personalize_wizard_process_bar($variables) {
   $output .= '<div class="personalize-wizard-navigation clearfix">';
   if (!empty($navigation)) {
     $output .= '<ul>';
-    $navigation_keys = element_children($navigation);
-    foreach ($navigation_keys as $key) {
-      $class = '';
+    foreach ($navigation['#options'] as $key => $option) {
+      $option_url = $base_path . $key;
+      $class = array();
       if ($current === $key) {
-        $class = 'personalize-wizard-navigation-current';
-        $navigation[$key]['#disabled'] = TRUE;
+        $class[] = 'personalize-wizard-navigation-current';
       }
-      $output .= '<li class="' . $class . '">' . drupal_render($navigation[$key]) . '</li>';
+      else if (!empty($option['disabled'])) {
+        $class[] = 'personalize-wizard-navigation-disabled';
+      }
+      $output .= '<li class="' . implode(' ', $class) . '">';
+      $output .= l($option['label'], $option_url);
+      $output .= '</li>';
     }
     $output .= '</ul>';
     // Action buttons (status, etc).
