@@ -1329,6 +1329,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
 function personalize_agent_goals_form($form, &$form_state, $agent_data) {
   // Determine goals for inclusion.
   $goals = $exclude = array();
+  $all_actions = visitor_actions_get_actions();
   if (isset($form_state['values']['goals'])) {
     foreach ($form_state['values']['goals'] as $delta => $goal) {
       if (!empty($goal['action_name'])) {
@@ -1354,10 +1355,18 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     $form_state['num_goals']--;
   }
 
-  // Any action already set as a goal on this campaign should be excluded
-  // from the action dropdown.
-  foreach ($goals as $goal) {
-    $exclude[$goal['action']] = $goal['action'];
+  foreach ($goals as $i => $goal) {
+    if (!isset($all_actions[$goal['action']])) {
+      // The action for this goal no longer exists - don't include it in the form
+      // and set a warning that it will be removed upon save.
+      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
+      unset($goals[$i]);
+    }
+    else {
+      // Any action already set as a goal on this campaign should be excluded
+      // from the action dropdown.
+      $exclude[$goal['action']] = $goal['action'];
+    }
   }
 
   if (empty($goals)) {
@@ -1486,16 +1495,10 @@ function personalize_agent_goals_form($form, &$form_state, $agent_data) {
     $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
 
     if (!empty($goal['action']) && empty($options[$goal['action']])) {
-      if ($goal_action = visitor_actions_custom_load($goal['action'])) {
+      if (isset($all_actions[$goal['action']])) {
         // The current goal was excluded from the list of options because it is
         // a limited use visitor action, just add it separately here.
-        $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
-      }
-      else {
-       // The action for this goal no longer exists - don't include it in the form
-       // and set a warning that it will be removed upon save.
-        drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
-        continue;
+        $options = array_merge(array($goal['action'] => $all_actions[$goal['action']]['label']), $options);
       }
     }
     $section['goals'][$delta]['action_name'] = array(

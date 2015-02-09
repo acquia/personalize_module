@@ -1104,7 +1104,10 @@ function personalize_agent_set_status($agent_name, $status) {
     if (variable_get('personalize_delete_actions_on_campaign_completion', FALSE)) {
       $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
       foreach ($goals as $goal) {
-        visitor_actions_delete_action($goal['action']);
+        $action = visitor_actions_custom_load($goal->action);
+        if ($action && !empty($action['limited_use'])) {
+          visitor_actions_delete_action($goal->action);
+        }
       }
     }
 

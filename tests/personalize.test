@@ -2681,6 +2681,84 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->assertNoFieldByName('personalize_goal_value');
   }
 
+  function testOrphanedGoals() {
+    $admin_user = $this->drupalCreateUser(array('manage personalized content', 'access administration pages', 'administer blocks'));
+    $this->drupalLogin($admin_user);
+    // Create some test agents and add a goal to each one.
+    $agents = $actions = array();
+    $num_agents = 4;
+    for ($i = 0; $i < $num_agents; $i++) {
+      $agent = $this->createTestAgent(array('agent_type' => 'test_agent'));
+      $agents[] = $agent;
+      // Create a custom action which we'll set as a goal.
+      $action_name = $this->randomName();
+      $machine_name = personalize_generate_machine_name($action_name, 'visitor_actions_machine_name_exists', '_');
+      $action = array(
+        'plugin' => 'link',
+        'label' => $action_name,
+        'machine_name' => $machine_name,
+        'identifier' => '.some-class',
+        'event' => 'client::click',
+        'pages' => 'node',
+        'limited_use' => (int) ($i == $num_agents-1), // Just set the last action to limited use.
+        'data' => array(),
+      );
+      visitor_actions_save_action($action);
+      $actions[] = $machine_name;
+      personalize_goal_save($agent->getMachineName(), $machine_name, 1);
+    }
+    $this->resetAll();
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agents[0]->getMachineName()));
+    $this->assertEqual(1, count($goals));
+    $goal = reset($goals);
+    // Delete the first action, the goal should be deleted also.
+    visitor_actions_delete_action($goal->action);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agents[0]->getMachineName()), TRUE);
+    $this->assertEqual(0, count($goals));
+
+    // Set the configuration for allowing orphaned goals.
+    variable_set('personalize_allow_orphaned_goals', 1);
+    $this->resetAll();
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()));
+    $this->assertEqual(1, count($goals));
+    $goal = reset($goals);
+    // Delete the second action, the goal should not get deleted
+    visitor_actions_delete_action($goal->action);
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()), TRUE);
+    $this->assertEqual(1, count($goals));
+
+    // Go to the campaign edit page and there should be a warning about the
+    // orphaned goal.
+    $this->drupalGet('admin/structure/personalize/manage/' . $agents[1]->getMachineName() . '/edit');
+    $this->assertText('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.');
+    $this->drupalPost(NULL, array(), $this->getButton('goal'));
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()), TRUE);
+    $this->assertEqual(0, count($goals));
+    // Set the third agent to completed, this should not cause the action to be
+    // deleted.
+    $action = visitor_actions_custom_load($actions[2], TRUE);
+    $this->assertNotNull($action);
+    personalize_agent_set_status($agents[2]->getMachineName(), PERSONALIZE_STATUS_COMPLETED);
+    $action = visitor_actions_custom_load($actions[2], TRUE);
+    $this->assertNotNull($action);
+    personalize_agent_set_status($agents[2]->getMachineName(), PERSONALIZE_STATUS_PAUSED);
+    // Now set the setting that will cause actions to be deleted when campaigns
+    // are completed.
+    variable_set('personalize_delete_actions_on_campaign_completion', 1);
+    // The action for the third agent still should not get deleted as it was
+    // not set as limited use.
+    personalize_agent_set_status($agents[2]->getMachineName(), PERSONALIZE_STATUS_COMPLETED);
+    $action = visitor_actions_custom_load($actions[2], TRUE);
+    $this->assertNotNull($action);
+    // If we set the status of the 4th agent to completed, the action should get
+    // deleted.
+    $action = visitor_actions_custom_load($actions[3], TRUE);
+    $this->assertNotNull($action);
+    personalize_agent_set_status($agents[3]->getMachineName(), PERSONALIZE_STATUS_COMPLETED);
+    $action = visitor_actions_custom_load($actions[3], TRUE);
+    $this->assertNull($action);
+  }
+
 }
 class PersonalizeMVTAdminTest extends PersonalizeBaseTest {
   public static function getInfo() {
