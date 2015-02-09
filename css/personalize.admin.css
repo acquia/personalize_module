@@ -86,6 +86,13 @@ button.personalize-delete-goal, button.personalize-delete-context {
 div.personalize-variation-row div.personalize-remove-context {
   padding-top: 1.4em;
 }
+.personalize-wizard-variation-sets .personalize-option-header h3 .personalize-admin-enumerated-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: top;
+  max-width: 500px;
+  white-space: nowrap;
+}
 
 .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-control,
 .personalize-content-variation div.personalize-admin-enumerated-item .personalize-content-variation-winner {
@@ -99,6 +106,14 @@ div.personalize-variation-row div.personalize-remove-context {
   background-size: 18px 18px;
   padding-left: 22px;
 }
+.personalize-option-set-report {
+  display:inline-block;
+  margin-left: 2em;
+}
+.personalize-option-set-report .personalize-stat {
+  margin: 0 .25em;
+}
+.personalize-option-set-report,
 .personalize-option-header-item {
   border-right: 1px solid;
   margin-right: .5em;
@@ -124,7 +139,6 @@ div.personalize-variation-row div.personalize-remove-context {
 .personalize-variation-row div {
   float: left;
 }
-
 .personalize-variation-row div.personalize-target-wrapper {
     clear: both;
 }

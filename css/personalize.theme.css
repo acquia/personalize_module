@@ -60,12 +60,12 @@ html.js .personalize-admin-content-title-suffix div.ctools-dropdown a.ctools-dro
   padding-left: 0px;
 }
 
-/* use Acquia Ember link colors for all header links and link look-alikes. */
-.personalize-admin-content-title-suffix a {
+/* Make all the campaign wizard form links the same as buttons that masquerade
+ as links. */
+.personalize-wizard-section a {
   color: #2fa6e5;
 }
-.personalize-admin-content-title-suffix a:hover,
-.personalize-admin-content-title-suffix a:active {
+.personalize-wizard-section a:hover, a:active {
   color: #007ec0;
 }
 /* Link look alike styling for add a goal button */
