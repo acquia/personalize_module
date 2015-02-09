@@ -521,9 +521,9 @@ class PersonalizeTest extends PersonalizeBaseTest {
     // options, rendered 3 times.
     $this->drupalGet('personalize-test/multiple-renderings/1/2/3');
 
-    // This the html output for the option set repeated twice.
+    // This the html output for the option set repeated three times.
     $html = <<<EOT
-<div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div>
+<div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div><div class="personalize-option-set" data-personalize="test-os-1"><script type="text/template" data-personalize-script="test-os-1">{"option-A":{"html":"<div data-personalize-option-name=\"option-A\">OHAI 0<\/div>","index":0},"option-B":{"html":"<div data-personalize-option-name=\"option-B\">OHAI 1<\/div>","index":1}}</script></div>
 EOT;
     // Confirm we have two renderings of the option set.
     $this->assertRaw($html, 'Option Set rendered twice.');
@@ -934,7 +934,7 @@ EOT;
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
 
     // Verify on page there isn't a template script tag for the option set.
-    $show_pattern = '/<div class="personalize-option-set" data-personalize="osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template">/is';
+    $show_pattern = '/<div class="personalize-option-set" data-personalize="osid-' . $osid . '">(\s*(<noscript>(.*?)<\/noscript>?)\s*)?\s*<script type="text\/template" data-personalize-script="osid-' . $osid . '">/is';
 
     $this->drupalGet('');
     $this->assertNoPattern($show_pattern);
@@ -2269,7 +2269,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($first_agent_machine_name));
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
     // Click the "start" button for the first agent.
-    $html_id_first_agent = "personalize-toggle-status-{$first_agent_machine_name}-form";
+    $html_id_first_agent = "personalize-change-status-{$first_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
     // No error should have been set.
     $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
@@ -2281,50 +2281,32 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertTrue($time_before <= $agent->started && $agent->started <= $time_after);
 
     // Now click the start button of the second agent.
-    $html_id_second_agent = "personalize-toggle-status-{$second_agent_machine_name}-form";
+    $html_id_second_agent = "personalize-change-status-{$second_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_second_agent);
     // Its verify() method will have returned false so a message should have been set.
     $this->assertText('There is a problem with this campaign and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
 
-    // Test setting an agent's status to completed.
+    // Set the first agent's status to "paused"
+    $this->drupalPost('admin/structure/personalize', array(), t('Pause'), array(), array(), $html_id_first_agent);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
+    // We should now have the option to set the agent's status to completed.
     $time_before = time();
-    personalize_agent_set_status($first_agent_machine_name, PERSONALIZE_STATUS_COMPLETED);
+    $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_COMPLETED), t('Change'), array(), array(), $html_id_first_agent);
+    $this->drupalPost(NULL, array(), t('Complete'));
+    $this->assertEqual(PERSONALIZE_STATUS_COMPLETED, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
     // Check the end time of the agent, which should now have been set.
     $time_after = time();
-    $end_time = variable_get(_personalize_agent_get_stoptime_variable($first_agent_machine_name), 0);
+    $end_time_var = _personalize_agent_get_stoptime_variable($first_agent_machine_name);
+    $end_time = variable_get($end_time_var, 0);
     $this->assertTrue($time_before <= $end_time && $end_time <= $time_after);
-
-    // Now test the ajax callback.
-    // Expected case to update to next status.
-    $expected = array(
-      'success' => TRUE,
-      'nextStatus' => array(
-        'status' => PERSONALIZE_STATUS_PAUSED,
-        'text' => t('Pause'),
-      ),
-      'currentStatus' => PERSONALIZE_STATUS_RUNNING,
-    );
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try an update that doesn't change the status.
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try to update an agent that cannot be verified.
-    $expected = array(
-      'success' => FALSE,
-    );
-    $result = $this->drupalGetAjax('admin/structure/personalize/manage/' . $second_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertEqual($expected, $result);
-
-    // Try to call the path without the proper permissions.
-    $this->drupalLogout();
-    $this->drupalGet('admin/structure/personalize/manage/' . $first_agent_machine_name . '/ajax_status/' . PERSONALIZE_STATUS_RUNNING);
-    $this->assertText(t('Access denied'));
+    // Set the status back to paused and confirm the end time var has been deleted.
+    $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_PAUSED), t('Change'), array(), array(), $html_id_first_agent);
+    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
+    $this->resetAll();
+    $this->assertFalse(variable_get($end_time_var, 0));
   }
 
   /**
@@ -2365,10 +2347,10 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     // Call the function that should pause all agents that are scheduled to be
     // paused.
-    personalize_pause_agents();
+    personalize_complete_agents();
 
     // The first agent's status should be paused.
-    $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status('agent-1'));
+    $this->assertEqual(PERSONALIZE_STATUS_COMPLETED, personalize_agent_get_status('agent-1'));
     // The second agent's status should still be running.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
     // The third agent's status should still be running.
@@ -2438,11 +2420,12 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     // There should just be a message saying there are no agents.
     $this->drupalGet('admin/structure/personalize');
-    $this->assertText(t('No campaigns available.'));
-    $this->assertNoText('Not started');
-    $this->assertNoText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+
+    $this->assertText('No campaigns available');
+    $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertNoRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
 
     module_enable(array('personalize_test'));
     $this->resetAll();
@@ -2450,19 +2433,20 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
     $this->assertNoText(t('No campaigns available.'));
     // "Not started" should be the only section on the page.
-    $this->assertText('Not started');
-    $this->assertNoText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertNoRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     $this->resetAll();
     // There should now be a "Running" section on the page.
     $this->drupalGet('admin/structure/personalize');
+
     $this->assertNoText(t('No campaigns available.'));
-    $this->assertText('Not started');
-    $this->assertText('Running');
-    $this->assertNoText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Running</h2>');
+    $this->assertNoRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
 
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_PAUSED);
     personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
@@ -2470,11 +2454,13 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // There should now be a "Paused" section and a "Running" section only.
     $this->resetAll();
     $this->drupalGet('admin/structure/personalize');
+
     $this->assertNoText(t('No campaigns available.'));
-    $this->assertNoText('Not started');
-    $this->assertText('Running');
-    $this->assertText('Paused');
-    $this->assertNoText('Completed');
+    $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Running</h2>');
+    $this->assertRaw('<h2>Paused</h2>');
+    $this->assertNoRaw('<h2>Completed</h2>');
+
   }
 
   /**
@@ -2923,108 +2909,5 @@ class PersonalizeAdminSettingsTest extends PersonalizeBaseTest {
     $response = $this->drupalGetAJAX('personalize/campaign_context/');
     $this->assertEqual($machine_name, $response['personalize_campaign'], 'The new campaign is the active personalize campaign context.');
   }
-
-  /**
-   * Tests campaign javascript settings.
-   */
-  function testCampaignSettings() {
-    module_enable(array('personalize_test_extra_agent'));
-    $this->resetAll();
-    // Adding an additional resetAll due to ctools.
-    $this->resetAll();
-    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
-    $this->drupalLogin($admin_user);
-    // Create two agents of different types.
-    $first_agent_name = $this->randomName();
-    $first_agent_machine_name = personalize_generate_machine_name($first_agent_name, 'personalize_agent_machine_name_exists');
-    $second_agent_name = $this->randomName();
-    $second_agent_machine_name = personalize_generate_machine_name($second_agent_name, 'personalize_agent_machine_name_exists');
-    $agents = array(
-      array(
-        'label' => $first_agent_name,
-        'machine_name' => $first_agent_machine_name,
-        'agent_type' => 'test_agent',
-      ),
-      array(
-        'label' => $second_agent_name,
-        'machine_name' => $second_agent_machine_name,
-        'agent_type' => 'test_extra_agent',
-      ),
-    );
-    foreach ($agents as $agent) {
-      $edit = array(
-        'agent_basic_info[title]' => $agent['label'],
-        'agent_basic_info[machine_name]' => $agent['machine_name'],
-        'agent_basic_info[agent_type]' => $agent['agent_type'],
-      );
-      $this->drupalPost('admin/structure/personalize/add', $edit, $this->getButton('agent'));
-    }
-    $expected = array(
-      $first_agent_machine_name => array(
-        'name' => $first_agent_machine_name,
-        'label' => $first_agent_name,
-        'type' => 'test_agent',
-        'status' => PERSONALIZE_STATUS_NOT_STARTED,
-        'nextStatus' => array(
-          'status' => PERSONALIZE_STATUS_RUNNING,
-          'text' => t('Start'),
-        ),
-        'links' => array(
-          'edit' => base_path() . 'admin/structure/personalize/manage/' . $first_agent_machine_name . '/edit',
-          'report' => base_path() . 'admin/structure/personalize/manage/' . $first_agent_machine_name . '/report',
-          'view' => base_path() . 'admin/structure/personalize/manage/' . $first_agent_machine_name,
-        ),
-        'supportsGoals' => TRUE,
-        'optionSetTypes' => array(),
-        'goals' => NULL,
-        'verified' => TRUE,
-      ),
-      $second_agent_machine_name => array(
-        'name' => $second_agent_machine_name,
-        'label' => $second_agent_name,
-        'type' => 'test_extra_agent',
-        'status' => PERSONALIZE_STATUS_NOT_STARTED,
-        'nextStatus' => array(
-          'status' => PERSONALIZE_STATUS_RUNNING,
-          'text' => t('Start'),
-        ),
-        'links' => array(
-          'edit' => base_path() . 'admin/structure/personalize/manage/' . $second_agent_machine_name . '/edit',
-          'report' => '',
-          'view' => base_path() . 'admin/structure/personalize/manage/' . $second_agent_machine_name,
-        ),
-        'supportsGoals' => FALSE,
-        'optionSetTypes' => array(),
-        'goals' => NULL,
-        'verified' => TRUE,
-      ),
-    );
-    $settings = $this->drupalGetSettings();
-    $this->assertEqual($settings['personalize']['campaigns'][$first_agent_machine_name], $expected[$first_agent_machine_name]);
-    $this->assertEqual($settings['personalize']['campaigns'][$second_agent_machine_name], $expected[$second_agent_machine_name]);
-
-    // Click the "start" button for the first agent.
-    $html_id_first_agent = "personalize-toggle-status-{$first_agent_machine_name}-form";
-    $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
-
-    $expected[$first_agent_machine_name]['status'] = PERSONALIZE_STATUS_RUNNING;
-    $expected[$first_agent_machine_name]['nextStatus'] = array(
-      'status' => PERSONALIZE_STATUS_PAUSED,
-      'text' => t('Pause'),
-    );
-    $settings = $this->drupalGetSettings();
-    $this->assertEqual($settings['personalize']['campaigns'][$first_agent_machine_name], $expected[$first_agent_machine_name]);
-    $this->assertEqual($settings['personalize']['campaigns'][$second_agent_machine_name], $expected[$second_agent_machine_name]);
-
-    // Add a goal to the agent.
-    personalize_goal_save($first_agent_machine_name, 'user_login', 3);
-    $this->drupalGet('/');
-    $settings = $this->drupalGetSettings();
-    $expected[$first_agent_machine_name]['goals'] = array(
-      'user_login' => 'logs in',
-    );
-    $this->assertEqual($settings['personalize']['campaigns'][$first_agent_machine_name], $expected[$first_agent_machine_name]);
-    $this->assertEqual($settings['personalize']['campaigns'][$second_agent_machine_name], $expected[$second_agent_machine_name]);
-  }
-
+  
 }
