@@ -68,7 +68,8 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
     return $form;
   }
 
-  // Add the form navigation bar.
+  // Add the form process bar (includes navigation and other campaign
+  // level actions).
   $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
 
   // Add the current sub-form.

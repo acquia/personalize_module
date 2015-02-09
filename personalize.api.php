@@ -56,14 +56,15 @@ function hook_personalize_option_set_type() {
 }
 
 /**
- * Allows the alteration of an agent before it is saved.
+ * An agent is about to be created or updated.
+ *
+ * This hook is invoked before the agent is saved to the database so
+ * modules can alter the information that is saved.
  *
  * @param stdClass $agent
  *   A stdClass object representing the agent being saved.
- * @param array $prior_values
- *   The unalterable prior data for the agent before this save.
  */
-function hook_personalize_agent_alter(&$agent, $prior_values) {
+function hook_personalize_agent_presave($agent) {
 
 }
 
