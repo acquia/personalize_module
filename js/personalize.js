@@ -1031,7 +1031,7 @@
     if (rule.hasOwnProperty('fixed_targeting_features')) {
       for (var i in rule.fixed_targeting_features) {
         if (rule.fixed_targeting_features.hasOwnProperty(i)) {
-          var feature_name = rule.fixed_targeting_features.[i];
+          var feature_name = rule.fixed_targeting_features[i];
           if (rule.hasOwnProperty('fixed_targeting_rules') && rule.fixed_targeting_rules.hasOwnProperty(feature_name)) {
             rules[feature_name] = rule.fixed_targeting_rules[feature_name];
           }
