@@ -919,7 +919,6 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
     return;
   }
   $loaded['osids'][] = $option_set->osid;
-  $attached = isset($element['#attached']) ? $element['#attached'] : array();
   $agent_name = $option_set->agent;
   if ($skip_completed && personalize_agent_get_status($agent_name) === PERSONALIZE_STATUS_COMPLETED) {
     return;
@@ -959,20 +958,34 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
       )
     )
   );
-  module_invoke_all('personalize_option_set_render', $option_set);
   if (isset($mvt_settings)) {
     $personalize_settings['data']['personalize']['mvt'] = $mvt_settings;
   }
   $assets['js'] = array_merge_recursive($assets['js'], array($personalize_settings));
+  personalize_merge_element_assets($element, $assets);
+
+  // Mark the entity as being personalized.
+  $element['#personalize'] = (isset($element['#entity_type'])) ? $element['#entity_type'] : NULL;
+  // Allow other modules to add settings as needed.
+  module_invoke_all('personalize_option_set_render', $element, $option_set);
+}
+
+/**
+ * Merges js and css assets required for personalization into the element array.
+ *
+ * @param $element
+ *   The render array of the element being personalized.
+ * @param $assets
+ *   The array of assets needed for personalization.
+ */
+function personalize_merge_element_assets(&$element, $assets) {
+  $attached = isset($element['#attached']) ? $element['#attached'] : array();
   foreach ($assets as $type => $data_array) {
     if (!isset($attached[$type])) {
       $attached[$type] = array();
     }
     $attached[$type] = array_merge($attached[$type], $data_array);
   }
-
-  // Mark the entity as being personalized.
-  $element['#personalize'] = (isset($element['#entity_type'])) ? $element['#entity_type'] : NULL;
   $element['#attached'] = $attached;
 }
 
