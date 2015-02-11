@@ -143,13 +143,6 @@ function personalize_schema() {
         'not null' => FALSE,
         'description' => 'The path to a local preview page for the option set.',
       ),
-      'parent' => array(
-        'description' => 'If this is a child Option Set, the osid of its parent.',
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-      ),
       'execution_rules' => array(
         'type' => 'blob',
         'not null' => FALSE,
@@ -596,19 +589,9 @@ function personalize_update_7014() {
 }
 
 /**
- * Add parent and execution_rules columns for Option Sets.
+ * Add execution_rules column for Option Sets.
  */
 function personalize_update_7015() {
-  // Make sure to add UUID field
-  if (!db_field_exists('personalize_option_sets', 'parent')) {
-    db_add_field('personalize_option_sets', 'parent', array(
-      'description' => 'If this is a child Option Set, the osid of its parent.',
-      'type' => 'int',
-      'unsigned' => TRUE,
-      'not null' => TRUE,
-      'default' => 0,
-    ));
-  }
   if (!db_field_exists('personalize_option_sets', 'execution_rules')) {
     db_add_field('personalize_option_sets', 'execution_rules', array(
       'type' => 'blob',
