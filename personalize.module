@@ -2635,9 +2635,12 @@ function personalize_visitor_context_expiration_load() {
     // Add explicit targeting contexts for options within the campaign.
     $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
     foreach($option_sets as $option_set) {
-      foreach($option_set->options as $option) {
-        if (!empty($option['fixed_targeting_rules'])) {
-          foreach($option['fixed_targeting_rules'] as $rule) {
+      if (empty($option_set->execution_rules)) {
+        continue;
+      }
+      foreach($option_set->execution_rules as $ex_rule) {
+        if (!empty($ex_rule['fixed_targeting_rules'])) {
+          foreach($ex_rule['fixed_targeting_rules'] as $rule) {
             $current_campaign_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
           }
         }
