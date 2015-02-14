@@ -150,21 +150,6 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
   }
 
   /**
-   * Helper function to assert that explicit targeting for a particular option
-   * set matches the expected rules.
-   *
-   * @param stdClass $option_set
-   *   The option set to test.
-   * @param array $expected
-   *   An array of expected targeting for each option.
-   */
-  protected function assertExplicitTargeting($option_set, $expected) {
-
-    $this->assertEqual($expected, $option_set->execution_rules);
-
-  }
-
-  /**
    * Helper method to move buttons names to one place to simplify
    * it's maintaining
    *
@@ -1517,7 +1502,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
-    $expected_execution_rules = array(
+    $expected_targeting = array(
       array(
         'option_id' => 'option-A',
         'fixed_targeting_features' => array('test_user_field_1--ss-first-value'),
@@ -1532,7 +1517,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
         'fixed_targeting_strategy' => 'OR'
       )
     );
-    $this->assertExplicitTargeting($option_set, $expected_execution_rules);
+    $this->assertEqual($expected_targeting, $option_set->targeting);
 
     // Now set some auto targeting as well.
     $edit = array('visitor_context[]' => array('user_profile_context__test_user_field_1' => 'user_profile_context__test_user_field_1'));
@@ -1545,9 +1530,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_features']);
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_features']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_strategy']);
   }
 
   /**
@@ -1609,7 +1594,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
-    $expected_execution_rules = array(
+    $expected_targeting = array(
       array(
         'option_id' => 'option-A',
         'fixed_targeting_features' => array('test_user_field_1--ss-first-value'),
@@ -1624,7 +1609,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
         'fixed_targeting_strategy' => 'OR'
       ),
     );
-    $this->assertExplicitTargeting($option_set, $expected_execution_rules);
+    $this->assertEqual($expected_targeting, $option_set->targeting);
 
     // Confirm that we have the expected visitor contexts.
     $edit = array();
@@ -1633,9 +1618,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_features']);
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_execution_rules[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['execution_rules'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_features']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_rules']);
+    $this->assertEqual($expected_targeting[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_strategy']);
   }
 
   /**
@@ -1677,7 +1662,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     module_load_include('inc', 'personalize', 'personalize.admin');
     // Ensure that we get the expected targeting values available for use by our
     // agent for fixed targeting.
-    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
+    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
     $expected_targeting_values = array(
       'boolean_user_field_1' => array(
         'friendly name' => 'field_boolean_user_field_1',

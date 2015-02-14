@@ -461,7 +461,7 @@ function personalize_agent_complete_form($form, &$form_state, $agent) {
       'label' => (isset($option_set->label) ? check_plain($option_set->label) : t('Option @id', array('@id' => $option_set->osid))),
       'counter' => 'V' . $v,
       'winner_label' => $winner['option_label'],
-      'alert' => (!empty($winner['fixed_targeting']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
+      'alert' => (!empty($winner['targeting_features']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
       'winner_type' => $winner_type,
     );
   }
@@ -798,7 +798,7 @@ function personalize_status_toggle_message($agent_name, $current_status) {
       'label' => (isset($option_set->label) ? check_plain($option_set->label) : t('Option @id', array('@id' => $option_set->osid))),
       'counter' => 'V' . $v,
       'winner_label' => $winner['option_label'],
-      'alert' => (!empty($winner['fixed_targeting']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
+      'alert' => (!empty($winner['targeting_features']) ? t('Show @v to specific users will not apply when paused.', array('@v' => 'V' . $v)) : ''),
       'winner_type' => $winner_type,
     );
   }
@@ -1639,7 +1639,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
   if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
     $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
+    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
   }
 
   foreach ($option_sets as $option_set) {
@@ -1682,7 +1682,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
     );
 
     $variant_number = 1;
-    $execution_rules = personalize_targeting_get_execution_rules_for_options($option_set);
+    $targeting = personalize_get_targeting_for_options($option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       $is_control = $variant_number == 1;
@@ -1774,7 +1774,7 @@ function personalize_agent_option_sets_form($form, &$form_state, $agent_data, $a
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
           '#title' => t('Show to visitors with specific traits'),
           '#type' => 'checkbox',
-          '#default_value' => !empty($execution_rules[$option['option_id']]) ? 1 : 0,
+          '#default_value' => !empty($targeting[$option['option_id']]) ? 1 : 0,
           '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
         );
         $states = array(
@@ -1977,8 +1977,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     ),
   );
 
-  // Get an array of execution rules per option id.
-  $execution_rules_for_options = personalize_targeting_get_execution_rules_for_options($option_set);
+  // Get an array of targeting rules per option id.
+  $targeting_for_options = personalize_get_targeting_for_options($option_set);
   // Load from the existing form if passed first, otherwise, load from option
   // set.
   $mappings = array();
@@ -1995,11 +1995,11 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       );
     }
   }
-  else if (isset($execution_rules_for_options[$option['option_id']])) {
-    $rule = $execution_rules_for_options[$option['option_id']];
-    foreach ($rule['fixed_targeting_features'] as $feature) {
-      if (isset($rule['fixed_targeting_rules'][$feature])) {
-        $mappings[] = $rule['fixed_targeting_rules'][$feature];
+  else if (isset($targeting_for_options[$option['option_id']])) {
+    $rule = $targeting_for_options[$option['option_id']];
+    foreach ($rule['targeting_features'] as $feature) {
+      if (isset($rule['targeting_rules'][$feature])) {
+        $mappings[] = $rule['targeting_rules'][$feature];
       }
     }
   }
@@ -2172,8 +2172,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     // Add radio buttons so the user can select how multiple features for an option
     // should be treated.
     $default_strategy = 'OR';
-    if (isset($execution_rules_for_options[$option['option_id']]) && isset($execution_rules_for_options[$option['option_id']]['fixed_targeting_strategy'])) {
-      $default_strategy = $execution_rules_for_options[$option['option_id']]['fixed_targeting_strategy'];
+    if (isset($targeting_for_options[$option['option_id']]) && isset($targeting_for_options[$option['option_id']]['targeting_strategy'])) {
+      $default_strategy = $targeting_for_options[$option['option_id']]['targeting_strategy'];
     }
     $form['strategies']['strategy'] = array(
       '#type' => 'select',
@@ -2336,7 +2336,7 @@ function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_
  *   An associative array keyed by context name, with an array of information
  *   about the possible values for that context.
  */
-function personalize_get_fixed_targeting_values_for_agent($agent_data) {
+function personalize_get_targeting_values_for_agent($agent_data) {
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::constrainExplicitTargetingContexts()) {
     $value_options = array();
@@ -2692,7 +2692,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // Keep track of feature strings that have already been designated to options,
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
-      $designated_features = $execution_rules = array();
+      $designated_features = $targeting = array();
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -2729,19 +2729,19 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
           }
           $rule = array(
             'option_id' => $option_id,
-            'fixed_targeting_features' => $feature_values,
-            'fixed_targeting_rules' => $rules,
+            'targeting_features' => $feature_values,
+            'targeting_rules' => $rules,
           );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
           if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
-            $rule['fixed_targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
+            $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
-          $execution_rules[] = $rule;
+          $targeting[] = $rule;
         }
       }
 
-      $option_set->execution_rules = $execution_rules;
+      $option_set->targeting = $targeting;
       personalize_option_set_save($option_set);
     }
   }
@@ -3150,24 +3150,24 @@ function personalize_targeting_generate_value_code($value_match, $operator) {
 }
 
 /**
- * Returns the execution rules that have been defined for each option in an option set.
+ * Returns the targeting that has been defined for the options in an option set.
  *
  * @param $option_set
- *   The option set to get execution rules for.
+ *   The option set to get targeting info for.
  * @return array
- *   An associative array, keyed by option_id, whose values are arrays of execution rules
- *   for the option id in question. If any option does not have execution rules, it will
- *   not be included in the array.
+ *   An associative array, keyed by option_id, whose values are arrays of target-
+ *   ing info for the option in question. If any option does not have targeting
+ *   set up, it will not be included in the array.
  */
-function personalize_targeting_get_execution_rules_for_options($option_set) {
-  // Get an array of execution rules per option id.
-  $execution_rules_for_options = array();
-  if (!empty($option_set->execution_rules)) {
-    foreach ($option_set->execution_rules as $rule) {
+function personalize_get_targeting_for_options($option_set) {
+  // Get an array of targeting rules per option id.
+  $targeting_for_options = array();
+  if (!empty($option_set->targeting)) {
+    foreach ($option_set->targeting as $rule) {
       if (isset($rule['option_id'])) {
-        $execution_rules_for_options[$rule['option_id']] = $rule;
+        $targeting_for_options[$rule['option_id']] = $rule;
       }
     }
   }
-  return $execution_rules_for_options;
+  return $targeting_for_options;
 }
