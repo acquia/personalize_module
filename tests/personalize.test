@@ -1505,8 +1505,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $expected_targeting = array(
       array(
         'option_id' => 'option-A',
-        'fixed_targeting_features' => array('test_user_field_1--ss-first-value'),
-        'fixed_targeting_rules' => array(
+        'targeting_features' => array('test_user_field_1--ss-first-value'),
+        'targeting_rules' => array(
           'test_user_field_1--ss-first-value' => array(
             'context' => 'test_user_field_1',
             'match' => 'first value',
@@ -1514,7 +1514,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
             'plugin' => 'user_profile_context',
           ),
         ),
-        'fixed_targeting_strategy' => 'OR'
+        'targeting_strategy' => 'OR'
       )
     );
     $this->assertEqual($expected_targeting, $option_set->targeting);
@@ -1530,9 +1530,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_features']);
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting[0]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_features']);
+    $this->assertEqual($expected_targeting[0]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_rules']);
+    $this->assertEqual($expected_targeting[0]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_strategy']);
   }
 
   /**
@@ -1597,8 +1597,8 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $expected_targeting = array(
       array(
         'option_id' => 'option-A',
-        'fixed_targeting_features' => array('test_user_field_1--ss-first-value'),
-        'fixed_targeting_rules' => array(
+        'targeting_features' => array('test_user_field_1--ss-first-value'),
+        'targeting_rules' => array(
           'test_user_field_1--ss-first-value' => array(
             'context' => 'test_user_field_1',
             'match' => 'first value',
@@ -1606,7 +1606,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
             'plugin' => 'user_profile_context',
           ),
         ),
-        'fixed_targeting_strategy' => 'OR'
+        'targeting_strategy' => 'OR'
       ),
     );
     $this->assertEqual($expected_targeting, $option_set->targeting);
@@ -1618,9 +1618,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_features']);
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_rules']);
-    $this->assertEqual($expected_targeting[0]['fixed_targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['fixed_targeting_strategy']);
+    $this->assertEqual($expected_targeting[0]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_features']);
+    $this->assertEqual($expected_targeting[0]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_rules']);
+    $this->assertEqual($expected_targeting[0]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_strategy']);
   }
 
   /**
