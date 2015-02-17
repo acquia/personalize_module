@@ -2348,9 +2348,9 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
   }
 
   /**
-   * Tests the function that pauses agents that are due to be paused.
+   * Tests the function that completes agents that are due to be completed.
    */
-  function testPauseAgents() {
+  function testCompleteAgents() {
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
     $this->drupalLogin($admin_user);
     // Create some test agents.
@@ -2383,11 +2383,11 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $variable = _personalize_agent_get_stoptime_variable('agent-2');
     variable_set($variable, $now + 86400);
 
-    // Call the function that should pause all agents that are scheduled to be
-    // paused.
+    // Call the function that should complete all agents that are scheduled to be
+    // completed.
     personalize_complete_agents();
 
-    // The first agent's status should be paused.
+    // The first agent's status should be completed.
     $this->assertEqual(PERSONALIZE_STATUS_COMPLETED, personalize_agent_get_status('agent-1'));
     // The second agent's status should still be running.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-2'));
