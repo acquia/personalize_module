@@ -1680,9 +1680,7 @@ function personalize_visitor_actions_page_build(&$page, $actions) {
   // listener can process them.
   $action_listeners = $agent_map = $client_side_goals = array();
   if (!empty($actions)) {
-    foreach ($actions as $action) {
-      $client_side_goals += personalize_goal_load_by_action($action);
-    }
+    $client_side_goals = personalize_goal_load_multiple_by_actions($actions);
     foreach ($client_side_goals as $goal) {
       $status = personalize_agent_get_status($goal->agent);
       if ($status  != PERSONALIZE_STATUS_RUNNING) {
@@ -2802,6 +2800,30 @@ function personalize_goal_load_by_action($action) {
   }
 
   return $goals[$action];
+}
+
+/**
+ * Loads multiple goals given a list of actions
+ *
+ * @param array $actions
+ *   An array of actions machine names
+ * @return array
+ *   An array of Goal objects
+ */
+function personalize_goal_load_multiple_by_actions($actions = array()) {
+  if (empty($actions) || !is_array($actions)) {
+    return array();
+  }
+  $goalsQuery = new EntityFieldQuery();
+  $goal_results = $goalsQuery->entityCondition('entity_type', 'personalize_campaign_goal')
+    ->propertyCondition('action', $actions, 'IN')
+    ->execute();
+  $goals = array();
+  if (!empty($goal_results['personalize_campaign_goal'])) {
+    $goal_ids = array_keys($goal_results['personalize_campaign_goal']);
+    $goals = personalize_goal_load_multiple($goal_ids);
+  }
+  return $goals;
 }
 
 /**
