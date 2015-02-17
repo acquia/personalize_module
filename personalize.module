@@ -319,7 +319,7 @@ function personalize_complete_agents() {
   $completed = array();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
-    if ($status == PERSONALIZE_STATUS_RUNNING) {
+    if ($status == PERSONALIZE_STATUS_RUNNING || $status == PERSONALIZE_STATUS_PAUSED) {
       if (personalize_agent_stop_now($agent)) {
         personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_COMPLETED);
         watchdog('personalize', 'Completing agent @agent based on agent settings', array('@agent' => $agent_name));
