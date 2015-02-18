@@ -1006,31 +1006,34 @@
     agentData.decisionPoints[decision_point].fallbacks[decision_name] = fallbackIndex;
     addDecisionCallback(executor, agent_name, decision_point, decision_name, $option_set, osid);
 
-    // Build up the fixed targeting rules for options within this option set.
-    for (var j in option_set.options) {
-      if (option_set.options.hasOwnProperty(j)) {
-        $.extend(agentData.fixedTargeting, getFixedTargetingRules(option_set.options[j]));
+    if (option_set.hasOwnProperty('targeting')) {
+      // Build up the fixed targeting rules for this option set.
+      for (var j in option_set.targeting) {
+        if (option_set.targeting.hasOwnProperty(j)) {
+          $.extend(agentData.fixedTargeting, getTargeting(option_set.targeting[j]));
+        }
       }
     }
+
     return agentData;
   }
 
   /**
-   * Builds the fixed targeting rules for an option within an option set.
+   * Builds the targeting rules for an option within an option set.
    *
-   * @param option
-   *   The option within an option set to check for fixed targeting rules.
+   * @param targeting
+   *   The targeting info to extract rules from.
    * @return {object}
-   *   An object of fixed targeting rules keyed by feature name.
+   *   An object of targeting rules keyed by feature name.
    */
-  function getFixedTargetingRules(option) {
+  function getTargeting(targeting) {
     var rules = {};
-    if (option.hasOwnProperty('fixed_targeting')) {
-      for (var i in option.fixed_targeting) {
-        if (option.fixed_targeting.hasOwnProperty(i)) {
-          var feature_name = option.fixed_targeting[i];
-          if (option.hasOwnProperty('fixed_targeting_rules') && option.fixed_targeting_rules.hasOwnProperty(feature_name)) {
-            rules[feature_name] = option.fixed_targeting_rules[feature_name];
+    if (targeting.hasOwnProperty('targeting_features')) {
+      for (var i in targeting.targeting_features) {
+        if (targeting.targeting_features.hasOwnProperty(i)) {
+          var feature_name = targeting.targeting_features[i];
+          if (targeting.hasOwnProperty('targeting_rules') && targeting.targeting_rules.hasOwnProperty(feature_name)) {
+            rules[feature_name] = targeting.targeting_rules[feature_name];
           }
         }
       }
