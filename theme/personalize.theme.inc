@@ -7,6 +7,8 @@
 
 /**
  * Themes a button that allows the text to be set independent of the value.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_html_tag($variables) {
   $element = $variables['element'];
@@ -23,6 +25,8 @@ function theme_personalize_html_tag($variables) {
  * Wraps an option set in a script tag so that options are not parsed
  * by the browser on page load. Surrounds this with a div containing
  * all the information needed by our js.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_options_wrapper($variables) {
   if (!isset($variables['element']['#personalize_option_set'])) {
@@ -73,6 +77,8 @@ function theme_personalize_options_wrapper($variables) {
  * Theme wrapper for option sets that are populated via callback.
  *
  * Provides a div to use with Ajax callback population.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_options_callback_wrapper($variables) {
   $option_set = $variables['element']['#personalize_option_set'];
@@ -96,6 +102,8 @@ function theme_personalize_options_callback_wrapper($variables) {
  *     - winner_label: The label of the winning variation for the option set.
  *     - winner_type: The type of winning variation (e.g., winner, control)
  *     - alert: Additional alert to show the end user regarding change.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_campaign_status_update($variables) {
   $option_message = $variables['option_message'];
@@ -136,6 +144,8 @@ function theme_personalize_campaign_status_update($variables) {
  *   - title: The title of the list item.
  *   - title_prefix: An optional prefix for the title.
  *   - title_suffix: An optional suffix for the title.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_admin_enumerated_item($variables) {
   $variables['attributes']['class'][] = 'personalize-admin-enumerated-item';
@@ -159,6 +169,8 @@ function theme_personalize_admin_enumerated_item($variables) {
  *   holds an array of reporting statistics.
  * @return string
  *   The themed output.
+ *
+ * @ingroup themeable
  */
 function theme_personalize_option_set_report($variables) {
   if (empty($variables['report'])) {
@@ -173,10 +185,126 @@ function theme_personalize_option_set_report($variables) {
 }
 
 /**
- * Theme function to output header information for an option set.
+ * Theme wrapper for an administrative option that displays optional
+ * details beyond the base description.
+ *
+ * @param $variables
+ *   Associative array of variables for the theme.
+ *   - details: The optional details that should only be shown when requested.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_admin_info_details($variables) {
+  if (!empty($variables['details'])) {
+    return '<div class="personalize-admin-optional">' . $variables['details'] . '</div>';
+  }
+  return '';
+}
+
+/********************************************************
+ *
+ * C A M P A I G N  W I Z A R D
+ *
+ *******************************************************/
+
+/**
+ * Theme function to output the navigation for the personalize campaign wizard.
+ *
+ * @param array $variables
+ *   - element:  The element to theme.  This element should have:
+ *     - #navigation: An array of subform navigation options with keyed by the
+ *       section name with the label to display as the value.
+ *     - #navigation_url: The base path for navigating to this wizard.  The
+ *       navigation section names will be appended to generate a url.
+ *     - #current: Indicates the current step
+ *     - actions: Renderable array for the action buttons
+ *     - message: Renderable array for the shorter instructional message.
+ *     - help: Renderable array of section help details.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_wizard_process_bar($variables) {
+  if (empty($variables['element'])) {
+    return;
+  }
+  $element = $variables['element'];
+  $navigation = empty($element['navigation']) ? array() : $element['navigation'];
+  $current = empty($element['#current']) ? '' : $element['#current'];
+  $actions = empty($element['actions']) ? '' : drupal_render($element['actions']);
+  $message = empty($element['message']) ? '' : drupal_render($element['message']);
+  $help = empty($element['help']) ? '' : drupal_render($element['help']);
+  $base_path = $element['#base_url'];
+  if (substr($base_path, -1) != '/') {
+    $base_path .= '/';
+  }
+
+  $output = '';
+  $output .= '<div id="personalize-wizard-process-bar">';
+  // Subform navigation.
+  $output .= '<div class="personalize-wizard-navigation clearfix">';
+  if (!empty($navigation)) {
+    $output .= '<ul>';
+    foreach ($navigation['#options'] as $key => $option) {
+      $option_url = $base_path . $key;
+      $class = array();
+      if ($current === $key) {
+        $class[] = 'personalize-wizard-navigation-current';
+      }
+      else if (!empty($option['disabled'])) {
+        $class[] = 'personalize-wizard-navigation-disabled';
+      }
+      $output .= '<li class="' . implode(' ', $class) . '">';
+      $output .= l($option['label'], $option_url);
+      $output .= '</li>';
+    }
+    $output .= '</ul>';
+    // Action buttons (status, etc).
+    if (!empty($actions)) {
+      $output .= $actions;
+    }
+    $output .= '</div>';
+  }
+  // Help
+  if (!empty($message) || !empty($help)) {
+    $output .= '<div class="personalize-wizard-instructions">' . $message;
+    if (!empty($help)) {
+      $output .= '<a href="" class="personalize-wizard-learn-more">' . t('Learn more') . '</a>';
+    }
+    $output .= '</div>';
+    $output .= '<div class="personalize-wizard-section-help">' . $help . '</div>';
+  }
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to output the header section for a personalize campaign
+ * wizard sub-form.
+ *
+ * @param array $variations
+ *   - element:  The element to theme.  This element should have a #title
+ *     attribute and may have children to include within the header.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_wizard_section_title($variables) {
+  $output = '';
+  if (empty($variables['element']) || empty($variables['element']['#title'])) {
+    return $output;
+  }
+  $element = $variables['element'];
+  $output .= '<div class="personalize-wizard-section-title"><h2>' . $element['#title'] . '</h2>';
+  $output .= drupal_render_children($element);
+  $output .=  '</div>';
+  return $output;
+}
+
+/**
+ * Theme function to output header information for a variation set.
  *
  * @param $variables
  *   An associative array of variables.
+ *   - variation_title: the title of the variation set.
  *   - variation_count: the number of variations within the option set.
  *   - report: an array of reporting statistics for this option set.
  *   - report_link: the link to the report for this option set.
@@ -184,11 +312,14 @@ function theme_personalize_option_set_report($variables) {
  *   - delete_link: the link to delete the option set.
  * @return string
  *   The themed output.
+ *
+ * @ingroup themeable
  */
-function theme_personalize_option_set_header($variables) {
-  $output = '<span class="personalize-option-header-item">';
-  $output .= format_plural($variables['variation_count'], '1 variation', '@count variations');
-  $output .= '</span>';
+function theme_personalize_wizard_variations_header($variables) {
+  $output = '';
+  $output .= '<h3>';
+  $output .= $variables['variation_title'] . ' ' . format_plural($variables['variation_count'], '1 variation', '@count variations');
+  $output .= '</h3>';
   if (!empty($variables['report'])) {
     $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
   }
@@ -203,63 +334,4 @@ function theme_personalize_option_set_header($variables) {
   }
   $output = '<span class="personalize-option-header">' . $output . '</span>';
   return $output;
-}
-
-/**
- * Theme wrapper for an administrative option that displays optional
- * details beyond the base description.
- *
- * @param $variables
- *   Associative array of variables for the theme.
- *   - details: The optional details that should only be shown when requested.
- */
-function theme_personalize_admin_info_details($variables) {
-  if (!empty($variables['details'])) {
-    return '<div class="personalize-admin-optional">' . $variables['details'] . '</div>';
-  }
-  return '';
-}
-
-/**
- * Theme wrapper for administrative section content.
- */
-function theme_personalize_admin_content($variables) {
-  $element = $variables['element'];
-  $attrs = drupal_attributes($element['#attributes']);
-  $output = '<fieldset ' . $attrs . '>';
-
-  $output .= '<legend><span class="personalize-fieldset-header"><span class="fieldset-legend personalize-admin-content-title">';
-  $output .= $element['#title'] . '</span>';
-  $output .= '</span></legend>';
-  $output .= '<div class="fieldset-wrapper personalize-admin-content-content">' . $element['#children'] . '</div>';
-  $output .= '</fieldset>';
-
-  // Summary content that is shown beneath the title when collapsed.
-  if (!empty($element['#summary'])) {
-    $output .= '<div class="personalize-admin-content-collapsed">' . $element['#summary'] . '</div>';
-  }
-
-  // Wrap the fieldset content.
-  $output = '<div class="personalize-admin-content personalize-collapsible">' . $output . '</div>';
-  return $output;
-}
-
-/**
- * Implements hook_personalize_admin_section().
- */
-function personalize_preprocess_personalize_admin_section(&$variables, $hook) {
-  // Add general classes.
-  $variables['classes_array'][] = 'clearfix';
-}
-
-/**
- * Implements hook_preprocess_personalize_content_set_item().
- */
-function personalize_preprocess_personalize_content_set_item(&$variables, $hook) {
-  // Move elements to the template variables.
-  $variables['title'] = $variables['element']['#title'];
-
-  // Add general classes.
-  $variables['title_attributes_array']['class'][] = 'personalize-content-set-item-title';
-  $variables['content_attributes_array']['class'][] = 'personalize-content-set-item-content';
 }

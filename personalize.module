@@ -81,10 +81,10 @@ function personalize_menu() {
   $items['admin/structure/personalize/add'] = array(
     'title' => 'Add Personalization Campaign',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_agent_form'),
+    'page arguments' => array('personalize_campaign_wizard', NULL, 'base'),
     'access arguments' => array('manage personalized content'),
     'type' => MENU_LOCAL_ACTION,
-    'file' => 'personalize.admin.inc',
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/variations'] = array(
     'title' => 'Variation sets',
@@ -137,26 +137,27 @@ function personalize_menu() {
   $items['admin/structure/personalize/manage/%personalize_agent'] = array(
     'title callback' => 'personalize_campaign_title_callback',
     'title arguments' => array(4),
-    'page callback' => 'personalize_agent_page',
-    'page arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard', 4, 5),
     'access arguments' => array('manage personalized content'),
-    'file' => 'personalize.admin.inc',
+    'file' => 'personalize.admin.campaign.inc',
   );
+  // This link is now deprecated but included here for backwards compatibility.
   $items['admin/structure/personalize/manage/%personalize_agent/edit'] = array(
-    'title' => 'Edit campaign',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE,
+    'title callback' => 'personalize_campaign_title_callback',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard', 4, ''),
+    'access arguments' => array('manage personalized content'),
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/report'] = array(
-    'title' => 'Report',
-    'description' => 'Evaluate your personalization campaign results.',
-    'page callback' => 'personalize_campaign_report',
-    'page arguments' => array(4, 6),
-    'access callback' => 'user_access',
+    'title callback' => 'personalize_campaign_title_callback',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_campaign_wizard', 4, 'review'),
     'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_TASK,
-    'context' => MENU_CONTEXT_PAGE,
-    'file' => 'personalize.admin.inc',
+    'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(
     'title' => 'Delete campaign',
@@ -371,8 +372,7 @@ function personalize_start_agents() {
 function personalize_agent_stop_now($agent_data) {
   // First check if a variable has been set specifying a timestamp for
   // when this agent should be paused.
-  $variable = _personalize_agent_get_stoptime_variable($agent_data->machine_name);
-  $stop_time = variable_get($variable, 0);
+  $stop_time = personalize_agent_get_stop_date($agent_data->machine_name);
   if ($stop_time > 0) {
     $ts = time();
     if ($ts >= $stop_time) {
@@ -402,8 +402,7 @@ function personalize_agent_stop_now($agent_data) {
 function personalize_agent_start_now($agent_data) {
   // Check if a variable has been set specifying a timestamp for when this
   // agent should be started.
-  $variable = _personalize_agent_get_starttime_variable($agent_data->machine_name);
-  $start_time = variable_get($variable, 0);
+  $start_time = personalize_agent_get_start_date($agent_data->machine_name);
   if ($start_time > 0) {
     if (isset($agent_data->started) && $agent_data->started > 0 && $agent_data->started >= $start_time) {
       // This agent has already been started once since the start time specified.
@@ -662,27 +661,6 @@ function personalize_campaign_title_callback($agent_data) {
 
 
 /**
- * Implements hook_element_info().
- */
-function personalize_element_info() {
-  return array(
-    'personalize_admin_section' => array(
-      '#theme_wrappers' => array('personalize_admin_section'),
-    ),
-    'personalize_admin_content' => array(
-      '#theme_wrappers' => array('personalize_admin_content'),
-      '#title' => '',
-      '#collapsible' => 0,
-      '#pre_render' => array('personalize_pre_render_admin_content'),
-    ),
-    'personalize_content_set_item' => array(
-      '#theme_wrappers' => array('personalize_content_set_item'),
-      '#title' => '',
-    ),
-  );
-}
-
-/**
  * Implements hook_library().
  */
 function personalize_library() {
@@ -785,27 +763,10 @@ function personalize_theme($existing, $type, $theme, $path) {
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
     ),
-    'personalize_admin_section' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'template' => 'personalize-admin-section',
-    ),
-    'personalize_admin_content' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-    ),
     'personalize_admin_info_details' => array(
       'render element' => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
-    ),
-    'personalize_content_set_item' => array(
-      'render element' => 'element',
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'template' => 'personalize-content-set-item',
     ),
     'personalize_campaign_status_update' => array(
       'path' => $path . '/theme',
@@ -833,15 +794,26 @@ function personalize_theme($existing, $type, $theme, $path) {
         'attributes' => array(),
       ),
     ),
-    'personalize_option_set_header' => array(
+    'personalize_wizard_variations_header' => array(
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
       'variables' => array(
+        'variation_title' => t('Variation set'),
         'variation_count' => 0,
         'report' => array(),
         'report_link' => '',
       ),
     ),
+    'personalize_wizard_section_title' => array(
+      'render element'  => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    ),
+    'personalize_wizard_process_bar' => array(
+      'render element' => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    )
   );
 }
 
@@ -1093,9 +1065,8 @@ function personalize_agent_set_status($agent_name, $status) {
 
   if ($status == PERSONALIZE_STATUS_COMPLETED) {
     // Register the end time of the campaign.
-    $end_time_var = _personalize_agent_get_stoptime_variable($agent_name);
     $now = time();
-    variable_set($end_time_var, $now);
+    personalize_agent_set_stop_date($agent_name, $now);
     // Check if we need to delete all the actions for completed campaigns.
     // @todo expose this setting via the UI
     if (variable_get('personalize_delete_actions_on_campaign_completion', FALSE)) {
@@ -1107,7 +1078,6 @@ function personalize_agent_set_status($agent_name, $status) {
         }
       }
     }
-
   }
 
   if ($status == PERSONALIZE_STATUS_RUNNING) {
@@ -1129,8 +1099,8 @@ function personalize_agent_set_status($agent_name, $status) {
   variable_set(_personalize_agent_get_status_variable($agent_name), $status);
 
   if ($old_status == PERSONALIZE_STATUS_COMPLETED) {
-    // Remove the variable holding the end time of the campaign.
-    variable_del(_personalize_agent_get_stoptime_variable($agent_name));
+    // Indicate that the agent end date should be reset.
+    personalize_agent_set_stop_date($agent_name, 0);
   }
 
   // Clear the visitor context cache settings for running campaigns.
@@ -1267,6 +1237,54 @@ function personalize_agent_get_status($agent_name) {
 }
 
 /**
+ * Helper function to return the current agent scheduled start date.
+ *
+ * @return int
+ *   The timestamp for the date to start or 0 if not set.
+ */
+function personalize_agent_get_start_date($agent_name) {
+  $variable = _personalize_agent_get_starttime_variable($agent_name);
+  return variable_get($variable, 0);
+}
+
+/**
+ * Helper function to set the scheduled start date for an agent.
+ */
+function personalize_agent_set_start_date($agent_name, $start_date) {
+  $variable = _personalize_agent_get_starttime_variable($agent_name);
+  if ($start_date > 0) {
+    variable_set($variable, $start_date);
+  }
+  else {
+    variable_del($variable);
+  }
+}
+
+/**
+ * Helper function to return the current agent scheduled end date.
+ *
+ * @return int
+ *   The timestamp for the date to end or 0 if not set.
+ */
+function personalize_agent_get_stop_date($agent_name) {
+  $variable = _personalize_agent_get_stoptime_variable($agent_name);
+  return variable_get($variable, 0);
+}
+
+/**
+ * Helper function to set the scheduled end date for an agent.
+ */
+function personalize_agent_set_stop_date($agent_name, $end_date) {
+  $variable = _personalize_agent_get_stoptime_variable($agent_name);
+  if ($end_date > 0) {
+    variable_set($variable, $end_date);
+  }
+  else {
+    variable_del($variable);
+  }
+}
+
+/**
  * Returns whether or not we are in admin mode.
  *
  * @return bool
@@ -1309,7 +1327,7 @@ function personalize_pause_if_running($agent_name) {
   $status = personalize_agent_get_status($agent_name);
   if ($status & PERSONALIZE_STATUS_RUNNING) {
     personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
-    $campaign_url = "admin/structure/personalize/manage/{$agent_name}/edit";
+    $campaign_url = "admin/structure/personalize/manage/{$agent_name}";
     $current_path = current_path();
     $destination_path = isset($_GET['destination']) ? $_GET['destination'] : $current_path;
     if ($current_path !== $campaign_url && $destination_path != $campaign_url) {
@@ -2040,6 +2058,7 @@ function personalize_agent_save($agent) {
     $agent = (object) $agent_array;
   }
 
+  module_invoke_all('personalize_agent_presave', $agent);
   entity_save('personalize_agent', $agent);
 
   // Make sure the static cache for this agent is reset.

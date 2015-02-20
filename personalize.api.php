@@ -281,11 +281,15 @@ function hook_personalize_delete_link($option_set) {
  *   A stdClass object representing the loaded agent.
  * @param stdClass $option_set
  *   (optional) The content variation set for filtering report data.
+ * @param array $form
+ *   (optional) The form array if this is called in the context of a form.
+ * @param array $form_state
+ *   (optional) The form_state array if this is called in the context of a form.
  *
  * @return string|array
  *   Either a string of themed output or an array that can be passed to drupal_render.
  */
-function hook_personalize_campaign_report($agent_data, $option_set) {
+function hook_personalize_campaign_report($agent_data, $option_set, $form, &$form_state) {
 
 }
 
@@ -330,5 +334,28 @@ function hook_personalize_get_executor_options() {
  *   The render array for the selected option.
  */
 function hook_personalize_option_load($option_set, $option) {
+
+}
+
+/**
+ * Allows the alteration of any of the subforms within the personalize
+ * campaign creation/editing flow.
+ *
+ * Options are:
+ * - base
+ * - variations (what)
+ * - goals (why)
+ * - targeting (why)
+ * - scheduling (when)
+ * - summary/reports (review)
+ *
+ * @param array $form
+ *   The form that can be altered (passed by reference).
+ * @param array $form_state
+ *   The unalterable form state for context.
+ * @param stdClass $agent_data
+ *   The unalterable data for the current campaign for context.
+ */
+function hook_personalize_campaign_wizard_OPTION_alter(&$form, $form_state, $agent_data) {
 
 }
