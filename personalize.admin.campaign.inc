@@ -139,6 +139,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
 
   // Disable all options when creating a campaign for the first time.
   if (empty($agent_data->machine_name)) {
+    $form['process_bar']['navigation']['#attributes']['class'][] = 'personalize-wizard-navigation-disabled';
     array_walk($form['process_bar']['navigation']['#options'], function(&$item) { $item['disabled'] = TRUE; });
   }
   else {

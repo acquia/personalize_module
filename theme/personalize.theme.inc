@@ -241,7 +241,9 @@ function theme_personalize_wizard_process_bar($variables) {
   $output = '';
   $output .= '<div id="personalize-wizard-process-bar">';
   // Subform navigation.
-  $output .= '<div class="personalize-wizard-navigation clearfix">';
+  $classes = empty($navigation['#attributes']['class']) ? array() : $navigation['#attributes']['class'];
+  $classes[] = 'clearfix';
+  $output .= '<div class="' . implode(' ', $classes) . '">';
   if (!empty($navigation)) {
     $output .= '<ul>';
     foreach ($navigation['#options'] as $key => $option) {
@@ -266,12 +268,14 @@ function theme_personalize_wizard_process_bar($variables) {
   }
   // Help
   if (!empty($message) || !empty($help)) {
+    $output .= '<div class="personalize-wizard-section-help">';
     $output .= '<div class="personalize-wizard-instructions">' . $message;
     if (!empty($help)) {
       $output .= '<a href="" class="personalize-wizard-learn-more">' . t('Learn more') . '</a>';
     }
     $output .= '</div>';
-    $output .= '<div class="personalize-wizard-section-help">' . $help . '</div>';
+    $output .= '<div class="personalize-wizard-expanded-help">' . $help . '</div>';
+    $output .= '</div>';
   }
   $output .= '</div>';
   return $output;
