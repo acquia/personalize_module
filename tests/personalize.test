@@ -199,21 +199,9 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
       case 'wizard_next':
         return t('Next');
       case 'wizard_done':
-        return t('Done');
+        return t('Save');
       case 'wizard_start':
         return t('Start');
-      case 'wizard_scheduled':
-        return t('Save');
-      case 'wizard_variations':
-        return t('What');
-      case 'wizard_goals':
-        return t('Why');
-      case 'wizard_targeting':
-        return t('Who');
-      case 'wizard_scheduling':
-        return t('When');
-      case 'wizard_review':
-        return t('Review');
       case 'create_campaign':
         return t('Create campaign');
       case 'add_goal':
@@ -1919,7 +1907,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // Make sure you can't create a campaign without any agents.
     $this->drupalGet('admin/structure/personalize/add');
     $this->assertText(t('You don\'t have any agent types enabled.'));
-    $this->assertNoFieldByName('op', $this->getButton('agent'));
+    $this->assertNoFieldByName('op', $this->getButton('create_campaign'));
 
     // Enable a test agent and verify that a campaign edit form is presented.
     module_enable(array('personalize_test'));
@@ -2053,7 +2041,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     $machine_name = $agent->getMachineName();
     // Navigate to the scheduling tab and check dates.
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_scheduling'));
+    $this->drupalGet('admin/structure/personalize/manage/' . $machine_name . '/scheduling');
     // Verify that the agent does not have start or end dates specified.
     $start_date = personalize_agent_get_start_date($machine_name);
     $this->assertEqual($start_date, 0);
@@ -2118,7 +2106,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->assertEqual($end_date, personalize_agent_get_stop_date($machine_name));
 
     // Go back to the scheduling form.
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_scheduling'));
+    $this->drupalGet('admin/structure/personalize/manage/' . $machine_name . '/scheduling');
 
     // Reset the dates.
     $edit = array(
@@ -2300,7 +2288,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalPost('admin/structure/personalize', array('status' => PERSONALIZE_STATUS_PAUSED), t('Change'), array(), array(), $html_id_first_agent);
     $this->assertEqual(PERSONALIZE_STATUS_PAUSED, personalize_agent_get_status($first_agent_machine_name));
     $this->resetAll();
-    $this->assertFalse(variable_get($end_time_var, 0));
+    $this->assertFalse(personalize_agent_get_stop_date($first_agent_machine_name));
   }
 
   /**
@@ -2692,9 +2680,9 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
 
     // Go to the campaign edit page and there should be a warning about the
     // orphaned goal.
-    $this->drupalGet('admin/structure/personalize/manage/' . $agents[1]->getMachineName() . '/edit');
+    $this->drupalGet('admin/structure/personalize/manage/' . $agents[1]->getMachineName() . '/goals');
     $this->assertText('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.');
-    $this->drupalPost(NULL, array(), $this->getButton('goal'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
     $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()), TRUE);
     $this->assertEqual(0, count($goals));
     // Set the third agent to completed, this should not cause the action to be

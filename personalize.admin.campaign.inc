@@ -426,7 +426,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
     $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
     // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_fixed_targeting_values_for_agent($agent_data);
+    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
   }
 
   foreach ($option_sets as $option_set) {
@@ -464,6 +464,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     );
 
     $variant_number = 1;
+    $targeting = personalize_get_targeting_for_options($option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       $is_control = $variant_number == 1;
@@ -555,7 +556,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
           '#title' => t('Show to visitors with specific traits'),
           '#type' => 'checkbox',
-          '#default_value' => !empty($option['fixed_targeting']) ? 1 : 0,
+          '#default_value' => !empty($targeting[$option['option_id']]) ? 1 : 0,
           '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
         );
         $states = array(
@@ -704,14 +705,23 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
 function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
   $goals = $exclude = array();
+  $all_actions = visitor_actions_get_actions();
   foreach ($goal_entities as $obj) {
     $goals[] = (array) $obj;
   }
 
-  // Any action already set as a goal on this campaign should be excluded
-  // from the action dropdown.
-  foreach ($goals as $goal) {
-    $exclude[$goal['action']] = $goal['action'];
+  foreach ($goals as $i => $goal) {
+    if (!isset($all_actions[$goal['action']])) {
+      // The action for this goal no longer exists - don't include it in the form
+      // and set a warning that it will be removed upon save.
+      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
+      unset($goals[$i]);
+    }
+    else {
+      // Any action already set as a goal on this campaign should be excluded
+      // from the action dropdown.
+      $exclude[$goal['action']] = $goal['action'];
+    }
   }
 
   if (empty($goals)) {
@@ -826,11 +836,13 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
       )
     );
     $options = $goal['action'] == '' ? $new_goal_options : $goal_options;
-    // If the current goal is a limited use visitor action, then it won't be
-    // in the list of options to display.
+
     if (!empty($goal['action']) && empty($options[$goal['action']])) {
-      $goal_action = visitor_actions_custom_load($goal['action']);
-      $options = array_merge(array($goal['action'] => $goal_action['label']), $options);
+      if (isset($all_actions[$goal['actions']])) {
+        // The current goal was excluded from the list of options because it is
+        // a limited use visitor action, just add it separately here.
+        $options = array_merge(array($goal['action'] => $all_actions[$goal['action']]['label']), $options);
+      }
     }
     $section['all_goals'][$delta]['action_name'] = array(
       '#type' => 'select',
@@ -1344,7 +1356,7 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       // Keep track of feature strings that have already been designated to options,
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
-      $designated_features = $option_features = $feature_rules = array();
+      $designated_features = $targeting = array();
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -1371,33 +1383,29 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
             $rules[$feature_string]['plugin'] = $plugin_name;
           }
           foreach ($feature_values as $feature) {
-            $option_features[$option_id][] = $feature;
-            $feature_rules[$option_id][$feature] = $rules[$feature];
             // Mark this feature string as already designated.
             if (!in_array($feature, $designated_features)) {
               $designated_features[] = $feature;
             }
             else {
-              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produced the desired effect.'), 'warning');
+              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produce the desired effect.'), 'warning');
             }
-
           }
-        }
-      }
-
-      // Now add the features to the option set's options array.
-      foreach ($option_set->options as &$option) {
-        if (isset($option_features[$option['option_id']])) {
-          $option['fixed_targeting'] = $option_features[$option['option_id']];
-          $option['fixed_targeting_rules'] = $feature_rules[$option['option_id']];
-
+          $rule = array(
+            'option_id' => $option_id,
+            'targeting_features' => $feature_values,
+            'targeting_rules' => $rules,
+          );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
-          if (isset($values['options'][$option['option_id']]['explicit_targeting']['strategy'])) {
-            $option['fixed_targeting_strategy'] = $values['options'][$option['option_id']]['explicit_targeting']['strategy'];
+          if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
+            $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
+          $targeting[] = $rule;
         }
       }
+
+      $option_set->targeting = $targeting;
       personalize_option_set_save($option_set);
     }
   }
