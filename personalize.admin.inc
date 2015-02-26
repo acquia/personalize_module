@@ -1830,7 +1830,7 @@ function personalize_set_campaign_context_callback($agent_data) {
  * Landing page for configuring agents.
  */
 function personalize_admin_page() {
-  return '<a href="' . base_path() . 'admin/content/personalize/agents">manage agents</a>';
+  return l(t('manage agents'), 'admin/content/personalize/agents');
 }
 
 /**
