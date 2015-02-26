@@ -529,9 +529,12 @@ function personalize_agent_get_map_settings($agent_name, $option_set = NULL, &$a
   // If no option set passed, then just get the contexts for all.
   $option_sets = empty($option_set) ? personalize_option_set_load_by_agent($agent_name) : array($option_set);
   foreach ($option_sets as $option_set) {
-    foreach ($option_set->options as $option) {
-      if (!empty($option['fixed_targeting_rules'])) {
-        foreach($option['fixed_targeting_rules'] as $rule) {
+    if (empty($option_set->targeting)) {
+      continue;
+    }
+    foreach ($option_set->targeting as $targ) {
+      if (!empty($targ['targeting_rules'])) {
+        foreach($targ['targeting_rules'] as $rule) {
           // Doesn't matter if we overwrite an existing value as they are all the
           // same key/value pairs.
           $all_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
@@ -919,7 +922,6 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
     return;
   }
   $loaded['osids'][] = $option_set->osid;
-  $attached = isset($element['#attached']) ? $element['#attached'] : array();
   $agent_name = $option_set->agent;
   if ($skip_completed && personalize_agent_get_status($agent_name) === PERSONALIZE_STATUS_COMPLETED) {
     return;
@@ -963,15 +965,33 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
     $personalize_settings['data']['personalize']['mvt'] = $mvt_settings;
   }
   $assets['js'] = array_merge_recursive($assets['js'], array($personalize_settings));
+  personalize_merge_element_assets($element, $assets);
+
+  // Mark the entity as being personalized.
+  $element['#personalize'] = (isset($element['#entity_type'])) ? $element['#entity_type'] : NULL;
+  // Allow other modules to add settings as needed.
+  foreach(module_implements('personalize_option_set_render') as $module) {
+    $func = $module . '_personalize_option_set_render';
+    $func($element, $option_set);
+  }
+}
+
+/**
+ * Merges js and css assets required for personalization into the element array.
+ *
+ * @param $element
+ *   The render array of the element being personalized.
+ * @param $assets
+ *   The array of assets needed for personalization.
+ */
+function personalize_merge_element_assets(&$element, $assets) {
+  $attached = isset($element['#attached']) ? $element['#attached'] : array();
   foreach ($assets as $type => $data_array) {
     if (!isset($attached[$type])) {
       $attached[$type] = array();
     }
     $attached[$type] = array_merge($attached[$type], $data_array);
   }
-
-  // Mark the entity as being personalized.
-  $element['#personalize'] = (isset($element['#entity_type'])) ? $element['#entity_type'] : NULL;
   $element['#attached'] = $attached;
 }
 
@@ -2619,9 +2639,12 @@ function personalize_visitor_context_expiration_load() {
     // Add explicit targeting contexts for options within the campaign.
     $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
     foreach($option_sets as $option_set) {
-      foreach($option_set->options as $option) {
-        if (!empty($option['fixed_targeting_rules'])) {
-          foreach($option['fixed_targeting_rules'] as $rule) {
+      if (empty($option_set->targeting)) {
+        continue;
+      }
+      foreach($option_set->targeting as $targ) {
+        if (!empty($targ['targeting_rules'])) {
+          foreach($targ['targeting_rules'] as $rule) {
             $current_campaign_contexts[$rule['plugin']][$rule['context']] = $rule['context'];
           }
         }
