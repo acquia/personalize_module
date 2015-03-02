@@ -1186,16 +1186,9 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
     drupal_set_message(t('There was a problem saving the campaign.'));
   }
 
-  // If the button that caused the submit is from the navigation, then the next
-  // step should be the clicked navigation button regardless of the last step.
-  if ($form_state['triggering_element']['#name'] !== 'wizard_submit') {
-    $form_state['new_step'] = $form_state['triggering_element']['#name'];
-  }
-  else {
-    // If the "Start" button was pressed then start the campaign.
-    if ($form_state['triggering_element']['#value'] === t('Start')) {
-      personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
-    }
+  // If the "Start" button was pressed then start the campaign.
+  if ($form_state['triggering_element']['#value'] === t('Start')) {
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
   }
 
   // Rebuild the form to show the next step.
