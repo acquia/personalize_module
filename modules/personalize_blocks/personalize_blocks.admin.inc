@@ -454,6 +454,9 @@ function personalize_blocks_form_validate($form, &$form_state) {
         if ($custom_block_exists) {
           form_set_error('blocks][' . $j . '][block][add][info', t('Ensure that each block description is unique.'));
         }
+        else {
+          $num_blocks++;
+        }
       }
       if (!empty($block['block']['bid'])) {
         $num_blocks++;
