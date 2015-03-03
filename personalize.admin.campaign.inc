@@ -626,6 +626,8 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     '#title' => 'Preview link',
     '#description' => t('Enter the internal Drupal path on your site to a page containing this content variation set. Enter &lt;front&gt; to link to the front page.'),
     '#default_value' => !empty($option_set->preview_link) ? $option_set->preview_link : '',
+    '#element_validate' => array('personalize_form_element_path_validate'),
+    '#allow_external' => FALSE,
   );
   // Display options to select the executor if supported.
   $executors = personalize_get_executors();
@@ -1110,14 +1112,6 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
 
   $need_form_state_cache_clear = FALSE;
   foreach ($form_values as $option_set_id => $values) {
-    personalize_campaign_wizard_validate_variations_advanced($form_values[$option_set_id], 'option_sets][' . $option_set_id . ']');
-    if (!empty($form_values[$option_set_id]['advanced']['preview_link'])) {
-      if ($form_values[$option_set_id]['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
-        form_set_error('option_sets][' . $option_set_id . '][advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
-          '@option_set' => $form_values[$option_set_id]['advanced']['label'],
-        )));
-      }
-    }
     if (!empty($form_values[$option_set_id]['options'])) {
       foreach ($form_values[$option_set_id]['options'] as $option_name => $option) {
         if (isset($option['enable_explicit_targeting']) && $option['enable_explicit_targeting'] == 0) {
@@ -1131,25 +1125,6 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   // Drupal caches form_state before validators are triggered, so flush it
   if ($need_form_state_cache_clear) {
     cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
-  }
-}
-
-/**
- * Validation for advanced settings form for a particular option set.
- *
- * @param array $form_values
- *   An array of form state values for each option set.
- * @param string $parents
- *   The string representation of the parents to the form values used to target
- *   error messages, e.g. variations][option_sets][option_set_1]
- */
-function personalize_campaign_wizard_validate_variations_advanced($form_values, $parents) {
-  if (!empty($form_values['advanced']['preview_link'])) {
-    if ($form_values['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values['advanced']['preview_link']) === FALSE) {
-      form_set_error($parents . '[advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
-        '@option_set' => $form_values['advanced']['label'],
-      )));
-    }
   }
 }
 
