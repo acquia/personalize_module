@@ -1129,6 +1129,25 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
 }
 
 /**
+ * Validation for advanced settings form for a particular option set.
+ *
+ * @param array $form_values
+ *   An array of form state values for each option set.
+ * @param string $parents
+ *   The string representation of the parents to the form values used to target
+ *   error messages, e.g. variations][option_sets][option_set_1]
+ */
+function personalize_campaign_wizard_validate_variations_advanced($form_values, $parents) {
+  if (!empty($form_values['advanced']['preview_link'])) {
+    if ($form_values['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values['advanced']['preview_link']) === FALSE) {
+      form_set_error($parents . '[advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
+        '@option_set' => $form_values['advanced']['label'],
+      )));
+    }
+  }
+}
+
+/**
  * Custom validation callback for scheduling form.
  */
 function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
