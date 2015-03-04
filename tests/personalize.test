@@ -1094,7 +1094,7 @@ EOT;
       "option_sets[option_set_$osid2][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
       "option_sets[option_set_$osid2][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/targeting", $edit, $this->getButton('wizard_next'));
 
     // Start the agent up and verify the various contexts are included.
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
@@ -1515,7 +1515,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
       "option_sets[option_set_$osid][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
-    $this->drupalPost("admin/structure/personalize/manage/$machine_name/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/$machine_name/targeting", $edit, $this->getButton('wizard_next'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
     $target_name = 'target_1';
@@ -1588,7 +1588,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $osid = $option_set->osid;
 
     // Confirm that we have visitor context options but cannot set fixed targeting.
-    $this->drupalGet("admin/structure/personalize/manage/$machine_name/variations");
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/targeting");
     $this->assertNoField("option_sets[option_set_$osid][options][option-A][enable_explicit_targeting]");
     $this->assertNoField("option_sets[option_set_$osid][options][option-B][enable_explicit_targeting]");
 
@@ -1604,7 +1604,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       "option_sets[option_set_$osid][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
       "option_sets[option_set_$osid][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
-    $this->drupalPost("admin/structure/personalize/manage/$machine_name/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/$machine_name/targeting", $edit, $this->getButton('wizard_next'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
     $target_name = 'target_1';
