@@ -1502,8 +1502,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
+    $target_name = 'target_1';
     $expected_targeting = array(
-      array(
+      $target_name => array(
         'option_id' => 'option-A',
         'targeting_features' => array('test_user_field_1--ss-first-value'),
         'targeting_rules' => array(
@@ -1514,6 +1515,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
             'plugin' => 'user_profile_context',
           ),
         ),
+        'weight' => 0,
         'targeting_strategy' => 'OR'
       )
     );
@@ -1530,9 +1532,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting[0]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_features']);
-    $this->assertEqual($expected_targeting[0]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_rules']);
-    $this->assertEqual($expected_targeting[0]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_strategy']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_features']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_rules']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_strategy']);
   }
 
   /**
@@ -1594,8 +1596,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $this->drupalPost("admin/structure/personalize/manage/$machine_name/edit", $edit, $this->getButton('option'));
     $this->resetAll();
     $option_set = personalize_option_set_load($osid);
+    $target_name = 'target_1';
     $expected_targeting = array(
-      array(
+      $target_name => array(
         'option_id' => 'option-A',
         'targeting_features' => array('test_user_field_1--ss-first-value'),
         'targeting_rules' => array(
@@ -1606,6 +1609,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
             'plugin' => 'user_profile_context',
           ),
         ),
+        'weight' => 0,
         'targeting_strategy' => 'OR'
       ),
     );
@@ -1618,9 +1622,9 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
 
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
-    $this->assertEqual($expected_targeting[0]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_features']);
-    $this->assertEqual($expected_targeting[0]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_rules']);
-    $this->assertEqual($expected_targeting[0]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][0]['targeting_strategy']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_features'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_features']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_rules'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_rules']);
+    $this->assertEqual($expected_targeting[$target_name]['targeting_strategy'], $settings['personalize']['option_sets']['osid-' . $osid]['targeting'][$target_name]['targeting_strategy']);
   }
 
   /**
