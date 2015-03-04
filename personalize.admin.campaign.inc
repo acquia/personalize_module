@@ -1259,6 +1259,7 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
       $designated_features = $targeting = array();
+      $target_weight = 0;
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -1297,13 +1298,15 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
             'option_id' => $option_id,
             'targeting_features' => $feature_values,
             'targeting_rules' => $rules,
+            'weight' => $target_weight,
           );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
           if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
             $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
-          $targeting[] = $rule;
+          $targeting['target_' . ($target_weight+1)] = $rule;
+          $target_weight++;
         }
       }
 
