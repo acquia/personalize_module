@@ -19,6 +19,13 @@
 function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $selected = NULL) {
   module_load_include('inc', 'personalize', 'personalize.admin');
 
+  // We have to specify the include file so as not to lose it during rendering from ajax.
+  // @see personalize_agent_form_ajax_submit()
+  // @see drupal_retrieve_form():734
+  $form_state['build_info']['files'] = array(
+    drupal_get_path('module', 'personalize') . '/personalize.admin.campaign.inc',
+  );
+
   // Set the default step.
   $selected = empty($selected) ? 'variations' : $selected;
 
@@ -47,10 +54,12 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Read the current step from the parameters unless the form process has
   // already started.
   $current_step = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : $selected;
-  // Make sure that the current step requested is applicable to the agent.
-  $agent_steps = _personalize_campaign_wizard_steps($agent_instance);
-  if (empty($agent_steps[$current_step])) {
-    $current_step = 'variations';
+  if ($current_step !== 'base') {
+    // Make sure that the current step requested is applicable to the agent.
+    $agent_steps = _personalize_campaign_wizard_steps($agent_instance);
+    if (empty($agent_steps[$current_step])) {
+      $current_step = 'variations';
+    }
   }
   $form_state['storage']['step'] = $current_step;
 
@@ -186,13 +195,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
  *   The form array for the actions of the multi-step form.
  */
 function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $agent_instance) {
-
-  $status = empty($agent_data->machine_name) ? PERSONALIZE_STATUS_NOT_STARTED : personalize_agent_get_status($agent_data->machine_name);
-  $button_value = t('Next');
-  $message = '';
-  $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
-  $scheduled = personalize_agent_get_start_date($agent_data->machine_name) > 0;
-
   // Determine the preview text to show with the button based on the next step
   // for this agent instance.
   $steps = _personalize_campaign_wizard_steps($agent_instance);
@@ -397,13 +399,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     return $form;
   }
 
-  $targeting_support = FALSE;
-  if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
-    $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
-    // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
-  }
-
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
@@ -521,45 +516,9 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
           ),
         );
       }
-      if ($targeting_support && !empty($targeting_values)) {
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
-          '#type' => 'container',
-          '#attributes' => array(
-            'class' => array('personalize-variation-row'),
-          ),
-        );
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
-          '#title' => t('Show to visitors with specific traits'),
-          '#type' => 'checkbox',
-          '#default_value' => !empty($targeting[$option['option_id']]) ? 1 : 0,
-          '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
-        );
-        $states = array(
-          'visible' => array(
-            ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
-          ),
-        );
-        $parents = array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id']);
-        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option_set, $option, $targeting_values, $targeting_support, $states, $parents, $form_state);
-      }
       $variant_number++;
     } // end of loop through variations.
 
-    switch ($targeting_support) {
-      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
-        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
-          '#type' => 'markup',
-          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the visitor must have all specified contexts for the rule to apply.')
-
-        );
-        break;
-      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
-        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
-          '#type' => 'markup',
-          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the rule will apply if the visitor has any of the specified contexts.')
-        );
-        break;
-    }
     // Add the advanced options.
     $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
   } // End loop through option sets.
@@ -669,15 +628,165 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
       '#markup' => t('This agent does not support targeting.'),
     );
   }
+
+  $form['targeting'] = array(
+    '#type' => 'container',
+    '#tree' => FALSE,
+    '#attributes' => array(
+      'class' => array('personalize-wizard-section'),
+    ),
+  );
+  $form['targeting']['title'] = array(
+    '#type' => 'container',
+    '#title' => t('Targeting'),
+    '#theme' => 'personalize_wizard_section_title',
+  );
+
   // Add visitor context items to the form for agents that support automatic
   // targeting.
-  if (!empty($agent_instance) && $agent_instance instanceof PersonalizeAutoTargetingInterface) {
+  if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
     $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
     if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
-      $form['visitor_context'] = $context_element;
+      $form['targeting']['visitor_context'] = $context_element;
     }
   }
 
+  if (!($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
+    // The rest of this function applies to explicit targeting.
+    return $form;
+  }
+
+  // Load the data used throughout form.
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+  $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
+
+  // Containing element for all option sets.
+  $form['targeting']['option_sets'] = array(
+    '#tree' => TRUE,
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-variation-sets'),
+    ),
+  );
+
+  $section = &$form['targeting']['option_sets'];
+  // For any option sets that have been created for this campaign, display
+  // advanced options for specifying decision name etc.
+  if (empty($option_sets)) {
+    return $form;
+  }
+
+  $targeting_support = FALSE;
+  if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
+    $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
+    // Build up a list of targeting values so we can map options to them.
+    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
+  }
+
+  foreach ($option_sets as $option_set) {
+    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+    $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
+
+    // Show this open if it was just refreshed via Ajax.
+    $section['option_set_' . $option_set->osid] = array(
+      '#tree' => TRUE,
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-option-set'),
+        'id' => $replace_option_set_id, // Used for AJAX replace.
+      ),
+    );
+    $option_set_winner = isset($form_state['winners']['option_set_' . $option_set->osid]) ? $form_state['winners']['option_set_' . $option_set->osid] : $option_set->winner;
+    $section['option_set_' . $option_set->osid]['winner'] = array(
+      '#type' => 'value',
+      '#value' => $option_set_winner,
+    );
+    // Header information.
+    $section['option_set_' . $option_set->osid]['summary'] = array(
+      '#type' => 'markup',
+      '#markup' => theme('personalize_wizard_variations_header', array(
+        'variation_title' => $option_set->label,
+        'variation_count' => count($option_set->options),
+      )),
+      '#theme_wrappers' => array('container'),
+    );
+
+    $variant_number = 1;
+    $targeting = personalize_get_targeting_for_options($option_set);
+    foreach ($option_set->options as $option) {
+      // Determine container classes based on campaign status and winner.
+      $classes = array('personalize-admin-content-item', 'personalize-content-variation', 'clearfix');
+      if ($is_running) {
+        $classes[] = 'personalize-content-variation-running';
+      }
+      else {
+        $classes[] = 'personalize-content-variation-stopped';
+      }
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']] = array(
+        '#tree' => TRUE,
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => $classes,
+        ),
+      );
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic'] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('personalize-variation-row'),
+        ),
+      );
+
+      $heading = theme('personalize_admin_enumerated_item', array(
+        'enum' => t('V@delta', array('@delta' => $variant_number)),
+        'title' => check_plain($option['option_label']),
+        'title_prefix' => '"',
+        'title_suffix' => '"',
+      ));
+      $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['basic']['heading'] = array(
+        '#markup' => $heading,
+      );
+      if ($targeting_support && !empty($targeting_values)) {
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting'] = array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array('personalize-variation-row'),
+          ),
+        );
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['targeting']['enable_explicit_targeting'] = array(
+          '#title' => t('Show to visitors with specific traits'),
+          '#type' => 'checkbox',
+          '#default_value' => !empty($targeting[$option['option_id']]) ? 1 : 0,
+          '#parents' => array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id'],'enable_explicit_targeting'),
+        );
+        $states = array(
+          'visible' => array(
+            ':input[name="option_sets[option_set_' . $option_set->osid . '][options][' . $option['option_id'] . '][enable_explicit_targeting]"]' => array('checked' => TRUE),
+          ),
+        );
+        $parents = array('option_sets', 'option_set_' . $option_set->osid, 'options', $option['option_id']);
+        $section['option_set_' . $option_set->osid]['options'][$option['option_id']]['explicit_targeting'] = personalize_targeting_support_form_elements($option_set, $option, $targeting_values, $targeting_support, $states, $parents, $form_state);
+      }
+      $variant_number++;
+    } // end of loop through variations.
+
+    switch ($targeting_support) {
+      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_AND:
+        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
+          '#type' => 'markup',
+          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the visitor must have all specified contexts for the rule to apply.')
+
+        );
+        break;
+      case PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_OR:
+        $section['option_set_' . $option_set->osid]['explicit_targeting_explanation'] = array(
+          '#type' => 'markup',
+          '#markup' => t('You can add explicit targeting for this content variation. If you choose multiple contexts for an option, then the rule will apply if the visitor has any of the specified contexts.')
+        );
+        break;
+    }
+    // Add the advanced options.
+    $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
+  } // End loop through option sets.
   return $form;
 }
 
@@ -1083,13 +1192,10 @@ function personalize_campaign_wizard_validate($form, &$form_state) {
 }
 
 /**
- * Custom validation callback for variations form.
- *
- * Clean Explicit targeting if "Enable explicit targeting" is unchecked.
- * Ensure that preview links are internal and valid.
+ * Validation callback for targeting form.
  */
-function personalize_campaign_wizard_validate_variations($form, &$form_state) {
-  $form_values = &$form_state['values']['option_sets'];
+function personalize_campaign_wizard_validate_targeting($form, &$form_state) {
+  $form_values = &$form_state['values']['targeting'];
   if (empty($form_values)) {
     return;
   }
@@ -1110,6 +1216,7 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   if ($need_form_state_cache_clear) {
     cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
   }
+
 }
 
 /**
@@ -1169,10 +1276,8 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
   personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
-    // Nothing left to do except start with the variations process.
-    $form_state['storage']['step'] = 'variations';
-    $form_state['values']['agent'] = $agent->machine_name;
-    $form_state['rebuild'] = TRUE;
+    // Redirect to the full wizard view with variations selected.
+    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent->machine_name . '/variations';
     return;
   }
 
@@ -1196,7 +1301,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
 
   // Rebuild the form to show the next step.
-  $agent_instance = personalize_agent_load_agent($agent);
+  $agent_instance = personalize_agent_load_agent($agent->machine_name);
 
   $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state['storage']['step'], $agent_instance);
   $form_state['rebuild'] = TRUE;
@@ -1228,8 +1333,7 @@ function personalize_campaign_wizard_submit_base($form, &$form_state) {
  * Submit handler for the variations section.
  */
 function personalize_campaign_wizard_submit_variations($form, &$form_state, &$agent_data) {
-  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  $form_values = is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
+  $form_values = isset($form_state['values']['option_sets']) && is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
   foreach ($form_values as $option_set_id => $values) {
     $osid = (int) str_replace('option_set_', '', $option_set_id);
     if ($option_set = personalize_option_set_load($osid)) {
@@ -1252,65 +1356,6 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
         personalize_option_set_save($option_set);
         continue;
       }
-
-      // Keep track of which explicit targeting features have already been
-      // designated as each can only be specified for one option.
-      // Keep track of feature strings that have already been designated to options,
-      // which options they have been designated to, and whether there's a rule
-      // associated with each feature.
-      $designated_features = $targeting = array();
-      $target_weight = 0;
-      foreach ($values['options'] as $option_id => $settings) {
-        $option_features[$option_id] = $feature_rules[$option_id] = array();
-        $feature_values = $rules = array();
-        if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
-          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $context_values) {
-            if ($context_values['context'] == '') {
-              continue;
-            }
-            list($plugin_name, $context_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context_values['context']);
-            $context_values['match'] = $context_values['value']['match'];
-            $context_values['operator'] = $context_values['value']['operator'];
-            unset($context_values['value'], $context_values['remove']);
-            // Generate a value code based on the operator used.
-            $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
-            // Create a feature string for this context value that can be consumed
-            // by the agent that will be using it.
-            $feature_string = $agent_instance->convertContextToFeatureString($context_name, $value);
-            $feature_values[] = $feature_string;
-            // Save the actual rule information as this is what will be used
-            // for evaluating it.
-            $rules[$feature_string] = $context_values;
-            // Override the context to split it into plugin and context parts.
-            $rules[$feature_string]['context'] = $context_name;
-            $rules[$feature_string]['plugin'] = $plugin_name;
-          }
-          foreach ($feature_values as $feature) {
-            // Mark this feature string as already designated.
-            if (!in_array($feature, $designated_features)) {
-              $designated_features[] = $feature;
-            }
-            else {
-              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produce the desired effect.'), 'warning');
-            }
-          }
-          $rule = array(
-            'option_id' => $option_id,
-            'targeting_features' => $feature_values,
-            'targeting_rules' => $rules,
-            'weight' => $target_weight,
-          );
-          // If a strategy has been specified for how to use the targeting features,
-          // then store this as well.
-          if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
-            $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
-          }
-          $targeting['target_' . ($target_weight+1)] = $rule;
-          $target_weight++;
-        }
-      }
-
-      $option_set->targeting = $targeting;
       personalize_option_set_save($option_set);
     }
   }
@@ -1350,6 +1395,76 @@ function personalize_campaign_wizard_submit_targeting($form, &$form_state, &$age
     $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
   }
   $agent_data->data['visitor_context'] = $visitor_context;
+  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
+  $form_values = isset($form_state['values']['option_sets']) && is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
+  foreach ($form_values as $option_set_id => $values) {
+    $osid = (int) str_replace('option_set_', '', $option_set_id);
+    if ($option_set = personalize_option_set_load($osid)) {
+      // Keep track of which explicit targeting features have already been
+      // designated as each can only be specified for one option.
+      // Keep track of feature strings that have already been designated to options,
+      // which options they have been designated to, and whether there's a rule
+      // associated with each feature.
+      $designated_features = $targeting = array();
+      $target_weight = 0;
+      if (empty($values['options'])) {
+        continue;
+      }
+      foreach ($values['options'] as $option_id => $settings) {
+        $feature_values = $rules = array();
+        if (isset($settings['explicit_targeting']) && !empty($settings['explicit_targeting']['mapping'])) {
+          foreach ($settings['explicit_targeting']['mapping']['contexts'] as $delta => $context_values) {
+            if ($context_values['context'] == '') {
+              continue;
+            }
+            list($plugin_name, $context_name) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context_values['context']);
+            $context_values['match'] = $context_values['value']['match'];
+            $context_values['operator'] = $context_values['value']['operator'];
+            unset($context_values['value'], $context_values['remove']);
+            // Generate a value code based on the operator used.
+            $value = personalize_targeting_generate_value_code($context_values['match'], $context_values['operator']);
+            // Create a feature string for this context value that can be consumed
+            // by the agent that will be using it.
+            $feature_string = $agent_instance->convertContextToFeatureString($context_name, $value);
+            $feature_values[] = $feature_string;
+            // Save the actual rule information as this is what will be used
+            // for evaluating it.
+            $rules[$feature_string] = $context_values;
+            // Override the context to split it into plugin and context parts.
+            $rules[$feature_string]['context'] = $context_name;
+            $rules[$feature_string]['plugin'] = $plugin_name;
+          }
+          foreach ($feature_values as $feature) {
+            // Mark this feature string as already designated.
+            if (!in_array($feature, $designated_features)) {
+              $designated_features[] = $feature;
+            }
+            else {
+              drupal_set_message(t('You have set the same targeting feature for more than one option. Depending on whether features are AND\'d or OR\'d together for the different options, and on how the decision agent evaluates explicit targeting rules, this may not produce the desired effect.'), 'warning');
+            }
+          }
+          if (!empty($feature_values)) {
+            $rule = array(
+              'option_id' => $option_id,
+              'targeting_features' => $feature_values,
+              'targeting_rules' => $rules,
+              'weight' => $target_weight,
+            );
+            // If a strategy has been specified for how to use the targeting features,
+            // then store this as well.
+            if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
+              $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
+            }
+            $targeting['target_' . ($target_weight + 1)] = $rule;
+            $target_weight++;
+          }
+        }
+      }
+
+      $option_set->targeting = $targeting;
+      personalize_option_set_save($option_set);
+    }
+  }
 }
 
 /**
