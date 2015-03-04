@@ -22,10 +22,6 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Set the default step.
   $selected = empty($selected) ? 'variations' : $selected;
 
-  // Read the current step from the parameters unless the form process has
-  // already started.
-  $form_state['storage']['step'] = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : $selected;
-
   // Determine the data for the current campaign.
   if (empty($agent_data)) {
     if (isset($form_state['values']['agent'])) {
@@ -47,6 +43,16 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   }
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->machine_name) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
+
+  // Read the current step from the parameters unless the form process has
+  // already started.
+  $current_step = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : $selected;
+  // Make sure that the current step requested is applicable to the agent.
+  $agent_steps = _personalize_campaign_wizard_steps($agent_instance);
+  if (empty($agent_steps[$current_step])) {
+    $current_step = 'variations';
+  }
+  $form_state['storage']['step'] = $current_step;
 
   $form['#attached']['library'][] = array('personalize', 'admin.campaign');
 
@@ -115,26 +121,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     '#attributes' => array(
       'class' => array('personalize-wizard-navigation'),
     ),
-    '#options' => array(
-      'variations' => array(
-        'label' => t('What'),
-      ),
-      'goals' => array(
-        'label' => t('Why'),
-      ),
-      'targeting' => array(
-        'label' => t('Who'),
-      ),
-      'scheduling' => array(
-        'label' => t('When'),
-      ),
-      'review' => array(
-        'label' => t('Review'),
-      ),
-      'report' => array(
-        'label' => t('Outcome'),
-      ),
-    ),
+    '#options' => _personalize_campaign_wizard_steps($agent_instance),
   );
 
   // Disable all options when creating a campaign for the first time.
@@ -206,27 +193,14 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
   $scheduled = personalize_agent_get_start_date($agent_data->machine_name) > 0;
 
-  switch ($form_state['storage']['step']) {
-    case 'variations':
-      $message = t('Goals for these variations');
-      break;
-    case 'goals':
-      $message = t('Who\'s going to see what');
-      break;
-    case 'targeting':
-      $message = t('When should this campaign run');
-      break;
-    case 'scheduling':
-      $message = $not_running ? t('Review personalization settings') : t('Review personalization results');
-      break;
-    case 'review':
-      $button_value = $not_running && !$scheduled ? t('Start') : t('Save');
-      break;
-    case 'report':
-      $button_value = '';
-      break;
-  }
-  if (empty($button_value)) {
+  // Determine the preview text to show with the button based on the next step
+  // for this agent instance.
+  $steps = _personalize_campaign_wizard_steps($agent_instance);
+  $next_step = _personalize_campaign_wizard_next_step($form_state['storage']['step'], $agent_instance);
+  $current_info = $steps[$form_state['storage']['step']];
+  $next_info = $steps[$next_step];
+
+  if (empty($next_info) || empty($current_info['button_value'])) {
     return $form;
   }
 
@@ -238,8 +212,8 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#name' => 'wizard_submit',
-    '#value' => $button_value,
-    '#suffix' => $message,
+    '#value' => $current_info['button_value'],
+    '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
   );
 
   return $form;
@@ -690,6 +664,11 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeExplicitTargetingInterface) && !($agent_instance instanceof PersonalizeAutoTargetingInterface))) {
+    return array(
+      '#markup' => t('This agent does not support targeting.'),
+    );
+  }
   // Add visitor context items to the form for agents that support automatic
   // targeting.
   if (!empty($agent_instance) && $agent_instance instanceof PersonalizeAutoTargetingInterface) {
@@ -716,6 +695,11 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
+    return array(
+      '#markup' => t('This agent does not support goals.'),
+    );
+  }
   $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
   $goals = $exclude = array();
   $all_actions = visitor_actions_get_actions();
@@ -1174,9 +1158,6 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
 
   // Call the submit handler that is specific to the current step.
-  // Each step submit handler is responsible for setting the
-  // $form_state['new_step'] value to the appropriate next step.
-  $form_state['new_step'] = 'review';
   $function = 'personalize_campaign_wizard_submit_' . $form_state['storage']['step'];
   if (function_exists($function)) {
     $function($form, $form_state, $agent);
@@ -1196,7 +1177,9 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
 
   // Rebuild the form to show the next step.
-  $form_state['storage']['step'] = $form_state['new_step'];
+  $agent_instance = personalize_agent_load_agent($agent);
+
+  $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state['storage']['step'], $agent_instance);
   $form_state['rebuild'] = TRUE;
 }
 
@@ -1312,7 +1295,6 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       personalize_option_set_save($option_set);
     }
   }
-  $form_state['new_step'] = 'targeting';
 }
 
 /**
@@ -1349,8 +1331,6 @@ function personalize_campaign_wizard_submit_targeting($form, &$form_state, &$age
     $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
   }
   $agent_data->data['visitor_context'] = $visitor_context;
-
-  $form_state['new_step'] = 'scheduling';
 }
 
 /**
@@ -1390,7 +1370,6 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
   }
   // Redraw the form without any additional new goals included.
   unset($form_state['num_goals']);
-  $form_state['new_step'] = 'targeting';
 }
 
 /**
@@ -1398,9 +1377,6 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$agent_data) {
   personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
-
-  // Since this is the last step, just return to the start of the wizard.
-  $form_state['new_step'] = 'review';
 }
 
 /**
@@ -1412,4 +1388,85 @@ function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_
 
   // Decision caching advanced setting.
   $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
+}
+
+/**
+ ********************************************************************
+ *
+ * H E L P E R  F U N C T I O N S
+ *
+ ********************************************************************
+ */
+
+/**
+ * Generate an array of steps for the wizard based on the type of agent shown.
+ *
+ * @param stdClass $agent_instance
+ *   (Optional) The agent instance for the current agent.
+ * @return array
+ *   An array of steps.
+ */
+function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_instance = NULL) {
+  $status = empty($agent_instance) ? PERSONALIZE_STATUS_NOT_STARTED : personalize_agent_get_status($agent_instance->getMachineName());
+  $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
+  $scheduled = !empty($agent_instance) && personalize_agent_get_start_date($agent_instance->getMachineName()) > 0;
+
+  $next = t('Next');
+  $message = '';
+  $steps = array(
+    'variations' => array(
+      'label' => t('What'),
+      'button_value' => $next,
+    ),
+    'goals' => array(
+      'label' => t('Why'),
+      'button_value' => $next,
+      'preview_message' => t('Goals for these variations'),
+    ),
+    'targeting' => array(
+      'label' => t('Who'),
+      'button_value' => $next,
+      'preview_message' => t('Who\'s going to see what'),
+    ),
+    'scheduling' => array(
+      'label' => t('When'),
+      'button_value' => $next,
+      'preview_message' => t('When should this campaign run'),
+    ),
+    'review' => array(
+      'label' => t('Review'),
+      'button_value' => $not_running && !$scheduled ? t('Start') : t('Save'),
+      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
+    ),
+    'report' => array(
+      'label' => t('Outcome'),
+      'button_value' => $next,
+    )
+  );
+  // Remove any steps that aren't applicable to the current agent.
+  if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
+    unset($steps['goals']);
+  }
+  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeAutoTargetingInterface) && !($agent_instance instanceof PersonalizeExplicitTargetingInterface))) {
+    unset($steps['targeting']);
+  }
+  return $steps;
+}
+
+/**
+ * Determine the next step in the wizard based on the type of agent shown.
+ *
+ * @param string $current_step
+ *   The current step key.
+ * @param stdClass $agent_instance
+ *   The agent instance for the current agent.
+ * @return string
+ *   The next step if there is a further step.  If the current step is the last
+ *   step then it is returned.
+ */
+function _personalize_campaign_wizard_next_step($current_step, PersonalizeAgentInterface $agent_instance) {
+  $agent_steps = array_keys(_personalize_campaign_wizard_steps($agent_instance));
+  $index = array_search($current_step, $agent_steps);
+  $index++;
+  return $index < count($agent_steps) ? $agent_steps[$index] : $current_step;
 }
