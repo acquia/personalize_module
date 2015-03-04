@@ -590,7 +590,8 @@ function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
     $form['advanced']['personalize_goal'] = array(
       '#type' => 'checkbox',
       '#title' => t('Add as a goal to the @campaign campaign', array('@campaign' => $campaign)),
-      '#default_value' => 1,
+      // Only check this by default if we're creating a new action.
+      '#default_value' => !isset($form['#visitor_action']['machine_name']),
     );
     $form['advanced']['personalize_goal_value'] = array(
       '#type' => 'textfield',

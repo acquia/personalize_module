@@ -2555,7 +2555,20 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
 
     $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content', 'administer visitor actions'));
     $this->drupalLogin($admin_user);
-
+    // There shouldn't be an "Add as goal" checkbox on the visitor actions add
+    // form.
+    $this->drupalGet('admin/structure/visitor_actions/add');
+    $this->assertNoFieldByName('personalize_goal');
+    // Create a new action which we will edit later on.
+    $non_goal_action = personalize_generate_machine_name($this->randomName(), 'visitor_actions_machine_name_exists', '_');
+    $edit = array(
+      'title' => $non_goal_action,
+      'machine_name' => $non_goal_action,
+      'actionable_element' => 'page',
+      'event[page]' => 'client::view',
+      'pages' => '<front>',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('add_visitor_action'));
     // Create a new agent that supports goals.
     $agent_name = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists');
@@ -2585,6 +2598,12 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     // The limited_use property should have been set via the form_alter.
     $action = visitor_actions_custom_load($action_name);
     $this->assertTrue($action['limited_use']);
+
+    // Edit an existing action and confirm that the "Add as goal" checkbox is
+    // unchecked.
+    $this->drupalGet('admin/structure/visitor_actions/manage/' . $non_goal_action . '/edit');
+    $this->assertFieldByName('personalize_goal');
+    $this->assertNoFieldChecked('edit-personalize-goal');
 
     // Now delete the goal and verify that the visitor action is also deleted.
     $goal = reset($goals);
