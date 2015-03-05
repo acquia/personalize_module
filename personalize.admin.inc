@@ -2529,7 +2529,7 @@ function personalize_agent_form_validate($form, &$form_state) {
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_type, 'handler')) {
     // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state);
+    $class::optionsFormValidate($form, $form_state, array('agent_basic_info', 'options', $agent_type));
   }
   personalize_agent_date_form_validate($form_state['values']);
 }
