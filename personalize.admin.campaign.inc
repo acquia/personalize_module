@@ -1035,7 +1035,11 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
   // Get the agent type specific options form.
-  $form['agent_options'] = $agent_instance->optionsForm($agent_data, array('agent_options', $agent_data->plugin));
+  $form['agent_options'] = array(
+    '#type' => 'container',
+    '#tree' => TRUE,
+  );
+  $form['agent_options']['options'] = $agent_instance::optionsForm($agent_data, array('agent_options', 'options'));
 
   // Add the advanced settings form.
   $form['advanced'] = array(
@@ -1214,7 +1218,7 @@ function personalize_campaign_wizard_validate_review($form, &$form_state) {
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
     // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state);
+    $class::optionsFormValidate($form, $form_state, array('agent_options', 'options'));
   }
 }
 
@@ -1479,7 +1483,7 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
  */
 function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
   // Agent-specific options
-  $agent_data->data = isset($form_state['values']['options'][$agent_data->plugin]) ? $form_state['values']['options'][$agent_data->plugin] : array();
+  $agent_data->data = isset($form_state['values']['agent_options']['options']) ? $form_state['values']['agent_options']['options'] : array();
 
   // Decision caching advanced setting.
   $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
