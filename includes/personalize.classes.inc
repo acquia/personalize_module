@@ -73,6 +73,8 @@ interface PersonalizeAgentInterface {
    *
    * @param $agent_data
    *   The agent being edited, if it's an edit form.
+   * @param array $option_parents
+   *   The array of form element parents for the options.
    *
    * @return array
    *   A FAPI array.
@@ -81,8 +83,11 @@ interface PersonalizeAgentInterface {
 
   /**
    * Validates the form data.
+   *
+   * @param array $option_parents
+   *   The array of form element parents for the options to validate.
    */
-  public static function optionsFormValidate($form, &$form_state);
+  public static function optionsFormValidate($form, &$form_state, $option_parents = array());
 
   /**
    * A method to call once an agent has been saved.
@@ -384,7 +389,7 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
   /**
    * Implements PersonalizeAgentInterface::optionsFormValidate().
    */
-  public static function optionsFormValidate($form, &$form_state) {
+  public static function optionsFormValidate($form, &$form_state, $option_parents = array()) {
     return;
   }
 
