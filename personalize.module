@@ -3230,8 +3230,12 @@ function personalize_form_element_path_validate($element, &$form_state) {
       break;
     }
 
-    // Check if path is valid.
-    if (!drupal_valid_path(drupal_get_normal_path($path), $element['#allow_dynamic'])) {
+    // Check if path is valid.  drupal_valid_path checks for dynamic paths
+    // using % as the wildcard and is broken at that. As a result we test using
+    // the non-dynamic portion.
+    $dynamic = substr($path, -2) === '/*';
+    $test = $dynamic && $element['#allow_dynamic'] ? substr($path, 0, -2) : $path;
+    if (!drupal_valid_path(drupal_get_normal_path($test))) {
       form_error($element, t('You have specified an invalid path for %element', array(
         '%element' => empty($element['#title']) ? $element['#name'] : $element['#title']
       )));

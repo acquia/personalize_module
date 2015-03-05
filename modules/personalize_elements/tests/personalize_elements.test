@@ -185,7 +185,7 @@ class PersonalizeElementsTest extends PersonalizeBaseTest {
     // entered.
     $edit = array(
       'pages_all' => 1,
-      'pages' => 'about',
+      'pages' => 'node',
     );
     $this->drupalPost("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit", $edit, $this->getButton('save'));
     $this->drupalGet("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit");
@@ -194,7 +194,7 @@ class PersonalizeElementsTest extends PersonalizeBaseTest {
     $edit['pages_all'] = 0;
     $this->drupalPost(NULL, $edit, $this->getButton('save'));
     $this->drupalGet("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit");
-    $this->assertFieldByName('pages', 'about');
+    $this->assertFieldByName('pages', 'node');
 
     // Now edit  and specify '<front>' as the path.
     $edit = array(
@@ -207,7 +207,7 @@ class PersonalizeElementsTest extends PersonalizeBaseTest {
       'pages' => 'some invalid url',
     );
     $this->drupalPost("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit", $edit, $this->getButton('save'));
-    $this->assertText('The selected pages must contain valid paths.');
+    $this->assertText('You have specified an invalid path for Pages');
   }
 
   /**
