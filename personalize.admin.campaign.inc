@@ -1566,7 +1566,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
 function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInterface $agent_instance) {
   // If the user is just clicking the standard "save" button then they should
   // stay on the same sub-form.
-  if ($form_state['triggering_element']['#value'] === t('Save')) {
+  if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
     return $form_state['storage']['step'];
   }
   // Determine the next step to show based on the steps available to this agent.
