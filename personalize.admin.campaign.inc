@@ -1030,32 +1030,7 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
   // Get the agent type specific options form.
-  $agent_types = personalize_get_agent_types();
-  foreach ($agent_types as $name => $info) {
-    if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
-      // Form structure for option parents in the current form.
-      $option_parents = array('options', $name);
-      // Get the agent type's options form elements
-      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, $option_parents));
-    }
-  }
-
-  // Add the agent-type-specific form elements to the form, to be shown only if the
-  // agent type in question is selected.
-  $form['options'] = array('#tree' => TRUE);
-  if (!empty($agent_data->plugin)) {
-    // If in edit mode, then only show the options for the selected agent.
-    $form['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
-  }
-  else {
-    // If in add mode, then show options dynamically using states.
-    foreach ($agent_type_form_options as $agent_type => $options) {
-      foreach ($options as &$option) {
-        $option['#states'] = array('visible' => array(':input[name="agent_basic_info[agent_type]"]' => array('value' => $agent_type)));
-      }
-      $form['options'][$agent_type] = $options;
-    }
-  }
+  $form['agent_options'] = $agent_instance->optionsForm($agent_data, array('agent_options', $agent_data->plugin));
 
   // Add the advanced settings form.
   $form['advanced'] = array(
@@ -1249,9 +1224,9 @@ function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
  * Custom validation callback for details form.
  */
 function personalize_campaign_wizard_validate_review($form, &$form_state) {
-  $agent_type = $form_state['values']['agent_basic_info']['agent_type'];
+  $agent_data = $form['#agent'];
   ctools_include('plugins');
-  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_type, 'handler')) {
+  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
     // Call the validation callback for the agent type.
     $class::optionsFormValidate($form, $form_state);
   }
