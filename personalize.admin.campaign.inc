@@ -153,6 +153,11 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       'class' => array('personalize-wizard-process-bar-actions'),
     ),
   );
+  // Save the current subform.
+  $form['process_bar']['actions']['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
   // Change campaign status.
   if (!empty($agent_data->machine_name)) {
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
@@ -198,7 +203,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   // Determine the preview text to show with the button based on the next step
   // for this agent instance.
   $steps = _personalize_campaign_wizard_steps($agent_instance);
-  $next_step = _personalize_campaign_wizard_next_step($form_state['storage']['step'], $agent_instance);
+  $next_step = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
   $current_info = $steps[$form_state['storage']['step']];
   $next_info = $steps[$next_step];
 
@@ -1259,7 +1264,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   // Rebuild the form to show the next step.
   $agent_instance = personalize_agent_load_agent($agent->machine_name);
 
-  $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state['storage']['step'], $agent_instance);
+  $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
   $form_state['rebuild'] = TRUE;
 }
 
@@ -1546,17 +1551,23 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
 /**
  * Determine the next step in the wizard based on the type of agent shown.
  *
- * @param string $current_step
- *   The current step key.
+ * @param array $form_state
+ *   The current form state.
  * @param stdClass $agent_instance
  *   The agent instance for the current agent.
  * @return string
  *   The next step if there is a further step.  If the current step is the last
  *   step then it is returned.
  */
-function _personalize_campaign_wizard_next_step($current_step, PersonalizeAgentInterface $agent_instance) {
+function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInterface $agent_instance) {
+  // If the user is just clicking the standard "save" button then they should
+  // stay on the same sub-form.
+  if ($form_state['triggering_element']['#value'] === t('Save')) {
+    return $form_state['storage']['step'];
+  }
+  // Determine the next step to show based on the steps available to this agent.
   $agent_steps = array_keys(_personalize_campaign_wizard_steps($agent_instance));
-  $index = array_search($current_step, $agent_steps);
+  $index = array_search($form_state['storage']['step'], $agent_steps);
   $index++;
-  return $index < count($agent_steps) ? $agent_steps[$index] : $current_step;
+  return $index < count($agent_steps) ? $agent_steps[$index] : $form_state['storage']['step'];
 }
