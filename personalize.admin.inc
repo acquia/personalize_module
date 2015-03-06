@@ -1324,7 +1324,7 @@ function personalize_explicit_targeting_mapping_element($mapping, $targeting_val
   );
   $element['value'] = array(
     '#tree' => TRUE,
-    '#prefix' => '<div id="' . $wrapper_id. '">',
+    '#prefix' => '<div id="' . $wrapper_id. '" class="personalize-target-value">',
     '#suffix' => '</div>'
   );
   $value_type = isset($value_types[$selected_plugin_context]) ? $value_types[$selected_plugin_context] : 'string';
