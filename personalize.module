@@ -3040,7 +3040,9 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
     if (isset($option_set->winner) && $option_set->winner == $option['option_id']) {
       $os_array['winner'] = $i;
     }
-    $os_array['options'][$i]['option_label'] = filter_xss($option['option_label']);
+    if (isset($option['option_label'])) {
+      $os_array['options'][$i]['option_label'] = filter_xss($option['option_label']);
+    }
   }
   $os_array['option_names'] = $option_names;
   $os_array += array(
