@@ -1451,14 +1451,14 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       'option_sets[option_set_1][advanced][preview_link]' => 'http://google.com',
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
-    $this->assertText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
+    $this->assertText(t('External paths are not allowed for Preview link'));
 
     // Try adding a link to a page that does not exist.
     $edit = array(
       'option_sets[option_set_1][advanced][preview_link]' => 'node/' . $this->randomString(),
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
-    $this->assertText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
+    $this->assertText(t('You have specified an invalid path for Preview link'));
 
     // Add a good preview link and verify that preview links are added.
     $edit = array(
