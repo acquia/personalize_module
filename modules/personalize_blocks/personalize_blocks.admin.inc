@@ -152,10 +152,12 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
   // If the "Add another" button was clicked, we need to increment the number of
   // blocks by one.
   $num_blocks = count($pblock->options);
-  if (isset($form_state['num_blocks']) && $form_state['num_blocks'] > $num_blocks) {
+  $num_blocks_requested = isset($form_state['num_blocks']) ? $form_state['num_blocks'] : $num_blocks;
+  while ($num_blocks < $num_blocks_requested) {
     $pblock->options[] = array('option_label' => personalize_generate_option_label($num_blocks));
+    $num_blocks++;
   }
-  $form_state['num_blocks'] = count($pblock->options);
+  $form_state['num_blocks'] = $num_blocks;
   // Keep track of block options throughout Ajax submits.
   $form_state['pblock'] =  $pblock;
 
@@ -451,6 +453,9 @@ function personalize_blocks_form_validate($form, &$form_state) {
 
         if ($custom_block_exists) {
           form_set_error('blocks][' . $j . '][block][add][info', t('Ensure that each block description is unique.'));
+        }
+        else {
+          $num_blocks++;
         }
       }
       if (!empty($block['block']['bid'])) {

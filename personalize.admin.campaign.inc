@@ -586,51 +586,61 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         );
         break;
     }
+    // Add the advanced options.
+    $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
+  } // End loop through option sets.
+  return $form;
+}
 
-    // Advanced area per option set.
-    $section['option_set_' . $option_set->osid]['advanced'] = array(
-      '#type' => 'fieldset',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#title' => t('Advanced'),
+/**
+ * Helper subform for the advanced section of an option set.
+ */
+function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $option_set) {
+  $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
+  $advanced = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Advanced'),
+  );
+  $advanced['label'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Name',
+    '#description' => 'Shown in the menu when you are viewing content variations on a page.',
+    '#default_value' => isset($option_set->label) ? $option_set->label : '',
+  );
+  $advanced['decision_name'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Decision Name',
+    '#description' => 'By default, this decision will be named after the content variation ID. You can use this if you want to make one conceptual decision across multiple content variations such as a special offer which manifests in different places on the site.',
+    '#default_value' => isset($option_set->decision_name) ? $option_set->decision_name : '',
+  );
+  $advanced['stateful'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Shareable'),
+    '#description' => 'Will display what the original visitor saw, not another variation.',
+    '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
+  );
+  $advanced['preview_link'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Preview link',
+    '#description' => t('Enter the internal Drupal path on your site to a page containing this content variation set. Enter &lt;front&gt; to link to the front page.'),
+    '#default_value' => !empty($option_set->preview_link) ? $option_set->preview_link : '',
+  );
+  // Display options to select the executor if supported.
+  $executors = personalize_get_executors();
+  $supported_executors = module_invoke($option_set_plugin['module'], 'personalize_get_executor_options');
+  if (count($supported_executors) == 1) {
+    $advanced['executor'] = array(
+      '#type' => 'value',
+      '#value' => array_shift(array_keys($supported_executors)),
     );
-    $section['option_set_' . $option_set->osid]['advanced']['label'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Name',
-      '#description' => 'Shown in the menu when you are viewing content variations on a page.',
-      '#default_value' => isset($option_set->label) ? $option_set->label : '',
-    );
-    $section['option_set_' . $option_set->osid]['advanced']['decision_name'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Decision Name',
-      '#description' => 'By default, this decision will be named after the content variation ID. You can use this if you want to make one conceptual decision across multiple content variations such as a special offer which manifests in different places on the site.',
-      '#default_value' => isset($option_set->decision_name) ? $option_set->decision_name : '',
-    );
-    $section['option_set_' . $option_set->osid]['advanced']['stateful'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Shareable'),
-      '#description' => 'Will display what the original visitor saw, not another variation.',
-      '#default_value' => isset($option_set->stateful) ? $option_set->stateful : 0,
-    );
-    $section['option_set_' . $option_set->osid]['advanced']['preview_link'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Preview link',
-      '#description' => t('Enter the internal Drupal path on your site to a page containing this content variation set. Enter &lt;front&gt; to link to the front page.'),
-      '#default_value' => !empty($option_set->preview_link) ? $option_set->preview_link : '',
-    );
-    // Display options to select the executor if supported.
-    $executors = personalize_get_executors();
-    $supported_executors = module_invoke($option_set_plugin['module'], 'personalize_get_executor_options');
-    if (count($supported_executors) == 1) {
-      $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
-        '#type' => 'value',
-        '#value' => array_shift(array_keys($supported_executors)),
-      );
-    }
-    else if (count($supported_executors) > 1) {
+  }
+  else {
+    if (count($supported_executors) > 1) {
       $default_executor = '';
       $options = array();
-      foreach($supported_executors as $executor_name => &$supported_options) {
+      foreach ($supported_executors as $executor_name => &$supported_options) {
         // Allow the supported declarations to overwrite the default displays.
         $supported_options += $executors[$executor_name];
         $options[$executor_name] = $supported_options['title'];
@@ -647,7 +657,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         $default_executor = key($supported_executors);
       }
 
-      $section['option_set_' . $option_set->osid]['advanced']['executor'] = array(
+      $advanced['executor'] = array(
         '#type' => 'radios',
         '#title' => t('Rendering'),
         '#options' => $options,
@@ -655,14 +665,14 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         '#title_display' => 'invisible',
       );
       // Add descriptions to the executor options
-      foreach($supported_executors as $executor_name => $options) {
-        $section['option_set_' . $option_set -> osid]['advanced']['executor'][$executor_name] = array(
+      foreach ($supported_executors as $executor_name => $options) {
+        $advanced['executor'][$executor_name] = array(
           '#description' => $options['description'] . theme('personalize_admin_info_details', $options),
         );
       }
     }
-  } // End loop through option sets.
-  return $form;
+  }
+  return $advanced;
 }
 
 /**
@@ -1099,8 +1109,8 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   }
 
   $need_form_state_cache_clear = FALSE;
-
   foreach ($form_values as $option_set_id => $values) {
+    personalize_campaign_wizard_validate_variations_advanced($form_values[$option_set_id], 'option_sets][' . $option_set_id . ']');
     if (!empty($form_values[$option_set_id]['advanced']['preview_link'])) {
       if ($form_values[$option_set_id]['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values[$option_set_id]['advanced']['preview_link']) === FALSE) {
         form_set_error('option_sets][' . $option_set_id . '][advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
@@ -1121,6 +1131,25 @@ function personalize_campaign_wizard_validate_variations($form, &$form_state) {
   // Drupal caches form_state before validators are triggered, so flush it
   if ($need_form_state_cache_clear) {
     cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
+  }
+}
+
+/**
+ * Validation for advanced settings form for a particular option set.
+ *
+ * @param array $form_values
+ *   An array of form state values for each option set.
+ * @param string $parents
+ *   The string representation of the parents to the form values used to target
+ *   error messages, e.g. variations][option_sets][option_set_1]
+ */
+function personalize_campaign_wizard_validate_variations_advanced($form_values, $parents) {
+  if (!empty($form_values['advanced']['preview_link'])) {
+    if ($form_values['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values['advanced']['preview_link']) === FALSE) {
+      form_set_error($parents . '[advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
+        '@option_set' => $form_values['advanced']['label'],
+      )));
+    }
   }
 }
 
@@ -1186,16 +1215,9 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
     drupal_set_message(t('There was a problem saving the campaign.'));
   }
 
-  // If the button that caused the submit is from the navigation, then the next
-  // step should be the clicked navigation button regardless of the last step.
-  if ($form_state['triggering_element']['#name'] !== 'wizard_submit') {
-    $form_state['new_step'] = $form_state['triggering_element']['#name'];
-  }
-  else {
-    // If the "Start" button was pressed then start the campaign.
-    if ($form_state['triggering_element']['#value'] === t('Start')) {
-      personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
-    }
+  // If the "Start" button was pressed then start the campaign.
+  if ($form_state['triggering_element']['#value'] === t('Start')) {
+    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
   }
 
   // Rebuild the form to show the next step.
@@ -1248,6 +1270,7 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       if (isset($values['winner'])) {
         $option_set->winner = $values['winner'];
       }
+      personalize_campaign_wizard_submit_variations_advanced($values, $option_set);
       if (!isset($values['options'])) {
         personalize_option_set_save($option_set);
         continue;
@@ -1259,6 +1282,7 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
       $designated_features = $targeting = array();
+      $target_weight = 0;
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -1297,13 +1321,15 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
             'option_id' => $option_id,
             'targeting_features' => $feature_values,
             'targeting_rules' => $rules,
+            'weight' => $target_weight,
           );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
           if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
             $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
-          $targeting[] = $rule;
+          $targeting['target_' . ($target_weight+1)] = $rule;
+          $target_weight++;
         }
       }
 
@@ -1312,6 +1338,30 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
     }
   }
   $form_state['new_step'] = 'targeting';
+}
+
+/**
+ * Submit helper for advanced settings within the variations subform.
+ *
+ * Update any advanced options on the option set.
+ *
+ * @param array $form_values
+ *   The form state values that include the "advanced" subform.
+ * @param stdClass $option_set
+ *   The option set class to get the new values.
+ */
+function personalize_campaign_wizard_submit_variations_advanced($form_values, &$option_set) {
+  $option_set->label = $form_values['advanced']['label'];
+  $option_set->stateful = $form_values['advanced']['stateful'];
+  if (isset($form_values['advanced']['executor'])) {
+    $option_set->executor = $form_values['advanced']['executor'];
+  }
+  if (isset($form_values['advanced']['decision_name'])) {
+    $option_set->decision_name = personalize_generate_machine_name($form_values['advanced']['decision_name']);
+  }
+  if (isset($form_values['advanced']['preview_link'])) {
+    $option_set->preview_link = $form_values['advanced']['preview_link'];
+  }
 }
 
 /**

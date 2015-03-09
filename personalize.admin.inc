@@ -1830,7 +1830,7 @@ function personalize_set_campaign_context_callback($agent_data) {
  * Landing page for configuring agents.
  */
 function personalize_admin_page() {
-  return '<a href="' . base_path() . 'admin/content/personalize/agents">manage agents</a>';
+  return l(t('manage agents'), 'admin/content/personalize/agents');
 }
 
 /**
@@ -1905,9 +1905,10 @@ function personalize_get_targeting_for_options($option_set) {
   // Get an array of targeting rules per option id.
   $targeting_for_options = array();
   if (!empty($option_set->targeting)) {
-    foreach ($option_set->targeting as $rule) {
+    foreach ($option_set->targeting as $name => $rule) {
       if (isset($rule['option_id'])) {
         $targeting_for_options[$rule['option_id']] = $rule;
+        $targeting_for_options[$rule['option_id']]['name'] = $name;
       }
     }
   }
