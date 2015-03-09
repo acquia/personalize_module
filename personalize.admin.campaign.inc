@@ -1254,6 +1254,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
   personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
+    drupal_set_message(t('The campaign has been created'));
     // Redirect to the full wizard view with variations selected.
     $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent->machine_name . '/variations';
     return;
@@ -1265,12 +1266,8 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
     $function($form, $form_state, $agent);
   }
   // Save the campaign.
-  $exists = personalize_agent_load($agent->machine_name);
-  if (personalize_agent_save($agent)) {
-    drupal_set_message(t('The campaign has been @saved.', array('@saved' => $exists ? 'updated' : 'created')));
-  }
-  else {
-    drupal_set_message(t('There was a problem saving the campaign.'));
+  if (!personalize_agent_save($agent)) {
+    drupal_set_message(t('There was a problem saving the campaign.', 'error'));
   }
 
   // If the "Start" button was pressed then start the campaign.
