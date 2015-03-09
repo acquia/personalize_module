@@ -675,21 +675,15 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   );
 
   $section = &$form['targeting']['option_sets'];
-  // For any option sets that have been created for this campaign, display
-  // advanced options for specifying decision name etc.
   if (empty($option_sets)) {
     return $form;
   }
 
-  $targeting_support = FALSE;
-  if ($agent_instance instanceof PersonalizeExplicitTargetingInterface) {
-    $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
-    // Build up a list of targeting values so we can map options to them.
-    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
-  }
+  $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
+  // Build up a list of targeting values so we can map options to them.
+  $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
 
   foreach ($option_sets as $option_set) {
-    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
 
     // Show this open if it was just refreshed via Ajax.
@@ -719,7 +713,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
     $variant_number = 1;
     $targeting = personalize_get_targeting_for_options($option_set);
     foreach ($option_set->options as $option) {
-      // Determine container classes based on campaign status and winner.
+      // Determine container classes based on campaign status.
       $classes = array('personalize-admin-content-item', 'personalize-content-variation', 'clearfix');
       if ($is_running) {
         $classes[] = 'personalize-content-variation-running';
