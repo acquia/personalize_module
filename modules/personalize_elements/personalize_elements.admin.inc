@@ -397,8 +397,10 @@ function personalize_elements_form_validate($form, &$form_state) {
     if ($changed) {
       drupal_set_message(t('Disallowed HTML tags were removed from @variations.', array('@variations' => format_plural($changed, '1 variation', '@count variations', array('@count' => $changed)))), 'warning');
     }
-    if ($values['pages_all'] == 0 && !personalize_elements_pages_validate($values['pages'])) {
-      form_set_error('pages', t('The selected pages must contain valid paths.'));
+    if ($values['pages_all'] == 0) {
+      $form['details']['pages']['#allow_external'] = FALSE;
+      $form['details']['pages']['#allow_dynamic'] = TRUE;
+      personalize_form_element_path_validate($form['details']['pages'], $form_state);
     }
 
     if (!personalize_elements_selector_validate($form_state['values']['selector'])) {
@@ -583,24 +585,4 @@ function personalize_elements_selector_validate($selector) {
   $matches = array();
   $matched = preg_match_all($re, $selector, $matches);
   return $matched == 0;
-}
-
-/**
- * Validates the pages entered for a personalized element.
- *
- * @param $pages
- *   The list of pages to validate separated by line breaks.
- * @return boolean
- *   True if the pages validate successfully, false if error.
- */
-function personalize_elements_pages_validate($pages) {
-  foreach(preg_split('~[\r\n]+~', $pages) as $line){
-    if(empty($line)) {
-      continue;
-    }
-    if (!valid_url($line) && $line !== '<front>') {
-      return FALSE;
-    }
-  }
-  return TRUE;
 }
