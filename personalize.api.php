@@ -81,6 +81,23 @@ function hook_personalize_agent_save($agent) {
 }
 
 /**
+ * An agent status is about to be changed.
+ *
+ * This hook is invoked before an agent status is changed to allow
+ * modules to alter agent data.  This hook is invoked after agent validation.
+ * If agent validation is required it should be added to the agent_type plugin
+ * definition class errors() method.
+ *
+ * @param string $agent_name
+ *   The machine name of the agent being updated.
+ * @param $new_status
+ *   The status of the agent after the change
+ */
+function hook_personalize_agent_status_presave($agent_name, $new_status) {
+
+}
+
+/**
  * Respond to an agent's status change.
  *
  * This hook is invoked after an agent's status has changed, e.g. from

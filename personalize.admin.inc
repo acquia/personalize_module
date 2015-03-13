@@ -1426,6 +1426,8 @@ function personalize_targeting_remove_context_submit($form, &$form_state) {
  * depending on what was selected in the context dropdown.
  */
 function personalize_explicit_targeting_context_callback($form, &$form_state) {
+  // Don't show messages in the small portion of the form returned.
+  drupal_get_messages(NULL, TRUE);
   // We need to return the section of the form corresponding to one level up from
   // the dropdown that triggered the ajax, so use the array parents to find that
   // section.
