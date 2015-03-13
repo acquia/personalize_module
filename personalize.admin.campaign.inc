@@ -1033,7 +1033,10 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     '#type' => 'container',
     '#tree' => TRUE,
   );
-  $form['agent_options']['options'] = $agent_instance::optionsForm($agent_data, array('agent_options', 'options'));
+  $options = $agent_instance::optionsForm($agent_data, array('agent_options', 'options'));
+  if (!empty($options)) {
+    $form['agent_options']['options'] = $options;
+  }
 
   // Add the advanced settings form.
   $form['advanced'] = array(
@@ -1228,6 +1231,9 @@ function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
  */
 function personalize_campaign_wizard_validate_review($form, &$form_state) {
   $agent_data = $form['#agent'];
+  if (!isset($form_state['values']['agent_options']['options'])) {
+    return;
+  }
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
     // Call the validation callback for the agent type.
