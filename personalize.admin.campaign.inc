@@ -43,11 +43,16 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
     }
   }
   else {
+    // If the form is being reloaded, reload the agent data in case it changed.
+    if (isset($form_state['triggering_element'])) {
+      $agent_data = personalize_agent_load($agent_data->machine_name);
+    }
     $form['agent'] = array(
       '#type' => 'value',
       '#value' => $agent_data->machine_name,
     );
   }
+
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->machine_name) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
