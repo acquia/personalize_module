@@ -424,6 +424,18 @@ function personalize_agent_start_now($agent_data) {
  * Implements hook_page_build().
  */
 function personalize_page_build(&$page) {
+  // Add JavaScript polyfills.
+  $path = drupal_get_path('module', 'personalize') . '/js/personalize.ie8.js';
+  $polyfill = array(
+    '#tag' => 'script',
+    '#attributes' => array(
+      'src' => $path,
+    ),
+    '#prefix' => '<!--[if lte IE 8]>',
+    '#suffix' => '</script><![endif]-->',
+  );
+  drupal_add_html_head($polyfill, 'personalize_polyfill_ie8');
+
   // Add the necessary JavaScript settings for personalization.
   $settings = array(
     'optionPreselectParam' => PERSONALIZE_PRESELECTION_PARAM,
