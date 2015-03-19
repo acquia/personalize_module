@@ -1265,7 +1265,7 @@
       var num = localStorage.length;
       var expirations = {};
 
-      for (var i = 0; i < num; i++) {
+      for (var i = (num-1); i >= 0; i--) {
         var key = localStorage.key(i);
         if (key.indexOf(this.cachePrefix) == 0) {
           // Key names are in the format cachePrefix:bucketName:otherArguments
@@ -1448,6 +1448,8 @@
     processedOptionSets = {};
     processingOptionSets = {};
     processedListeners = {};
+    Drupal.personalize.storage.buckets = {};
+    delete Drupal.personalize.storage.utilities.wasMaintained;
   };
 
   Drupal.personalize.debug = function(message, code) {
