@@ -2529,7 +2529,7 @@ function personalize_agent_form_validate($form, &$form_state) {
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_type, 'handler')) {
     // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state);
+    $class::optionsFormValidate($form, $form_state, array('agent_basic_info', 'options', $agent_type));
   }
   personalize_agent_date_form_validate($form_state['values']);
 }
@@ -2693,6 +2693,7 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
       // which options they have been designated to, and whether there's a rule
       // associated with each feature.
       $designated_features = $targeting = array();
+      $target_weight = 0;
       foreach ($values['options'] as $option_id => $settings) {
         $option_features[$option_id] = $feature_rules[$option_id] = array();
         $feature_values = $rules = array();
@@ -2731,13 +2732,15 @@ function personalize_agent_option_sets_form_submit($form, &$form_state) {
             'option_id' => $option_id,
             'targeting_features' => $feature_values,
             'targeting_rules' => $rules,
+            'weight' => $target_weight,
           );
           // If a strategy has been specified for how to use the targeting features,
           // then store this as well.
           if (isset($values['options'][$option_id]['explicit_targeting']['strategy'])) {
             $rule['targeting_strategy'] = $values['options'][$option_id]['explicit_targeting']['strategy'];
           }
-          $targeting[] = $rule;
+          $targeting['target_' . ($target_weight+1)] = $rule;
+          $target_weight++;
         }
       }
 
@@ -3163,9 +3166,10 @@ function personalize_get_targeting_for_options($option_set) {
   // Get an array of targeting rules per option id.
   $targeting_for_options = array();
   if (!empty($option_set->targeting)) {
-    foreach ($option_set->targeting as $rule) {
+    foreach ($option_set->targeting as $name => $rule) {
       if (isset($rule['option_id'])) {
         $targeting_for_options[$rule['option_id']] = $rule;
+        $targeting_for_options[$rule['option_id']]['name'] = $name;
       }
     }
   }
