@@ -1089,28 +1089,6 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     '#states' => $states,
   );
 
-  $context_options = array('' => '-- ' . t('Select a context') . ' --');
-  $value_types = array();
-  $operator_options = array(
-    'string' => array(
-      'equals' => t('equals'),
-      'contains' => t('contains'),
-      'starts' => t('starts with'),
-      'ends' => t('ends with')
-    ),
-    'number' => array(
-      'equals' => t('equals'),
-      'numgt' => t('greater than'),
-      'numlt' => t('less than')
-    )
-  );
-  foreach ($targeting_values as  $key => $info) {
-    $option_key = $info['visitor_context'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $key;
-    $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
-    $context_options[$option_key] = $key_label;
-    $value_types[$option_key] = $info['value type'];
-  }
-
   // This is the portion of the form that will be replace when the "add new" or "remove
   // context" links are clicked.
   $main_wrapper_id = 'personalize-targeting-osid-' . $osid . '-' . $option['option_id'];
@@ -1190,79 +1168,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
 
   $form_state['num_contexts']['option_set_' . $osid][$option['option_id']] = count($mappings);
   foreach ($mappings as $delta => $mapping) {
-    $wrapper_id = 'operator-dropdown-replace-' . $osid . '-' . $option['option_id'] . '-' . $delta;
-    $selected_plugin_context = $mapping['plugin'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $mapping['context'];
-    $selected_context = $mapping['context'];
-    $selected_operator = $mapping['operator'];
-    $selected_match = $mapping['match'];
-    $form['mapping']['contexts'][$delta] = array(
-      '#prefix' => '<div class="personalize-target-wrapper">',
-      '#suffix' => '</div>',
-      'context' => array(
-        '#type' => 'select',
-        '#title' => t('Context'),
-        '#options' => $context_options,
-        '#default_value' => empty($selected_plugin_context) ? '' : $selected_plugin_context,
-        '#ajax' => array(
-          'event' => 'change',
-          'callback' => 'personalize_explicit_targeting_context_callback',
-          'wrapper' => $wrapper_id,
-        ),
-        '#attributes' => array(
-          'class' => array('personalize-targeting-context'),
-        ),
-      ),
-    );
-    $form['mapping']['contexts'][$delta]['value'] = array(
-      '#tree' => TRUE,
-      '#prefix' => '<div id="' . $wrapper_id. '">',
-      '#suffix' => '</div>'
-    );
-    $value_type = isset($value_types[$selected_plugin_context]) ? $value_types[$selected_plugin_context] : 'string';
-    // We use different form elements depending on whether there is a predefined list
-    // of possible values or not.
-    switch ($value_type) {
-      case 'predefined':
-        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
-          '#type' => 'value',
-          '#value' => 'equals',
-        );
-        $form['mapping']['contexts'][$delta]['value']['match'] = array(
-          '#type' => 'select',
-          '#options' => $targeting_values[$selected_context]['values'],
-          '#title' => 'Value',
-          '#default_value' => $selected_match,
-        );
-       break;
-      case 'boolean':
-        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
-          '#type' => 'value',
-          '#value' => 'equals',
-        );
-        $off_label = isset($targeting_values[$selected_context]['off_label']) ? $targeting_values[$selected_context]['off_label'] : 'No';
-        $on_label = isset($targeting_values[$selected_context]['on_label']) ? $targeting_values[$selected_context]['on_label'] : 'Yes';
-        $form['mapping']['contexts'][$delta]['value']['match'] = array(
-          '#type' => 'select',
-          '#options' => array(0 => $off_label, 1 => $on_label),
-          '#title' => 'Value',
-          '#default_value' => $selected_match,
-        );
-        break;
-      default:
-        $form['mapping']['contexts'][$delta]['value']['operator'] = array(
-          '#type' => 'select',
-          '#title' => t('Operator'),
-          '#options' => $operator_options[$value_type],
-          '#default_value' => $selected_operator
-        );
-        $form['mapping']['contexts'][$delta]['value']['match'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Value',
-          '#size' => $value_type == 'number' ? 6 : 30,
-          '#default_value' => $selected_match,
-        );
-        break;
-    }
+    $wrapper_id =  $osid . '-' . $option['option_id'] . '-' . $delta;
+    $form['mapping']['contexts'][$delta] = personalize_explicit_targeting_mapping_element($mapping, $targeting_values, $wrapper_id);
 
     // Add a "remove" button for this context.
     // NOTE: ajax.js expects the ID of the element to match the element's name
@@ -1350,6 +1257,122 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     );
   }
   return $form;
+}
+
+/**
+ * Helper function to generate an element for the selection of context to apply
+ * to a rule.
+ *
+ * @param array $mapping
+ *   The mapping for the context plugin and values to match.  Mapping contains:
+ *   - plugin: the context plugin responsible for providing this data.
+ *   - context: the specific context to match
+ *   - operator: the operator that defines the type of match
+ *   - match: the value to match (if appropriate to the operator)
+ * @param array $targeting_values
+ *   The available context values.
+ * @param string $wrapper_id
+ *   A unique id that can be used within this element for AJAX purposes.
+ */
+function personalize_explicit_targeting_mapping_element($mapping, $targeting_values, $wrapper_id) {
+  // @todo Cache the context options, value types, and operator options as this
+  // function can be called multiple times per form.
+  $context_options = array('' => '-- ' . t('Select a context') . ' --');
+  $value_types = array();
+  foreach ($targeting_values as  $key => $info) {
+    $option_key = $info['visitor_context'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $key;
+    $key_label = isset($info['friendly name']) ? $info['friendly name'] : $key;
+    $context_options[$option_key] = $key_label;
+    $value_types[$option_key] = $info['value type'];
+  }
+
+  $wrapper_id = 'operator-dropdown-replace-' . $wrapper_id;
+  $selected_plugin_context = $mapping['plugin'] . PERSONALIZE_TARGETING_ADMIN_SEPARATOR . $mapping['context'];
+  $selected_context = $mapping['context'];
+  $selected_operator = $mapping['operator'];
+  $selected_match = $mapping['match'];
+  $operator_options = array(
+    'string' => array(
+      'equals' => t('equals'),
+      'contains' => t('contains'),
+      'starts' => t('starts with'),
+      'ends' => t('ends with')
+    ),
+    'number' => array(
+      'equals' => t('equals'),
+      'numgt' => t('greater than'),
+      'numlt' => t('less than')
+    )
+  );
+  $element = array(
+    '#prefix' => '<div class="personalize-target-wrapper">',
+    '#suffix' => '</div>',
+    'context' => array(
+      '#type' => 'select',
+      '#title' => t('Context'),
+      '#options' => $context_options,
+      '#default_value' => empty($selected_plugin_context) ? '' : $selected_plugin_context,
+      '#ajax' => array(
+        'event' => 'change',
+        'callback' => 'personalize_explicit_targeting_context_callback',
+        'wrapper' => $wrapper_id,
+      ),
+      '#attributes' => array(
+        'class' => array('personalize-targeting-context'),
+      ),
+    ),
+  );
+  $element['value'] = array(
+    '#tree' => TRUE,
+    '#prefix' => '<div id="' . $wrapper_id. '" class="personalize-target-value">',
+    '#suffix' => '</div>'
+  );
+  $value_type = isset($value_types[$selected_plugin_context]) ? $value_types[$selected_plugin_context] : 'string';
+  // We use different form elements depending on whether there is a predefined list
+  // of possible values or not.
+  switch ($value_type) {
+    case 'predefined':
+      $element['value']['operator'] = array(
+        '#type' => 'value',
+        '#value' => 'equals',
+      );
+      $element['value']['match'] = array(
+        '#type' => 'select',
+        '#options' => $targeting_values[$selected_context]['values'],
+        '#title' => 'Value',
+        '#default_value' => $selected_match,
+      );
+      break;
+    case 'boolean':
+      $element['value']['operator'] = array(
+        '#type' => 'value',
+        '#value' => 'equals',
+      );
+      $off_label = isset($targeting_values[$selected_context]['off_label']) ? $targeting_values[$selected_context]['off_label'] : 'No';
+      $on_label = isset($targeting_values[$selected_context]['on_label']) ? $targeting_values[$selected_context]['on_label'] : 'Yes';
+      $element['value']['match'] = array(
+        '#type' => 'select',
+        '#options' => array(0 => $off_label, 1 => $on_label),
+        '#title' => 'Value',
+        '#default_value' => $selected_match,
+      );
+      break;
+    default:
+      $element['value']['operator'] = array(
+        '#type' => 'select',
+        '#title' => t('Operator'),
+        '#options' => $operator_options[$value_type],
+        '#default_value' => $selected_operator
+      );
+      $element['value']['match'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Value',
+        '#size' => $value_type == 'number' ? 6 : 30,
+        '#default_value' => $selected_match,
+      );
+      break;
+  }
+  return $element;
 }
 
 /**
