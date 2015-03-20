@@ -174,6 +174,10 @@ div.personalize-target-wrapper div.form-item {
 }
 
 /* Personalize campaign wizard forms */
+#personalize-campaign-wizard .personalize-wizard-section {
+  width: 50%;
+  min-width: 400px;
+}
 #personalize-campaign-wizard #edit-agent-basic-info .form-item {
   padding: 0;
 }
@@ -197,8 +201,8 @@ div.personalize-target-wrapper div.form-item {
   margin-bottom: 1.2em;
 }
 #personalize-wizard-process-bar .personalize-wizard-navigation {
-  border-top: 1px solid #0074BD;
-  border-bottom: 1px solid #0074BD;
+  border-bottom: 2px solid #999;
+  padding: 0 1em;
 }
 #personalize-wizard-process-bar ul {
   list-style: none;
@@ -209,55 +213,28 @@ div.personalize-target-wrapper div.form-item {
   float: left;
 }
 #personalize-wizard-process-bar li {
-  padding: 1em 1em 1em 3em;
+  padding: 1em 1em 0 1em;
   position: relative;
   display: block;
   float: left;
 }
 #personalize-wizard-process-bar li.personalize-wizard-navigation-current {
-  background: #0074BD;
+  border-bottom: 2px solid #0074BD;
 }
 #personalize-wizard-process-bar li.personalize-wizard-navigation-current a {
-  color: white;
   text-decoration: none;
 }
 #personalize-wizard-process-bar li.personalize-wizard-navigation-current a:hover {
-  text-decoration: none;
   cursor: default;
 }
-#personalize-wizard-process-bar li.personalize-wizard-navigation-current:after {
-  content: " ";
-  display: block;
-  width: 0;
-  height: 0;
-  border-top: 3em solid transparent;           /* Go big on the size, and let overflow hide */
-  border-bottom: 3em solid transparent;
-  border-left: 2em solid #0074BD;
-  position: absolute;
-  top: 50%;
-  margin-top: -3em;
-  left: 100%;
-  z-index: 2;
-}
-#personalize-wizard-process-bar li.personalize-wizard-navigation-disabled {
-  background-color: #dddddd;
-  border-right: 1px solid #ffffff;
-}
-#personalize-wizard-process-bar li.personalize-wizard-navigation-disabled a {
-  text-decoration: none;
-  color: #ffffff;
-  cursor: default;
-}
-#personalize-wizard-process-bar div.personalize-wizard-navigation-disabled {
-  border-top: 1px solid #999;
-  border-bottom: 1px solid #999;
-}
-#personalize-wizard-process-bar div.personalize-wizard-navigation-disabled li {
-  padding: 1em 1.333em;
-}
+#personalize-wizard-process-bar li.personalize-wizard-navigation-disabled a,
 #personalize-wizard-process-bar li.personalize-wizard-navigation-disabled a:hover {
+  color: #999;
+  cursor: default;
   text-decoration: none;
-  color: #ffffff;
+}
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions {
+  float: right;
 }
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions,
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions > div {

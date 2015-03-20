@@ -1108,6 +1108,9 @@ function personalize_agent_set_status($agent_name, $status) {
     }
   }
 
+  // Allow modules to act on the agent prior to changing its status.
+  module_invoke_all('personalize_agent_status_presave', $agent_name, $status);
+
   // Set the new status in variables.
   variable_set(_personalize_agent_get_status_variable($agent_name), $status);
 
