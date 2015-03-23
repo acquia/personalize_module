@@ -1293,9 +1293,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
 
   // Rebuild the form to show the next step.
   $agent_instance = personalize_agent_load_agent($agent->machine_name);
-
-  $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
-  $form_state['rebuild'] = TRUE;
+  _personalize_campaign_wizard_rebuild($form_state, $agent_instance);
 }
 
 /**
@@ -1600,4 +1598,22 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
   $index = array_search($form_state['storage']['step'], $agent_steps);
   $index++;
   return $index < count($agent_steps) ? $agent_steps[$index] : $form_state['storage']['step'];
+}
+
+/**
+ * Rebuild the form for the next step.
+ *
+ * @param array $form_state
+ *   The current form state.
+ * @param stdClass $agent_instance
+ *   The agent instance for the current agent.
+ */
+function _personalize_campaign_wizard_rebuild($form_state, PersonalizeAgentInterface $agent_instance) {
+  if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
+    $form_state['redirect'] = current_path();
+  }
+  else {
+    $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
+    $form_state['rebuild'] = TRUE;
+  }
 }
