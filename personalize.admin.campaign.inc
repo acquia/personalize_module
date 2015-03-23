@@ -959,6 +959,10 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
         $options = array_merge(array($goal['action'] => $all_actions[$goal['action']]['label']), $options);
       }
     }
+    $section['all_goals'][$delta]['goal_id'] = array(
+      '#type' => 'value',
+      '#value' => isset($goal['id']) ? $goal['id'] : '',
+    );
     $section['all_goals'][$delta]['action_name'] = array(
       '#type' => 'select',
       '#title' => t('Action'),
