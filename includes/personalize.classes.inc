@@ -247,24 +247,6 @@ interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterfac
 
 }
 
-/**
- * An interface to implement when an agent supports automatic targeting of
- * results based on campaign-specific targeting options.
- */
-interface PersonalizeAutoTargetingInterface extends PersonalizeAgentInterface {
-
-  /**
-   * Indicates if explicit targeting options are dependent on the auto targeting
-   * context options selected for the campaign.
-   *
-   * @return boolean
-   *   True to indicate that explicit targeting values are dependent upon
-   *   campaign auto-targeting options selected.  False to indicate that
-   *   explicit targeting options are selected independently of campaign
-   *   auto-targeting context options.
-   */
-  public static function constrainExplicitTargetingContexts();
-}
 
 /**
  * Abstract base class for agents, providing default implementations of some methods.
