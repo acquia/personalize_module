@@ -877,6 +877,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
     '#tree' => FALSE,
     '#attributes' => array(
       'class' => array('personalize-wizard-section'),
+      'id' => 'personalize-goals-container',
     ),
   );
 
