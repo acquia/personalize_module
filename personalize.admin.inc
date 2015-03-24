@@ -319,6 +319,8 @@ function personalize_agent_list() {
       )
     );
   }
+  // Allow other modules to alter the list of agents being displayed here.
+  drupal_alter('personalize_agent_list', $agents);
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
     PERSONALIZE_STATUS_RUNNING => array(),
