@@ -2996,8 +2996,10 @@ function personalize_goal_action_subscriber($name, $context) {
  *   The name of the action.
  * @param $goal_value
  *   The reward value to send when the goal is triggered.
+ * @param $goal_id
+ *   (Optional) The goal entity id if this is an existing goal to edit.
  */
-function personalize_goal_save($agent_name, $action_name, $goal_value) {
+function personalize_goal_save($agent_name, $action_name, $goal_value, $goal_id = NULL) {
   $agent = personalize_agent_load_agent($agent_name);
   if (!($agent instanceof PersonalizeAgentGoalInterface)) {
     throw new PersonalizeException(t('Goals are not supported by this campaign.'));
@@ -3011,6 +3013,9 @@ function personalize_goal_save($agent_name, $action_name, $goal_value) {
     'action' => $action_name,
     'value' => $goal_value
   );
+  if (!empty($goal_id)) {
+    $goal_array['id'] = $goal_id;
+  }
   $goal_entity = (object) $goal_array;
 
   entity_save('personalize_campaign_goal', $goal_entity);
