@@ -1502,35 +1502,6 @@ function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_
 }
 
 /**
- * Extracts targeting values from those set up on the agent available for fixed
- * targeting.
- *
- * @param stdClass $agent_data
- *   The personalize agent plugin data.
- * @return array
- *   An associative array keyed by context name, with an array of information
- *   about the possible values for that context.
- */
-function personalize_get_targeting_values_for_agent($agent_data) {
-  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::constrainExplicitTargetingContexts()) {
-    $value_options = array();
-    if (!empty($agent_data->data['visitor_context'])) {
-      foreach ($agent_data->data['visitor_context'] as $name => $contexts) {
-        $selected_context = array_filter($contexts);
-        if (!empty($selected_context)) {
-          $value_options = array_merge($value_options, _personalize_get_targeting_values($name, $agent_data, $selected_context));
-        }
-      }
-    }
-    return $value_options;
-  }
-  // Otherwise the targeting values for an agent are the same as the options
-  // available.
-  return personalize_get_targeting_options_for_agent($agent_data);
-}
-
-/**
  * Gets all targeting options that can be selected for an agent.
  *
  * @param stdClass $agent_data

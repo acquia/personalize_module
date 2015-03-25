@@ -164,6 +164,14 @@ interface PersonalizeAgentInterface {
    *   TRUE if the agent supports multiple decision points, FALSE otherwise.
    */
   public function supportsMultipleDecisionPoints();
+
+  /**
+   * Whether the agent supports automatic targeting.
+   *
+   * @return boolean
+   *   TRUE if the agent supports automatic targeting, FALSE otherwise.
+   */
+  public function supportsAutoTargeting();
 }
 
 interface PersonalizeAgentGoalInterface {
@@ -429,6 +437,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Implements PersonalizeAgentInterface::supportsAutoTargeting().
+   */
+  public function supportsAutoTargeting() {
+    return FALSE;
   }
 
   /**

@@ -1670,7 +1670,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     module_load_include('inc', 'personalize', 'personalize.admin');
     // Ensure that we get the expected targeting values available for use by our
     // agent for fixed targeting.
-    $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
+    $targeting_values = personalize_get_targeting_options_for_agent($agent_data);
     $expected_targeting_values = array(
       'boolean_user_field_1' => array(
         'friendly name' => 'field_boolean_user_field_1',

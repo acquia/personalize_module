@@ -5,7 +5,7 @@
  * targeting options provided by those selected for campaign context.
  */
 
-class PersonalizeTestAutopersonalizeAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
+class PersonalizeTestAutopersonalizeAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface {
 
   public $goals_received = array();
 
@@ -26,16 +26,17 @@ class PersonalizeTestAutopersonalizeAgent extends PersonalizeAgentBase implement
   }
 
   /**
+   * Implements PersonalizeAgentInterface::supportsAutoTargeting().
+   */
+  public function supportsAutoTargeting() {
+    return TRUE;
+  }
+
+  /**
    * Implements PersonalizeExplicitTargetingInterface::explicitTargetingSupportMultiple().
    */
   public static function explicitTargetingSupportMultiple() {
     return PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH;
   }
 
-  /**
-   * Implements PersonalizeAutoTargetingInterface::constrainExplicitTargetingContexts
-   */
-  public static function constrainExplicitTargetingContexts() {
-    return TRUE;
-  }
 }
