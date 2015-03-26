@@ -1043,16 +1043,6 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  // Get the agent type specific options form.
-  $form['agent_options'] = array(
-    '#type' => 'container',
-    '#tree' => TRUE,
-  );
-  $options = $agent_instance::optionsForm($agent_data, array('agent_options', 'options'));
-  if (!empty($options)) {
-    $form['agent_options']['options'] = $options;
-  }
-
   // Add the advanced settings form.
   $form['advanced'] = array(
     '#type' => 'fieldset',
@@ -1293,21 +1283,6 @@ function personalize_campaign_wizard_validate_variations_advanced($form_values, 
  */
 function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
   personalize_agent_date_form_validate($form_state['values']);
-}
-
-/**
- * Custom validation callback for details form.
- */
-function personalize_campaign_wizard_validate_review($form, &$form_state) {
-  $agent_data = $form['#agent'];
-  if (!isset($form_state['values']['agent_options']['options'])) {
-    return;
-  }
-  ctools_include('plugins');
-  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
-    // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state, array('agent_options', 'options'));
-  }
 }
 
 /**
@@ -1565,9 +1540,6 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
  * Submit handler for the review section.
  */
 function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
-  // Agent-specific options
-  $agent_data->data = isset($form_state['values']['agent_options']['options']) ? $form_state['values']['agent_options']['options'] : array();
-
   // Decision caching advanced setting.
   $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
