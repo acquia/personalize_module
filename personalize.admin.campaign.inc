@@ -79,8 +79,6 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   if ($header_form === FALSE) {
     return $form;
   }
-  // Allow the top level base form to be modified.
-  drupal_alter('personalize_campaign_wizard_base', $form, $form_state, $agent_data);
   $form += $header_form;
 
   // Add the form process bar (includes navigation and other campaign
@@ -95,10 +93,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
   if (function_exists($function)) {
-    $subform = $function($form, $form_state, $agent_data, $agent_instance);
-    // Allow the subform to be modified.
-    drupal_alter($function, $form, $form_state, $agent_data);
-    $form += $subform;
+    $function($form, $form_state, $agent_data, $agent_instance);
   }
 
   // Add the form action buttons.
