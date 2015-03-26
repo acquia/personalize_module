@@ -408,12 +408,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   );
 
   $section = &$form['variations']['option_sets'];
-  // For any option sets that have been created for this campaign, display
-  // advanced options for specifying decision name etc.
-  if (empty($option_sets)) {
-    return $form;
-  }
-
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
@@ -537,6 +531,9 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     // Add the advanced options.
     $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
   } // End loop through option sets.
+
+  // Add agent level advanced settings.
+  $form['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
   return $form;
 }
 
@@ -623,6 +620,38 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     }
   }
   return $advanced;
+}
+
+/**
+ * Helper function to generate the advanced settings form for agent-level
+ * settings.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   The advanced settings form element.
+ */
+function personalize_campaign_wizard_variations_advanced_agent($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  $element = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => FALSE,
+  );
+  $element['cache_decisions'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Cache decisions made by this agent?',
+    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
+    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  );
+  return $element;
 }
 
 /**
@@ -1043,21 +1072,6 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  // Add the advanced settings form.
-  $form['advanced'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Advanced'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#tree' => FALSE,
-  );
-  $form['advanced']['cache_decisions'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Cache decisions made by this agent?',
-    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
-    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
-  );
-
   $form['summary'] = array(
     '#type' => 'container',
   );
@@ -1382,6 +1396,8 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       personalize_option_set_save($option_set);
     }
   }
+  // Update any advanced agent-level settings.
+  personalize_campaign_wizard_submit_variations_advanced_agent($form, $form_state, $agent_data);
 }
 
 /**
@@ -1406,6 +1422,14 @@ function personalize_campaign_wizard_submit_variations_advanced($form_values, &$
   if (isset($form_values['advanced']['preview_link'])) {
     $option_set->preview_link = $form_values['advanced']['preview_link'];
   }
+}
+
+/**
+ * Submit handler for variations page advanced agent settings.
+ */
+function personalize_campaign_wizard_submit_variations_advanced_agent($form, &$form_state, &$agent_data) {
+  // Decision caching advanced setting.
+  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
 
 /**
@@ -1534,14 +1558,6 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$agent_data) {
   personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
-}
-
-/**
- * Submit handler for the review section.
- */
-function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
-  // Decision caching advanced setting.
-  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
 
 /**

@@ -849,7 +849,7 @@ EOT;
 
     // Now turn on decision caching for this agent.
     $edit = array('cache_decisions' => TRUE);
-    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/review", $edit, $this->getButton('wizard_done'));
+    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/variations", $edit, $this->getButton('wizard_next'));
     $this->resetAll();
 
     $this->drupalGet('');
