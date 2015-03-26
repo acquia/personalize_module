@@ -1639,7 +1639,7 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
  * @param stdClass $agent_instance
  *   The agent instance for the current agent.
  */
-function _personalize_campaign_wizard_rebuild($form_state, PersonalizeAgentInterface $agent_instance) {
+function _personalize_campaign_wizard_rebuild(&$form_state, PersonalizeAgentInterface $agent_instance) {
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
     $form_state['redirect'] = current_path();
   }
