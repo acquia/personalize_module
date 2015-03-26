@@ -826,7 +826,25 @@ function personalize_theme($existing, $type, $theme, $path) {
       'render element' => 'element',
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
-    )
+    ),
+    'personalize_wizard_summary_count' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'count' => 'N/A',
+        'details' => '',
+      ),
+    ),
+    'personalize_wizard_summary_schedule' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+      'variables' => array(
+        'status' => '',
+        'start_date' => 0,
+        'stop_date' => 0,
+        'started_date' => 0,
+      ),
+    ),
   );
 }
 

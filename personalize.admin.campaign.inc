@@ -1067,6 +1067,60 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
     '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
   );
+
+  $form['summary'] = array(
+    '#type' => 'container',
+  );
+  // Get summary data for option sets.
+  $summary_list = array();
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+  $count_option_sets = count($option_sets);
+  foreach ($option_sets as $option_set) {
+    if (empty($summary_list[$option_set->plugin])) {
+      $summary_list[$option_set->plugin] = 0;
+    }
+    $summary_list[$option_set->plugin]++;
+  }
+  $items = array();
+  foreach ($summary_list as $plugin => $count) {
+    $items[] = $count . ' ' . $plugin;
+  }
+
+  $form['summary']['option_sets'] = array(
+    '#markup' => theme('personalize_wizard_summary_count', array(
+      'count' => $count_option_sets,
+      'details' => theme('item_list', array(
+        'title' => format_plural($count_option_sets, 'Variation set', 'Variation sets'),
+        'items' => $items,
+      )),
+    )),
+  );
+  // Get summary data for goals.
+  $goals = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+  $count_goals = count($goals);
+  $actions = visitor_actions_get_actions();
+  $items = array();
+  foreach ($goals as $goal) {
+    $items[] = isset($actions[$goal->action]) ? $actions[$goal->action]['label'] : $goal->action;
+  }
+
+  $form['summary']['goals'] = array(
+    '#markup' => theme('personalize_wizard_summary_count', array(
+      'count' => $count_goals,
+      'details' => theme('item_list', array(
+        'title' => format_plural($count_goals, 'Goal', 'Goals'),
+        'items' => $items,
+      )),
+    )),
+  );
+  $form['summary']['scheduling'] = array(
+    '#markup' => theme('personalize_wizard_summary_schedule', array(
+      'status' => personalize_agent_get_status($agent_data->machine_name),
+      'start_date' => personalize_agent_get_start_date($agent_data->machine_name),
+      'stop_date' => personalize_agent_get_stop_date($agent_data->machine_name),
+      'started_date' => empty($agent_data->started) ? 0 : $agent_data->started,
+    )),
+  );
   return $form;
 }
 

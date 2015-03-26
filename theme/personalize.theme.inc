@@ -339,3 +339,67 @@ function theme_personalize_wizard_variations_header($variables) {
   $output = '<span class="personalize-option-header">' . $output . '</span>';
   return $output;
 }
+
+/**
+ * Theme function to display a summary item on the campaign wizard "Review"
+ * screen that indicates the count of an item.
+ *
+ * @param $variables
+ *   Associative array of enumerated list item details
+ *   - count: The main count to be displayed
+ *   - details: Previously themed and cleaned output to display for each
+ *     count.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_wizard_summary_count($variables) {
+  $text = '';
+  $text .= '<div class="personalize-wizard-summary-item clearfix">';
+  $text .= '<span class="personalize-wizard-summary-count">' . $variables['count'] . '</span>';
+  if (!empty($variables['details'])) {
+    $text .= '<div class="personalize-wizard-summary-details">' . $variables['details'] . '</div>';
+  }
+  $text .= '</div>';
+  return $text;
+}
+
+/**
+ * Theme function to display a summary item that shows the scheduling component
+ * for a particular agent.
+ *
+ * @param $variables
+ *   Associative array of enumerated list item details
+ *   - status:  The current status of the agent
+ *   - start_date: The timestamp to start the campaign or 0 if not indicated.
+ *   - stop_date: The timestamp to stop the campaign or 0 if not indicated.
+ *   - started_date: The timestamp that the campaign was started last or 0 if
+ *     never started.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_wizard_summary_schedule($variables) {
+  $text = '';
+  $text .= '<div class="personalize-wizard-summary-schedule">';
+  switch ($variables['status']) {
+    case PERSONALIZE_STATUS_PAUSED:
+      $text .= '<div class="personalize-wizard-summary-status-paused">' . t('Paused') . '</div>';
+      break;
+    case PERSONALIZE_STATUS_RUNNING:
+      $text .= '<div class="personalize-wizard-summary-status-running">' . t('Running') . '</div>';
+      break;
+    case PERSONALIZE_STATUS_COMPLETED:
+      $text .= '<div class="personalize-wizard-summary-status-completed">' . t('Completed') . '</div>';
+      break;
+  }
+  if (!empty($variables['started_date'])) {
+    $text .= '<div class="personalize-wizard-summary-started">' . t('Started:') . format_date($variables['started_date'], 'custom', 'D M. d, Y') . '</div>';
+  }
+  if (!empty($variables['start_date'])) {
+    $text .= '<div class="personalize-wizard-summary-start">' . t('Start: ') . format_date($variables['start_date'], 'custom', 'D M. d, Y') . '</div>';
+  }
+  if (!empty($variables['stop_date'])) {
+    $text .= '<div class="personalize-wizard-summary-stop">' . t('Stop: ') . format_date($variables['stop_date'], 'custom', 'D M. d, Y') . '</div>';
+  }
+  $text .= '</div>';
+  return $text;
+}

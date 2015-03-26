@@ -274,3 +274,22 @@ div.personalize-target-wrapper div.form-item {
 .personalize-tabs-container.ui-tabs .ui-tabs-nav li a:hover {
   text-decoration: underline;
 }
+
+.personalize-wizard-summary-item {
+  margin-bottom: 2em;
+  line-height: 1em;
+}
+.personalize-wizard-summary-item .personalize-wizard-summary-count,
+.personalize-wizard-summary-item .personalize-wizard-summary-details {
+  display: inline-block;
+  vertical-align: top;
+}
+.personalize-wizard-summary-item .personalize-wizard-summary-count {
+  font-size: 4em;
+  margin-right: .25em; /* LTR */
+  line-height: 1em;
+}
+.personalize-wizard-summary-item .personalize-wizard-summary-details ul,
+.personalize-wizard-summary-item .personalize-wizard-summary-details ul li {
+  list-style-type: none;
+}
