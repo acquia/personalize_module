@@ -547,7 +547,9 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#title' => t('Advanced'),
+    '#title' => t('Advanced options for @option_set', array(
+      '@option_set' => $option_set->label,
+    )),
   );
   $advanced['label'] = array(
     '#type' => 'textfield',
