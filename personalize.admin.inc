@@ -969,12 +969,11 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
       $agent_type_options[$name] = $name;
     }
   }
-  if (empty($agent_types_options)) {
+  if (empty($agent_type_options)) {
     drupal_set_message(t('You don\'t have any agent types enabled. Please enable the personalize_target module or another module that provides an agent type.'), 'error');
     return FALSE;
   }
   ksort($agent_type_options);
-
   $form['agent_basic_info']['title'] = array(
     '#title' => t('Name'),
     '#type' => 'textfield',

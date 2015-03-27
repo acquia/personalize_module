@@ -1986,14 +1986,12 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $edit = array(
       'agent_select' => PERSONALIZE_NEW_AGENT_FORM_VALUE,
       'agent_basic_info[title]' => $agent_name,
-      'agent_basic_info[options][test_agent][use_client_side_goal_processing]' => FALSE,
     );
     $this->drupalPost('admin/personalize_test/form', $edit, $this->getButton('Submit'));
     $this->assertText('Agent saved');
     $this->resetAll();
     if ($agent = personalize_agent_load_agent($machine_name)) {
       $this->assertTrue($agent instanceof PersonalizeTestAgent);
-      $this->assertFalse($agent->useClientSideGoalDelivery());
     }
     else {
       $this->fail('Agent was not saved');
