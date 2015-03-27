@@ -1561,7 +1561,9 @@ function personalize_campaign_report($agent_data, $osid = NULL, $form = NULL, &$
       return $report;
     }
   }
-  return t('No reports available for the specified campaign');
+  return array(
+    '#markup' => t('No reports available for the specified campaign'),
+  );
 }
 
 /**
