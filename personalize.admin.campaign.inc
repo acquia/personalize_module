@@ -149,7 +149,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     // Disable the reporting link if the agent has not yet been started.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
     if ($agent_status == PERSONALIZE_STATUS_NOT_STARTED) {
-      $form['process_bar']['navigation']['#options']['report']['disabled'] = TRUE;
+      $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
     }
   }
 
@@ -436,7 +436,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         'variation_title' => $option_sets_labels[$option_set->osid],
         'variation_count' => count($option_set->options),
         'report' => $agent_instance instanceof PersonalizeAgentReportInterface ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
+        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/results/{$option_set->osid}") : '',
         'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
         'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
