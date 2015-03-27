@@ -175,9 +175,14 @@ div.personalize-target-wrapper div.form-item {
 
 /* Personalize campaign wizard forms */
 #personalize-campaign-wizard .personalize-wizard-section {
-  width: 50%;
-  min-width: 400px;
+  width: 100%;
 }
+#personalize-campaign-wizard .personalize-wizard-section .personalize-wizard-column {
+  float: left;
+  width: 48%;
+  margin: 1em;
+}
+/* Agent top level form */
 #personalize-campaign-wizard #edit-agent-basic-info .form-item {
   padding: 0;
 }
@@ -196,7 +201,7 @@ div.personalize-target-wrapper div.form-item {
 .personalize-wizard-section .personalize-admin-enumerated-counter:after {
   content: ':';
 }
-
+/* Process bar */
 #personalize-wizard-process-bar {
   margin-bottom: 1.2em;
 }
@@ -252,7 +257,7 @@ div.personalize-target-wrapper div.form-item {
 #personalize-wizard-process-bar .personalize-wizard-expanded-help {
   display: none;
 }
-
+/* Tabs */
 .personalize-tabs-container.ui-tabs .ui-tabs-nav li.ui-tabs-selected a {
   background: none;
   font-weight: bold;
@@ -274,7 +279,7 @@ div.personalize-target-wrapper div.form-item {
 .personalize-tabs-container.ui-tabs .ui-tabs-nav li a:hover {
   text-decoration: underline;
 }
-
+/* Review screen */
 .personalize-wizard-summary-item {
   margin-bottom: 2em;
   line-height: 1em;

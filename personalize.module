@@ -1113,7 +1113,8 @@ function personalize_agent_set_status($agent_name, $status) {
 
   if ($status == PERSONALIZE_STATUS_RUNNING) {
     // Do a check before setting the status to running.
-    if (!personalize_verify_agent($agent_name)) {
+    $errors = personalize_verify_agent($agent_name);
+    if (!empty($errors)) {
       drupal_set_message(t('There is a problem with this campaign and it cannot be run at this time.'), 'error');
       return FALSE;
     }
@@ -1153,8 +1154,8 @@ function personalize_agent_set_status($agent_name, $status) {
  * @param bool $show_messages
  *   True if any verification errors should be shown using on-screen messages.
  *
- * @return bool
- *   Whether or not the agent passed all the checks.
+ * @return array
+ *   An array of verification messages.  Empty if the agent verification passes.
  */
 function personalize_verify_agent($agent_name, $show_messages = TRUE) {
   // Now allow the agent to run a check.
@@ -1171,9 +1172,8 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
         drupal_set_message($error, 'error');
       }
     }
-    return FALSE;
   }
-  return TRUE;
+  return $errors;
 }
 
 /**

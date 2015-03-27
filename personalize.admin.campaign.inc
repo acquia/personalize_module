@@ -60,6 +60,9 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->machine_name) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
+  // This property can be adjusted by any sub-form to prevent the submit action.
+  $form_state['storage']['allow_submit'] = TRUE;
+
   // Read the current step from the parameters unless the form process has
   // already started.
   $current_step = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : $selected;
@@ -93,7 +96,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
   if (function_exists($function)) {
-    $function($form, $form_state, $agent_data, $agent_instance);
+    $form += $function($form, $form_state, $agent_data, $agent_instance);
   }
 
   // Add the form action buttons.
@@ -209,6 +212,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   // for this agent instance.
   $steps = _personalize_campaign_wizard_steps($agent_instance);
   $next_step = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
+  if (empty($next_step)) {
+    return $form;
+  }
   $current_info = $steps[$form_state['storage']['step']];
   $next_info = $steps[$next_step];
 
@@ -226,6 +232,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#name' => 'wizard_submit',
     '#value' => $current_info['button_value'],
     '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
+    '#disabled' => !($form_state['storage']['allow_submit']),
   );
 
   return $form;
@@ -363,7 +370,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
   }
 
-  $form = array();
   $form['variations'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
@@ -1067,9 +1073,25 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  $form['summary'] = array(
+  $form['review'] = array(
     '#type' => 'container',
+    '#attributes' => array(
+      // @todo move this clearfix addition out of the main code.
+      'class' => array('personalize-wizard-section', 'clearfix'),
+    ),
   );
+  $form['review']['summary_column'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-column'),
+    ),
+  );
+  $form['review']['summary_column']['summary'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => FALSE,
+    '#title' => t('Overview'),
+  );
+
   // Get summary data for option sets.
   $summary_list = array();
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
@@ -1085,7 +1107,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     $items[] = $count . ' ' . $plugin;
   }
 
-  $form['summary']['option_sets'] = array(
+  $form['review']['summary_column']['summary']['option_sets'] = array(
     '#markup' => theme('personalize_wizard_summary_count', array(
       'count' => $count_option_sets,
       'details' => theme('item_list', array(
@@ -1103,7 +1125,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     $items[] = isset($actions[$goal->action]) ? $actions[$goal->action]['label'] : $goal->action;
   }
 
-  $form['summary']['goals'] = array(
+  $form['review']['summary_column']['summary']['goals'] = array(
     '#markup' => theme('personalize_wizard_summary_count', array(
       'count' => $count_goals,
       'details' => theme('item_list', array(
@@ -1112,7 +1134,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
       )),
     )),
   );
-  $form['summary']['scheduling'] = array(
+  $form['review']['summary_column']['summary']['scheduling'] = array(
     '#markup' => theme('personalize_wizard_summary_schedule', array(
       'status' => personalize_agent_get_status($agent_data->machine_name),
       'start_date' => personalize_agent_get_start_date($agent_data->machine_name),
@@ -1120,6 +1142,31 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
       'started_date' => empty($agent_data->started) ? 0 : $agent_data->started,
     )),
   );
+
+  // Get an errors that would prevent submitting the agent.
+  $warnings = personalize_verify_agent($agent_data->machine_name, FALSE);
+  if (!empty($warnings)) {
+    $form_state['storage']['allow_submit'] = FALSE;
+    $form['review']['warnings_column'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-wizard-column'),
+      ),
+    );
+    $form['review']['warnings_column']['warnings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Let\'s fix this'),
+      '#collapsible' => FALSE,
+    );
+    $form['review']['warnings_column']['warnings']['details'] = array(
+      '#markup' => theme('item_list', array(
+        'items' => $warnings,
+        'attributes' => array(
+          'class' => array('personalize-wizard-review-warnings'),
+        ),
+      )),
+    );
+  }
   return $form;
 }
 
@@ -1135,7 +1182,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
  * @param PersonalizeAgentInterface $agent_instance
  *   The agent that defines the functionality for the campaign (if set).
  */
-function personalize_campaign_wizard_report($form, &$form_state, $agent_data, $agent_instance = NULL) {
+function personalize_campaign_wizard_results($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $form['report'] = personalize_campaign_report($agent_data, NULL, $form, $form_state);
   return $form;
 }
@@ -1577,7 +1624,6 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   $scheduled = !empty($agent_instance) && personalize_agent_get_start_date($agent_instance->getMachineName()) > 0;
 
   $next = t('Next');
-  $message = '';
   $steps = array(
     'variations' => array(
       'label' => t('What'),
@@ -1603,7 +1649,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
       'button_value' => $not_running && !$scheduled ? t('Start') : t('Save'),
       'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
     ),
-    'report' => array(
+    'results' => array(
       'label' => t('Outcome'),
       'button_value' => $next,
     )
@@ -1639,7 +1685,7 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
   $agent_steps = array_keys(_personalize_campaign_wizard_steps($agent_instance));
   $index = array_search($form_state['storage']['step'], $agent_steps);
   $index++;
-  return $index < count($agent_steps) ? $agent_steps[$index] : $form_state['storage']['step'];
+  return $index < count($agent_steps) ? $agent_steps[$index] : NULL;
 }
 
 /**
