@@ -233,6 +233,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#value' => $current_info['button_value'],
     '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
     '#disabled' => !($form_state['storage']['allow_submit']),
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
   );
 
   return $form;
