@@ -344,6 +344,9 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
       '#type' => 'submit',
       '#value' => t('Create campaign'),
       '#disabled' => empty($agent_type_options),
+      '#attributes' => array(
+        'class' => array('action-item-primary-active'),
+      ),
     );
   }
 
