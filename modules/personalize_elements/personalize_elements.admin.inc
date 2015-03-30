@@ -495,7 +495,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
     'data' => array(
       'personalize_elements_selector' => isset($values['selector']) ? $values['selector'] : '',
       'personalize_elements_type' => $values['variation_type'],
-      'pages' => $values['pages_all'] == 1 ? '' : $values['pages'],
+      'pages' => isset($values['pages_all']) && $values['pages_all'] == 1 ? '' : $values['pages'],
     )
   );
   if (isset($values['osid'])) {
