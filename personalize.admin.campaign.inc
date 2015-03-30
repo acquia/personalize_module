@@ -374,9 +374,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   $form['variations'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
-    '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['variations']['title'] = array(
     '#type' => 'container',
@@ -445,7 +443,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     );
 
     $variant_number = 1;
-    $targeting = personalize_get_targeting_for_options($option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       $is_control = $variant_number == 1;
@@ -535,7 +532,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   } // End loop through option sets.
 
   // Add agent level advanced settings.
-  $form['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
+  $form['variations']['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
   return $form;
 }
 
@@ -680,9 +677,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   $form['targeting'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
-    '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['targeting']['title'] = array(
     '#type' => 'container',
@@ -918,9 +913,9 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
     '#type' => 'container',
     '#tree' => FALSE,
     '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
       'id' => 'personalize-goals-container',
     ),
+    '#theme' => 'personalize_wizard_section',
   );
 
   $form['goals']['title'] = array(
@@ -1087,10 +1082,7 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $form['review'] = array(
     '#type' => 'container',
-    '#attributes' => array(
-      // @todo move this clearfix addition out of the main code.
-      'class' => array('personalize-wizard-section', 'clearfix'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['review']['summary_column'] = array(
     '#type' => 'container',
