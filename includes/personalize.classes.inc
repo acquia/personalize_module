@@ -69,27 +69,6 @@ interface PersonalizeAgentInterface {
   public static function create($agent_data);
 
   /**
-   * Returns the options form for configuring this type of agent.
-   *
-   * @param $agent_data
-   *   The agent being edited, if it's an edit form.
-   * @param array $option_parents
-   *   The array of form element parents for the options.
-   *
-   * @return array
-   *   A FAPI array.
-   */
-  public static function optionsForm($agent_data, $option_parents = array());
-
-  /**
-   * Validates the form data.
-   *
-   * @param array $option_parents
-   *   The array of form element parents for the options to validate.
-   */
-  public static function optionsFormValidate($form, &$form_state, $option_parents = array());
-
-  /**
    * A method to call once an agent has been saved.
    *
    * @param $old_data
@@ -377,20 +356,6 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
    */
   public function getAssets() {
     return array();
-  }
-
-  /**
-   * Implements PersonalizeAgentInterface::optionsForm().
-   */
-  public static function optionsForm($agent_data, $option_parents = array()) {
-    return array();
-  }
-
-  /**
-   * Implements PersonalizeAgentInterface::optionsFormValidate().
-   */
-  public static function optionsFormValidate($form, &$form_state, $option_parents = array()) {
-    return;
   }
 
   /**

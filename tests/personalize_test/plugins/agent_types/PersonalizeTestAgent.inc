@@ -41,20 +41,6 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
   }
 
   /**
-   * Implements PersonalizeAgentInterface::optionsForm().
-   */
-  public static function optionsForm($agent_data, $option_parents = array()) {
-    $form = array();
-    $form['use_client_side_goal_processing'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Client-side goal processing'),
-      '#default_value' => isset($agent_data->data['use_client_side_goal_processing']) ? $agent_data->data['use_client_side_goal_processing'] : 1,
-      '#description' => t('Should goals for this agent be processed on the client-side? (Recommended)'),
-    );
-    return $form;
-  }
-
-  /**
    * Implements PersonalizeAgentInterface::getAssets().
    */
   public function getAssets() {

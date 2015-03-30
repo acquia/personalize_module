@@ -18,3 +18,7 @@
 .personalize-wizard-section .personalize-admin-enumerated-item {
   margin-left: 1em; /* RTL */
 }
+
+.personalize-wizard-summary-item .personalize-wizard-summary-count {
+  margin-left: .25em; /* RTL */
+}

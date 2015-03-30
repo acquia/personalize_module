@@ -60,6 +60,9 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   $form['#agent'] = $agent_data;
   $agent_instance = !empty($agent_data->machine_name) ? personalize_agent_load_agent($agent_data->machine_name) : NULL;
 
+  // This property can be adjusted by any sub-form to prevent the submit action.
+  $form_state['storage']['allow_submit'] = TRUE;
+
   // Read the current step from the parameters unless the form process has
   // already started.
   $current_step = isset($form_state['storage']['step']) ? $form_state['storage']['step'] : $selected;
@@ -79,8 +82,6 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   if ($header_form === FALSE) {
     return $form;
   }
-  // Allow the top level base form to be modified.
-  drupal_alter('personalize_campaign_wizard_base', $form, $form_state, $agent_data);
   $form += $header_form;
 
   // Add the form process bar (includes navigation and other campaign
@@ -95,10 +96,7 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
   if (function_exists($function)) {
-    $subform = $function($form, $form_state, $agent_data, $agent_instance);
-    // Allow the subform to be modified.
-    drupal_alter($function, $form, $form_state, $agent_data);
-    $form += $subform;
+    $form += $function($form, $form_state, $agent_data, $agent_instance);
   }
 
   // Add the form action buttons.
@@ -151,7 +149,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     // Disable the reporting link if the agent has not yet been started.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
     if ($agent_status == PERSONALIZE_STATUS_NOT_STARTED) {
-      $form['process_bar']['navigation']['#options']['report']['disabled'] = TRUE;
+      $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
     }
   }
 
@@ -214,6 +212,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   // for this agent instance.
   $steps = _personalize_campaign_wizard_steps($agent_instance);
   $next_step = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
+  if (empty($next_step)) {
+    return $form;
+  }
   $current_info = $steps[$form_state['storage']['step']];
   $next_info = $steps[$next_step];
 
@@ -231,6 +232,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#name' => 'wizard_submit',
     '#value' => $current_info['button_value'],
     '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
+    '#disabled' => !($form_state['storage']['allow_submit']),
   );
 
   return $form;
@@ -368,7 +370,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
   }
 
-  $form = array();
   $form['variations'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
@@ -408,12 +409,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   );
 
   $section = &$form['variations']['option_sets'];
-  // For any option sets that have been created for this campaign, display
-  // advanced options for specifying decision name etc.
-  if (empty($option_sets)) {
-    return $form;
-  }
-
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
     $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
@@ -441,7 +436,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
         'variation_title' => $option_sets_labels[$option_set->osid],
         'variation_count' => count($option_set->options),
         'report' => $agent_instance instanceof PersonalizeAgentReportInterface ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/report/{$option_set->osid}") : '',
+        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/results/{$option_set->osid}") : '',
         'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
         'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
@@ -537,6 +532,9 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     // Add the advanced options.
     $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
   } // End loop through option sets.
+
+  // Add agent level advanced settings.
+  $form['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
   return $form;
 }
 
@@ -549,7 +547,9 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     '#type' => 'fieldset',
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#title' => t('Advanced'),
+    '#title' => t('Advanced options for @option_set', array(
+      '@option_set' => $option_set->label,
+    )),
   );
   $advanced['label'] = array(
     '#type' => 'textfield',
@@ -623,6 +623,38 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     }
   }
   return $advanced;
+}
+
+/**
+ * Helper function to generate the advanced settings form for agent-level
+ * settings.
+ *
+ * @param array $form
+ *   The current form array.
+ * @param array $form_state
+ *   The current drupal form state
+ * @param stdClass $agent_data
+ *   The current campaign data.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent that defines the functionality for the campaign (if set).
+ * @return array
+ *   The advanced settings form element.
+ */
+function personalize_campaign_wizard_variations_advanced_agent($form, &$form_state, $agent_data, $agent_instance = NULL) {
+  $element = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => FALSE,
+  );
+  $element['cache_decisions'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Cache decisions made by this agent?',
+    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
+    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  );
+  return $element;
 }
 
 /**
@@ -1043,30 +1075,100 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  // Get the agent type specific options form.
-  $form['agent_options'] = array(
+  $form['review'] = array(
     '#type' => 'container',
-    '#tree' => TRUE,
+    '#attributes' => array(
+      // @todo move this clearfix addition out of the main code.
+      'class' => array('personalize-wizard-section', 'clearfix'),
+    ),
   );
-  $options = $agent_instance::optionsForm($agent_data, array('agent_options', 'options'));
-  if (!empty($options)) {
-    $form['agent_options']['options'] = $options;
+  $form['review']['summary_column'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-column'),
+    ),
+  );
+  $form['review']['summary_column']['summary'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => FALSE,
+    '#title' => t('Overview'),
+  );
+
+  // Get summary data for option sets.
+  $summary_list = array();
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+  $count_option_sets = count($option_sets);
+  foreach ($option_sets as $option_set) {
+    if (empty($summary_list[$option_set->plugin])) {
+      $summary_list[$option_set->plugin] = 0;
+    }
+    $summary_list[$option_set->plugin]++;
+  }
+  $items = array();
+  foreach ($summary_list as $plugin => $count) {
+    $items[] = $count . ' ' . $plugin;
   }
 
-  // Add the advanced settings form.
-  $form['advanced'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Advanced'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#tree' => FALSE,
+  $form['review']['summary_column']['summary']['option_sets'] = array(
+    '#markup' => theme('personalize_wizard_summary_count', array(
+      'count' => $count_option_sets,
+      'details' => theme('item_list', array(
+        'title' => format_plural($count_option_sets, 'Variation set', 'Variation sets'),
+        'items' => $items,
+      )),
+    )),
   );
-  $form['advanced']['cache_decisions'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Cache decisions made by this agent?',
-    '#description' => t('Check this if decisions made by this agent should stick, so that they don\'t have to be made again every time variation sets are rendered. This depends on the availability of local storage in the visitor\'s browser'),
-    '#default_value' => isset($agent_data->data['cache_decisions']) ? $agent_data->data['cache_decisions'] : 1
+  // Get summary data for goals.
+  $goals = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+  $count_goals = count($goals);
+  $actions = visitor_actions_get_actions();
+  $items = array();
+  foreach ($goals as $goal) {
+    $items[] = isset($actions[$goal->action]) ? $actions[$goal->action]['label'] : $goal->action;
+  }
+
+  $form['review']['summary_column']['summary']['goals'] = array(
+    '#markup' => theme('personalize_wizard_summary_count', array(
+      'count' => $count_goals,
+      'details' => theme('item_list', array(
+        'title' => format_plural($count_goals, 'Goal', 'Goals'),
+        'items' => $items,
+      )),
+    )),
   );
+  $form['review']['summary_column']['summary']['scheduling'] = array(
+    '#markup' => theme('personalize_wizard_summary_schedule', array(
+      'status' => personalize_agent_get_status($agent_data->machine_name),
+      'start_date' => personalize_agent_get_start_date($agent_data->machine_name),
+      'stop_date' => personalize_agent_get_stop_date($agent_data->machine_name),
+      'started_date' => empty($agent_data->started) ? 0 : $agent_data->started,
+    )),
+  );
+
+  // Get an errors that would prevent submitting the agent.
+  $warnings = personalize_verify_agent($agent_data->machine_name, FALSE);
+  if (!empty($warnings)) {
+    $form_state['storage']['allow_submit'] = FALSE;
+    $form['review']['warnings_column'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-wizard-column'),
+      ),
+    );
+    $form['review']['warnings_column']['warnings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Let\'s fix this'),
+      '#collapsible' => FALSE,
+    );
+    $form['review']['warnings_column']['warnings']['details'] = array(
+      '#markup' => theme('item_list', array(
+        'items' => $warnings,
+        'attributes' => array(
+          'class' => array('personalize-wizard-review-warnings'),
+        ),
+      )),
+    );
+  }
   return $form;
 }
 
@@ -1082,7 +1184,7 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
  * @param PersonalizeAgentInterface $agent_instance
  *   The agent that defines the functionality for the campaign (if set).
  */
-function personalize_campaign_wizard_report($form, &$form_state, $agent_data, $agent_instance = NULL) {
+function personalize_campaign_wizard_results($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $form['report'] = personalize_campaign_report($agent_data, NULL, $form, $form_state);
   return $form;
 }
@@ -1242,21 +1344,6 @@ function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
 }
 
 /**
- * Custom validation callback for details form.
- */
-function personalize_campaign_wizard_validate_review($form, &$form_state) {
-  $agent_data = $form['#agent'];
-  if (!isset($form_state['values']['agent_options']['options'])) {
-    return;
-  }
-  ctools_include('plugins');
-  if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent_data->plugin, 'handler')) {
-    // Call the validation callback for the agent type.
-    $class::optionsFormValidate($form, $form_state, array('agent_options', 'options'));
-  }
-}
-
-/**
  ********************************************************************
  *
  * S U B M I S S I O N
@@ -1353,6 +1440,8 @@ function personalize_campaign_wizard_submit_variations($form, &$form_state, &$ag
       personalize_option_set_save($option_set);
     }
   }
+  // Update any advanced agent-level settings.
+  personalize_campaign_wizard_submit_variations_advanced_agent($form, $form_state, $agent_data);
 }
 
 /**
@@ -1377,6 +1466,14 @@ function personalize_campaign_wizard_submit_variations_advanced($form_values, &$
   if (isset($form_values['advanced']['preview_link'])) {
     $option_set->preview_link = $form_values['advanced']['preview_link'];
   }
+}
+
+/**
+ * Submit handler for variations page advanced agent settings.
+ */
+function personalize_campaign_wizard_submit_variations_advanced_agent($form, &$form_state, &$agent_data) {
+  // Decision caching advanced setting.
+  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
 }
 
 /**
@@ -1508,17 +1605,6 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
 }
 
 /**
- * Submit handler for the review section.
- */
-function personalize_campaign_wizard_submit_review($form, &$form_state, &$agent_data) {
-  // Agent-specific options
-  $agent_data->data = isset($form_state['values']['agent_options']['options']) ? $form_state['values']['agent_options']['options'] : array();
-
-  // Decision caching advanced setting.
-  $agent_data->data['cache_decisions'] = $form_state['values']['cache_decisions'];
-}
-
-/**
  ********************************************************************
  *
  * H E L P E R  F U N C T I O N S
@@ -1540,7 +1626,6 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   $scheduled = !empty($agent_instance) && personalize_agent_get_start_date($agent_instance->getMachineName()) > 0;
 
   $next = t('Next');
-  $message = '';
   $steps = array(
     'variations' => array(
       'label' => t('What'),
@@ -1566,7 +1651,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
       'button_value' => $not_running && !$scheduled ? t('Start') : t('Save'),
       'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
     ),
-    'report' => array(
+    'results' => array(
       'label' => t('Outcome'),
       'button_value' => $next,
     )
@@ -1602,7 +1687,7 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
   $agent_steps = array_keys(_personalize_campaign_wizard_steps($agent_instance));
   $index = array_search($form_state['storage']['step'], $agent_steps);
   $index++;
-  return $index < count($agent_steps) ? $agent_steps[$index] : $form_state['storage']['step'];
+  return $index < count($agent_steps) ? $agent_steps[$index] : NULL;
 }
 
 /**
@@ -1613,7 +1698,7 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
  * @param stdClass $agent_instance
  *   The agent instance for the current agent.
  */
-function _personalize_campaign_wizard_rebuild($form_state, PersonalizeAgentInterface $agent_instance) {
+function _personalize_campaign_wizard_rebuild(&$form_state, PersonalizeAgentInterface $agent_instance) {
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
     $form_state['redirect'] = current_path();
   }

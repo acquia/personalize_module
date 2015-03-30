@@ -82,7 +82,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
     ctools_include('plugins');
     // Make sure we have at least one agent type available.
     $agent_types = personalize_get_agent_types();
-    $agent_type_options = $agent_type_form_options = array();
+    $agent_type_options = array();
     $agent_data = new stdClass();
     $agent_data->data = array();
     foreach ($agent_types as $name => $info) {
@@ -92,8 +92,6 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
       if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
         // Add this option to the options for the "agent type" dropdown.
         $agent_type_options[$name] = $name;
-        // Get the agent type's options form elements
-        $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, array('field', 'settings', 'personalize', 'options', $name)));
       }
     }
     if (empty($agent_type_options)) {
@@ -120,19 +118,6 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
         '#description' => t('Choose which type of campaign to create.'),
       );
       personalize_form_element_add_states($state, $form['field']['settings']['personalize']['agent_type']);
-    }
-
-    // Add the agent-type-specific form elements to the form, to be shown only if the
-    // agent type in question is selected.
-    $form['field']['settings']['personalize']['options'] = array('#tree' => TRUE);
-    foreach ($agent_type_form_options as $agent_type => $options) {
-      $children = element_children($options);
-      foreach ($children as $child) {
-        $option = &$options[$child];
-        $option['#states'] = array('visible' => array(':input[name="field[settings][personalize][agent_type]"]' => array('value' => $agent_type)));
-        personalize_form_element_add_states($state, $option);
-      }
-      $form['field']['settings']['personalize']['options'][$agent_type] = $options;
     }
   }
 }

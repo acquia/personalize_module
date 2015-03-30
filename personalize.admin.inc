@@ -962,15 +962,11 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
   $form['#agent'] = $agent_data;
   // Make sure we have at least one agent type available.
   $agent_types = personalize_get_agent_types();
-  $agent_type_options = $agent_type_form_options = array();
+  $agent_type_options = array();
   foreach ($agent_types as $name => $info) {
     if ($class = ctools_plugin_load_class('personalize', 'agent_type', $name, 'handler')) {
       // Add this option to the options for the "agent type" dropdown.
       $agent_type_options[$name] = $name;
-      // Form structure for option parents in the current form.
-      $option_parents = array('agent_basic_info', 'options', $name);
-      // Get the agent type's options form elements
-      $agent_type_form_options[$name] = call_user_func_array(array($class, 'optionsForm'), array($agent_data, $option_parents));
     }
   }
   if (empty($agent_type_options)) {
@@ -978,7 +974,6 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
     return FALSE;
   }
   ksort($agent_type_options);
-
   $form['agent_basic_info']['title'] = array(
     '#title' => t('Name'),
     '#type' => 'textfield',
@@ -1035,23 +1030,6 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
       '#description' => t('Choose which type of agent to create.'),
       '#weight' => -7,
     );
-  }
-
-  // Add the agent-type-specific form elements to the form, to be shown only if the
-  // agent type in question is selected.
-  $form['agent_basic_info']['options'] = array('#tree' => TRUE, '#weight' => -6);
-  if (!empty($agent_data->plugin)) {
-    // If in edit mode, then only show the options for the selected agent.
-    $form['agent_basic_info']['options'][$agent_data->plugin] = $agent_type_form_options[$agent_data->plugin];
-  }
-  else {
-    // If in add mode, then show options dynamically using states.
-    foreach ($agent_type_form_options as $agent_type => $options) {
-      foreach ($options as &$option) {
-        $option['#states'] = array('visible' => array(':input[name="agent_basic_info[agent_type]"]' => array('value' => $agent_type)));
-      }
-      $form['agent_basic_info']['options'][$agent_type] = $options;
-    }
   }
   return $form;
 }
@@ -1582,7 +1560,9 @@ function personalize_campaign_report($agent_data, $osid = NULL, $form = NULL, &$
       return $report;
     }
   }
-  return t('No reports available for the specified campaign');
+  return array(
+    '#markup' => t('No reports available for the specified campaign'),
+  );
 }
 
 /**
