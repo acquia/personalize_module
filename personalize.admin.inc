@@ -1294,6 +1294,9 @@ function personalize_explicit_targeting_mapping_element($mapping, $targeting_val
         'event' => 'change',
         'callback' => 'personalize_explicit_targeting_context_callback',
         'wrapper' => $wrapper_id,
+        'progress' => array(
+          'type' => 'none',
+        ),
       ),
       '#attributes' => array(
         'class' => array('personalize-targeting-context'),
