@@ -182,6 +182,10 @@ div.personalize-target-wrapper div.form-item {
   width: 48%;
   margin: 1em;
 }
+#personalize-campaign-wizard .form-actions .description {
+  font-size: .9em;
+  color: #666;
+}
 /* Agent top level form */
 #personalize-campaign-wizard #edit-agent-basic-info .form-item {
   padding: 0;
@@ -246,7 +250,7 @@ div.personalize-target-wrapper div.form-item {
   display: inline-block;
 }
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions input {
-  margin: .7em 0 .7em 2em;
+  margin: .7em 0 .7em .7em;
 }
 #personalize-wizard-process-bar .personalize-wizard-section-help {
   border-bottom: 1px solid #0074BD;

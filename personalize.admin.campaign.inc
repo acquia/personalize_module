@@ -231,7 +231,15 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#type' => 'submit',
     '#name' => 'wizard_submit',
     '#value' => $current_info['button_value'],
-    '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
+    '#suffix' => empty($next_info['preview_message']) ? '' : theme('html_tag', array(
+      'element' => array(
+        '#value' => $next_info['preview_message'],
+        '#tag' => 'span',
+        '#attributes' => array(
+          'class' => array('description'),
+        ),
+      ),
+    )),
     '#disabled' => !($form_state['storage']['allow_submit']),
     '#attributes' => array(
       'class' => array('action-item-primary-active'),
