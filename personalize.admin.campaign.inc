@@ -367,15 +367,9 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
  */
 function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
   // Load the data used throughout form.
-  if (empty($agent_data->machine_name)) {
-    $option_sets = array();
-    $campaign_page = 'admin/structure/personalize/wizard';
-  }
-  else {
-    $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
-    $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}";
-    $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
-  }
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+  $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}";
+  $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
 
   $form['variations'] = array(
     '#type' => 'container',
