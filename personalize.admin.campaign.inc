@@ -711,6 +711,15 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
 
+  if (empty($option_sets)) {
+    $form['targeting']['error'] = array(
+      '#markup' => t('You must <a href="!variations_url">create variation sets</a> before targeting.', array(
+        '!variations_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/variations'),
+      )),
+    );
+    return $form;
+  }
+
   // Containing element for all option sets.
   $form['targeting']['option_sets'] = array(
     '#tree' => TRUE,
