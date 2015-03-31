@@ -204,7 +204,7 @@ function personalize_schema() {
   );
 
   $schema['personalize_campaign_goals'] = array(
-    'description' => 'Stores visitor actions as goals for campaigns.',
+    'description' => 'Stores visitor actions as goals for personalizations.',
     'fields' => array(
       'id' => array(
         'description' => 'The primary identifier for this goal.',

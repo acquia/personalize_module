@@ -46,7 +46,7 @@ class PersonalizeBlocksTest extends PersonalizeBaseTest {
 
     $pblock = $this->createPersonalizeBlock($edit, FALSE);
 
-    $this->assertText('Campaign name is required');
+    $this->assertText('Personalization name is required');
 
     $edit = array(
       'agent_select' => '__new__',

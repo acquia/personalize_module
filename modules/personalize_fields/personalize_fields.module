@@ -95,7 +95,7 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
       }
     }
     if (empty($agent_type_options)) {
-      drupal_set_message(t('You don\'t have any campaign types enabled. Please enable the personalize_target module or another module that provides a campaign type.'), 'error');
+      drupal_set_message(t('You don\'t have any personalization types enabled. Please enable the personalize_target module or another module that provides a personalization type.'), 'error');
       return;
     }
     // Add a state to the form elements to make sure they only appear when the
@@ -112,10 +112,10 @@ function personalize_fields_form_field_ui_field_edit_form_alter(&$form, &$form_s
     else {
       $form['field']['settings']['personalize']['agent_type'] = array(
         '#type' => 'select',
-        '#title' => t('Campaign Type'),
+        '#title' => t('Personalization Type'),
         '#options' => $agent_type_options,
         '#default_value' => isset($field['settings']['personalize']['agent_type']) ? $field['settings']['personalize']['agent_type'] : '',
-        '#description' => t('Choose which type of campaign to create.'),
+        '#description' => t('Choose which type of personalization to create.'),
       );
       personalize_form_element_add_states($state, $form['field']['settings']['personalize']['agent_type']);
     }
@@ -679,11 +679,11 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
     $field = field_info_field($field_name);
 
     if (!isset($field['settings']['personalize']['agent_type'])) {
-      throw new PersonalizeFieldsException(t('No campaign type has been configured for this field. Please go to the field settings and specify the campaign type to use.'));
+      throw new PersonalizeFieldsException(t('No personalization type has been configured for this field. Please go to the field settings and specify the personalization type to use.'));
     }
     $plugin = personalize_get_agent_type($field['settings']['personalize']['agent_type']);
     if (empty($plugin)) {
-      throw new PersonalizeFieldsException(t('The campaign type specified for this field does not exist. Please go to the field settings and choose an existing campaign type.'));
+      throw new PersonalizeFieldsException(t('The personalization type specified for this field does not exist. Please go to the field settings and choose an existing personalization type.'));
     }
     $agent_type = $field['settings']['personalize']['agent_type'];
     $basic_info = array(
@@ -709,7 +709,7 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
       $option_set->agent = $new_agent->machine_name;
     }
     else {
-      drupal_set_message('There was a problem saving the new campaign', 'error');
+      drupal_set_message('There was a problem saving the new personalization', 'error');
       return;
     }
   }

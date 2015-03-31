@@ -472,7 +472,7 @@ function personalize_blocks_form_validate($form, &$form_state) {
     $agent_title = trim($form_state['values']['agent_basic_info']['title']);
 
     if (empty($agent_title)) {
-      form_error($form['personalize']['agent_basic_info']['title'], t('Campaign name is required'));
+      form_error($form['personalize']['agent_basic_info']['title'], t('Personalization name is required'));
     }
   }
 }
@@ -497,7 +497,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
         $pblock->agent = $new_agent->machine_name;
       }
       else {
-        drupal_set_message('There was a problem saving the new campaign', 'error');
+        drupal_set_message('There was a problem saving the new personalization', 'error');
         return;
       }
     }

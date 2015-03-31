@@ -952,7 +952,7 @@
     if (option_set.selector.length > 0 && $option_set.length == 0 && agent_info.active) {
       // Add a debug message to say there's a decision happening for an option set with
       // no DOM element on hte page.
-      Drupal.personalize.debug('No DOM element for the following selector in the ' + agent_name + ' campaign: "' + option_set.selector + '"', 3002);
+      Drupal.personalize.debug('No DOM element for the following selector in the ' + agent_name + ' personalization: "' + option_set.selector + '"', 3002);
     }
     // Determine any pre-selected option to display.
     if (option_set.hasOwnProperty('winner') && option_set.winner !== null) {
@@ -977,7 +977,7 @@
     // ... or if the campaign is not running.
     else if (!agent_info.active) {
       chosenOption = choices[fallbackIndex];
-      Drupal.personalize.debug('Fallback option being shown for ' + agent_name + ' because the campaign is not running.', 2005);
+      Drupal.personalize.debug('Fallback option being shown for ' + agent_name + ' because the personalization is not running.', 2005);
     }
     // If we now have a chosen option, just call the executor and be done.
     if (chosenOption !== null) {

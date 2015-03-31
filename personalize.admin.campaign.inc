@@ -297,7 +297,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#markup' => theme('html_tag', array(
       'element' => array(
         '#tag' => 'h2',
-        '#value' => 'Create campaign',
+        '#value' => 'Create personalization',
       ),
     )),
   );
@@ -350,7 +350,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
   if (empty($agent_data->machine_name)) {
     $form['agent_basic_info']['create'] = array(
       '#type' => 'submit',
-      '#value' => t('Create campaign'),
+      '#value' => t('Create personalization'),
       '#disabled' => empty($agent_type_options),
       '#attributes' => array(
         'class' => array('action-item-primary-active'),
@@ -874,7 +874,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
     if (!isset($all_actions[$goal['action']])) {
       // The action for this goal no longer exists - don't include it in the form
       // and set a warning that it will be removed upon save.
-      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
+      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the personalization.'), 'warning', FALSE);
       unset($goals[$i]);
     }
     else {
@@ -1372,7 +1372,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
   personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
-    drupal_set_message(t('The campaign has been created'));
+    drupal_set_message(t('The personalization has been created'));
     // Redirect to the full wizard view with variations selected.
     $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent->machine_name . '/variations';
     return;
@@ -1385,7 +1385,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
   // Save the campaign.
   if (!personalize_agent_save($agent)) {
-    drupal_set_message(t('There was a problem saving the campaign.', 'error'));
+    drupal_set_message(t('There was a problem saving the personalization.', 'error'));
   }
 
   // If the "Start" button was pressed then start the campaign.
@@ -1654,7 +1654,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
     'scheduling' => array(
       'label' => t('When'),
       'button_value' => $next,
-      'preview_message' => t('When should this campaign run'),
+      'preview_message' => t('When should this personalization run'),
     ),
     'review' => array(
       'label' => t('Review'),
@@ -1662,7 +1662,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
       'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
     ),
     'results' => array(
-      'label' => t('Outcome'),
+      'label' => t('Reports'),
       'button_value' => $next,
     )
   );

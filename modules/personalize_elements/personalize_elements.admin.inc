@@ -426,7 +426,7 @@ function personalize_elements_form_submit($form, &$form_state) {
         $option_set->agent = $new_agent->machine_name;
       }
       else {
-        drupal_set_message('There was a problem saving the new campaign', 'error');
+        drupal_set_message('There was a problem saving the new personalization', 'error');
         return;
       }
     }
