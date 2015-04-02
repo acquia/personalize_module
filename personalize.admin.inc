@@ -54,7 +54,7 @@ function personalize_admin_form($form, &$form_state) {
   $settings = variable_get('personalize_visitor_context_disabled', array());
   $form['personalize_visitor_context_disabled'] = personalize_admin_build_visitor_context_select($settings, FALSE);
   $form['personalize_visitor_context_disabled']['#title'] = t('Disallowed visitor context items');
-  $form['personalize_visitor_context_disabled']['#description'] = t('Select which visitor context items should never show up when configuring visitor context for campaigns.');
+  $form['personalize_visitor_context_disabled']['#description'] = t('Select which visitor context items should never show up when configuring visitor context for personalizations.');
 
   // Add our own submit handler to run BEFORE settings form handler.
   $form['#submit'][] = 'personalize_admin_form_submit';
@@ -161,7 +161,7 @@ function personalize_status_change_form_submit(&$form, &$form_state) {
       // Otherwise just change the status as requested.
       $status_map = personalize_get_agent_status_map();
       if (personalize_agent_set_status($agent_name, $status)) {
-        drupal_set_message(t('Set the status of campaign @campaign to @status', array('@campaign' => $agent_name, '@status' => $status_map[$status])));
+        drupal_set_message(t('Set the status of personalization @campaign to @status', array('@campaign' => $agent_name, '@status' => $status_map[$status])));
       }
     }
   }
@@ -306,7 +306,7 @@ function personalize_agent_list() {
   $status_map = personalize_get_agent_status_map();
 
   $header = array(
-    array('data' => t('Campaign name')),
+    array('data' => t('Name')),
     array('data' => t('Type')),
     array('data' => t('Change status')),
     array('data' => t('Operations'), 'colspan' => 4),
@@ -315,7 +315,7 @@ function personalize_agent_list() {
   if (empty($agents)) {
     return array(
       'no_agents' => array(
-        '#markup' => '<div>' . t('No campaigns available.') . '</div>'
+        '#markup' => '<div>' . t('No personalizations available.') . '</div>'
       )
     );
   }
@@ -339,16 +339,16 @@ function personalize_agent_list() {
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
-        $description = t('This table lists campaigns that have never been started.');
+        $description = t('This table lists personalizations that have never been started.');
         break;
       case PERSONALIZE_STATUS_RUNNING:
-        $description = t('This table lists campaigns that are displaying personalized content to website visitors for each variation set.');
+        $description = t('This table lists personalizations that are displaying personalized content to website visitors for each variation set.');
         break;
       case PERSONALIZE_STATUS_PAUSED:
-        $description = t('This table lists campaigns that use personalization JavaScript to display the fallback/winner variation for each variation set.');
+        $description = t('This table lists personalizations that use personalization JavaScript to display the fallback/winner variation for each variation set.');
         break;
       case PERSONALIZE_STATUS_COMPLETED:
-        $description = t('This table lists campaigns that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused campaigns.');
+        $description = t('This table lists personalizations that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused personalizations.');
         break;
     }
     $build['status_' . $status] = array(
@@ -493,7 +493,7 @@ function personalize_option_set_list($form, &$form_state) {
   $header = array(
     array('data' => t('Variation set name')),
     array('data' => t('Type')),
-    array('data' => t('Campaign')),
+    array('data' => t('Personalization')),
     array('data' => t('Edit')),
     array('data' => t('Delete')),
   );
@@ -570,7 +570,7 @@ function personalize_goals_list($form, &$form_state) {
 
   $header = array(
     array('data' => t('Goal')),
-    array('data' => t('Campaign')),
+    array('data' => t('Personalization')),
     array('data' => t('Value')),
     array('data' => t('Edit')),
     array('data' => t('Delete')),
@@ -610,13 +610,13 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
   $options = personalize_goals_options();
   $campaign = personalize_agent_load($goal->agent);
   if (personalize_agent_get_status($campaign->machine_name) == PERSONALIZE_STATUS_RUNNING) {
-    $description = t('The %goal goal will no longer be tracked in the currently running %campaign campaign.', array(
+    $description = t('The %goal goal will no longer be tracked in the currently running %campaign personalization.', array(
       '%campaign' => $campaign->label,
       '%goal' => $options[$goal->action]
     ));
   }
   else {
-    $description = t('The %goal goal will no longer be tracked when the %campaign campaign is started.', array(
+    $description = t('The %goal goal will no longer be tracked when the %campaign personalization is started.', array(
       '%campaign' => $campaign->label,
       '%goal' => $options[$goal->action]
     ));
@@ -714,26 +714,26 @@ function personalize_status_toggle_form_submit($form, &$form_state) {
   if (personalize_agent_set_status($form_state['values']['agent'], $form_state['values']['status'])) {
     switch ($form_state['values']['status']) {
       case PERSONALIZE_STATUS_RUNNING:
-        drupal_set_message(t('The campaign "@agent" is now live.', array(
+        drupal_set_message(t('The personalization "@agent" is now live.', array(
           '@agent' => $form_state['values']['agent'],
         )));
         break;
       case PERSONALIZE_STATUS_PAUSED:
       case PERSONALIZE_STATUS_COMPLETED:
-        drupal_set_message(t('The campaign "@agent" is @status.', array(
+        drupal_set_message(t('The personalization "@agent" is @status.', array(
           '@agent' => $form_state['values']['agent'],
           '@status' => drupal_strtolower($status_map[$form_state['values']['status']]),
         )));
         break;
       default:
-        drupal_set_message(t('The status of agent @agent has been set to @status', array(
+        drupal_set_message(t('The status of personalization @agent has been set to @status', array(
           '@agent' => $form_state['values']['agent'],
           '@status' => drupal_strtolower($status_map[$status_map[$form_state['values']['status']]]),
         )));
     }
   }
   else {
-    drupal_set_message(t('There was a problem setting the status of agent @agent to @status', array(
+    drupal_set_message(t('There was a problem setting the status of personalization @agent to @status', array(
       '@agent' => $form_state['values']['agent'],
       '@status' => drupal_strtolower($status_map[$form_state['values']['status']]))
     ), 'error');
@@ -818,7 +818,7 @@ function personalize_agent_date_form($agent_name = NULL) {
   $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
   $form['campaign_start'] = array(
     '#type' => 'radios',
-    '#title' => t('Campaign start date'),
+    '#title' => t('Personalization start date'),
     '#options' => array(
       'none' => t('Start manually'),
       'specified' => t('Start on selected date'),
@@ -837,7 +837,7 @@ function personalize_agent_date_form($agent_name = NULL) {
   $agent_end_date = array('year' => date('Y', $default_end), 'month' => intval(date('m', $default_end)), 'day' => date('d', $default_end));
   $form['campaign_end'] = array(
     '#type' => 'radios',
-    '#title' => t('Campaign end date'),
+    '#title' => t('Personalization end date'),
     '#options' => array(
       'none' => t('End manually'),
       'specified' => t('End on selected date'),
@@ -869,18 +869,18 @@ function personalize_agent_date_form_validate($values) {
   if (isset($values['campaign_start']) && $values['campaign_start'] === 'specified') {
     $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
     if ($start_date < time()) {
-      form_set_error('campaign_start_date', t('When provided, the start date for the campaign must be in the future.'));
+      form_set_error('campaign_start_date', t('When provided, the start date for the personalization must be in the future.'));
     }
   }
   if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
     $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
     if ($end_date < time()) {
-      form_set_error('campaign_end_date', t('When provided, the end date for the campaign must be in the future.'));
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be in the future.'));
     }
   }
   if ($start_date > 0 && $end_date > 0) {
     if ($end_date <= $start_date) {
-      form_set_error('campaign_end_date', t('When provided, the end date for the campaign must be after the start date for the campaign.'));
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be after the start date for the personalization.'));
     }
   }
 }
@@ -1294,6 +1294,9 @@ function personalize_explicit_targeting_mapping_element($mapping, $targeting_val
         'event' => 'change',
         'callback' => 'personalize_explicit_targeting_context_callback',
         'wrapper' => $wrapper_id,
+        'progress' => array(
+          'type' => 'none',
+        ),
       ),
       '#attributes' => array(
         'class' => array('personalize-targeting-context'),
@@ -1543,7 +1546,7 @@ function personalize_campaign_report($agent_data, $osid = NULL, $form = NULL, &$
   // The page title of the simple campaign name is taken from
   // personalize_campaign_title_callback().  In order to give the reports tab
   // a specific title, explicitly update the title.
-  $report_tab_title = t('@campaign Campaign Report', array('@campaign' => drupal_get_title()));
+  $report_tab_title = t('@campaign Personalization Report', array('@campaign' => drupal_get_title()));
   $report = array();
   drupal_set_title($report_tab_title);
 
@@ -1561,7 +1564,7 @@ function personalize_campaign_report($agent_data, $osid = NULL, $form = NULL, &$
     }
   }
   return array(
-    '#markup' => t('No reports available for the specified campaign'),
+    '#markup' => t('No reports available for the specified personalization'),
   );
 }
 
@@ -1821,7 +1824,7 @@ function personalize_set_campaign_context_callback($agent_data) {
     drupal_json_output($ret);
   }
   else {
-    throw new Exception('No campaign was specified.');
+    throw new Exception('No personalization was specified.');
   }
 }
 

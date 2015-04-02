@@ -66,7 +66,7 @@ function personalize_menu() {
   );
   $items['admin/structure/personalize'] = array(
     'title' => 'Personalize',
-    'description' => 'Manage your personalization campaigns.',
+    'description' => 'Manage your personalizations.',
     'page callback' => 'personalize_agent_list',
     'access callback' => 'user_access',
     'access arguments' => array('manage personalized content'),
@@ -74,12 +74,12 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/list'] = array(
-    'title' => 'Campaigns',
-    'description' => 'List personalization agents',
+    'title' => 'Personalizations',
+    'description' => 'List personalizations',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/structure/personalize/add'] = array(
-    'title' => 'Add Personalization Campaign',
+    'title' => 'Add Personalization',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_campaign_wizard', NULL, 'base'),
     'access arguments' => array('manage personalized content'),
@@ -88,7 +88,7 @@ function personalize_menu() {
   );
   $items['admin/structure/personalize/variations'] = array(
     'title' => 'Variation sets',
-    'description' => 'Manage your personalization campaign content variation sets.',
+    'description' => 'Manage your personalization content variation sets.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_option_set_list'),
     'access callback' => 'user_access',
@@ -99,12 +99,12 @@ function personalize_menu() {
   );
   $items['admin/structure/personalize/variations/list'] = array(
     'title' => 'All variation sets',
-    'description' => 'Manage all content variation sets for all campaigns.',
+    'description' => 'Manage all content variation sets for all personalizations.',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/structure/personalize/goals'] = array(
     'title' => 'Goals',
-    'description' => 'Manage your personalization campaign goals.',
+    'description' => 'Manage your personalization goals.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_goals_list'),
     'access callback' => 'user_access',
@@ -160,7 +160,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.campaign.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(
-    'title' => 'Delete campaign',
+    'title' => 'Delete personalization',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_agent_delete_form', 4),
     'access callback' => 'personalize_delete_agent_access',
@@ -169,7 +169,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/complete'] = array(
-    'title' => 'Complete campaign',
+    'title' => 'Complete personalization',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_agent_complete_form', 4),
     'access arguments' => array('manage personalized content'),
@@ -177,7 +177,7 @@ function personalize_menu() {
     'file' => 'personalize.admin.inc',
   );
   $items['admin/structure/personalize/manage/%personalize_agent/clone'] = array(
-    'title' => 'Clone campaign',
+    'title' => 'Clone personalization',
     'page callback' => 'personalize_agent_clone',
     'page arguments' => array(4),
     'access arguments' => array('manage personalized content'),
@@ -243,7 +243,7 @@ function personalize_permission() {
   $permissions = array(
    'manage personalized content' => array(
       'title' => t('Manage personalized content'),
-      'description' => t('Create and edit personalization campaigns with various types of personalized content.'),
+      'description' => t('Create and edit personalizations with various types of personalized content.'),
     ),
     'administer personalize configuration' => array(
       'title' => t('Administer personalize settings'),
@@ -601,14 +601,14 @@ function personalize_form_visitor_actions_form_alter(&$form, &$form_state) {
     }
     $form['advanced']['personalize_goal'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Add as a goal to the @campaign campaign', array('@campaign' => $campaign)),
+      '#title' => t('Add as a goal to the @campaign personalization', array('@campaign' => $campaign)),
       // Only check this by default if we're creating a new action.
       '#default_value' => !isset($form['#visitor_action']['machine_name']),
     );
     $form['advanced']['personalize_goal_value'] = array(
       '#type' => 'textfield',
       '#title' => t('Goal value'),
-      '#description' => t('The relative value of this goal in the campaign'),
+      '#description' => t('The relative value of this goal in the personalization'),
       '#size' => 6,
       '#default_value' => '1',
       '#states' => array(
@@ -685,7 +685,7 @@ function personalize_library() {
 
   $libraries = array();
   $libraries['admin.campaign'] = array(
-    'title' => 'Campaign edit',
+    'title' => 'Personalization edit',
     'website' => '',
     'version' => VERSION,
     'js' => array(
@@ -816,6 +816,11 @@ function personalize_theme($existing, $type, $theme, $path) {
         'report' => array(),
         'report_link' => '',
       ),
+    ),
+    'personalize_wizard_section' => array(
+      'render element'  => 'element',
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
     ),
     'personalize_wizard_section_title' => array(
       'render element'  => 'element',
@@ -1115,7 +1120,7 @@ function personalize_agent_set_status($agent_name, $status) {
     // Do a check before setting the status to running.
     $errors = personalize_verify_agent($agent_name);
     if (!empty($errors)) {
-      drupal_set_message(t('There is a problem with this campaign and it cannot be run at this time.'), 'error');
+      drupal_set_message(t('There is a problem with this personalization and it cannot be run at this time.'), 'error');
       return FALSE;
     }
     // If we're setting a campaign to the running status for the first time,
@@ -1347,7 +1352,7 @@ function personalize_debug_mode_enabled() {
 function personalize_warn_if_running($agent_name) {
   $status = personalize_agent_get_status($agent_name);
   if ($status & PERSONALIZE_STATUS_RUNNING) {
-    drupal_set_message(t('You are editing content in a running personalization campaign, which may affect the integrity of the campaign data. The campaign will be paused if you make changes here.'), 'warning');
+    drupal_set_message(t('You are editing content in a running personalization, which may affect the integrity of the personalization data. The personalization will be paused if you make changes here.'), 'warning');
   }
 }
 
@@ -1365,11 +1370,11 @@ function personalize_pause_if_running($agent_name) {
     $current_path = current_path();
     $destination_path = isset($_GET['destination']) ? $_GET['destination'] : $current_path;
     if ($current_path !== $campaign_url && $destination_path != $campaign_url) {
-      drupal_set_message(t('The campaign has been paused because you have made changes. You can edit and restart the campaign !here or from the Acquia Lift campaign management bar.', array('!here' => l('here', $campaign_url))), 'warning');
+      drupal_set_message(t('The personalization has been paused because you have made changes. You can edit and restart the personalization !here or from the Acquia Lift tool bar.', array('!here' => l('here', $campaign_url))), 'warning');
     }
     else {
       module_load_include('inc', 'personalize', 'personalize.admin');
-      drupal_set_message(t('The campaign has been paused because you have made changes.'));
+      drupal_set_message(t('The personalization has been paused because you have made changes.'));
       personalize_status_toggle_message($agent_name, PERSONALIZE_STATUS_PAUSED);
     }
   }
@@ -1425,7 +1430,7 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
     }
   }
   if ($allow_add_new) {
-    $agent_options[PERSONALIZE_NEW_AGENT_FORM_VALUE] = '< ' . t('Add a new campaign...') . ' >';
+    $agent_options[PERSONALIZE_NEW_AGENT_FORM_VALUE] = '< ' . t('Add a new personalization...') . ' >';
   }
 
   if (empty($default) && $active_campaign = personalize_get_campaign_context()) {
@@ -1435,9 +1440,9 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
   //  First create a drop down which will include an option to add a new campaign.
   $form['personalize']['agent_select'] = array(
     '#type' => 'select',
-    '#title' => 'Campaign',
+    '#title' => 'Personalization',
     '#options' => $agent_options,
-    '#description' => t('Select the campaign to use for personalization.'),
+    '#description' => t('Select the personalization to use.'),
     '#default_value' => $default,
   );
   if ($allow_add_new) {
@@ -3020,7 +3025,7 @@ function personalize_goal_action_subscriber($name, $context) {
 function personalize_goal_save($agent_name, $action_name, $goal_value, $goal_id = NULL) {
   $agent = personalize_agent_load_agent($agent_name);
   if (!($agent instanceof PersonalizeAgentGoalInterface)) {
-    throw new PersonalizeException(t('Goals are not supported by this campaign.'));
+    throw new PersonalizeException(t('Goals are not supported by this personalization.'));
   }
 
   // Checks whether an action is being used before saving or updating.

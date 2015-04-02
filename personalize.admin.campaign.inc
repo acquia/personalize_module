@@ -231,8 +231,19 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
     '#type' => 'submit',
     '#name' => 'wizard_submit',
     '#value' => $current_info['button_value'],
-    '#suffix' => empty($next_info['preview_message']) ? '' : $next_info['preview_message'],
+    '#suffix' => empty($next_info['preview_message']) ? '' : theme('html_tag', array(
+      'element' => array(
+        '#value' => $next_info['preview_message'],
+        '#tag' => 'span',
+        '#attributes' => array(
+          'class' => array('description'),
+        ),
+      ),
+    )),
     '#disabled' => !($form_state['storage']['allow_submit']),
+    '#attributes' => array(
+      'class' => array('action-item-primary-active'),
+    ),
   );
 
   return $form;
@@ -286,7 +297,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#markup' => theme('html_tag', array(
       'element' => array(
         '#tag' => 'h2',
-        '#value' => 'Create campaign',
+        '#value' => 'Create personalization',
       ),
     )),
   );
@@ -339,7 +350,11 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
   if (empty($agent_data->machine_name)) {
     $form['agent_basic_info']['create'] = array(
       '#type' => 'submit',
-      '#value' => t('Create campaign'),
+      '#value' => t('Create personalization'),
+      '#disabled' => empty($agent_type_options),
+      '#attributes' => array(
+        'class' => array('action-item-primary-active'),
+      ),
     );
   }
 
@@ -360,22 +375,14 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
  */
 function personalize_campaign_wizard_variations($form, &$form_state, $agent_data, $agent_instance = NULL) {
   // Load the data used throughout form.
-  if (empty($agent_data->machine_name)) {
-    $option_sets = array();
-    $campaign_page = 'admin/structure/personalize/wizard';
-  }
-  else {
-    $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
-    $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}";
-    $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
-  }
+  $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
+  $campaign_page = "admin/structure/personalize/manage/{$agent_data->machine_name}";
+  $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
 
   $form['variations'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
-    '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['variations']['title'] = array(
     '#type' => 'container',
@@ -444,7 +451,6 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     );
 
     $variant_number = 1;
-    $targeting = personalize_get_targeting_for_options($option_set);
     foreach ($option_set->options as $option) {
       $is_winner = FALSE;
       $is_control = $variant_number == 1;
@@ -534,7 +540,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   } // End loop through option sets.
 
   // Add agent level advanced settings.
-  $form['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
+  $form['variations']['advanced'] = personalize_campaign_wizard_variations_advanced_agent($form, $form_state, $agent_data, $agent_instance);
   return $form;
 }
 
@@ -679,9 +685,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   $form['targeting'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
-    '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['targeting']['title'] = array(
     '#type' => 'container',
@@ -706,6 +710,15 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $is_running = personalize_agent_get_status($agent_data->machine_name) == PERSONALIZE_STATUS_RUNNING;
+
+  if (empty($option_sets)) {
+    $form['targeting']['error'] = array(
+      '#markup' => t('You must <a href="!variations_url">create variation sets</a> before targeting.', array(
+        '!variations_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/variations'),
+      )),
+    );
+    return $form;
+  }
 
   // Containing element for all option sets.
   $form['targeting']['option_sets'] = array(
@@ -861,7 +874,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
     if (!isset($all_actions[$goal['action']])) {
       // The action for this goal no longer exists - don't include it in the form
       // and set a warning that it will be removed upon save.
-      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.'), 'warning', FALSE);
+      drupal_set_message(t('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the personalization.'), 'warning', FALSE);
       unset($goals[$i]);
     }
     else {
@@ -908,9 +921,9 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
     '#type' => 'container',
     '#tree' => FALSE,
     '#attributes' => array(
-      'class' => array('personalize-wizard-section'),
       'id' => 'personalize-goals-container',
     ),
+    '#theme' => 'personalize_wizard_section',
   );
 
   $form['goals']['title'] = array(
@@ -1077,10 +1090,7 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
 function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $agent_instance = NULL) {
   $form['review'] = array(
     '#type' => 'container',
-    '#attributes' => array(
-      // @todo move this clearfix addition out of the main code.
-      'class' => array('personalize-wizard-section', 'clearfix'),
-    ),
+    '#theme' => 'personalize_wizard_section',
   );
   $form['review']['summary_column'] = array(
     '#type' => 'container',
@@ -1362,7 +1372,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
   personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
-    drupal_set_message(t('The campaign has been created'));
+    drupal_set_message(t('The personalization has been created'));
     // Redirect to the full wizard view with variations selected.
     $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent->machine_name . '/variations';
     return;
@@ -1375,7 +1385,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
   // Save the campaign.
   if (!personalize_agent_save($agent)) {
-    drupal_set_message(t('There was a problem saving the campaign.', 'error'));
+    drupal_set_message(t('There was a problem saving the personalization.', 'error'));
   }
 
   // If the "Start" button was pressed then start the campaign.
@@ -1644,7 +1654,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
     'scheduling' => array(
       'label' => t('When'),
       'button_value' => $next,
-      'preview_message' => t('When should this campaign run'),
+      'preview_message' => t('When should this personalization run'),
     ),
     'review' => array(
       'label' => t('Review'),
@@ -1652,7 +1662,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
       'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
     ),
     'results' => array(
-      'label' => t('Outcome'),
+      'label' => t('Reports'),
       'button_value' => $next,
     )
   );

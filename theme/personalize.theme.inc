@@ -282,10 +282,62 @@ function theme_personalize_wizard_process_bar($variables) {
 }
 
 /**
+ * Theme function to output a personalize wizard subform.
+ *
+ * This theme ensures that there is at least one personalize column on the page.
+ * If there are to be multiple columns, then each column must be specified using
+ * the personalize-wizard-column class on each container.  If no columns are
+ * specified then this theme function will add a single default column for
+ * all children.
+ *
+ * @param array $variables
+ *   - element: The element to theme.  This element should be a container.
+ *
+ * @ingroup themeable
+ */
+function theme_personalize_wizard_section($variables) {
+  $output = '';
+  $element = $variables['element'];
+  $element['#attributes']['class'][] = 'personalize-wizard-section';
+  $element['#attributes']['class'][] = 'clearfix';
+  // Find out if the element has columns already defined.  If it doesn't
+  // then wrap the section content in a column container.
+  $has_column = $title_child = FALSE;
+  $child_keys = element_children($element);
+  foreach ($child_keys as $child) {
+    if (!empty($element[$child]['#attributes']['class']) && in_array('personalize-wizard-column', $element[$child]['#attributes']['class'])) {
+      $has_column = TRUE;
+    }
+    if (!empty($element[$child]['#theme']) && $element[$child]['#theme'] === 'personalize_wizard_section_title') {
+      $title_child = $child;
+    }
+    // No reason to keep looping if all of the information has been found.
+    if ($has_column && !empty($title_child)) {
+      break;
+    }
+  }
+  if ($has_column) {
+    unset($element['#theme']);
+    return drupal_render($element);
+  }
+  else {
+    $output .= '<div ' . drupal_attributes($element['#attributes']) . '>';
+    if (!empty($title_child)) {
+      $output .= drupal_render($element[$title_child]);
+      unset($element[$title_child]);
+    }
+    $output .= '<div class="personalize-wizard-column">';
+    $output .= drupal_render_children($element);
+    $output .= '</div></div>';
+  }
+  return $output;
+}
+
+/**
  * Theme function to output the header section for a personalize campaign
  * wizard sub-form.
  *
- * @param array $variations
+ * @param array $variables
  *   - element:  The element to theme.  This element should have a #title
  *     attribute and may have children to include within the header.
  *

@@ -203,7 +203,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
       case 'wizard_start':
         return t('Start');
       case 'create_campaign':
-        return t('Create campaign');
+        return t('Create personalization');
       case 'add_goal':
         return t('Add goal');
       case 'delete':
@@ -2065,8 +2065,8 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
       'campaign_end_date[year]' => date('Y', $end_date),
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
-    $this->assertText('When provided, the start date for the campaign must be in the future.');
-    $this->assertText('When provided, the end date for the campaign must be in the future.');
+    $this->assertText('When provided, the start date for the personalization must be in the future.');
+    $this->assertText('When provided, the end date for the personalization must be in the future.');
     // Make sure the variables did not get updated.
     $this->assertEqual(0, personalize_agent_get_start_date($machine_name));
     $this->assertEqual(0, personalize_agent_get_stop_date($machine_name));
@@ -2085,7 +2085,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
       'campaign_end_date[year]' => date('Y', $end_date),
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
-    $this->assertText('When provided, the end date for the campaign must be after the start date for the campaign.');
+    $this->assertText('When provided, the end date for the personalization must be after the start date for the personalization.');
     // Make sure the variables did not get updated.
     $this->assertEqual(0, personalize_agent_get_start_date($machine_name));
     $this->assertEqual(0, personalize_agent_get_stop_date($machine_name));
@@ -2257,7 +2257,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $html_id_first_agent = "personalize-change-status-{$first_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_first_agent);
     // No error should have been set.
-    $this->assertNoText('There is a problem with this campaign and it cannot be run at this time');
+    $this->assertNoText('There is a problem with this personalization and it cannot be run at this time');
     // The agent's status should now be "running".
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status($first_agent_machine_name));
     // Check the "started" time of the agent, which should now have been set.
@@ -2269,7 +2269,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $html_id_second_agent = "personalize-change-status-{$second_agent_machine_name}-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Start'), array(), array(), $html_id_second_agent);
     // Its verify() method will have returned false so a message should have been set.
-    $this->assertText('There is a problem with this campaign and it cannot be run at this time');
+    $this->assertText('There is a problem with this personalization and it cannot be run at this time');
     // The agent's status should still be "not started"
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status($second_agent_machine_name));
 
@@ -2401,7 +2401,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // There should just be a message saying there are no agents.
     $this->drupalGet('admin/structure/personalize');
 
-    $this->assertText('No campaigns available');
+    $this->assertText('No personalizations available');
     $this->assertNoRaw('<h2>Not started</h2>');
     $this->assertNoRaw('<h2>Running</h2>');
     $this->assertNoRaw('<h2>Paused</h2>');
@@ -2411,7 +2411,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
 
     $this->drupalGet('admin/structure/personalize');
-    $this->assertNoText(t('No campaigns available.'));
+    $this->assertNoText(t('No personalizations available.'));
     // "Not started" should be the only section on the page.
     $this->assertRaw('<h2>Not started</h2>');
     $this->assertNoRaw('<h2>Running</h2>');
@@ -2422,7 +2422,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // There should now be a "Running" section on the page.
     $this->drupalGet('admin/structure/personalize');
 
-    $this->assertNoText(t('No campaigns available.'));
+    $this->assertNoText(t('No personalizations available.'));
     $this->assertRaw('<h2>Not started</h2>');
     $this->assertRaw('<h2>Running</h2>');
     $this->assertNoRaw('<h2>Paused</h2>');
@@ -2435,7 +2435,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     $this->drupalGet('admin/structure/personalize');
 
-    $this->assertNoText(t('No campaigns available.'));
+    $this->assertNoText(t('No personalizations available.'));
     $this->assertNoRaw('<h2>Not started</h2>');
     $this->assertRaw('<h2>Running</h2>');
     $this->assertRaw('<h2>Paused</h2>');
@@ -2538,7 +2538,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
       $this->fail('Should not get here.');
     } catch (Exception $e) {
       $this->assertTrue($e instanceof PersonalizeException);
-      $this->assertEqual($e->getMessage(), t('Goals are not supported by this campaign.'));
+      $this->assertEqual($e->getMessage(), t('Goals are not supported by this personalization.'));
     }
   }
 
@@ -2702,7 +2702,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     // Go to the campaign edit page and there should be a warning about the
     // orphaned goal.
     $this->drupalGet('admin/structure/personalize/manage/' . $agents[1]->getMachineName() . '/goals');
-    $this->assertText('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the campaign.');
+    $this->assertText('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the personalization.');
     $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
     $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()), TRUE);
     $this->assertEqual(0, count($goals));
@@ -2875,7 +2875,7 @@ class PersonalizeAdminSettingsTest extends PersonalizeBaseTest {
 
     // Get the active context.
     $response = $this->drupalGetAJAX('/personalize/campaign_context/');
-    $this->assertEqual($agent_data->machine_name, $response['personalize_campaign'], 'The new campaign is the active personalize campaign context.');
+    $this->assertEqual($agent_data->machine_name, $response['personalize_campaign'], 'The new personalization is the active personalization context.');
 
     // Create another agent via the UI.
     $agent_data = $this->createTestCampaign(array('agent_type' => 'test_extra_agent'));
@@ -2884,6 +2884,6 @@ class PersonalizeAdminSettingsTest extends PersonalizeBaseTest {
     $this->drupalGetAJAX('personalize/campaign_context/' . $agent_data->machine_name);
     // Get the active context.
     $response = $this->drupalGetAJAX('personalize/campaign_context/');
-    $this->assertEqual($agent_data->machine_name, $response['personalize_campaign'], 'The new campaign is the active personalize campaign context.');
+    $this->assertEqual($agent_data->machine_name, $response['personalize_campaign'], 'The new personalization is the active personalization context.');
   }
 }
