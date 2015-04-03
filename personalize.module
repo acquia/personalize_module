@@ -3037,7 +3037,16 @@ function personalize_goal_save($agent_name, $action_name, $goal_value, $goal_id 
     'value' => $goal_value
   );
   if (!empty($goal_id)) {
-    $goal_array['id'] = $goal_id;
+    $existing = personalize_goal_load($goal_id);
+    // If the action is being changed, then the goal needs to be deleted and
+    // recreated.
+    if ($existing->action !== $action_name) {
+      personalize_goal_delete($goal_id);
+    }
+    else {
+      // Otherwise just edit the existing goal.
+      $goal_array['id'] = $goal_id;
+    }
   }
   $goal_entity = (object) $goal_array;
 

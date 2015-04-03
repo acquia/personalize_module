@@ -2510,6 +2510,10 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/goals");
     $this->assertOptionSelected('edit-all-goals-0-action-name', 'user_login');
 
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
+    $saved_goal = reset($goals);
+    $original_goal_id = $saved_goal->id;
+
     // Add two more goals
     $this->drupalPostAJAX(NULL, array(), array('op' => $this->getButton('add_goal')), NULL, array(), array(), 'personalize-campaign-wizard');
     $this->assertFieldByName('all_goals[1][action_name]');
@@ -2529,6 +2533,40 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $this->assertOptionSelected('edit-all-goals-0-action-name', 'user_login');
     $this->assertOptionSelected('edit-all-goals-1-action-name', 'user_register');
     $this->assertNoFieldByName('all_goals[2][action_name]');
+
+    // Edit the value of a goal and verify that the goal is edited.
+    $edit = array(
+      'all_goals[0][value]' => 5,
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
+    $new_id = FALSE;
+    foreach($goals as $id => $goal) {
+      if ($goal->action === 'user_login') {
+        $new_id = $id;
+        break;
+      }
+    }
+    $this->assertEqual($new_id, $original_goal_id);
+
+    // Edit the goal action and verify that the original goal is deleted and a
+    // new goal is created.
+    $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/goals");
+    $edit = array(
+      'all_goals[0][action_name]' => 'form_submit',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
+    $new_id = FALSE;
+    foreach($goals as $id => $goal) {
+      if ($goal->action === 'form_submit') {
+        $new_id = $id;
+        break;
+      }
+    }
+    $this->assertNotEqual($new_id, $original_goal_id);
 
     // Verify that we cannot add goals to agents that do not support them.
     $agent = $this->createTestAgent(array('agent_type' => 'test_extra_agent'));

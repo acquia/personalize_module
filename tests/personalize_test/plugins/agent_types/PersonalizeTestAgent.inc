@@ -27,9 +27,8 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
   /**
    * Implements PersonalizeAgentGoalInterface::useClientSideGoalDelivery().
    */
-  public function useClientSideGoalDelivery()
-  {
-    return $this->data['use_client_side_goal_processing'];
+  public function useClientSideGoalDelivery() {
+    return isset($this->data['use_client_side_goal_processing']) ? $this->data['use_client_side_goal_processing'] : NULL;
   }
 
   /**
