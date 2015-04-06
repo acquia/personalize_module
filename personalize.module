@@ -2112,7 +2112,7 @@ function personalize_agent_save($agent) {
     if ($agent_instance = call_user_func_array(array($class, 'create'), array($agent))) {
       // If this is an agent that uses visitor contexts for auto-targeting, clear
       // the visitor context cache.
-      if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
+      if ($agent_instance->supportsAutoTargeting()) {
         personalize_visitor_context_expiration_clear();
       }
       $agent_instance->postSave($prior_values);

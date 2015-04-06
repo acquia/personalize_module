@@ -676,7 +676,7 @@ function personalize_campaign_wizard_variations_advanced_agent($form, &$form_sta
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeExplicitTargetingInterface) && !($agent_instance instanceof PersonalizeAutoTargetingInterface))) {
+  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeExplicitTargetingInterface) && !($agent_instance->supportsAutoTargeting()))) {
     return array(
       '#markup' => t('This agent does not support targeting.'),
     );
@@ -695,7 +695,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
 
   // Add visitor context items to the form for agents that support automatic
   // targeting.
-  if ($agent_instance instanceof PersonalizeAutoTargetingInterface) {
+  if ($agent_instance->supportsAutoTargeting()) {
     $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
     if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
       $form['targeting']['visitor_context'] = $context_element;
@@ -736,7 +736,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
 
   $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
   // Build up a list of targeting values so we can map options to them.
-  $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
+  $targeting_values = personalize_get_targeting_options_for_agent($agent_data);
 
   foreach ($option_sets as $option_set) {
     $replace_option_set_id = drupal_strtolower('personalize-option-set-' . $option_set->osid);
@@ -1670,7 +1670,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
     unset($steps['goals']);
   }
-  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeAutoTargetingInterface) && !($agent_instance instanceof PersonalizeExplicitTargetingInterface))) {
+  if (empty($agent_instance) || (!($agent_instance->supportsAutoTargeting()) && !($agent_instance instanceof PersonalizeExplicitTargetingInterface))) {
     unset($steps['targeting']);
   }
   return $steps;

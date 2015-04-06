@@ -302,7 +302,7 @@ function personalize_admin_convert_visitor_context_form_values($values) {
 /**
  * Menu callback for displaying a list of all agents.
  */
-function personalize_agent_list() {
+function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter = TRUE) {
   $status_map = personalize_get_agent_status_map();
 
   $header = array(
@@ -311,13 +311,21 @@ function personalize_agent_list() {
     array('data' => t('Change status')),
     array('data' => t('Operations'), 'colspan' => 4),
   );
-  $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
+  if ($agents === NULL) {
+    $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
+  }
+
   if (empty($agents)) {
     return array(
       'no_agents' => array(
         '#markup' => '<div>' . t('No personalizations available.') . '</div>'
       )
     );
+  }
+
+  if ($allow_alter) {
+    // Allow other modules to alter the list of agents being displayed here.
+    drupal_alter('personalize_agent_list', $agents);
   }
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
@@ -361,22 +369,15 @@ function personalize_agent_list() {
       $can_delete = personalize_delete_agent_access($agent);
       $delete_link = '';
       // Determine storage
-      switch ($agent->export_type) {
-        case EXPORT_IN_DATABASE | EXPORT_IN_CODE:
-          $storage = t('Overridden');
-          if ($can_delete) {
+      if ($can_delete) {
+        switch ($agent->export_type) {
+          case EXPORT_IN_DATABASE | EXPORT_IN_CODE:
             $delete_link = l(t('Revert'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
-          }
-          break;
-        case EXPORT_IN_DATABASE:
-          $storage = t('Normal');
-          if ($can_delete) {
+            break;
+          case EXPORT_IN_DATABASE:
             $delete_link = l(t('Delete'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/delete');
-          }
-          break;
-        case EXPORT_IN_CODE:
-          $storage = t('Default');
-          break;
+            break;
+        }
       }
 
       $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $status);
@@ -388,10 +389,8 @@ function personalize_agent_list() {
         array('data' => $agent->plugin),
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
-        array('data' => l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name)),
+        array('data' => $allow_edit ? l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name . '/edit') : ''),
         array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
-        //array('data' => l(t('Export'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/export')),
-        //array('data' => l(t('Clone'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/clone')),
         array('data' => $delete_link),
       );
       // Show the scheduled start date for campaigns that aren't running yet.
@@ -1482,35 +1481,6 @@ function _personalize_get_targeting_values($plugin_name, $agent_data, $limit_to_
     }
   }
   return $values;
-}
-
-/**
- * Extracts targeting values from those set up on the agent available for fixed
- * targeting.
- *
- * @param stdClass $agent_data
- *   The personalize agent plugin data.
- * @return array
- *   An associative array keyed by context name, with an array of information
- *   about the possible values for that context.
- */
-function personalize_get_targeting_values_for_agent($agent_data) {
-  $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
-  if ($agent_instance instanceof PersonalizeAutoTargetingInterface && $agent_instance::constrainExplicitTargetingContexts()) {
-    $value_options = array();
-    if (!empty($agent_data->data['visitor_context'])) {
-      foreach ($agent_data->data['visitor_context'] as $name => $contexts) {
-        $selected_context = array_filter($contexts);
-        if (!empty($selected_context)) {
-          $value_options = array_merge($value_options, _personalize_get_targeting_values($name, $agent_data, $selected_context));
-        }
-      }
-    }
-    return $value_options;
-  }
-  // Otherwise the targeting values for an agent are the same as the options
-  // available.
-  return personalize_get_targeting_options_for_agent($agent_data);
 }
 
 /**

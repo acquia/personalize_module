@@ -143,6 +143,14 @@ interface PersonalizeAgentInterface {
    *   TRUE if the agent supports multiple decision points, FALSE otherwise.
    */
   public function supportsMultipleDecisionPoints();
+
+  /**
+   * Whether the agent supports automatic targeting.
+   *
+   * @return boolean
+   *   TRUE if the agent supports automatic targeting, FALSE otherwise.
+   */
+  public function supportsAutoTargeting();
 }
 
 interface PersonalizeAgentGoalInterface {
@@ -226,24 +234,6 @@ interface PersonalizeExplicitTargetingInterface extends PersonalizeAgentInterfac
 
 }
 
-/**
- * An interface to implement when an agent supports automatic targeting of
- * results based on campaign-specific targeting options.
- */
-interface PersonalizeAutoTargetingInterface extends PersonalizeAgentInterface {
-
-  /**
-   * Indicates if explicit targeting options are dependent on the auto targeting
-   * context options selected for the campaign.
-   *
-   * @return boolean
-   *   True to indicate that explicit targeting values are dependent upon
-   *   campaign auto-targeting options selected.  False to indicate that
-   *   explicit targeting options are selected independently of campaign
-   *   auto-targeting context options.
-   */
-  public static function constrainExplicitTargetingContexts();
-}
 
 /**
  * Abstract base class for agents, providing default implementations of some methods.
@@ -412,6 +402,13 @@ abstract class PersonalizeAgentBase implements PersonalizeAgentInterface, Person
       return FALSE;
     }
     return TRUE;
+  }
+
+  /**
+   * Implements PersonalizeAgentInterface::supportsAutoTargeting().
+   */
+  public function supportsAutoTargeting() {
+    return FALSE;
   }
 
   /**

@@ -4,7 +4,7 @@
  * Provides an extra test agent type for testing with multiple agent types.
  */
 
-class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface, PersonalizeAutoTargetingInterface {
+class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements PersonalizeExplicitTargetingInterface {
 
   public $goals_received = array();
 
@@ -25,17 +25,17 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   }
 
   /**
+   * Implements PersonalizeAgentInterface::supportsAutoTargeting().
+   */
+  public function supportsAutoTargeting() {
+    return TRUE;
+  }
+
+  /**
    * Implements PersonalizeExplicitTargetingInterface::explicitTargetingSupportMultiple().
    */
   public static function explicitTargetingSupportMultiple() {
     return PersonalizeExplicitTargetingInterface::EXPLICIT_TARGETING_MULTIPLE_BOTH;
-  }
-
-  /**
-   * Implements PersonalizeAutoTargetingInterface::constrainExplicitTargetingContexts
-   */
-  public static function constrainExplicitTargetingContexts() {
-    return FALSE;
   }
 
   /**
