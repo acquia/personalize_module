@@ -425,7 +425,7 @@ function personalize_agent_start_now($agent_data) {
  */
 function personalize_page_build(&$page) {
   // Add JavaScript polyfills.
-  $path = drupal_get_path('module', 'personalize') . '/js/personalize.ie8.js';
+  $path = base_path() . drupal_get_path('module', 'personalize') . '/js/personalize.ie8.js';
   $polyfill = array(
     '#tag' => 'script',
     '#attributes' => array(
