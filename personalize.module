@@ -3050,6 +3050,7 @@ function personalize_goal_save($agent_name, $action_name, $goal_value, $goal_id 
   }
   $goal_entity = (object) $goal_array;
 
+  module_invoke_all('personalize_goal_presave', $goal_entity);
   entity_save('personalize_campaign_goal', $goal_entity);
 
   // If action wasn't used before this, the action subscribers cache will
