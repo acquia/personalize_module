@@ -52,6 +52,7 @@
           }
           Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
+          Drupal.attachBehaviors();
         }
       }
     }

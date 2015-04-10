@@ -1,4 +1,11 @@
 QUnit.test( "Executor test", function( assert ) {
+  expect(22);
+  // Provide a mock of the attach behaviors function for purposes of tracking
+  // that it is correctly called.
+  Drupal.attachBehaviors = function(bread, circus) {
+    assert.ok(true, 'Attach behaviors called.');
+  }
+
   // Test the executor for a regular option set.
   assert.equal(0, $('.osid-1-first-option').length);
   assert.equal(0, $('.osid-1-second-option').length);
