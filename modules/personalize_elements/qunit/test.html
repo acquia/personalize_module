@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Personalize JS Tests</title>
+    <title>Personalize Elements JS Tests</title>
     <link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.14.0.css">
 </head>
 <body>
@@ -11,8 +11,22 @@
 <div id="qunit-fixture">
     <!-- HTML required for DOM tests -->
     <div id="personalized-content">
-        // First option set appears once on the page.
-        <div id="personalize-option-set-1">
+        <div id="personalize-option-set-edit-text">
+            <p>Unpersonalized content.</p>
+        </div>
+        <div id="personalize-option-set-edit-html">
+            <p>Unpersonalized content.</p>
+        </div>
+        <div id="personalize-option-set-replace-html">
+            <p>Unpersonalized content.</p>
+        </div>
+        <div id="personalize-option-set-add-class">
+            <p>Unpersonalized content.</p>
+        </div>
+        <div id="personalize-option-set-prepend-html">
+            <p>Unpersonalized content.</p>
+        </div>
+        <div id="personalize-option-set-append-html">
             <p>Unpersonalized content.</p>
         </div>
     </div>
@@ -34,7 +48,6 @@
     Drupal.ajax.prototype.commands = Drupal.ajax.prototype.commands || {};
 </script>
 
-<script src="../../../js/promise-1.0.0.min.js"></script>
 <script src="../../../js/personalize.js"></script>
 <script src="../js/personalize_elements.js"></script>
 <script src="tests.js"></script>
