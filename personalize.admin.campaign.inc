@@ -418,7 +418,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   $section = &$form['variations']['option_sets'];
   foreach ($option_sets as $option_set) {
     $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
-    $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
+    $replace_option_set_id = drupal_strtolower('personalize-option-set-' . $option_set->osid);
 
     // Show this open if it was just refreshed via Ajax.
     $section['option_set_' . $option_set->osid] = array(
@@ -516,7 +516,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
           '#theme_wrappers' => array('personalize_html_tag'),
           '#attributes' => array(
             // The ID is necessary for the AJAX replace to function correctly.
-            'id' => 'edit-option-sets-option-set-' . $option_set->osid . '-options-' . $option['option_id'] . '-basic-winner',
+            'id' => drupal_strtolower('edit-option-sets-option-set-' . $option_set->osid . '-options-' . $option['option_id'] . '-basic-winner'),
             'class' => array('personalize-add-link'),
             'title' => t('Click here to set as winning variation.')
           ),
@@ -739,7 +739,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   $targeting_values = personalize_get_targeting_values_for_agent($agent_data);
 
   foreach ($option_sets as $option_set) {
-    $replace_option_set_id = 'personalize-option-set-' . $option_set->osid;
+    $replace_option_set_id = drupal_strtolower('personalize-option-set-' . $option_set->osid);
 
     // Show this open if it was just refreshed via Ajax.
     $section['option_set_' . $option_set->osid] = array(

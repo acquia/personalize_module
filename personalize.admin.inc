@@ -1031,6 +1031,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
       '#weight' => -7,
     );
   }
+
   return $form;
 }
 
@@ -1069,7 +1070,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
 
   // This is the portion of the form that will be replace when the "add new" or "remove
   // context" links are clicked.
-  $main_wrapper_id = 'personalize-targeting-osid-' . $osid . '-' . $option['option_id'];
+  $main_wrapper_id = drupal_strtolower('personalize-targeting-osid-' . $osid . '-' . $option['option_id']);
 
   $form['mapping'] = array(
     '#tree' => TRUE,
@@ -1163,7 +1164,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
       '#attributes' => array(
         'class' => array('personalize-delete-context', 'form-submit',),
         'title' => t('Delete this context.'),
-        'id' => 'edit-option-sets-option-set-' . trim($osid, '- ') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-mapping-contexts-' . $delta . '-remove',
+        'id' => drupal_strtolower('edit-option-sets-option-set-' . trim($osid, '- ') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-mapping-contexts-' . $delta . '-remove'),
       ),
       '#submit' => array('personalize_targeting_remove_context_submit'),
       '#ajax' => array(
@@ -1182,7 +1183,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     '#value' => 'add_context_' . $osid . '_' . $option['option_id'],
     '#theme_wrappers' => array('personalize_html_tag'),
     '#attributes' => array(
-      'id' => 'edit-option-sets-option-set-' . trim($osid, ' -') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-add-new',
+      'id' => drupal_strtolower('edit-option-sets-option-set-' . trim($osid, ' -') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-add-new'),
       'class' => array('personalize-add-link'),
       'title' => t('Click here to add more contexts.')
     ),
