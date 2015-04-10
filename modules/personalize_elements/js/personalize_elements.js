@@ -52,7 +52,6 @@
           }
           Drupal.personalizeElements[element.variation_type].execute($option_set, selectedContent, isControl, osid);
           Drupal.personalize.executorCompleted($option_set, choice_name, osid);
-          Drupal.attachBehaviors();
         }
       }
     }
@@ -67,6 +66,7 @@
         // who was explicitly given permission to write JavaScript to be executed
         // on this site. Mitigating the evil of the eval.
         eval(selectedContent);
+        Drupal.attachBehaviors();
       }
     }
   };
@@ -168,6 +168,7 @@
         $newContent.attr('data-personalize', osid);
         this.addElementEvents($newContent, events);
         this.addElementData($newContent, data);
+        Drupal.attachBehaviors($newContent);
       }
     }
   };
