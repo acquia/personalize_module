@@ -88,9 +88,6 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     }
   }
   if (!empty($option_set->osid)) {
-    // Make sure a warning message is delivered if this is a running
-    // campaign.
-    personalize_warn_if_running($option_set->agent);
     $form['osid'] = array(
       '#type' => 'value',
       '#value' => $option_set->osid,

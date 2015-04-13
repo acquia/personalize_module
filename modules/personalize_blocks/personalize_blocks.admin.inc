@@ -66,9 +66,6 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
   }
 
   if (!empty($pblock->osid)) {
-    // Make sure a warning message is delivered if this is a running
-    // campaign.
-    personalize_warn_if_running($pblock->agent);
     $form['osid'] = array(
       '#type' => 'value',
       '#value' => $pblock->osid,
