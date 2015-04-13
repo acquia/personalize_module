@@ -204,6 +204,24 @@ function hook_personalize_goal_save($goal_array) {
 }
 
 /**
+ * A goals is about to be changed or added to a campaign.
+ *
+ * This hook is invoked before the goal is saved to the database so
+ * modules can alter the information that is saved.
+ *
+ * @param stdClass $goal
+ *   A stdClass object representing the goal entity, with the following
+ *   properties:
+ *   - agent The name of the agent the goal was saved for.
+ *   - name The name of the action used by the goal.
+ *   - value The value of the goal.
+ *   - goal_id: (Optional) the id of the goal if it is being edited.
+ */
+function hook_personalize_goal_presave($agent) {
+
+}
+
+/**
  * Respond to ajax submission of agent-related changes.
  *
  * This hook is invoked at the end of the ajax callback when any of
@@ -351,28 +369,5 @@ function hook_personalize_get_executor_options() {
  *   The render array for the selected option.
  */
 function hook_personalize_option_load($option_set, $option) {
-
-}
-
-/**
- * Allows the alteration of any of the subforms within the personalize
- * campaign creation/editing flow.
- *
- * Options are:
- * - base
- * - variations (what)
- * - goals (why)
- * - targeting (why)
- * - scheduling (when)
- * - summary/reports (review)
- *
- * @param array $form
- *   The form that can be altered (passed by reference).
- * @param array $form_state
- *   The unalterable form state for context.
- * @param stdClass $agent_data
- *   The unalterable data for the current campaign for context.
- */
-function hook_personalize_campaign_wizard_OPTION_alter(&$form, $form_state, $agent_data) {
 
 }
