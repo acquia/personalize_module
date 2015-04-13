@@ -331,6 +331,7 @@ function _personalize_blocks_add_block_form(&$form_state) {
  * @ingroup themeable
  */
 function theme_personalize_blocks_admin_form_blocks($variables) {
+  $has_operations = FALSE;
   $blocks = $variables['blocks'];
   $draggable = isset($blocks['#draggable']) && $blocks['#draggable'];
   $rows = array();
@@ -359,6 +360,11 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
     if ($draggable) {
       $fields[] = array('data' => drupal_render($block['weight']), 'class' => array('personalized-blocks-weight'));
     }
+
+    if (!isset($block['remove']['#access']) || $block['remove']['#access'] === TRUE) {
+      $has_operations = TRUE;
+    }
+
     $fields = array_merge($fields, array(
       array('data' => drupal_render($block['block']), 'class' => array('personalized-block-block')),
       array('data' => drupal_render($block['remove']), 'class' => array('personalize-block-remove'))
@@ -375,6 +381,14 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
       $row = array_merge($row, $block['#attributes']);
     }
     $rows[] = $row;
+  }
+
+  // If there were never any operations available then remove the column.
+  if (!$has_operations) {
+    array_pop($header);
+    foreach ($rows as &$row) {
+      array_pop($row['data']);
+    }
   }
 
   $build['personalized_block'] = array(
