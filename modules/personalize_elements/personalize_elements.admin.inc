@@ -84,7 +84,11 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
   }
   elseif (isset($option_set->options)) {
     foreach ($option_set->options as $option) {
-      $options[] = array('option_label' => $option['option_label'], 'personalize_elements_content' => isset($option['personalize_elements_content']) ? $option['personalize_elements_content'] : '');
+      $options[] = array(
+        'option_id' => $option['option_id'],
+        'option_label' => $option['option_label'],
+        'personalize_elements_content' => isset($option['personalize_elements_content']) ? $option['personalize_elements_content'] : ''
+      );
     }
   }
   if (!empty($option_set->osid)) {
@@ -166,6 +170,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
       'option_label' => personalize_generate_option_label($index),
       'content' => '',
       'is_new' => TRUE,
+      'option_id' => '',
     );
   }
   $show_control = TRUE;
@@ -186,6 +191,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     array_unshift($options, array(
       'option_label' => PERSONALIZE_CONTROL_OPTION_LABEL,
       'personalize_elements_content' => '',
+      'option_id' => PERSONALIZE_CONTROL_OPTION_ID,
     ));
   }
   $form_state['num_options'] = count($options);
@@ -230,6 +236,10 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     $option_form = array(
       '#tree' => TRUE,
       '#type' => 'container',
+    );
+    $option_form['option_id'] = array(
+      '#type' => 'value',
+      '#value' => $option['option_id'],
     );
     $option_form['option_label'] = array(
       '#prefix' => '<div class="personalize-elements-option-label-element">',
