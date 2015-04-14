@@ -419,6 +419,10 @@ function theme_personalize_blocks_admin_form_draggable_blocks($variables) {
  * Ajax callback for the add tab and remove tab buttons.
  */
 function personalize_blocks_ajax_callback($form, $form_state) {
+  // Clear messages since they don't need to be repeated within the AJAX
+  // callback area.
+  drupal_get_messages();
+
   return $form['pblock_wrapper']['blocks'];
 }
 
