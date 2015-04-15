@@ -1185,20 +1185,37 @@ function _personalize_fields_get_cid_for_field($entity_type, $entity_id, $field_
  * TRUE, then this will return TRUE even if the value is an empty value.
  */
 function _personalize_fields_option_has_value($option, $empty = FALSE) {
+  $option_value = personalize_fields_get_option_value($option);
+  return !empty($option_value) || $empty;
+}
+
+/**
+ * Helper function to retrieve the value portion from a personalize field.
+ *
+ * @param $option
+ *   The option array representing the field.  This can be either the form
+ *   render array or the form state values.
+ * @param mixed
+ *   If a form render array is pasesd, then this will be the renderable value
+ *   child.  If a form state values array is passed then this will be the
+ *   actual value.  An empty value could be a 0 for ids, an empty array, or
+ *   an empty string and therefore values should be checked using empty().
+ */
+function personalize_fields_get_option_value($option) {
   if (!is_array($option)) {
-    return FALSE;
+    return array();
   }
   // Supports all fields that use a 'value' column.
   if (array_key_exists('value', $option)) {
-    return !empty($option['value']) || $empty;
+    return $option['value'];
   }
   // Supports file fields.
   if (array_key_exists('fid', $option)) {
-    return (int) $option['fid'] > 0 || $empty;
+    return $option['fid'];
   }
   // Supports entity_reference fields.
   if (array_key_exists('target_id', $option)) {
-    return !empty($option['target_id']) || $empty;
+    return $option['target_id'];
   }
-  return FALSE;
+  return array();
 }
