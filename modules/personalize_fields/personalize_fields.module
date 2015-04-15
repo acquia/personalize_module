@@ -309,6 +309,9 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
 
     // Load the Option Sets if we have an entity id and entity.
     if ($entity_id && ($option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key))) {
+      // Add the option set id to the field data.
+      $form[$key]['#attributes']['data-personalize-agent'] = $option_set->agent;
+      $form[$key]['#attributes']['data-personalize-osid'] = $option_set->osid;
       // Add the content variation field data for each option.
       foreach ($option_set->options as $option) {
         if (isset($limit_option_ids) && !in_array($option['option_id'], $limit_option_ids)) {
@@ -348,6 +351,8 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
               // This option has been removed from the form.
               continue;
             }
+            $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name]['#attributes']['data-personalize-agent'] = $option_set->agent;
+            $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name]['#attributes']['data-personalize-osid'] = $option_set->osid;
             $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name][$subfield_language][$field_counter] += array('personalize_fields_option_id' => array(
               '#type' => 'value',
               '#value' => $option['option_id'],
