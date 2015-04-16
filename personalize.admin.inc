@@ -205,7 +205,7 @@ function personalize_admin_build_visitor_context_select($settings, $exclude_disa
   }
   $element = array(
     '#type' => 'select',
-    '#title' => t('Visitor contexts to use for automatic targeting'),
+    '#title' => t('Visitor contexts'),
     '#options' => $groups,
     '#multiple' => TRUE,
     '#default_value' => $selected,

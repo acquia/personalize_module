@@ -25,13 +25,6 @@ class PersonalizeTestExtraAgent extends PersonalizeAgentBase implements Personal
   }
 
   /**
-   * Implements PersonalizeAgentInterface::supportsAutoTargeting().
-   */
-  public function supportsAutoTargeting() {
-    return TRUE;
-  }
-
-  /**
    * Implements PersonalizeExplicitTargetingInterface::explicitTargetingSupportMultiple().
    */
   public static function explicitTargetingSupportMultiple() {
