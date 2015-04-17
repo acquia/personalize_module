@@ -1091,6 +1091,9 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $mappings = array();
   if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
+      if (empty($contxt['context'])) {
+        continue;
+      }
       list($plugin_name, $context_option) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context['context']);
       // Important: preserve the delta passed through the form as it is used
       // to determine the item to delete when "remove" is clicked.
@@ -1164,6 +1167,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
         'class' => array('personalize-delete-context', 'form-submit',),
         'title' => t('Delete this context.'),
         'id' => drupal_strtolower('edit-option-sets-option-set-' . trim($osid, '- ') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-mapping-contexts-' . $delta . '-remove'),
+        'name' => 'option-sets[option-set-' . trim($osid, '- ') . '][options][' . trim($option['option_id'], ' -') . '][explicit-targeting][mapping][contexts][' . $delta . '][remove]'
       ),
       '#submit' => array('personalize_targeting_remove_context_submit'),
       '#ajax' => array(
@@ -1184,7 +1188,8 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
     '#attributes' => array(
       'id' => drupal_strtolower('edit-option-sets-option-set-' . trim($osid, ' -') . '-options-' . trim($option['option_id'], ' -') . '-explicit-targeting-add-new'),
       'class' => array('personalize-add-link'),
-      'title' => t('Click here to add more contexts.')
+      'title' => t('Click here to add more contexts.'),
+      'name' => 'option_sets[option_set_' . trim($osid) . '][options][' . trim($option['option_id']) . '][explicit_targeting][add_new]',
     ),
     '#submit' => array('personalize_targeting_add_context_submit'),
     '#ajax' => array(

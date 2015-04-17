@@ -199,6 +199,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
       case 'wizard_next':
         return t('Next');
       case 'wizard_done':
+      case 'wizard_save':
         return t('Save');
       case 'wizard_start':
         return t('Start');
@@ -390,6 +391,7 @@ class PersonalizeTest extends PersonalizeBaseTest {
   function testPermissions() {
     // @todo test all permissions
   }
+
 
   /**
    * Tests personalization behavior under multiple scenarios.
@@ -989,19 +991,34 @@ EOT;
     // Create a new agent via the UI.
     $agent = $this->createTestCampaign(array('agent_type' => 'test_extra_agent'));
     $machine_name = $agent->machine_name;
-    $agent->data['visitor_context']['personalize_test_visitor_context'] = array(
-      'test_session' => 'test_session',
-      'test_local_none' => 'test_local_none',
-      'test_nocache' => 'test_nocache',
-    );
-    personalize_agent_save($agent);
 
     // Create a block based option set.
     $options = array(
       array('bid' => 'comment_delta_recent'),
       array('bid' => 'system_delta_powered-by'),
     );
-    $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $option_set = $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+
+    // Add fixed targeting
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/targeting");
+    $edit = array(
+      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
+    );
+    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_1][options][option-A][explicit_targeting][add_new]');
+    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_1][options][option-A][explicit_targeting][add_new]');
+    $edit = array(
+      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_session',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'equals',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => '',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][context]' => 'personalize_test_visitor_context__test_local_none',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]' => 'equals',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][value][match]' => '',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][context]' => 'personalize_test_visitor_context__test_nocache',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]' => 'equals',
+      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][value][match]' => '',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_save'));
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
 
     // Don't remove until this is fixed: https://drupal.org/node/2256243
@@ -1020,12 +1037,27 @@ EOT;
     $second_agent = $this->createTestCampaign(array('agent_type' => 'test_extra_agent'));
     $second_machine_name = $second_agent->machine_name;
 
-    $second_agent->data['visitor_context']['personalize_test_visitor_context'] = array(
-      'test_local_30' => 'test_local_30',
-      'test_local_none' => 'test_local_none',
-      'test_nocache' => 'test_nocache',
+    $second_option_set = $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $second_machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $this->drupalGet("admin/structure/personalize/manage/$second_machine_name/targeting");
+    $edit = array(
+      'option_sets[option_set_2][options][option-A][enable_explicit_targeting]' => 1,
     );
-    personalize_agent_save($second_agent);
+    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_2][options][option-A][explicit_targeting][add_new]');
+    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_2][options][option-A][explicit_targeting][add_new]');
+    $edit = array(
+      'option_sets[option_set_2][options][option-A][enable_explicit_targeting]' => 1,
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_local_30',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'equals',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => '',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][context]' => 'personalize_test_visitor_context__test_local_none',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]' => 'equals',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][value][match]' => '',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][context]' => 'personalize_test_visitor_context__test_nocache',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]' => 'equals',
+      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][value][match]' => '',
+
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_save'));
     personalize_agent_set_status($second_machine_name, PERSONALIZE_STATUS_RUNNING);
 
     $this->resetAll();
@@ -1073,13 +1105,6 @@ EOT;
 
     // Add a personalized block based option set and use the unused context for
     // fixed targeting.
-    $agent->data['visitor_context']['personalize_test_visitor_context'] = array(
-      'test_session' => 'test_session',
-      'test_local_none' => 'test_local_none',
-      'test_nocache' => 'test_nocache',
-      'test_local_30' => 'text_local_30',
-    );
-    personalize_agent_save($agent);
     $options = array(
       array('bid' => 'comment_delta_recent'),
       array('bid' => 'system_delta_powered-by'),
