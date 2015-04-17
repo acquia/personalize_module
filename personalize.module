@@ -669,7 +669,7 @@ function personalize_forms() {
  *   The title to use for the page.
  */
 function personalize_campaign_title_callback($agent_data) {
-  $title = isset($agent_data->label) ? check_plain($agent_data->label) : $agent_data->machine_name;
+  $title = isset($agent_data->label) ? filter_xss($agent_data->label) : $agent_data->machine_name;
   return $title;
 }
 
