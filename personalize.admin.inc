@@ -1091,7 +1091,7 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   $mappings = array();
   if (isset($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'])) {
     foreach($form_state['values']['option_sets']['option_set_' . $osid]['options'][$option['option_id']]['explicit_targeting']['mapping']['contexts'] as $delta => $context) {
-      if (empty($contxt['context'])) {
+      if (empty($context['context'])) {
         continue;
       }
       list($plugin_name, $context_option) = explode(PERSONALIZE_TARGETING_ADMIN_SEPARATOR, $context['context']);
