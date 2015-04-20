@@ -1603,7 +1603,6 @@ function _personalize_agent_from_form_values($values) {
   $agent = new stdClass();
   $agent->label = $values['title'];
   $agent->plugin = $agent_type;
-  $agent->data = isset($values['options'][$agent_type]) ? $values['options'][$agent_type] : array();
   if (isset($values['machine_name'])) {
     $agent->machine_name = $values['machine_name'];
   }

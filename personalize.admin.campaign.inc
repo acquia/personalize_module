@@ -1408,7 +1408,13 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
  *   The agent/campaign class that is being modified.
  */
 function personalize_campaign_wizard_submit_base($form, &$form_state) {
-  $agent = _personalize_agent_from_form_values($form_state['values']['agent_basic_info']);
+  if (isset($form_state['values']['agent_basic_info']['machine_name'])) {
+    $agent = personalize_agent_load($form_state['values']['agent_basic_info']['machine_name']);
+    $agent->label = $form_state['values']['agent_basic_info']['title'];
+  }
+  else {
+    $agent = _personalize_agent_from_form_values($form_state['values']['agent_basic_info']);
+  }
 
   // If it is a new campaign, save the basic information so that it can be
   // added to in the other subform submit handlers.
