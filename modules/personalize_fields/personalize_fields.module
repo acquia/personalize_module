@@ -309,7 +309,9 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
 
     // Load the Option Sets if we have an entity id and entity.
     if ($entity_id && ($option_set = _personalize_fields_get_option_set_for_field($entity_type, $entity_id, $key))) {
-      personalize_warn_if_running($option_set->agent);
+      // Add the option set id to the field data.
+      $form[$key]['#attributes']['data-personalize-agent'] = $option_set->agent;
+      $form[$key]['#attributes']['data-personalize-osid'] = $option_set->osid;
       // Add the content variation field data for each option.
       foreach ($option_set->options as $option) {
         if (isset($limit_option_ids) && !in_array($option['option_id'], $limit_option_ids)) {
@@ -349,6 +351,8 @@ function personalize_fields_add_personalized_fields(&$form, &$form_state, $entit
               // This option has been removed from the form.
               continue;
             }
+            $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name]['#attributes']['data-personalize-agent'] = $option_set->agent;
+            $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name]['#attributes']['data-personalize-osid'] = $option_set->osid;
             $form[$collection_field_name][$collection_field_language][$collection_field_index][$subfield_name][$subfield_language][$field_counter] += array('personalize_fields_option_id' => array(
               '#type' => 'value',
               '#value' => $option['option_id'],
@@ -1181,20 +1185,37 @@ function _personalize_fields_get_cid_for_field($entity_type, $entity_id, $field_
  * TRUE, then this will return TRUE even if the value is an empty value.
  */
 function _personalize_fields_option_has_value($option, $empty = FALSE) {
+  $option_value = personalize_fields_get_option_value($option);
+  return !empty($option_value) || $empty;
+}
+
+/**
+ * Helper function to retrieve the value portion from a personalize field.
+ *
+ * @param $option
+ *   The option array representing the field.  This can be either the form
+ *   render array or the form state values.
+ * @param mixed
+ *   If a form render array is pasesd, then this will be the renderable value
+ *   child.  If a form state values array is passed then this will be the
+ *   actual value.  An empty value could be a 0 for ids, an empty array, or
+ *   an empty string and therefore values should be checked using empty().
+ */
+function personalize_fields_get_option_value($option) {
   if (!is_array($option)) {
-    return FALSE;
+    return array();
   }
   // Supports all fields that use a 'value' column.
   if (array_key_exists('value', $option)) {
-    return !empty($option['value']) || $empty;
+    return $option['value'];
   }
   // Supports file fields.
   if (array_key_exists('fid', $option)) {
-    return (int) $option['fid'] > 0 || $empty;
+    return $option['fid'];
   }
   // Supports entity_reference fields.
   if (array_key_exists('target_id', $option)) {
-    return !empty($option['target_id']) || $empty;
+    return $option['target_id'];
   }
-  return FALSE;
+  return array();
 }

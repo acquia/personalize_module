@@ -1343,42 +1343,6 @@ function personalize_admin_mode() {
 function personalize_debug_mode_enabled() {
   return variable_get('personalize_enable_debug_mode', FALSE);
 }
-/**
- * Sets a warning message if the passed in agent is running.
- *
- * @param $agent_name
- *   The name of the agent.
- */
-function personalize_warn_if_running($agent_name) {
-  $status = personalize_agent_get_status($agent_name);
-  if ($status & PERSONALIZE_STATUS_RUNNING) {
-    drupal_set_message(t('You are editing content in a running personalization, which may affect the integrity of the personalization data. The personalization will be paused if you make changes here.'), 'warning');
-  }
-}
-
-/**
- * Pauses the passed in agent if it's running.
- *
- * @param string $agent_name
- *   The name of the agent.
- */
-function personalize_pause_if_running($agent_name) {
-  $status = personalize_agent_get_status($agent_name);
-  if ($status & PERSONALIZE_STATUS_RUNNING) {
-    personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_PAUSED);
-    $campaign_url = "admin/structure/personalize/manage/{$agent_name}";
-    $current_path = current_path();
-    $destination_path = isset($_GET['destination']) ? $_GET['destination'] : $current_path;
-    if ($current_path !== $campaign_url && $destination_path != $campaign_url) {
-      drupal_set_message(t('The personalization has been paused because you have made changes. You can edit and restart the personalization !here or from the Acquia Lift tool bar.', array('!here' => l('here', $campaign_url))), 'warning');
-    }
-    else {
-      module_load_include('inc', 'personalize', 'personalize.admin');
-      drupal_set_message(t('The personalization has been paused because you have made changes.'));
-      personalize_status_toggle_message($agent_name, PERSONALIZE_STATUS_PAUSED);
-    }
-  }
-}
 
 /**
  * Returns an agent selection form element for use in option set forms.

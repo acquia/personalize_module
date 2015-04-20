@@ -173,6 +173,18 @@ function hook_personalize_option_set_delete($option_set) {
 }
 
 /**
+ * Allow alteration of the element to be rendered for an option set.
+ *
+ * @param array $element
+ *   The render element by reference.
+ * @param stdClass $option_set
+ *   The option set data.
+ */
+function hook_personalize_option_set_render(&$element, $option_set) {
+
+}
+
+/**
  * Respond to an MVT being deleted.
  *
  * This hook is invoked after an MVT has been deleted from the db.

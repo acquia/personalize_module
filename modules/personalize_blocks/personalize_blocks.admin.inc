@@ -66,9 +66,6 @@ function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL)
   }
 
   if (!empty($pblock->osid)) {
-    // Make sure a warning message is delivered if this is a running
-    // campaign.
-    personalize_warn_if_running($pblock->agent);
     $form['osid'] = array(
       '#type' => 'value',
       '#value' => $pblock->osid,
@@ -334,6 +331,7 @@ function _personalize_blocks_add_block_form(&$form_state) {
  * @ingroup themeable
  */
 function theme_personalize_blocks_admin_form_blocks($variables) {
+  $has_operations = FALSE;
   $blocks = $variables['blocks'];
   $draggable = isset($blocks['#draggable']) && $blocks['#draggable'];
   $rows = array();
@@ -362,6 +360,11 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
     if ($draggable) {
       $fields[] = array('data' => drupal_render($block['weight']), 'class' => array('personalized-blocks-weight'));
     }
+
+    if (!isset($block['remove']['#access']) || $block['remove']['#access'] === TRUE) {
+      $has_operations = TRUE;
+    }
+
     $fields = array_merge($fields, array(
       array('data' => drupal_render($block['block']), 'class' => array('personalized-block-block')),
       array('data' => drupal_render($block['remove']), 'class' => array('personalize-block-remove'))
@@ -378,6 +381,14 @@ function theme_personalize_blocks_admin_form_blocks($variables) {
       $row = array_merge($row, $block['#attributes']);
     }
     $rows[] = $row;
+  }
+
+  // If there were never any operations available then remove the column.
+  if (!$has_operations) {
+    array_pop($header);
+    foreach ($rows as &$row) {
+      array_pop($row['data']);
+    }
   }
 
   $build['personalized_block'] = array(
@@ -408,6 +419,10 @@ function theme_personalize_blocks_admin_form_draggable_blocks($variables) {
  * Ajax callback for the add tab and remove tab buttons.
  */
 function personalize_blocks_ajax_callback($form, $form_state) {
+  // Clear messages since they don't need to be repeated within the AJAX
+  // callback area.
+  drupal_get_messages();
+
   return $form['pblock_wrapper']['blocks'];
 }
 
@@ -530,6 +545,41 @@ function personalize_blocks_block_delete_submit($form, &$form_state) {
   $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
 }
 
+/**
+ * Deletion of personalized_block block option from within an existing
+ * personalized block.
+ */
+function personalize_blocks_block_option_delete($form, $form_state, $pblock, $option_id) {
+  $option_label = $option_id;
+  foreach($pblock->options as $option) {
+    if ($option['option_id'] === $option_id) {
+      $option_label = $option['option_label'];
+      break;
+    }
+  }
+  $form['osid'] = array('#type' => 'hidden', '#value' => $pblock->osid);
+  $form['option_id'] = array('#type' => 'hidden', '#value' => $option_id);
+  $form['block_title'] = array('#type' => 'hidden', '#value' => $pblock->data['block_title']);
+  $form['option_label'] = array('#type' => 'hidden', '#value' => $option_label);
+  return confirm_form($form, t('Are you sure you want to delete variation %option_label from the %title personalized block?', array('%option_label' => $option_label, '%title' => $pblock->data['block_title'])), 'admin/structure/personalize/variations/personalize-blocks/manage/' . $pblock->osid, '', t('Delete'), t('Cancel'));
+}
+
+/**
+ * Submit handler for personalized_block block deletion.
+ */
+function personalize_blocks_block_option_delete_submit($form, &$form_state) {
+  $option_set = personalize_option_set_load($form_state['values']['osid']);
+  foreach($option_set->options as $i => $option) {
+    if ($option['option_id'] === $form_state['values']['option_id']) {
+      unset($option_set->options[$i]);
+      break;
+    }
+  }
+  personalize_option_set_save($option_set);
+  drupal_set_message(t('The variation %option_label has been removed from the %block_title personalized block.', array('%option_label' => $form_state['values']['option_label'], '%block_title' => $form_state['values']['block_title'])));
+  cache_clear_all();
+  $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
+}
 
 /**
  * Helper function to get all blocks.
