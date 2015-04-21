@@ -2074,11 +2074,6 @@ function personalize_agent_save($agent) {
   ctools_include('plugins');
   if ($class = ctools_plugin_load_class('personalize', 'agent_type', $agent->plugin, 'handler')) {
     if ($agent_instance = call_user_func_array(array($class, 'create'), array($agent))) {
-      // If this is an agent that uses visitor contexts for auto-targeting, clear
-      // the visitor context cache.
-      if ($agent_instance->supportsAutoTargeting()) {
-        personalize_visitor_context_expiration_clear();
-      }
       $agent_instance->postSave($prior_values);
     }
     else {
@@ -2649,15 +2644,6 @@ function personalize_visitor_context_expiration_load() {
   $current_campaign_contexts = array();
   // Get the visitor context for each of the currently running campaigns.
   foreach ($current_campaigns as $campaign) {
-    // Add auto-targeting contexts.
-    if (!empty($campaign->data['visitor_context'])) {
-      foreach ($campaign->data['visitor_context'] as $plugin => $contexts) {
-        if (!isset($current_campaign_contexts[$plugin])) {
-          $current_campaign_contexts[$plugin] = array();
-        }
-        $current_campaign_contexts[$plugin] = array_merge($current_campaign_contexts[$plugin], $contexts);
-      }
-    }
     // Add explicit targeting contexts for options within the campaign.
     $option_sets = personalize_option_set_load_by_agent($campaign->machine_name);
     foreach($option_sets as $option_set) {

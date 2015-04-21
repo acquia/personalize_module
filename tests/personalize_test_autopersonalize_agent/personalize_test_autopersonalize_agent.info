@@ -1,6 +1,0 @@
-name = Personalize Test Autopersonalize Agent
-description = Provides an agent type for testing with autopersonalize agents.
-dependencies[] = personalize
-package = Testing
-core = 7.x
-hidden = TRUE

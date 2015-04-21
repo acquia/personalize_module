@@ -676,7 +676,7 @@ function personalize_campaign_wizard_variations_advanced_agent($form, &$form_sta
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  if (empty($agent_instance) || (!($agent_instance instanceof PersonalizeExplicitTargetingInterface) && !($agent_instance->supportsAutoTargeting()))) {
+  if (empty($agent_instance) || !($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
     return array(
       '#markup' => t('This agent does not support targeting.'),
     );
@@ -692,20 +692,6 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
     '#title' => t('Targeting'),
     '#theme' => 'personalize_wizard_section_title',
   );
-
-  // Add visitor context items to the form for agents that support automatic
-  // targeting.
-  if ($agent_instance->supportsAutoTargeting()) {
-    $visitor_context = isset($agent_data->data['visitor_context']) ? $agent_data->data['visitor_context'] : array();
-    if ($context_element = personalize_admin_build_visitor_context_select($visitor_context, TRUE, $agent_data)) {
-      $form['targeting']['visitor_context'] = $context_element;
-    }
-  }
-
-  if (!($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
-    // The rest of this function applies to explicit targeting.
-    return $form;
-  }
 
   // Load the data used throughout form.
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
@@ -1496,12 +1482,6 @@ function personalize_campaign_wizard_submit_variations_advanced_agent($form, &$f
  * Submit handler for campaign targeting.
  */
 function personalize_campaign_wizard_submit_targeting($form, &$form_state, &$agent_data) {
-  // Add the visitor context configuration.
-  $visitor_context = array();
-  if (isset($form_state['values']['visitor_context'])) {
-    $visitor_context = personalize_admin_convert_visitor_context_form_values($form_state['values']['visitor_context']);
-  }
-  $agent_data->data['visitor_context'] = $visitor_context;
   $agent_instance = personalize_agent_load_agent($agent_data->machine_name);
   $form_values = isset($form_state['values']['option_sets']) && is_array($form_state['values']['option_sets']) ? $form_state['values']['option_sets'] : array();
   foreach ($form_values as $option_set_id => $values) {
@@ -1676,7 +1656,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
     unset($steps['goals']);
   }
-  if (empty($agent_instance) || (!($agent_instance->supportsAutoTargeting()) && !($agent_instance instanceof PersonalizeExplicitTargetingInterface))) {
+  if (empty($agent_instance) || !($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
     unset($steps['targeting']);
   }
   return $steps;
