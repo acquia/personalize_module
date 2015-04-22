@@ -291,7 +291,7 @@ div.personalize-target-wrapper div.form-item {
 .personalize-wizard-summary-item .personalize-wizard-summary-count,
 .personalize-wizard-summary-item .personalize-wizard-summary-details {
   display: inline-block;
-  vertical-align: top;
+  vertical-align: middle;
 }
 .personalize-wizard-summary-item .personalize-wizard-summary-count {
   font-size: 4em;

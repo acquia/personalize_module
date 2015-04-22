@@ -432,25 +432,27 @@ function theme_personalize_wizard_summary_count($variables) {
 function theme_personalize_wizard_summary_schedule($variables) {
   $text = '';
   $text .= '<div class="personalize-wizard-summary-schedule">';
+  $text .= '<div class="personalize-wizard-summary-status"><strong>' . t('Current status:') . ' ' . '</strong>';
   switch ($variables['status']) {
     case PERSONALIZE_STATUS_PAUSED:
-      $text .= '<div class="personalize-wizard-summary-status-paused">' . t('Paused') . '</div>';
+      $text .= t('Paused');
       break;
     case PERSONALIZE_STATUS_RUNNING:
-      $text .= '<div class="personalize-wizard-summary-status-running">' . t('Running') . '</div>';
+      $text .= t('Running');
       break;
     case PERSONALIZE_STATUS_COMPLETED:
-      $text .= '<div class="personalize-wizard-summary-status-completed">' . t('Completed') . '</div>';
+      $text .= t('Completed');
       break;
   }
+  $text .= '</div>';
   if (!empty($variables['started_date'])) {
-    $text .= '<div class="personalize-wizard-summary-started">' . t('Started:') . format_date($variables['started_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-started"><strong>' . t('Started:') . ' </strong>' . format_date($variables['started_date'], 'custom', 'D M. d, Y') . '</div>';
   }
   if (!empty($variables['start_date'])) {
-    $text .= '<div class="personalize-wizard-summary-start">' . t('Start: ') . format_date($variables['start_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-start"><strong>' . t('Start: ') . ' </strong>' . format_date($variables['start_date'], 'custom', 'D M. d, Y') . '</div>';
   }
   if (!empty($variables['stop_date'])) {
-    $text .= '<div class="personalize-wizard-summary-stop">' . t('Stop: ') . format_date($variables['stop_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-stop"><strong>' . t('Stop: ') . ' </strong>' . format_date($variables['stop_date'], 'custom', 'D M. d, Y') . '</div>';
   }
   $text .= '</div>';
   return $text;

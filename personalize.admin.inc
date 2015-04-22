@@ -1338,7 +1338,7 @@ function personalize_explicit_targeting_mapping_element($mapping, $targeting_val
       $on_label = isset($targeting_values[$selected_context]['on_label']) ? $targeting_values[$selected_context]['on_label'] : 'Yes';
       $element['value']['match'] = array(
         '#type' => 'select',
-        '#options' => array(0 => $off_label, 1 => $on_label),
+        '#options' => array(1 => $on_label, 0 => $off_label),
         '#title' => 'Value',
         '#default_value' => $selected_match,
       );
