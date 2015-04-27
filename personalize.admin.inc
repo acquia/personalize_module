@@ -150,7 +150,7 @@ function personalize_status_change_form_submit(&$form, &$form_state) {
       // Otherwise just change the status as requested.
       $status_map = personalize_get_agent_status_map();
       if (personalize_agent_set_status($agent_name, $status)) {
-        drupal_set_message(t('Set the status of personalization @campaign to @status', array('@campaign' => $agent_name, '@status' => $status_map[$status])));
+        drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
       }
     }
   }
