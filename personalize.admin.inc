@@ -101,10 +101,17 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
     '#type' => 'value',
     '#value' => $agent_name,
   );
+  $form['status_wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-status-change'),
+    ),
+    '#tree' => FALSE,
+  );
   switch($agent_status) {
     case PERSONALIZE_STATUS_NOT_STARTED:
       // Just present a start button, no need for a dropdown.
-      $form['status'] = array(
+      $form['status_wrapper']['status'] = array(
         '#type' => 'value',
         '#value' => PERSONALIZE_STATUS_RUNNING
       );
@@ -112,7 +119,7 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
       break;
     case PERSONALIZE_STATUS_RUNNING:
       // Just present  Pause button, not need for a dropdown.
-      $form['status'] = array(
+      $form['status_wrapper']['status'] = array(
         '#type' => 'value',
         '#value' => PERSONALIZE_STATUS_PAUSED
       );
@@ -121,24 +128,21 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
     default:
       // Present a dropdown of all available next statuses.
       $allowed_statuses = personalize_allowed_status_transitions($agent_status);
-      $options = array(
-        '' => t('--Select--')
-      );
+      $options = array();
       foreach ($allowed_statuses as $status) {
         $options[$status] = $friendly_statuses[$status];
       }
-      $form['status'] = array(
-        '#prefix' => '<div class="personalize-status-change-select">',
-        '#suffix' => '</div>',
+      $form['status_wrapper']['status'] = array(
         '#type' => 'select',
         '#options' => $options,
         '#default_value' => '',
+        '#empty_option' => t('--Select--'),
       );
       $submit_text = t('Change');
       break;
   }
 
-  $form['submit'] = array(
+  $form['status_wrapper']['submit'] = array(
     '#type' => 'submit',
     '#value' => $submit_text
   );
@@ -636,109 +640,6 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
 function personalize_admin_goal_delete_submit($form, &$form_state) {
   personalize_goal_delete($form_state['values']['goal']->id);
   $form_state['redirect'] = 'admin/structure/personalize/goals';
-}
-
-/**
- * Returns a form with just a submit button for changing the status of an agent.
- *
- * @param $agent_name
- *   The name of the campaign for which to toggle status.
- * @param $current_status
- *   The current status of the campaign, should match defined constant values.
- * @param $ajax_callback
- *   A callback function to apply Ajax settings to the form.
- */
-function personalize_status_toggle_form($form, &$form_state, $agent_name, $current_status, $ajax_callback = NULL) {
-  // If called via Ajax, then retrieve the new status values from the previous submit.
-  if (!empty($form_state['values']['agent'])) {
-    $agent_data = personalize_agent_load($agent_name);
-    $current_status = personalize_agent_get_status($agent_data->machine_name);
-  }
-  $form = personalize_status_toggle_form_definition($agent_name, $current_status, FALSE, $ajax_callback);
-  return $form;
-}
-
-/**
- * Gets the form fields that define the status toggle form.
- *
- * @param $agent_name
- *   The name of the campaign for which to toggle status.
- * @param $current_status
- *   The current status of the campaign, should match defined constant values.
- * @param $add_handlers
- *   Indicates if submit/validate handlers need to be added to the submit.
- *   These are only needed if the form is included within another form.
- * @param $ajax_callback
- *   A callback function to apply Ajax settings to the form.
- */
-function personalize_status_toggle_form_definition($agent_name, $current_status, $add_handlers = FALSE, $ajax_callback = NULL) {
-  $form = array();
-  $form['#prefix'] = '<div id="personalize-status-toggle-form">';
-  $form['#suffix'] = '</div>';
-
-  list($new_status, $button_text) = _personalize_status_toggle_next($current_status);
-  if (!$new_status) {
-    return array();
-  }
-  $form['agent'] = array(
-    '#type' => 'value',
-    '#value' => $agent_name,
-  );
-  $form['status'] = array(
-    '#type' => 'value',
-    '#value' => $new_status,
-  );
-  $form['actions']['toggle_form'] = array(
-    '#type' => 'submit',
-    '#name' => 'toggle_submit',
-    '#value' => $button_text,
-    '#attributes' => array(
-      'class' => array('action-item-primary-active'),
-    ),
-  );
-  if ($add_handlers) {
-    $form['actions']['toggle_form']['#submit'] = array('personalize_status_toggle_form_submit');
-  }
-  if (is_callable($ajax_callback)) {
-    $form = $ajax_callback($form);
-  }
-  return $form;
-}
-
-/**
- * Submit handler for the agent status toggle form.
- */
-function personalize_status_toggle_form_submit($form, &$form_state) {
-  $status_map = personalize_get_agent_status_map();
-  if (personalize_agent_set_status($form_state['values']['agent'], $form_state['values']['status'])) {
-    switch ($form_state['values']['status']) {
-      case PERSONALIZE_STATUS_RUNNING:
-        drupal_set_message(t('The personalization "@agent" is now live.', array(
-          '@agent' => $form_state['values']['agent'],
-        )));
-        break;
-      case PERSONALIZE_STATUS_PAUSED:
-      case PERSONALIZE_STATUS_COMPLETED:
-        drupal_set_message(t('The personalization "@agent" is @status.', array(
-          '@agent' => $form_state['values']['agent'],
-          '@status' => drupal_strtolower($status_map[$form_state['values']['status']]),
-        )));
-        break;
-      default:
-        drupal_set_message(t('The status of personalization @agent has been set to @status', array(
-          '@agent' => $form_state['values']['agent'],
-          '@status' => drupal_strtolower($status_map[$status_map[$form_state['values']['status']]]),
-        )));
-    }
-  }
-  else {
-    drupal_set_message(t('There was a problem setting the status of personalization @agent to @status', array(
-      '@agent' => $form_state['values']['agent'],
-      '@status' => drupal_strtolower($status_map[$form_state['values']['status']]))
-    ), 'error');
-  }
-  personalize_status_toggle_message($form_state['values']['agent'], $form_state['values']['status']);
-  $form_state['redirect'] = 'admin/structure/personalize';
 }
 
 /**

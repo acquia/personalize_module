@@ -169,14 +169,10 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
 
     // Change campaign status.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
-    // Add AJAX callback.
-    $form['process_bar']['actions']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-    $form['process_bar']['actions']['status']['actions']['toggle_form']['#ajax'] = array(
-      'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
-      'wrapper' => 'personalize-campaign-wizard-process-bar',
-      'effect' => 'fade',
-    );
+    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data->machine_name, $agent_status);
+    // Assign the submit handler to the button to bypass full form submission.
+    $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
+    $form['process_bar']['actions']['status']['submit']['#submit'] = array('personalize_status_change_form_submit');
   }
 
   // Instructions and help.
@@ -1253,15 +1249,6 @@ function personalize_campaign_wizard_ajax_goal_remove_submit($form, &$form_state
  */
 function personalize_campaign_wizard_ajax_process_bar_callback($form, &$form_state) {
   return $form['process_bar'];
-}
-
-/**
- * Submit handler for the status change button.
- */
-function personalize_campaign_wizard_ajax_status_submit($form, &$form_state) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
-  personalize_status_toggle_form_submit($form, $form_state);
-  $form_state['rebuild'] = TRUE;
 }
 
 /**
