@@ -1053,7 +1053,12 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
  */
 function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data, $agent_instance = NULL) {
   module_load_include('inc', 'personalize', 'personalize.admin');
-  return personalize_agent_date_form($agent_data->machine_name);
+  $form['scheduling'] = array(
+    '#type' => 'container',
+    '#tree' => FALSE,
+  );
+  $form['scheduling'] += personalize_agent_date_form($agent_data->machine_name);
+  return $form;
 }
 
 /**
