@@ -1037,38 +1037,6 @@ function _personalize_agent_get_starttime_variable($agent_name) {
 }
 
 /**
- * Helper function to determine the next status and text to display for
- * changing an agent's status.
- *
- * @param $current_status
- *   The current status of the agent.
- * @return
- *   An array with two values:
- *   - new status value
- *   - text to display
- */
-function _personalize_status_toggle_next($current_status) {
-  switch ($current_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_PAUSED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Resume');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      $new_status = PERSONALIZE_STATUS_PAUSED;
-      $button_text = t('Pause');
-      break;
-    default:
-      $new_status = FALSE;
-      $button_text = '';
-  }
-  return array($new_status, $button_text);
-}
-
-/**
  * Set the status of an agent.
  *
  * @param $agent_name
@@ -1187,10 +1155,6 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
- *
- * @todo This should really replace _personalize_status_toggle_next or they
- *   should be made to work together. There are too many functions about status
- *   changes :/
  */
 function personalize_allowed_status_transitions($status = NULL) {
   $transitions = array(
