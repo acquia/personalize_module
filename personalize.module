@@ -25,6 +25,7 @@ define('PERSONALIZE_STATUS_NOT_STARTED', 1);
 define('PERSONALIZE_STATUS_RUNNING', 2);
 define('PERSONALIZE_STATUS_PAUSED', 4);
 define('PERSONALIZE_STATUS_COMPLETED', 8);
+define('PERSONALIZE_STATUS_SCHEDULED', 16);
 
 /**
  * =================================================================================
@@ -1152,27 +1153,54 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
 /**
  * Returns the allowed next statuses for each status.
  *
+ * @param $status
+ *   (Optional) The current status to transition from
+ * @param stdClass $agent_data
+ *   (Optional) When provided then agent-specific transition steps can be
+ *   included.  This is used for the "Scheduled" status.
+ *
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
  */
-function personalize_allowed_status_transitions($status = NULL) {
+function personalize_allowed_status_transitions($status = NULL, $agent_data = NULL) {
   $transitions = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(
-      PERSONALIZE_STATUS_RUNNING
+      PERSONALIZE_STATUS_RUNNING => t('Start'),
     ),
     PERSONALIZE_STATUS_RUNNING => array(
-      PERSONALIZE_STATUS_PAUSED,
-      PERSONALIZE_STATUS_COMPLETED
+      PERSONALIZE_STATUS_PAUSED => t('Pause'),
+      PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_PAUSED => array(
-      PERSONALIZE_STATUS_RUNNING,
-      PERSONALIZE_STATUS_COMPLETED
+      PERSONALIZE_STATUS_RUNNING => t('Start'),
+      PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_COMPLETED => array(
-      PERSONALIZE_STATUS_PAUSED
+      PERSONALIZE_STATUS_PAUSED => t('Make editable'),
     ),
   );
+  if (!empty($agent_data)) {
+    // The scheduled status only applies to agents with a start date set.
+    $start_date = personalize_agent_get_start_date($agent_data->machine_name);
+    if (!empty($start_date)) {
+      $transitions[PERSONALIZE_STATUS_SCHEDULED] = array(
+        PERSONALIZE_STATUS_RUNNING => t('Start'),
+      );
+      if (!empty($agent_data->started)) {
+        // If the agent has been started, then scheduling status moves to and
+        // from the paused status.
+        $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
+        $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
+      }
+      else {
+        // If the agent has not been started, then the scheduling status moves
+        // to and from the not started status.
+        $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
+        $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_NOT_STARTED] = t('Unschedule');
+      }
+    }
+  }
   if (!empty($status) && isset($transitions[$status])) {
     return $transitions[$status];
   }
@@ -1614,6 +1642,7 @@ function personalize_get_agent_status_map() {
     PERSONALIZE_STATUS_RUNNING => t('Running'),
     PERSONALIZE_STATUS_PAUSED => t('Paused'),
     PERSONALIZE_STATUS_COMPLETED => t('Completed'),
+    PERSONALIZE_STATUS_SCHEDULED => t('Scheduled'),
   );
 }
 

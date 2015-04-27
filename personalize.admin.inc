@@ -87,19 +87,17 @@ function personalize_admin_form_submit($form, &$form_state) {
 /**
  * Form for changing the status of an agent.
  *
- * @param $agent_name
- *   THe name of the agent the form is for.
- * @param array $agent_status
- *   The current status of the agent.
+ * @param stdClass $agent_data
+ *   The standard data for the agent to change.
  * @return array
  *   Array representing the status change form.
  */
-function personalize_status_change_form($form, &$form_state, $agent_name, $agent_status) {
-  $friendly_statuses = personalize_get_agent_status_map();
+function personalize_status_change_form($form, &$form_state, $agent_data) {
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
   $form = array();
   $form['agent_name'] = array(
     '#type' => 'value',
-    '#value' => $agent_name,
+    '#value' => $agent_data->machine_name,
   );
   $form['status_wrapper'] = array(
     '#type' => 'container',
@@ -108,38 +106,25 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
     ),
     '#tree' => FALSE,
   );
-  switch($agent_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      // Just present a start button, no need for a dropdown.
-      $form['status_wrapper']['status'] = array(
-        '#type' => 'value',
-        '#value' => PERSONALIZE_STATUS_RUNNING
-      );
-      $submit_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      // Just present  Pause button, not need for a dropdown.
-      $form['status_wrapper']['status'] = array(
-        '#type' => 'value',
-        '#value' => PERSONALIZE_STATUS_PAUSED
-      );
-      $submit_text = t('Pause');
-      break;
-    default:
-      // Present a dropdown of all available next statuses.
-      $allowed_statuses = personalize_allowed_status_transitions($agent_status);
-      $options = array();
-      foreach ($allowed_statuses as $status) {
-        $options[$status] = $friendly_statuses[$status];
-      }
-      $form['status_wrapper']['status'] = array(
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => '',
-        '#empty_option' => t('--Select--'),
-      );
-      $submit_text = t('Change');
-      break;
+  // Present a dropdown of all available next statuses.
+  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
+  if (count($allowed_statuses) === 1) {
+    // Just present a single button to change the status.
+    $next_status = array_keys($allowed_statuses);
+    $form['status_wrapper']['status'] = array(
+      '#type' => 'value',
+      '#value' => key($next_status),
+    );
+    $submit_text = current($allowed_statuses);
+  }
+  else {
+    $form['status_wrapper']['status'] = array(
+      '#type' => 'select',
+      '#options' => $allowed_statuses,
+      '#default_value' => '',
+      '#empty_option' => t('--Select--'),
+    );
+    $submit_text = t('Change');
   }
 
   $form['status_wrapper']['submit'] = array(
@@ -384,7 +369,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         }
       }
 
-      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $status);
+      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent);
       // @todo We are ignoring the "storage" info and the clone/export functionality
       //   for now. Revisit once we can provide full support for clone/export.
       $plugin = personalize_agent_load_agent($agent->machine_name);
