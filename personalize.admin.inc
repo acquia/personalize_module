@@ -318,6 +318,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
   }
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
+    PERSONALIZE_STATUS_SCHEDULED => array(),
     PERSONALIZE_STATUS_RUNNING => array(),
     PERSONALIZE_STATUS_PAUSED => array(),
     PERSONALIZE_STATUS_COMPLETED => array()
@@ -337,6 +338,9 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
         $description = t('This table lists personalizations that have never been started.');
+        break;
+      case PERSONALIZE_STATUS_SCHEDULED:
+        $description = t('This table lists personalizations that are scheduled to start in the future.');
         break;
       case PERSONALIZE_STATUS_RUNNING:
         $description = t('This table lists personalizations that are displaying personalized content to website visitors for each variation set.');
@@ -379,11 +383,11 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
         array('data' => $allow_edit ? l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name . '/edit') : ''),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && !empty($agent->started) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         array('data' => $delete_link),
       );
       // Show the scheduled start date for campaigns that aren't running yet.
-      if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+      if ($status === PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_SCHEDULED) {
         $start_date = personalize_agent_get_start_date($agent->machine_name);
         array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
       }
@@ -392,7 +396,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     }
     // Add the scheduled start date in to the "not started" table headers.
     $build_header = $header;
-    if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status === PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_SCHEDULED) {
       array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
     }
 

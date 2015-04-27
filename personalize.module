@@ -346,7 +346,7 @@ function personalize_start_agents() {
   $all_agents = personalize_agent_load_multiple();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
-    if ($status == PERSONALIZE_STATUS_PAUSED || $status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status == PERSONALIZE_STATUS_SCHEDULED) {
       if (personalize_agent_start_now($agent)) {
         if (personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING)) {
           watchdog('personalize', 'Starting agent @agent based on agent settings', array('@agent' => $agent_name));
@@ -1054,6 +1054,7 @@ function personalize_agent_set_status($agent_name, $status) {
     PERSONALIZE_STATUS_RUNNING,
     PERSONALIZE_STATUS_PAUSED,
     PERSONALIZE_STATUS_COMPLETED,
+    PERSONALIZE_STATUS_SCHEDULED,
   );
   if (!in_array($status, $allowed_status)) {
     watchdog('personalize', 'Attempt to set an agent to an invalid status');
@@ -1085,7 +1086,7 @@ function personalize_agent_set_status($agent_name, $status) {
     }
   }
 
-  if ($status == PERSONALIZE_STATUS_RUNNING) {
+  if ($status == PERSONALIZE_STATUS_RUNNING || $status == PERSONALIZE_STATUS_SCHEDULED) {
     // Do a check before setting the status to running.
     $errors = personalize_verify_agent($agent_name);
     if (!empty($errors)) {
@@ -1094,10 +1095,13 @@ function personalize_agent_set_status($agent_name, $status) {
     }
     // If we're setting a campaign to the running status for the first time,
     // record the current time as the "started" property of the agent.
-    if ($old_status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status == PERSONALIZE_STATUS_RUNNING &&
+      ($old_status == PERSONALIZE_STATUS_NOT_STARTED || $old_status == PERSONALIZE_STATUS_SCHEDULED)) {
       $agent = personalize_agent_load($agent_name);
-      $agent->started = time();
-      personalize_agent_save($agent);
+      if (empty($agent->started)) {
+        $agent->started = time();
+        personalize_agent_save($agent);
+      }
     }
   }
 
@@ -1635,7 +1639,7 @@ function personalize_get_campaign_context() {
  */
 function personalize_get_agent_status_map() {
   return array(
-    PERSONALIZE_STATUS_NOT_STARTED => t('Not started'),
+    PERSONALIZE_STATUS_NOT_STARTED => t('Drafts'),
     PERSONALIZE_STATUS_RUNNING => t('Running'),
     PERSONALIZE_STATUS_PAUSED => t('Paused'),
     PERSONALIZE_STATUS_COMPLETED => t('Completed'),

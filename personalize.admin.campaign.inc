@@ -148,7 +148,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
   else {
     // Disable the reporting link if the agent has not yet been started.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    if ($agent_status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if (empty($agent_status->started)) {
       $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
     }
   }
