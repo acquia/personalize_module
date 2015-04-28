@@ -1785,6 +1785,12 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
       'button_value' => $next,
     )
   );
+
+  // Add any status changes that should happen upon completion of the review
+  // step.
+  if (!empty($review_next_status)) {
+    $steps['review']['next_status'] = $review_next_status;
+  }
   // Remove any steps that aren't applicable to the current agent.
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
     unset($steps['goals']);
