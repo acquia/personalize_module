@@ -204,7 +204,7 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
       case 'wizard_start':
         return t('Start');
       case 'create_campaign':
-        return t('Create personalization');
+        return t('Create and edit');
       case 'add_goal':
         return t('Add goal');
       case 'delete':
@@ -1966,6 +1966,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
       'campaign_end_date[year]' => date('Y', $end_date),
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->resetAll();
     $this->assertEqual($start_date, personalize_agent_get_start_date($machine_name));
     $this->assertEqual($end_date, personalize_agent_get_stop_date($machine_name));
 
@@ -2233,8 +2234,10 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $now = time();
     // First agent was due to start yesterday.
     personalize_agent_set_start_date('agent-1', $now - 86400);
+    personalize_agent_set_status('agent-1', PERSONALIZE_STATUS_SCHEDULED);
     // Second agent is due to start tomorrow.
     personalize_agent_set_start_date('agent-2', $now + 86400);
+    personalize_agent_set_status('agent-2', PERSONALIZE_STATUS_SCHEDULED);
 
     // Call the function that should start all agents that are scheduled to be
     // started.
@@ -2243,7 +2246,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     // The first agent's status should be started.
     $this->assertEqual(PERSONALIZE_STATUS_RUNNING, personalize_agent_get_status('agent-1'));
     // The second agent's status should still be stopped.
-    $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status('agent-2'));
+    $this->assertEqual(PERSONALIZE_STATUS_SCHEDULED, personalize_agent_get_status('agent-2'));
     // The third agent's status should still be stopped.
     $this->assertEqual(PERSONALIZE_STATUS_NOT_STARTED, personalize_agent_get_status('agent-3'));
 
@@ -2264,7 +2267,8 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
 
     $this->assertText('No personalizations available');
-    $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertNoRaw('<h2>Draft</h2>');
+    $this->assertNoRaw('<h2>Scheduled</h2>');
     $this->assertNoRaw('<h2>Running</h2>');
     $this->assertNoRaw('<h2>Paused</h2>');
     $this->assertNoRaw('<h2>Completed</h2>');
@@ -2275,7 +2279,8 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
     $this->assertNoText(t('No personalizations available.'));
     // "Not started" should be the only section on the page.
-    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Draft</h2>');
+    $this->assertNoRaw('<h2>Scheduled</h2>');
     $this->assertNoRaw('<h2>Running</h2>');
     $this->assertNoRaw('<h2>Paused</h2>');
     $this->assertNoRaw('<h2>Completed</h2>');
@@ -2285,20 +2290,22 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
 
     $this->assertNoText(t('No personalizations available.'));
-    $this->assertRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Draft</h2>');
+    $this->assertNoRaw('<h2>Scheduled</h2>');
     $this->assertRaw('<h2>Running</h2>');
     $this->assertNoRaw('<h2>Paused</h2>');
     $this->assertNoRaw('<h2>Completed</h2>');
 
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_PAUSED);
     personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
-    personalize_agent_set_status('test-agent-3', PERSONALIZE_STATUS_RUNNING);
-    // There should now be a "Paused" section and a "Running" section only.
+    personalize_agent_set_status('test-agent-3', PERSONALIZE_STATUS_SCHEDULED);
+    // There should now be a "Paused", "Running" and "Scheduled" sections.
     $this->resetAll();
     $this->drupalGet('admin/structure/personalize');
 
     $this->assertNoText(t('No personalizations available.'));
     $this->assertNoRaw('<h2>Not started</h2>');
+    $this->assertRaw('<h2>Scheduled</h2>');
     $this->assertRaw('<h2>Running</h2>');
     $this->assertRaw('<h2>Paused</h2>');
     $this->assertNoRaw('<h2>Completed</h2>');

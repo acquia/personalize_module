@@ -1683,6 +1683,7 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
 
   // Submit the new values.
   $start_date = $end_date = 0;
+  $values = $form_state['values'];
   if (!empty($values['campaign_start'])) {
     // Set the start date.
     if ($values['campaign_start'] === 'specified') {
