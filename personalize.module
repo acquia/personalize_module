@@ -86,33 +86,6 @@ function personalize_menu() {
     'type' => MENU_LOCAL_ACTION,
     'file' => 'personalize.admin.campaign.inc',
   );
-  $items['admin/structure/personalize/variations'] = array(
-    'title' => 'Variation sets',
-    'description' => 'Manage your personalization content variation sets.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_option_set_list'),
-    'access callback' => 'user_access',
-    'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'personalize.admin.inc',
-    'weight' => 10,
-  );
-  $items['admin/structure/personalize/variations/list'] = array(
-    'title' => 'All variation sets',
-    'description' => 'Manage all content variation sets for all personalizations.',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  );
-  $items['admin/structure/personalize/goals'] = array(
-    'title' => 'Goals',
-    'description' => 'Manage your personalization goals.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_goals_list'),
-    'access callback' => 'user_access',
-    'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'personalize.admin.inc',
-    'weight' => 20,
-  );
   $items['admin/structure/personalize/goals/%personalize_goal/delete'] = array(
     'title' => 'Delete Goal',
     'page callback' => 'drupal_get_form',

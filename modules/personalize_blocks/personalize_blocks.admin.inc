@@ -5,50 +5,6 @@
  */
 
 /**
- * Page callback to list personalize_blocks instances in the system.
- */
-function personalize_blocks_list() {
-  $header = array(
-    array('data' => t('Block')),
-    array('data' => t('Operations'), 'colspan' => 3),
-  );
-  $rows = array();
-
-  foreach (personalize_option_set_load_by_type('block') as $personalized_block) {
-    $tablerow = array(
-      array('data' => check_plain($personalized_block->data['block_title'])),
-      array('data' => l(t('Edit'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/edit')),
-      array('data' => l(t('Clone'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/clone')),
-      array('data' => l(t('Delete'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/delete')),
-    );
-    $rows[] = $tablerow;
-  }
-
-  if (empty($rows)) {
-    $rows[] = array(array('data' => t('No personalize_blocks instances available.'), 'colspan' => 4));
-  }
-
-  $build = array(
-    '#theme' => 'table',
-    '#header' => $header,
-    '#rows' => $rows,
-    '#attributes' => array('id' => 'personalize_blocks'),
-  );
-  return $build;
-}
-
-/**
- * Clone personalize_blocks.
- */
-function personalize_blocks_clone($block) {
-  unset($block->osid);
-  $data = $block->data;
-  $data['block_title'] = '';
-  $block->data = $data;
-  return drupal_get_form('personalize_blocks_form', 'clone', $block);
-}
-
-/**
  * Build the personalize_blocks creation and edit form.
  */
 function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL) {
@@ -521,7 +477,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
       personalize_blocks_replace_existing($form_state['values']['original_block'], $pblock);
     }
     else {
-      $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
+      $form_state['redirect'] = 'admin/structure/personalize';
     }
   }
 }
@@ -532,7 +488,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
 function personalize_blocks_block_delete($form, $form_state, $pblock) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $pblock->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $pblock->data['block_title']);
-  return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize/variations/personalize-blocks', '', t('Delete'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize', '', t('Delete'), t('Cancel'));
 }
 
 /**
@@ -542,7 +498,7 @@ function personalize_blocks_block_delete_submit($form, &$form_state) {
   personalize_option_set_delete($form_state['values']['osid']);
   drupal_set_message(t('The personalize_blocks instance %name has been removed.', array('%name' => $form_state['values']['title'])));
   cache_clear_all();
-  $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
+  $form_state['redirect'] = 'admin/structure/personalize';
 }
 
 /**
@@ -578,7 +534,7 @@ function personalize_blocks_block_option_delete_submit($form, &$form_state) {
   personalize_option_set_save($option_set);
   drupal_set_message(t('The variation %option_label has been removed from the %block_title personalized block.', array('%option_label' => $form_state['values']['option_label'], '%block_title' => $form_state['values']['block_title'])));
   cache_clear_all();
-  $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-blocks';
+  $form_state['redirect'] = 'admin/structure/personalize';
 }
 
 /**
