@@ -240,6 +240,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       'class' => array('action-item-primary-active'),
     ),
   );
+  if (isset($current_info['next_status'])) {
+    $form['actions']['submit']['#personalize_next_status'] = $current_info['next_status'];
+  }
 
   return $form;
 }
@@ -1605,12 +1608,31 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
  * @param stdClass $agent_instance
  *   (Optional) The agent instance for the current agent.
  * @return array
- *   An array of steps.
+ *   An array of steps with the following keys:
+ *   - label: The label to display for the step
+ *   - button_value: The text to display for the step within a button
+ *   - preview_message: (Optional) Any text to give a quick preview of the step
+ *   - next_status: (Optional) The status that should be applied along with
+ *     completing this step.
  */
 function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_instance = NULL) {
   $status = empty($agent_instance) ? PERSONALIZE_STATUS_NOT_STARTED : personalize_agent_get_status($agent_instance->getMachineName());
   $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
-  $scheduled = !empty($agent_instance) && personalize_agent_get_start_date($agent_instance->getMachineName()) > 0;
+
+  $review_button = t('Save');
+  $review_next_status = '';
+  if ($not_running) {
+    if (!empty($agent_instance) && $start_date = personalize_agent_get_start_date($agent_instance->getMachineName())) {
+      $review_button = t('Start on @date', array(
+        '@date' => _personalize_campaign_wizard_date($start_date),
+      ));
+      $review_next_status = PERSONALIZE_STATUS_SCHEDULED;
+    }
+    else {
+      $review_button = t('Start');
+      $review_next_status = PERSONALIZE_STATUS_RUNNING;
+    }
+  }
 
   $next = t('Next');
   $steps = array(
@@ -1635,8 +1657,8 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
     ),
     'review' => array(
       'label' => t('Review'),
-      'button_value' => $not_running && !$scheduled ? t('Start') : t('Save'),
-      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
+      'button_value' => $review_button,
+      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results'),
     ),
     'results' => array(
       'label' => t('Reports'),
