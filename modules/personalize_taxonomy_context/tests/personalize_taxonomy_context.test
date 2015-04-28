@@ -6,7 +6,9 @@
  */
 
 class PersonalizeTaxonomyContextTest extends DrupalWebTestCase {
-  protected $adminUser;
+  private $adminUser;
+  private $vocabulary;
+  private $terms;
 
   public static function getInfo() {
     return array(
@@ -17,10 +19,20 @@ class PersonalizeTaxonomyContextTest extends DrupalWebTestCase {
   }
 
   function setUp() {
-    parent::setUp(array('ctools', 'personalize', 'personalize_test', 'personalize_taxonomy_context'));
-    $this->adminUser = $this->drupalCreateUser(array('administer personalize configuration', 'access administration pages', 'manage personalized content'));
+    parent::setUp(array('personalize_test', 'personalize_taxonomy_context'));
+    $this->adminUser = $this->drupalCreateUser(array('create article content', 'administer content types', 'administer taxonomy'));
+    $this->drupalLogin($this->adminUser);
+    $taxonomyWebTestCase = new TaxonomyWebTestCase();
+    $this->vocabulary = $taxonomyWebTestCase->createVocabulary();
+    $term1 = $taxonomyWebTestCase->createTerm($this->vocabulary);
+    $this->terms[$term1->vid] = $term1;
+    $term2 = $taxonomyWebTestCase->createTerm($this->vocabulary);
+    $this->terms[$term2->vid] = $term2;
   }
 
-  function testTaxonomyConfiguration() {
-  }
+  /**
+   * @todo Assert the terms are correctly collected on the page settings.
+   */
+//  function testTaxonomyPageSettings() {
+//  }
 }
