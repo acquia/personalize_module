@@ -1639,7 +1639,7 @@ function personalize_get_campaign_context() {
  */
 function personalize_get_agent_status_map() {
   return array(
-    PERSONALIZE_STATUS_NOT_STARTED => t('Drafts'),
+    PERSONALIZE_STATUS_NOT_STARTED => t('Draft'),
     PERSONALIZE_STATUS_RUNNING => t('Running'),
     PERSONALIZE_STATUS_PAUSED => t('Paused'),
     PERSONALIZE_STATUS_COMPLETED => t('Completed'),
