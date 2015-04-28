@@ -1055,12 +1055,60 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
+  $agent_end = $default_end = personalize_agent_get_stop_date($agent_data->machine_name);
+  $agent_start = $default_start = personalize_agent_get_start_date($agent_data->machine_name);
+
+  // Default the start date to one month and the end date to one month.
+  if ($agent_start == 0) {
+    $default_start = strtotime('+1 month');
+  }
+  if ($agent_end == 0) {
+    $default_end = strtotime('+1 month');
+  }
+
   $form['scheduling'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
   );
-  $form['scheduling'] += personalize_agent_date_form($agent_data->machine_name);
+
+  $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
+  $form['scheduling']['campaign_start'] = array(
+    '#type' => 'radios',
+    '#title' => t('Personalization start date'),
+    '#options' => array(
+      'none' => t('Start manually'),
+      'specified' => t('Start on selected date'),
+    ),
+    '#default_value' => $agent_start == 0 ? 'none' : 'specified',
+  );
+  $form['scheduling']['campaign_start_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_start_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_start"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
+  $agent_end_date = array('year' => date('Y', $default_end), 'month' => intval(date('m', $default_end)), 'day' => date('d', $default_end));
+  $form['scheduling']['campaign_end'] = array(
+    '#type' => 'radios',
+    '#title' => t('Personalization end date'),
+    '#options' => array(
+      'none' => t('End manually'),
+      'specified' => t('End on selected date'),
+    ),
+    '#default_value' => $agent_end == 0 ? 'none' : 'specified',
+  );
+  $form['scheduling']['campaign_end_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_end_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_end"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
   return $form;
 }
 
@@ -1338,7 +1386,26 @@ function personalize_campaign_wizard_validate_variations_advanced($form_values, 
  * Custom validation callback for scheduling form.
  */
 function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
-  personalize_agent_date_form_validate($form_state['values']);
+  $values = $form_state['values'];
+  $start_date = 0;
+  $end_date = 0;
+  if (isset($values['campaign_start']) && $values['campaign_start'] === 'specified') {
+    $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
+    if ($start_date < time()) {
+      form_set_error('campaign_start_date', t('When provided, the start date for the personalization must be in the future.'));
+    }
+  }
+  if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
+    $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+    if ($end_date < time()) {
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be in the future.'));
+    }
+  }
+  if ($start_date > 0 && $end_date > 0) {
+    if ($end_date <= $start_date) {
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be after the start date for the personalization.'));
+    }
+  }
 }
 
 /**
@@ -1599,16 +1666,32 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
  * Submit handler for the scheduling section.
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$agent_data) {
+  // Grab the original start value.
   $current_start = personalize_agent_get_start_date($agent_data->machine_name);
-  personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
-  if ($form_state['values']['campaign_start'] === 'specified') {
-    $start_date = strtotime($form_state['values']['campaign_start_date']['year'] . '-' . $form_state['values']['campaign_start_date']['month'] . '-' . $form_state['values']['campaign_start_date']['day']);
-    if ($current_start != $start_date) {
-      drupal_set_message(t('The scheduled start date has been saved. Your personalization will not be automatically started until it has been finalized by pressing "Start on @start_date" in the <a href="!review_url">review screen</a>.', array(
-        '@start_date' => _personalize_campaign_wizard_date($start_date),
-        '!review_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/review'),
-      )));
+
+  // Submit the new values.
+  $start_date = $end_date = 0;
+  if (!empty($values['campaign_start'])) {
+    // Set the start date.
+    if ($values['campaign_start'] === 'specified') {
+      $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
     }
+    personalize_agent_set_start_date($agent_data->machine_name, $start_date);
+  }
+  if (!empty($values['campaign_end'])) {
+    // Set the end date.
+    if ($values['campaign_end'] === 'specified') {
+      $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+    }
+    personalize_agent_set_stop_date($agent_data->machine_name, $end_date);
+  }
+
+  // Show a message if the start schedule changed.
+  if ($current_start != $start_date) {
+    drupal_set_message(t('The scheduled start date has been saved. Your personalization will not be automatically started until it has been finalized by pressing "Start on @start_date" in the <a href="!review_url">review screen</a>.', array(
+      '@start_date' => _personalize_campaign_wizard_date($start_date),
+      '!review_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/review'),
+    )));
   }
 }
 
