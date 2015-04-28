@@ -275,6 +275,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
   $form = array();
   // Base form is shown for all steps so the values are the main values.
   $values = isset($form_state['values']) ? $form_state['values'] : array();
+  $is_new = empty($agent_data->machine_name);
 
   // Make sure we have at least one agent type available.
   $agent_types = personalize_get_agent_types();
@@ -295,7 +296,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#markup' => theme('html_tag', array(
       'element' => array(
         '#tag' => 'h2',
-        '#value' => 'Create personalization',
+        '#value' => $is_new ? t('Create personalization') : t('Edit personalization'),
       ),
     )),
   );
@@ -304,10 +305,21 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#type' => 'container',
     '#tree' => TRUE,
   );
-  if (!empty($agent_data->machine_name)) {
+  if (!$is_new) {
     $form['agent_basic_info']['machine_name'] = array(
       '#type' => 'value',
       '#value' => $agent_data->machine_name,
+    );
+    $form['agent_basic_info']['overview'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-campaign-overview'),
+      ),
+    );
+    $status_map = personalize_get_agent_status_map();
+    $status = personalize_agent_get_status($agent_data->machine_name);
+    $form['agent_basic_info']['overview']['status'] = array(
+      '#markup' => '<div>' . t('Status: @status', array('@status' => $status_map[$status])) . '</div>',
     );
   }
   if (empty($values['agent_basic_info']['title'])) {
@@ -345,10 +357,10 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
       '#description' => t('Choose which type of agent to create.'),
     );
   }
-  if (empty($agent_data->machine_name)) {
+  if ($is_new) {
     $form['agent_basic_info']['create'] = array(
       '#type' => 'submit',
-      '#value' => t('Create personalization'),
+      '#value' => t('Create and edit'),
       '#disabled' => empty($agent_type_options),
       '#attributes' => array(
         'class' => array('action-item-primary-active'),
