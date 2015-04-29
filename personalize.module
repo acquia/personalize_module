@@ -1095,8 +1095,7 @@ function personalize_agent_set_status($agent_name, $status) {
     }
     // If we're setting a campaign to the running status for the first time,
     // record the current time as the "started" property of the agent.
-    if ($status == PERSONALIZE_STATUS_RUNNING &&
-      ($old_status == PERSONALIZE_STATUS_NOT_STARTED || $old_status == PERSONALIZE_STATUS_SCHEDULED)) {
+    if ($status == PERSONALIZE_STATUS_RUNNING) {
       $agent = personalize_agent_load($agent_name);
       if (empty($agent->started)) {
         $agent->started = time();
