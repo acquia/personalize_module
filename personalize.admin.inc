@@ -145,7 +145,6 @@ function personalize_status_change_form_submit(&$form, &$form_state) {
     $status = $form_state['triggering_element']['#personalize_next_status'];
   }
   if (empty($status)) {
-    dpm($form_state['values'], 'no status');
     return;
   }
   $agent_name = $form_state['values']['agent_name'];

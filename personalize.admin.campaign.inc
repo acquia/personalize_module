@@ -171,7 +171,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data);
     // Assign the submit handler to the button to bypass full form submission.
     $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
-    $form['process_bar']['actions']['status']['submit']['#submit'] = array('personalize_status_change_form_submit');
+    $form['process_bar']['actions']['status']['status_wrapper']['submit']['#submit'] = array('personalize_status_change_form_submit');
   }
 
   // Instructions and help.
