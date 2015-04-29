@@ -1152,7 +1152,10 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
 }
 
 /**
- * Returns the allowed next statuses for each status.
+ * Returns the allowed next statuses for each status to display as options.
+ *
+ * Note that there are other statuses allowed form each state, but they aren't
+ * displayable options.
  *
  * @param $status
  *   (Optional) The current status to transition from
@@ -1171,34 +1174,40 @@ function personalize_allowed_status_transitions($status = NULL, $agent_data = NU
     ),
     PERSONALIZE_STATUS_RUNNING => array(
       PERSONALIZE_STATUS_PAUSED => t('Pause'),
-      PERSONALIZE_STATUS_COMPLETED => t('Complete'),
+      // Not displayed by an allowable transition.
+      //PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_PAUSED => array(
-      PERSONALIZE_STATUS_RUNNING => t('Start'),
+      PERSONALIZE_STATUS_RUNNING => t('Resume'),
       PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_COMPLETED => array(
-      PERSONALIZE_STATUS_PAUSED => t('Make editable'),
+      // Not displayed but an allowable transition.
+      //PERSONALIZE_STATUS_PAUSED => t('Make editable'),
     ),
   );
   if (!empty($agent_data)) {
     // The scheduled status only applies to agents with a start date set.
     $start_date = personalize_agent_get_start_date($agent_data->machine_name);
-    if (!empty($start_date)) {
+    if (!empty($start_date) && $start_date > time()) {
       $transitions[PERSONALIZE_STATUS_SCHEDULED] = array(
-        PERSONALIZE_STATUS_RUNNING => t('Start'),
+        PERSONALIZE_STATUS_RUNNING => t('Start now'),
       );
       if (!empty($agent_data->started)) {
         // If the agent has been started, then scheduling status moves to and
         // from the paused status.
         $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
-        $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
+        $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
+        // Not displayed but an allowable transition.
+        //$transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
       }
       else {
         // If the agent has not been started, then the scheduling status moves
         // to and from the not started status.
         $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
-        $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_NOT_STARTED] = t('Unschedule');
+        $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
+        // Not displayed but an allowable transition.
+        //$transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_NOT_STARTED] = t('Unschedule');
       }
     }
   }

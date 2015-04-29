@@ -109,13 +109,13 @@ function personalize_status_change_form($form, &$form_state, $agent_data) {
   // Present a dropdown of all available next statuses.
   $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
   if (count($allowed_statuses) === 1) {
+    $keys = array_keys($allowed_statuses);
     // Just present a single button to change the status.
-    $next_status = array_keys($allowed_statuses);
     $form['status_wrapper']['status'] = array(
       '#type' => 'value',
-      '#value' => key($next_status),
+      '#value' => reset($keys),
     );
-    $submit_text = current($allowed_statuses);
+    $submit_text = reset($allowed_statuses);
   }
   else {
     $form['status_wrapper']['status'] = array(
@@ -138,20 +138,27 @@ function personalize_status_change_form($form, &$form_state, $agent_data) {
  * Submit callback for the status change form.
  */
 function personalize_status_change_form_submit(&$form, &$form_state) {
-  $agent_name = $form_state['values']['agent_name'];
-  if (!empty($form_state['values']['status'])) {
+  if (isset($form_state['values']['status'])) {
     $status = $form_state['values']['status'];
-    if ($status == PERSONALIZE_STATUS_COMPLETED) {
-      // Redirect to a confirm form as this has more serious implications than
-      // other status changes.
-      $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
-    }
-    else {
-      // Otherwise just change the status as requested.
-      $status_map = personalize_get_agent_status_map();
-      if (personalize_agent_set_status($agent_name, $status)) {
-        drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
-      }
+  }
+  else if (isset($form_state['triggering_element']['#personalize_next_status'])) {
+    $status = $form_state['triggering_element']['#personalize_next_status'];
+  }
+  if (empty($status)) {
+    dpm($form_state['values'], 'no status');
+    return;
+  }
+  $agent_name = $form_state['values']['agent_name'];
+  if ($status == PERSONALIZE_STATUS_COMPLETED) {
+    // Redirect to a confirm form as this has more serious implications than
+    // other status changes.
+    $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
+  }
+  else {
+    // Otherwise just change the status as requested.
+    $status_map = personalize_get_agent_status_map();
+    if (personalize_agent_set_status($agent_name, $status)) {
+      drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
     }
   }
 }
@@ -391,6 +398,10 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         $start_date = personalize_agent_get_start_date($agent->machine_name);
         array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
       }
+      // Remove the status change for a completed campaign.
+      if ($status === PERSONALIZE_STATUS_COMPLETED) {
+        array_splice($tablerow, 2, 1);
+      }
 
       $rows[] = $tablerow;
     }
@@ -398,6 +409,9 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     $build_header = $header;
     if ($status === PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_SCHEDULED) {
       array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
+    }
+    if ($status === PERSONALIZE_STATUS_COMPLETED) {
+      array_splice($build_header, 2, 1);
     }
 
     $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
