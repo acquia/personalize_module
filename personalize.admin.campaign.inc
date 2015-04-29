@@ -161,12 +161,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
   );
   if (!empty($agent_data->machine_name)) {
-    // Save the current subform.
-    $form['process_bar']['actions']['save'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-    );
-
     // Change campaign status.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
     $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
@@ -176,6 +170,12 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
       'wrapper' => 'personalize-campaign-wizard-process-bar',
       'effect' => 'fade',
+    );
+
+    // Save the current subform.
+    $form['process_bar']['actions']['save'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save'),
     );
   }
 

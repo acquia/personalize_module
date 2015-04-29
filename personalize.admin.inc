@@ -103,7 +103,7 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
   );
   switch($agent_status) {
     case PERSONALIZE_STATUS_NOT_STARTED:
-      // Just present a start button, no need for a dropdown.
+      // Just present a Start button, no need for a dropdown.
       $form['status'] = array(
         '#type' => 'value',
         '#value' => PERSONALIZE_STATUS_RUNNING
@@ -111,7 +111,7 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
       $submit_text = t('Start');
       break;
     case PERSONALIZE_STATUS_RUNNING:
-      // Just present  Pause button, not need for a dropdown.
+      // Just present a Pause button, not need for a dropdown.
       $form['status'] = array(
         '#type' => 'value',
         '#value' => PERSONALIZE_STATUS_PAUSED

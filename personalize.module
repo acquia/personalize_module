@@ -1021,22 +1021,12 @@ function _personalize_agent_get_starttime_variable($agent_name) {
  *   - text to display
  */
 function _personalize_status_toggle_next($current_status) {
-  switch ($current_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_PAUSED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Resume');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      $new_status = PERSONALIZE_STATUS_PAUSED;
-      $button_text = t('Pause');
-      break;
-    default:
-      $new_status = FALSE;
-      $button_text = '';
+  $allowed_status = personalize_allowed_status_transitions($current_status);
+  $new_status = FALSE;
+  $button_text = '';
+  if (isset($allowed_status['toggle_to'])) {
+    $new_status = $allowed_status['toggle_to'];
+    $button_text = personalize_get_agent_toggle_button_text($current_status);
   }
   return array($new_status, $button_text);
 }
@@ -1157,29 +1147,29 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
 /**
  * Returns the allowed next statuses for each status.
  *
+ * @param $status
+ *   The current status of the agent.
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
- *
- * @todo This should really replace _personalize_status_toggle_next or they
- *   should be made to work together. There are too many functions about status
- *   changes :/
  */
 function personalize_allowed_status_transitions($status = NULL) {
   $transitions = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(
-      PERSONALIZE_STATUS_RUNNING
+      'toggle_to' => PERSONALIZE_STATUS_RUNNING,
     ),
+    // "running" can toggle to "paused".
     PERSONALIZE_STATUS_RUNNING => array(
-      PERSONALIZE_STATUS_PAUSED,
-      PERSONALIZE_STATUS_COMPLETED
+      'toggle_to' => PERSONALIZE_STATUS_PAUSED,
+      PERSONALIZE_STATUS_COMPLETED,
     ),
+    // "paused" can toggle to "running".
     PERSONALIZE_STATUS_PAUSED => array(
-      PERSONALIZE_STATUS_RUNNING,
-      PERSONALIZE_STATUS_COMPLETED
+      'toggle_to' => PERSONALIZE_STATUS_RUNNING,
+      PERSONALIZE_STATUS_COMPLETED,
     ),
     PERSONALIZE_STATUS_COMPLETED => array(
-      PERSONALIZE_STATUS_PAUSED
+      PERSONALIZE_STATUS_PAUSED,
     ),
   );
   if (!empty($status) && isset($transitions[$status])) {
@@ -1624,6 +1614,23 @@ function personalize_get_agent_status_map() {
     PERSONALIZE_STATUS_PAUSED => t('Paused'),
     PERSONALIZE_STATUS_COMPLETED => t('Completed'),
   );
+}
+
+/**
+ * Returns a map of "from" status codes to "to" human-readable statuses.
+ *
+ * @param $current_status
+ *   The agent current status which the button is switching from.
+ * @return string
+ *   The button's text which the button is switching to.
+ */
+function personalize_get_agent_toggle_button_text($current_status) {
+  $map = array(
+    PERSONALIZE_STATUS_NOT_STARTED => t('Start'),
+    PERSONALIZE_STATUS_RUNNING => t('Pause'),
+    PERSONALIZE_STATUS_PAUSED => t('Resume'),
+  );
+  return isset($map[$current_status]) ? $map[$current_status] : '';
 }
 
 /**
