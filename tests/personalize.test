@@ -1981,6 +1981,29 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
     $this->assertEqual(0, personalize_agent_get_start_date($machine_name));
     $this->assertEqual(0, personalize_agent_get_stop_date($machine_name));
+
+    // Update to start in the past and access the review form.
+    $start_date = $end_date = strtotime('-7 days midnight');
+    personalize_agent_set_start_date($machine_name, $start_date);
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/review");
+    $this->assertText(t('The scheduled dates for this personalization have already passed.'));
+
+    // Update to stop in the past and access the review form.
+    $start_date = strtotime('+7 days midnight');
+    personalize_agent_set_start_date($machine_name, $start_date);
+    personalize_agent_set_stop_date($machine_name, $end_date);
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/review");
+    $this->assertText(t('The scheduled dates for this personalization have already passed.'));
+
+    // Remove the end date and verify that the agent can now be scheduled.
+    personalize_agent_set_stop_date($machine_name, 0);
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/review");
+    $this->assertNoText(t('The scheduled dates for this personalization have already passed.'));
+    module_load_include('inc', 'personalize', 'personalize.admin.campaign');
+    $button_text = t("Start on @start_date", array('@start_date' => _personalize_campaign_wizard_date($start_date)));
+    $this->drupalPost(NULL, array(), $button_text);
+    $status = personalize_agent_get_status($machine_name);
+    $this->assertEqual($status, PERSONALIZE_STATUS_SCHEDULED);
   }
 
   /**
