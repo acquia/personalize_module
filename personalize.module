@@ -2289,26 +2289,14 @@ function personalize_personalize_option_set_load($option_sets) {
  * Returns all Option Sets of a given type.
  */
 function personalize_option_set_load_by_type($type, $sort = NULL) {
-  $option_sets = &drupal_static(__FUNCTION__, array());
-
-  if (!isset($option_sets[$type])) {
-    $option_sets[$type] = personalize_option_set_load_multiple(FALSE, array('plugin' => $type), FALSE, $sort);
-  }
-
-  return $option_sets[$type];
+  return personalize_option_set_load_multiple(FALSE, array('plugin' => $type), FALSE, $sort);
 }
 
 /**
  * Returns all Option Sets for a given agent.
  */
 function personalize_option_set_load_by_agent($agent_name, $reset = FALSE) {
-  $option_sets = &drupal_static(__FUNCTION__, array());
-
-  if ($reset || !isset($option_sets[$agent_name])) {
-    $option_sets[$agent_name] = personalize_option_set_load_multiple(FALSE, array('agent' => $agent_name), $reset);
-  }
-
-  return $option_sets[$agent_name];
+  return personalize_option_set_load_multiple(FALSE, array('agent' => $agent_name), $reset);
 }
 
 /**
