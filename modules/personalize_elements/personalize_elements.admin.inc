@@ -486,7 +486,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
 function personalize_elements_element_delete($form, $form_state, $option_set) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $option_set->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $option_set->label);
-  $form['agent'] = array('#type' => 'hidden', '#value' => $option_set->agent);
+  $form['agent'] = array('#type' => 'value', '#value' => $option_set->agent);
   return confirm_form($form, t('Are you sure you want to delete the element %title?', array('%title' => $option_set->label)), 'admin/structure/personalize/manage/' . $option_set->agent . '/variations', '', t('Delete'), t('Cancel'));
 }
 

@@ -488,7 +488,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
 function personalize_blocks_block_delete($form, $form_state, $pblock) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $pblock->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $pblock->data['block_title']);
-  $form['agent'] = array('#type' => 'hidden', '#value' => $pblock->agent);
+  $form['agent'] = array('#type' => 'value', '#value' => $pblock->agent);
   return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize/manage/' . $pblock->agent . '/variations', '', t('Delete'), t('Cancel'));
 }
 
