@@ -477,7 +477,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
       personalize_blocks_replace_existing($form_state['values']['original_block'], $pblock);
     }
     else {
-      $form_state['redirect'] = 'admin/structure/personalize';
+      $form_state['redirect'] = 'admin/structure/personalize/manage/' . $pblock->agent . '/variations';
     }
   }
 }
@@ -488,7 +488,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
 function personalize_blocks_block_delete($form, $form_state, $pblock) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $pblock->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $pblock->data['block_title']);
-  return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize', '', t('Delete'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize/manage/' . $pblock->agent . '/variations', '', t('Delete'), t('Cancel'));
 }
 
 /**
@@ -499,6 +499,13 @@ function personalize_blocks_block_delete_submit($form, &$form_state) {
   drupal_set_message(t('The personalize_blocks instance %name has been removed.', array('%name' => $form_state['values']['title'])));
   cache_clear_all();
   $form_state['redirect'] = 'admin/structure/personalize';
+  // Find the agent's machine name and use it to redirect to the agent's page, if possible.
+  foreach ($form_state['build_info']['args'] as $arg) {
+    if (!isset($arg->osid, $arg->agent) || $arg->osid !== $form_state['values']['osid']) {
+      continue;
+    }
+    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $arg->agent . '/variations';
+  }
 }
 
 /**
@@ -534,7 +541,7 @@ function personalize_blocks_block_option_delete_submit($form, &$form_state) {
   personalize_option_set_save($option_set);
   drupal_set_message(t('The variation %option_label has been removed from the %block_title personalized block.', array('%option_label' => $form_state['values']['option_label'], '%block_title' => $form_state['values']['block_title'])));
   cache_clear_all();
-  $form_state['redirect'] = 'admin/structure/personalize';
+  $form_state['redirect'] = 'admin/structure/personalize/manage/' . $option_set->agent . '/variations';
 }
 
 /**

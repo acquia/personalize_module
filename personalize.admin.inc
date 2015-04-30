@@ -550,7 +550,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
   return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
     '%goal' => $options[$goal->action],
     '%campaign' => $campaign->label,
-  )), 'admin/structure/personalize', $description);
+  )), 'admin/structure/personalize/manage/' . $goal->agent . '/variations', $description);
 }
 
 /**
@@ -558,7 +558,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
  */
 function personalize_admin_goal_delete_submit($form, &$form_state) {
   personalize_goal_delete($form_state['values']['goal']->id);
-  $form_state['redirect'] = 'admin/structure/personalize';
+  $form_state['redirect'] = 'admin/structure/personalize/manage/' . $form_state['values']['goal']->agent . '/variations';
 }
 
 /**

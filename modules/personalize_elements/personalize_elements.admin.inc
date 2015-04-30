@@ -406,7 +406,7 @@ function personalize_elements_form_submit($form, &$form_state) {
     }
     personalize_option_set_save($option_set);
     drupal_set_message(t('The option set was saved.'));
-    $form_state['redirect'] = 'admin/structure/personalize';
+    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $option_set->agent . '/variations';
   }
 }
 
@@ -486,7 +486,7 @@ function personalize_elements_convert_form_values_to_option_set($values) {
 function personalize_elements_element_delete($form, $form_state, $option_set) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $option_set->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $option_set->label);
-  return confirm_form($form, t('Are you sure you want to delete the element %title?', array('%title' => $option_set->label)), 'admin/structure/personalize', '', t('Delete'), t('Cancel'));
+  return confirm_form($form, t('Are you sure you want to delete the element %title?', array('%title' => $option_set->label)), 'admin/structure/personalize/manage/' . $option_set->agent . '/variations', '', t('Delete'), t('Cancel'));
 }
 
 /**
@@ -496,6 +496,13 @@ function personalize_elements_element_delete_submit($form, &$form_state) {
   personalize_option_set_delete($form_state['values']['osid']);
   drupal_set_message(t('The personalized element %name has been removed.', array('%name' => $form_state['values']['title'])));
   $form_state['redirect'] = 'admin/structure/personalize';
+  // Find the agent's machine name and use it to redirect to the agent's page, if possible.
+  foreach ($form_state['build_info']['args'] as $arg) {
+    if (!isset($arg->osid, $arg->agent) || $arg->osid !== $form_state['values']['osid']) {
+      continue;
+    }
+    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $arg->agent . '/variations';
+  }
 }
 
 /**
