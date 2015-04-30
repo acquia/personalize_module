@@ -484,83 +484,6 @@ function personalize_agent_complete_form_submit($form, &$form_state) {
 }
 
 /**
- * Menu callback for displaying a list of content variations.
- */
-function personalize_option_set_list($form, &$form_state) {
-  $option_sets = personalize_option_set_load_multiple(FALSE, array(), FALSE, 'label');
-
-  $header = array(
-    array('data' => t('Variation set name')),
-    array('data' => t('Type')),
-    array('data' => t('Personalization')),
-    array('data' => t('Edit')),
-    array('data' => t('Delete')),
-  );
-
-  $types = array();
-  $rows = array();
-  $filter = isset($form_state['values']['filter']) ? $form_state['values']['filter'] : '';
-  foreach($option_sets as $option_set) {
-    $types[$option_set->plugin] = $option_set->plugin;
-    if (!empty($filter) && $filter != $option_set->plugin) {
-      continue;
-    }
-    $campaign = personalize_agent_load($option_set->agent);
-    if (empty($campaign)) {
-      continue;
-    }
-    $option_set_plugin = personalize_get_option_set_type($option_set->plugin);
-    $edit_link = module_hook($option_set_plugin['module'], 'personalize_edit_link') ? module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set) : '';
-    $delete_link = module_hook($option_set_plugin['module'], 'personalize_delete_link') ? module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set) : '';
-    $rows[] = array(
-      check_plain($option_set->label),
-      $option_set->plugin,
-      l($campaign->label, 'admin/structure/personalize/manage/' . $option_set->agent . '/variations'),
-      !empty($edit_link) ? l(t('edit'), $edit_link) : '',
-      !empty($delete_link) ? l(t('delete'), $delete_link) : '',
-    );
-  }
-
-  // Links to create new option sets of each type.
-  $form['add'] = array(
-    '#type' => 'markup',
-    '#markup' => personalize_get_create_new_links_dropbutton('admin/structure/personalize/variations'),
-  );
-
-  // Include a filter by variation set type.
-  if (count($types) > 0) {
-    $types = array_merge(array('' => t('All')), $types);
-    $form['filter'] = array(
-      '#type' => 'select',
-      '#title' => t('Filter by type'),
-      '#options' => $types,
-      '#ajax' => array(
-        'callback' => 'personalize_option_set_list_ajax_callback',
-        'wrapper' => 'personalize-variation-sets',
-      )
-    );
-  }
-
-  $form['results'] = array(
-    '#markup' => theme('table', array(
-      'header' => $header,
-      'rows' => $rows,
-      'attributes' => array(
-        'id' => 'personalize-variation-sets',
-      ),
-    )),
-  );
-  return $form;
-}
-
-/**
- * Ajax submit handler used to filter the content variation list page.
- */
-function personalize_option_set_list_ajax_callback($form, &$form_state) {
-  return $form['results'];
-}
-
-/**
  * Menu callback for displaying a list of campaign goals.
  */
 function personalize_goals_list($form, &$form_state) {
@@ -627,7 +550,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
   return confirm_form($form, t('Are you sure you want to delete %goal from %campaign?', array(
     '%goal' => $options[$goal->action],
     '%campaign' => $campaign->label,
-  )), 'admin/structure/personalize/goals', $description);
+  )), 'admin/structure/personalize/manage/' . $goal->agent . '/goals', $description);
 }
 
 /**
@@ -635,7 +558,7 @@ function personalize_admin_goal_delete($form, &$form_state, $goal) {
  */
 function personalize_admin_goal_delete_submit($form, &$form_state) {
   personalize_goal_delete($form_state['values']['goal']->id);
-  $form_state['redirect'] = 'admin/structure/personalize/goals';
+  $form_state['redirect'] = 'admin/structure/personalize/manage/' . $form_state['values']['goal']->agent . '/goals';
 }
 
 /**
