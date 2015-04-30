@@ -488,6 +488,7 @@ function personalize_blocks_form_submit($form, &$form_state) {
 function personalize_blocks_block_delete($form, $form_state, $pblock) {
   $form['osid'] = array('#type' => 'hidden', '#value' => $pblock->osid);
   $form['title'] = array('#type' => 'hidden', '#value' => $pblock->data['block_title']);
+  $form['agent'] = array('#type' => 'hidden', '#value' => $pblock->agent);
   return confirm_form($form, t('Are you sure you want to delete the personalized_block block %title?', array('%title' => $pblock->data['block_title'])), 'admin/structure/personalize/manage/' . $pblock->agent . '/variations', '', t('Delete'), t('Cancel'));
 }
 
@@ -498,14 +499,7 @@ function personalize_blocks_block_delete_submit($form, &$form_state) {
   personalize_option_set_delete($form_state['values']['osid']);
   drupal_set_message(t('The personalize_blocks instance %name has been removed.', array('%name' => $form_state['values']['title'])));
   cache_clear_all();
-  $form_state['redirect'] = 'admin/structure/personalize';
-  // Find the agent's machine name and use it to redirect to the agent's page, if possible.
-  foreach ($form_state['build_info']['args'] as $arg) {
-    if (!isset($arg->osid, $arg->agent) || $arg->osid !== $form_state['values']['osid']) {
-      continue;
-    }
-    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $arg->agent . '/variations';
-  }
+  $form_state['redirect'] = 'admin/structure/personalize/manage/' . $form_state['values']['agent'] . '/variations';
 }
 
 /**

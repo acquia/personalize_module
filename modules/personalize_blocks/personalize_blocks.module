@@ -9,7 +9,7 @@ function personalize_blocks_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('personalize_blocks_form', 'add'),
     'access arguments' => array('manage personalized content'),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
     'file' => 'personalize_blocks.admin.inc',
   );
   $items['admin/structure/personalize/variations/personalize-blocks/manage/%personalize_block'] = array(
