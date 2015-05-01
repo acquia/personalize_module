@@ -87,58 +87,47 @@ function personalize_admin_form_submit($form, &$form_state) {
 /**
  * Form for changing the status of an agent.
  *
- * @param $agent_name
- *   THe name of the agent the form is for.
- * @param array $agent_status
- *   The current status of the agent.
+ * @param stdClass $agent_data
+ *   The standard data for the agent to change.
  * @return array
  *   Array representing the status change form.
  */
-function personalize_status_change_form($form, &$form_state, $agent_name, $agent_status) {
-  $friendly_statuses = personalize_get_agent_status_map();
+function personalize_status_change_form($form, &$form_state, $agent_data) {
+  $agent_status = personalize_agent_get_status($agent_data->machine_name);
   $form = array();
   $form['agent_name'] = array(
     '#type' => 'value',
-    '#value' => $agent_name,
+    '#value' => $agent_data->machine_name,
   );
-  switch($agent_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      // Just present a start button, no need for a dropdown.
-      $form['status'] = array(
-        '#type' => 'value',
-        '#value' => PERSONALIZE_STATUS_RUNNING
-      );
-      $submit_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      // Just present  Pause button, not need for a dropdown.
-      $form['status'] = array(
-        '#type' => 'value',
-        '#value' => PERSONALIZE_STATUS_PAUSED
-      );
-      $submit_text = t('Pause');
-      break;
-    default:
-      // Present a dropdown of all available next statuses.
-      $allowed_statuses = personalize_allowed_status_transitions($agent_status);
-      $options = array(
-        '' => t('--Select--')
-      );
-      foreach ($allowed_statuses as $status) {
-        $options[$status] = $friendly_statuses[$status];
-      }
-      $form['status'] = array(
-        '#prefix' => '<div class="personalize-status-change-select">',
-        '#suffix' => '</div>',
-        '#type' => 'select',
-        '#options' => $options,
-        '#default_value' => '',
-      );
-      $submit_text = t('Change');
-      break;
+  $form['status_wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-status-change'),
+    ),
+    '#tree' => FALSE,
+  );
+  // Present a dropdown of all available next statuses.
+  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
+  if (count($allowed_statuses) === 1) {
+    $keys = array_keys($allowed_statuses);
+    // Just present a single button to change the status.
+    $form['status_wrapper']['status'] = array(
+      '#type' => 'value',
+      '#value' => reset($keys),
+    );
+    $submit_text = reset($allowed_statuses);
+  }
+  else {
+    $form['status_wrapper']['status'] = array(
+      '#type' => 'select',
+      '#options' => $allowed_statuses,
+      '#default_value' => '',
+      '#empty_option' => t('--Select--'),
+    );
+    $submit_text = t('Change');
   }
 
-  $form['submit'] = array(
+  $form['status_wrapper']['submit'] = array(
     '#type' => 'submit',
     '#value' => $submit_text
   );
@@ -149,20 +138,26 @@ function personalize_status_change_form($form, &$form_state, $agent_name, $agent
  * Submit callback for the status change form.
  */
 function personalize_status_change_form_submit(&$form, &$form_state) {
-  $agent_name = $form_state['values']['agent_name'];
-  if (!empty($form_state['values']['status'])) {
+  if (isset($form_state['values']['status'])) {
     $status = $form_state['values']['status'];
-    if ($status == PERSONALIZE_STATUS_COMPLETED) {
-      // Redirect to a confirm form as this has more serious implications than
-      // other status changes.
-      $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
-    }
-    else {
-      // Otherwise just change the status as requested.
-      $status_map = personalize_get_agent_status_map();
-      if (personalize_agent_set_status($agent_name, $status)) {
-        drupal_set_message(t('Set the status of personalization @campaign to @status', array('@campaign' => $agent_name, '@status' => $status_map[$status])));
-      }
+  }
+  else if (isset($form_state['triggering_element']['#personalize_next_status'])) {
+    $status = $form_state['triggering_element']['#personalize_next_status'];
+  }
+  if (empty($status)) {
+    return;
+  }
+  $agent_name = $form_state['values']['agent_name'];
+  if ($status == PERSONALIZE_STATUS_COMPLETED) {
+    // Redirect to a confirm form as this has more serious implications than
+    // other status changes.
+    $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
+  }
+  else {
+    // Otherwise just change the status as requested.
+    $status_map = personalize_get_agent_status_map();
+    if (personalize_agent_set_status($agent_name, $status)) {
+      drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
     }
   }
 }
@@ -329,6 +324,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
   }
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
+    PERSONALIZE_STATUS_SCHEDULED => array(),
     PERSONALIZE_STATUS_RUNNING => array(),
     PERSONALIZE_STATUS_PAUSED => array(),
     PERSONALIZE_STATUS_COMPLETED => array()
@@ -348,6 +344,9 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
         $description = t('This table lists personalizations that have never been started.');
+        break;
+      case PERSONALIZE_STATUS_SCHEDULED:
+        $description = t('This table lists personalizations that are scheduled to start in the future.');
         break;
       case PERSONALIZE_STATUS_RUNNING:
         $description = t('This table lists personalizations that are displaying personalized content to website visitors for each variation set.');
@@ -380,7 +379,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         }
       }
 
-      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent->machine_name, $status);
+      $status_change_form = drupal_get_form("personalize_change_status_{$agent->machine_name}_form", $agent);
       // @todo We are ignoring the "storage" info and the clone/export functionality
       //   for now. Revisit once we can provide full support for clone/export.
       $plugin = personalize_agent_load_agent($agent->machine_name);
@@ -390,21 +389,28 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
         array('data' => $allow_edit ? l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name . '/edit') : ''),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface && ($status > PERSONALIZE_STATUS_NOT_STARTED) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && !empty($agent->started) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
         array('data' => $delete_link),
       );
       // Show the scheduled start date for campaigns that aren't running yet.
-      if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+      if ($status === PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_SCHEDULED) {
         $start_date = personalize_agent_get_start_date($agent->machine_name);
         array_splice($tablerow, 1, 0, array('data' => $start_date > 0 ? format_date($start_date, 'custom', 'M d, Y') : ''));
+      }
+      // Remove the status change for a completed campaign.
+      if ($status === PERSONALIZE_STATUS_COMPLETED) {
+        array_splice($tablerow, 2, 1);
       }
 
       $rows[] = $tablerow;
     }
     // Add the scheduled start date in to the "not started" table headers.
     $build_header = $header;
-    if ($status === PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status === PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_SCHEDULED) {
       array_splice($build_header, 1, 0, array('data' => t('Scheduled start')));
+    }
+    if ($status === PERSONALIZE_STATUS_COMPLETED) {
+      array_splice($build_header, 2, 1);
     }
 
     $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
@@ -562,109 +568,6 @@ function personalize_admin_goal_delete_submit($form, &$form_state) {
 }
 
 /**
- * Returns a form with just a submit button for changing the status of an agent.
- *
- * @param $agent_name
- *   The name of the campaign for which to toggle status.
- * @param $current_status
- *   The current status of the campaign, should match defined constant values.
- * @param $ajax_callback
- *   A callback function to apply Ajax settings to the form.
- */
-function personalize_status_toggle_form($form, &$form_state, $agent_name, $current_status, $ajax_callback = NULL) {
-  // If called via Ajax, then retrieve the new status values from the previous submit.
-  if (!empty($form_state['values']['agent'])) {
-    $agent_data = personalize_agent_load($agent_name);
-    $current_status = personalize_agent_get_status($agent_data->machine_name);
-  }
-  $form = personalize_status_toggle_form_definition($agent_name, $current_status, FALSE, $ajax_callback);
-  return $form;
-}
-
-/**
- * Gets the form fields that define the status toggle form.
- *
- * @param $agent_name
- *   The name of the campaign for which to toggle status.
- * @param $current_status
- *   The current status of the campaign, should match defined constant values.
- * @param $add_handlers
- *   Indicates if submit/validate handlers need to be added to the submit.
- *   These are only needed if the form is included within another form.
- * @param $ajax_callback
- *   A callback function to apply Ajax settings to the form.
- */
-function personalize_status_toggle_form_definition($agent_name, $current_status, $add_handlers = FALSE, $ajax_callback = NULL) {
-  $form = array();
-  $form['#prefix'] = '<div id="personalize-status-toggle-form">';
-  $form['#suffix'] = '</div>';
-
-  list($new_status, $button_text) = _personalize_status_toggle_next($current_status);
-  if (!$new_status) {
-    return array();
-  }
-  $form['agent'] = array(
-    '#type' => 'value',
-    '#value' => $agent_name,
-  );
-  $form['status'] = array(
-    '#type' => 'value',
-    '#value' => $new_status,
-  );
-  $form['actions']['toggle_form'] = array(
-    '#type' => 'submit',
-    '#name' => 'toggle_submit',
-    '#value' => $button_text,
-    '#attributes' => array(
-      'class' => array('action-item-primary-active'),
-    ),
-  );
-  if ($add_handlers) {
-    $form['actions']['toggle_form']['#submit'] = array('personalize_status_toggle_form_submit');
-  }
-  if (is_callable($ajax_callback)) {
-    $form = $ajax_callback($form);
-  }
-  return $form;
-}
-
-/**
- * Submit handler for the agent status toggle form.
- */
-function personalize_status_toggle_form_submit($form, &$form_state) {
-  $status_map = personalize_get_agent_status_map();
-  if (personalize_agent_set_status($form_state['values']['agent'], $form_state['values']['status'])) {
-    switch ($form_state['values']['status']) {
-      case PERSONALIZE_STATUS_RUNNING:
-        drupal_set_message(t('The personalization "@agent" is now live.', array(
-          '@agent' => $form_state['values']['agent'],
-        )));
-        break;
-      case PERSONALIZE_STATUS_PAUSED:
-      case PERSONALIZE_STATUS_COMPLETED:
-        drupal_set_message(t('The personalization "@agent" is @status.', array(
-          '@agent' => $form_state['values']['agent'],
-          '@status' => drupal_strtolower($status_map[$form_state['values']['status']]),
-        )));
-        break;
-      default:
-        drupal_set_message(t('The status of personalization @agent has been set to @status', array(
-          '@agent' => $form_state['values']['agent'],
-          '@status' => drupal_strtolower($status_map[$status_map[$form_state['values']['status']]]),
-        )));
-    }
-  }
-  else {
-    drupal_set_message(t('There was a problem setting the status of personalization @agent to @status', array(
-      '@agent' => $form_state['values']['agent'],
-      '@status' => drupal_strtolower($status_map[$form_state['values']['status']]))
-    ), 'error');
-  }
-  personalize_status_toggle_message($form_state['values']['agent'], $form_state['values']['status']);
-  $form_state['redirect'] = 'admin/structure/personalize';
-}
-
-/**
  * Update messaging when the user changes the status of a campaign.
  */
 function personalize_status_toggle_message($agent_name, $current_status) {
@@ -709,133 +612,6 @@ function personalize_status_toggle_message($agent_name, $current_status) {
     $theme_variables['option_message'] = t('All visitors will see the following variations:');
   }
   drupal_set_message(theme('personalize_campaign_status_update', $theme_variables));
-}
-
-/**
- * Generate the form array to set campaign dates.
- *
- * @param $agent_name
- *   (optional) The machine name for the campaign.
- * @return array
- *   The renderable form array for the end date form fields.
- */
-function personalize_agent_date_form($agent_name = NULL) {
-  if (!empty($agent_name)) {
-    $agent_end = $default_end = personalize_agent_get_stop_date($agent_name);
-    $agent_start = $default_start = personalize_agent_get_start_date($agent_name);
-  }
-  else {
-    $agent_end = 0;
-    $agent_start = 0;
-  }
-  // Default the start date to one month and the end date to one month if the
-  // campaign is new or does not yet have an end date set.
-  if ($agent_start == 0) {
-    $default_start = strtotime('+1 month');
-  }
-  if ($agent_end == 0) {
-    $default_end = strtotime('+1 month');
-  }
-
-  $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
-  $form['campaign_start'] = array(
-    '#type' => 'radios',
-    '#title' => t('Personalization start date'),
-    '#options' => array(
-      'none' => t('Start manually'),
-      'specified' => t('Start on selected date'),
-    ),
-    '#default_value' => $agent_start == 0 ? 'none' : 'specified',
-  );
-  $form['campaign_start_date'] = array(
-    '#type' => 'date',
-    '#default_value' => $agent_start_date,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="campaign_start"]' => array('value' => 'specified'),
-      ),
-    ),
-  );
-  $agent_end_date = array('year' => date('Y', $default_end), 'month' => intval(date('m', $default_end)), 'day' => date('d', $default_end));
-  $form['campaign_end'] = array(
-    '#type' => 'radios',
-    '#title' => t('Personalization end date'),
-    '#options' => array(
-      'none' => t('End manually'),
-      'specified' => t('End on selected date'),
-    ),
-    '#default_value' => $agent_end == 0 ? 'none' : 'specified',
-  );
-  $form['campaign_end_date'] = array(
-    '#type' => 'date',
-    '#default_value' => $agent_end_date,
-    '#states' => array(
-      'visible' => array(
-        ':input[name="campaign_end"]' => array('value' => 'specified'),
-      ),
-    ),
-  );
-  drupal_alter('personalize_agent_date_form', $form, $agent_name);
-  return $form;
-}
-
-/**
- * Validate the campaign date form values.
- *
- * @param $values
- *   An array of values to validate.
- */
-function personalize_agent_date_form_validate($values) {
-  $start_date = 0;
-  $end_date = 0;
-  if (isset($values['campaign_start']) && $values['campaign_start'] === 'specified') {
-    $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
-    if ($start_date < time()) {
-      form_set_error('campaign_start_date', t('When provided, the start date for the personalization must be in the future.'));
-    }
-  }
-  if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
-    $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
-    if ($end_date < time()) {
-      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be in the future.'));
-    }
-  }
-  if ($start_date > 0 && $end_date > 0) {
-    if ($end_date <= $start_date) {
-      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be after the start date for the personalization.'));
-    }
-  }
-}
-
-/**
- * Save an agent campaign start and end date values.
- *
- * @param $agent_name
- *   The name of the campaign.
- * @param $values
- *   An array of campaign end date values.
- */
-function personalize_agent_date_form_submit($agent_name, $values) {
-  if (!empty($values['campaign_start'])) {
-    // Set the start date.
-    if ($values['campaign_start'] === 'specified') {
-      $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
-    }
-    else {
-      $start_date = 0;
-    }
-    personalize_agent_set_start_date($agent_name, $start_date);
-  }
-  if (!empty($values['campaign_end'])) {
-    // Set the end date.
-    if ($values['campaign_end'] === 'specified') {
-      $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
-    }
-    else {
-      $end_date = 0;
-    }
-    personalize_agent_set_stop_date($agent_name, $end_date);
-  }
 }
 
 /**
