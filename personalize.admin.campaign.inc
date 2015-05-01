@@ -148,7 +148,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
   else {
     // Disable the reporting link if the agent has not yet been started.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    if ($agent_status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if (empty($agent_status->started)) {
       $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
     }
   }
@@ -168,15 +168,10 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     );
 
     // Change campaign status.
-    $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    $form['process_bar']['actions']['status'] = personalize_status_toggle_form_definition($agent_data->machine_name, $agent_status, FALSE, NULL);
-    // Add AJAX callback.
-    $form['process_bar']['actions']['status']['actions']['toggle_form']['#submit'] = array('personalize_campaign_wizard_ajax_status_submit');
-    $form['process_bar']['actions']['status']['actions']['toggle_form']['#ajax'] = array(
-      'callback' => 'personalize_campaign_wizard_ajax_process_bar_callback',
-      'wrapper' => 'personalize-campaign-wizard-process-bar',
-      'effect' => 'fade',
-    );
+    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data);
+    // Assign the submit handler to the button to bypass full form submission.
+    $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
+    $form['process_bar']['actions']['status']['status_wrapper']['submit']['#submit'] = array('personalize_status_change_form_submit');
   }
 
   // Instructions and help.
@@ -245,6 +240,9 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
       'class' => array('action-item-primary-active'),
     ),
   );
+  if (isset($current_info['next_status'])) {
+    $form['actions']['submit']['#personalize_next_status'] = $current_info['next_status'];
+  }
 
   return $form;
 }
@@ -277,6 +275,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
   $form = array();
   // Base form is shown for all steps so the values are the main values.
   $values = isset($form_state['values']) ? $form_state['values'] : array();
+  $is_new = empty($agent_data->machine_name);
 
   // Make sure we have at least one agent type available.
   $agent_types = personalize_get_agent_types();
@@ -297,7 +296,7 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#markup' => theme('html_tag', array(
       'element' => array(
         '#tag' => 'h2',
-        '#value' => 'Create personalization',
+        '#value' => $is_new ? t('Create personalization') : t('Edit personalization'),
       ),
     )),
   );
@@ -306,10 +305,21 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
     '#type' => 'container',
     '#tree' => TRUE,
   );
-  if (!empty($agent_data->machine_name)) {
+  if (!$is_new) {
     $form['agent_basic_info']['machine_name'] = array(
       '#type' => 'value',
       '#value' => $agent_data->machine_name,
+    );
+    $form['agent_basic_info']['overview'] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('personalize-campaign-overview'),
+      ),
+    );
+    $status_map = personalize_get_agent_status_map();
+    $status = personalize_agent_get_status($agent_data->machine_name);
+    $form['agent_basic_info']['overview']['status'] = array(
+      '#markup' => '<div>' . t('Status: @status', array('@status' => $status_map[$status])) . '</div>',
     );
   }
   if (empty($values['agent_basic_info']['title'])) {
@@ -347,10 +357,10 @@ function personalize_campaign_wizard_base($form, &$form_state, $agent_data, $age
       '#description' => t('Choose which type of agent to create.'),
     );
   }
-  if (empty($agent_data->machine_name)) {
+  if ($is_new) {
     $form['agent_basic_info']['create'] = array(
       '#type' => 'submit',
-      '#value' => t('Create personalization'),
+      '#value' => t('Create and edit'),
       '#disabled' => empty($agent_type_options),
       '#attributes' => array(
         'class' => array('action-item-primary-active'),
@@ -1057,8 +1067,61 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
  *   The agent that defines the functionality for the campaign (if set).
  */
 function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
-  return personalize_agent_date_form($agent_data->machine_name);
+  $agent_end = $default_end = personalize_agent_get_stop_date($agent_data->machine_name);
+  $agent_start = $default_start = personalize_agent_get_start_date($agent_data->machine_name);
+
+  // Default the start date to one month and the end date to one month.
+  if ($agent_start == 0) {
+    $default_start = strtotime('+1 month');
+  }
+  if ($agent_end == 0) {
+    $default_end = strtotime('+1 month');
+  }
+
+  $form['scheduling'] = array(
+    '#type' => 'container',
+    '#tree' => FALSE,
+  );
+
+  $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
+  $form['scheduling']['campaign_start'] = array(
+    '#type' => 'radios',
+    '#title' => t('Personalization start date'),
+    '#options' => array(
+      'none' => t('Start manually'),
+      'specified' => t('Start on selected date'),
+    ),
+    '#default_value' => $agent_start == 0 ? 'none' : 'specified',
+  );
+  $form['scheduling']['campaign_start_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_start_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_start"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
+  $agent_end_date = array('year' => date('Y', $default_end), 'month' => intval(date('m', $default_end)), 'day' => date('d', $default_end));
+  $form['scheduling']['campaign_end'] = array(
+    '#type' => 'radios',
+    '#title' => t('Personalization end date'),
+    '#options' => array(
+      'none' => t('End manually'),
+      'specified' => t('End on selected date'),
+    ),
+    '#default_value' => $agent_end == 0 ? 'none' : 'specified',
+  );
+  $form['scheduling']['campaign_end_date'] = array(
+    '#type' => 'date',
+    '#default_value' => $agent_end_date,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="campaign_end"]' => array('value' => 'specified'),
+      ),
+    ),
+  );
+  return $form;
 }
 
 /**
@@ -1143,6 +1206,14 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
 
   // Get an errors that would prevent submitting the agent.
   $warnings = personalize_verify_agent($agent_data->machine_name, FALSE);
+  $start_date = personalize_agent_get_start_date($agent_data->machine_name);
+  $end_date = personalize_agent_get_stop_date($agent_data->machine_name);
+  if (($start_date > 0 && $start_date < time()) ||
+    ($end_date > 0 && $end_date < time())) {
+    $warnings[] = t('The scheduled dates for this personalization have already passed.  In the <a href="!schedule_url">When</a> section, update or remove the date information.', array(
+      '!schedule_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/scheduling'),
+    ));
+  }
   if (!empty($warnings)) {
     $form_state['storage']['allow_submit'] = FALSE;
     $form['review']['warnings_column'] = array(
@@ -1256,15 +1327,6 @@ function personalize_campaign_wizard_ajax_process_bar_callback($form, &$form_sta
 }
 
 /**
- * Submit handler for the status change button.
- */
-function personalize_campaign_wizard_ajax_status_submit($form, &$form_state) {
-  module_load_include('inc', 'personalize', 'personalize.admin');
-  personalize_status_toggle_form_submit($form, $form_state);
-  $form_state['rebuild'] = TRUE;
-}
-
-/**
  ********************************************************************
  *
  * V A L I D A T I O N
@@ -1336,7 +1398,26 @@ function personalize_campaign_wizard_validate_variations_advanced($form_values, 
  * Custom validation callback for scheduling form.
  */
 function personalize_campaign_wizard_validate_scheduling($form, &$form_state) {
-  personalize_agent_date_form_validate($form_state['values']);
+  $values = $form_state['values'];
+  $start_date = 0;
+  $end_date = 0;
+  if (isset($values['campaign_start']) && $values['campaign_start'] === 'specified') {
+    $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
+    if ($start_date < time()) {
+      form_set_error('campaign_start_date', t('When provided, the start date for the personalization must be in the future.'));
+    }
+  }
+  if (isset($values['campaign_end']) && $values['campaign_end'] === 'specified') {
+    $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+    if ($end_date < time()) {
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be in the future.'));
+    }
+  }
+  if ($start_date > 0 && $end_date > 0) {
+    if ($end_date <= $start_date) {
+      form_set_error('campaign_end_date', t('When provided, the end date for the personalization must be after the start date for the personalization.'));
+    }
+  }
 }
 
 /**
@@ -1374,9 +1455,9 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
     drupal_set_message(t('There was a problem saving the personalization.', 'error'));
   }
 
-  // If the "Start" button was pressed then start the campaign.
-  if ($form_state['triggering_element']['#value'] === t('Start')) {
-    personalize_agent_set_status($agent->machine_name, PERSONALIZE_STATUS_RUNNING);
+  // If a new status was indicated, then update the agent status.
+  if (!empty($form_state['triggering_element']['#personalize_next_status'])) {
+    personalize_agent_set_status($agent->machine_name, $form_state['triggering_element']['#personalize_next_status']);
   }
 
   // Rebuild the form to show the next step.
@@ -1597,7 +1678,34 @@ function personalize_campaign_wizard_submit_goals($form, &$form_state, &$agent_d
  * Submit handler for the scheduling section.
  */
 function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$agent_data) {
-  personalize_agent_date_form_submit($agent_data->machine_name, $form_state['values']);
+  // Grab the original start value.
+  $current_start = personalize_agent_get_start_date($agent_data->machine_name);
+
+  // Submit the new values.
+  $start_date = $end_date = 0;
+  $values = $form_state['values'];
+  if (!empty($values['campaign_start'])) {
+    // Set the start date.
+    if ($values['campaign_start'] === 'specified') {
+      $start_date = strtotime($values['campaign_start_date']['year'] . '-' . $values['campaign_start_date']['month'] . '-' . $values['campaign_start_date']['day']);
+    }
+    personalize_agent_set_start_date($agent_data->machine_name, $start_date);
+  }
+  if (!empty($values['campaign_end'])) {
+    // Set the end date.
+    if ($values['campaign_end'] === 'specified') {
+      $end_date = strtotime($values['campaign_end_date']['year'] . '-' . $values['campaign_end_date']['month'] . '-' . $values['campaign_end_date']['day']);
+    }
+    personalize_agent_set_stop_date($agent_data->machine_name, $end_date);
+  }
+
+  // Show a message if the start schedule changed.
+  if ($current_start != $start_date) {
+    drupal_set_message(t('The scheduled start date has been saved. Your personalization will not be automatically started until it has been finalized by pressing "Start on @start_date" in the <a href="!review_url">review screen</a>.', array(
+      '@start_date' => _personalize_campaign_wizard_date($start_date),
+      '!review_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/review'),
+    )));
+  }
 }
 
 /**
@@ -1609,17 +1717,43 @@ function personalize_campaign_wizard_submit_scheduling($form, &$form_state, &$ag
  */
 
 /**
+ * Formats a date for presentation consistently throughout the wizard.
+ */
+function _personalize_campaign_wizard_date($timestamp) {
+  return date('M j, Y', $timestamp);
+}
+
+/**
  * Generate an array of steps for the wizard based on the type of agent shown.
  *
  * @param stdClass $agent_instance
  *   (Optional) The agent instance for the current agent.
  * @return array
- *   An array of steps.
+ *   An array of steps with the following keys:
+ *   - label: The label to display for the step
+ *   - button_value: The text to display for the step within a button
+ *   - preview_message: (Optional) Any text to give a quick preview of the step
+ *   - next_status: (Optional) The status that should be applied along with
+ *     completing this step.
  */
 function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_instance = NULL) {
   $status = empty($agent_instance) ? PERSONALIZE_STATUS_NOT_STARTED : personalize_agent_get_status($agent_instance->getMachineName());
   $not_running = $status == PERSONALIZE_STATUS_NOT_STARTED || $status == PERSONALIZE_STATUS_PAUSED;
-  $scheduled = !empty($agent_instance) && personalize_agent_get_start_date($agent_instance->getMachineName()) > 0;
+
+  $review_button = t('Save');
+  $review_next_status = '';
+  if ($not_running) {
+    if (!empty($agent_instance) && $start_date = personalize_agent_get_start_date($agent_instance->getMachineName())) {
+      $review_button = t('Start on @date', array(
+        '@date' => _personalize_campaign_wizard_date($start_date),
+      ));
+      $review_next_status = PERSONALIZE_STATUS_SCHEDULED;
+    }
+    else {
+      $review_button = t('Start');
+      $review_next_status = PERSONALIZE_STATUS_RUNNING;
+    }
+  }
 
   $next = t('Next');
   $steps = array(
@@ -1644,14 +1778,20 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
     ),
     'review' => array(
       'label' => t('Review'),
-      'button_value' => $not_running && !$scheduled ? t('Start') : t('Save'),
-      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results')
+      'button_value' => $review_button,
+      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results'),
     ),
     'results' => array(
       'label' => t('Reports'),
       'button_value' => $next,
     )
   );
+
+  // Add any status changes that should happen upon completion of the review
+  // step.
+  if (!empty($review_next_status)) {
+    $steps['review']['next_status'] = $review_next_status;
+  }
   // Remove any steps that aren't applicable to the current agent.
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeAgentGoalInterface)) {
     unset($steps['goals']);

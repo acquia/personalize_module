@@ -25,6 +25,7 @@ define('PERSONALIZE_STATUS_NOT_STARTED', 1);
 define('PERSONALIZE_STATUS_RUNNING', 2);
 define('PERSONALIZE_STATUS_PAUSED', 4);
 define('PERSONALIZE_STATUS_COMPLETED', 8);
+define('PERSONALIZE_STATUS_SCHEDULED', 16);
 
 /**
  * =================================================================================
@@ -318,7 +319,7 @@ function personalize_start_agents() {
   $all_agents = personalize_agent_load_multiple();
   foreach ($all_agents as $agent_name => $agent) {
     $status = personalize_agent_get_status($agent_name);
-    if ($status == PERSONALIZE_STATUS_PAUSED || $status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status == PERSONALIZE_STATUS_SCHEDULED) {
       if (personalize_agent_start_now($agent)) {
         if (personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING)) {
           watchdog('personalize', 'Starting agent @agent based on agent settings', array('@agent' => $agent_name));
@@ -384,11 +385,6 @@ function personalize_agent_start_now($agent_data) {
     // Otherwise if the start time has passed, then the agent should be started.
     $ts = time();
     return $ts >= $start_time;
-  }
-  // No start time explicitly set, but the agent plugin might have some logic
-  // to determine that the agent should be started.
-  if ($agent = personalize_agent_load_agent($agent_data->machine_name)) {
-    return $agent->startNow();
   }
   return FALSE;
 }
@@ -1010,38 +1006,6 @@ function _personalize_agent_get_starttime_variable($agent_name) {
 }
 
 /**
- * Helper function to determine the next status and text to display for
- * changing an agent's status.
- *
- * @param $current_status
- *   The current status of the agent.
- * @return
- *   An array with two values:
- *   - new status value
- *   - text to display
- */
-function _personalize_status_toggle_next($current_status) {
-  switch ($current_status) {
-    case PERSONALIZE_STATUS_NOT_STARTED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Start');
-      break;
-    case PERSONALIZE_STATUS_PAUSED:
-      $new_status = PERSONALIZE_STATUS_RUNNING;
-      $button_text = t('Resume');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      $new_status = PERSONALIZE_STATUS_PAUSED;
-      $button_text = t('Pause');
-      break;
-    default:
-      $new_status = FALSE;
-      $button_text = '';
-  }
-  return array($new_status, $button_text);
-}
-
-/**
  * Set the status of an agent.
  *
  * @param $agent_name
@@ -1058,6 +1022,7 @@ function personalize_agent_set_status($agent_name, $status) {
     PERSONALIZE_STATUS_RUNNING,
     PERSONALIZE_STATUS_PAUSED,
     PERSONALIZE_STATUS_COMPLETED,
+    PERSONALIZE_STATUS_SCHEDULED,
   );
   if (!in_array($status, $allowed_status)) {
     watchdog('personalize', 'Attempt to set an agent to an invalid status');
@@ -1089,7 +1054,7 @@ function personalize_agent_set_status($agent_name, $status) {
     }
   }
 
-  if ($status == PERSONALIZE_STATUS_RUNNING) {
+  if ($status == PERSONALIZE_STATUS_RUNNING || $status == PERSONALIZE_STATUS_SCHEDULED) {
     // Do a check before setting the status to running.
     $errors = personalize_verify_agent($agent_name);
     if (!empty($errors)) {
@@ -1098,15 +1063,14 @@ function personalize_agent_set_status($agent_name, $status) {
     }
     // If we're setting a campaign to the running status for the first time,
     // record the current time as the "started" property of the agent.
-    if ($old_status == PERSONALIZE_STATUS_NOT_STARTED) {
+    if ($status == PERSONALIZE_STATUS_RUNNING) {
       $agent = personalize_agent_load($agent_name);
-      $agent->started = time();
-      personalize_agent_save($agent);
+      if (empty($agent->started)) {
+        $agent->started = time();
+        personalize_agent_save($agent);
+      }
     }
   }
-
-  // Allow modules to act on the agent prior to changing its status.
-  module_invoke_all('personalize_agent_status_presave', $agent_name, $status);
 
   // Set the new status in variables.
   variable_set(_personalize_agent_get_status_variable($agent_name), $status);
@@ -1155,33 +1119,65 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
 }
 
 /**
- * Returns the allowed next statuses for each status.
+ * Returns the allowed next statuses for each status to display as options.
+ *
+ * Note that there are other statuses allowed form each state, but they aren't
+ * displayable options.
+ *
+ * @param $status
+ *   (Optional) The current status to transition from
+ * @param stdClass $agent_data
+ *   (Optional) When provided then agent-specific transition steps can be
+ *   included.  This is used for the "Scheduled" status.
  *
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
- *
- * @todo This should really replace _personalize_status_toggle_next or they
- *   should be made to work together. There are too many functions about status
- *   changes :/
  */
-function personalize_allowed_status_transitions($status = NULL) {
+function personalize_allowed_status_transitions($status = NULL, $agent_data = NULL) {
   $transitions = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(
-      PERSONALIZE_STATUS_RUNNING
+      PERSONALIZE_STATUS_RUNNING => t('Start'),
     ),
     PERSONALIZE_STATUS_RUNNING => array(
-      PERSONALIZE_STATUS_PAUSED,
-      PERSONALIZE_STATUS_COMPLETED
+      PERSONALIZE_STATUS_PAUSED => t('Pause'),
+      // Not displayed by an allowable transition.
+      //PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_PAUSED => array(
-      PERSONALIZE_STATUS_RUNNING,
-      PERSONALIZE_STATUS_COMPLETED
+      PERSONALIZE_STATUS_RUNNING => t('Resume'),
+      PERSONALIZE_STATUS_COMPLETED => t('Complete'),
     ),
     PERSONALIZE_STATUS_COMPLETED => array(
-      PERSONALIZE_STATUS_PAUSED
+      // Not displayed but an allowable transition.
+      //PERSONALIZE_STATUS_PAUSED => t('Make editable'),
     ),
   );
+  if (!empty($agent_data)) {
+    // The scheduled status only applies to agents with a start date set.
+    $start_date = personalize_agent_get_start_date($agent_data->machine_name);
+    if (!empty($start_date) && $start_date > time()) {
+      $transitions[PERSONALIZE_STATUS_SCHEDULED] = array(
+        PERSONALIZE_STATUS_RUNNING => t('Start now'),
+      );
+      if (!empty($agent_data->started)) {
+        // If the agent has been started, then scheduling status moves to and
+        // from the paused status.
+        $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
+        $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
+        // Not displayed but an allowable transition.
+        //$transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
+      }
+      else {
+        // If the agent has not been started, then the scheduling status moves
+        // to and from the not started status.
+        $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
+        $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
+        // Not displayed but an allowable transition.
+        //$transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_NOT_STARTED] = t('Unschedule');
+      }
+    }
+  }
   if (!empty($status) && isset($transitions[$status])) {
     return $transitions[$status];
   }
@@ -1619,10 +1615,11 @@ function personalize_get_campaign_context() {
  */
 function personalize_get_agent_status_map() {
   return array(
-    PERSONALIZE_STATUS_NOT_STARTED => t('Not started'),
+    PERSONALIZE_STATUS_NOT_STARTED => t('Draft'),
     PERSONALIZE_STATUS_RUNNING => t('Running'),
     PERSONALIZE_STATUS_PAUSED => t('Paused'),
     PERSONALIZE_STATUS_COMPLETED => t('Completed'),
+    PERSONALIZE_STATUS_SCHEDULED => t('Scheduled'),
   );
 }
 

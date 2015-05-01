@@ -14,6 +14,10 @@
   margin-left: 1em; /* RTL */
 }
 
+#personalize-campaign-wizard #edit-agent-basic-info .personalize-campaign-overview {
+  float: left; /* RTL */
+}
+
 .personalize-wizard-section .personalize-option-header h3,
 .personalize-wizard-section .personalize-admin-enumerated-item {
   margin-left: 1em; /* RTL */
