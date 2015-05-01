@@ -244,6 +244,23 @@ function hook_personalize_form_ajax_commands_alter(&$commands) {
 }
 
 /**
+ * Alter the links displayed within the process bar drop button when editing
+ * a campaign.
+ *
+ * @param array $links
+ *   An array of links to alter that must be suitable to be passed to the
+ *   ctools_dropbutton theme function.
+ * @param stdClass $agent_data
+ *   The campaign that is being edited for context.
+ * @param string $destination
+ *   A destination url to use in order to return to the current section of the
+ *   campaign edit process.
+ */
+function hook_personalize_campaign_action_links_alter(&$links, $agent_data, $destination) {
+
+}
+
+/**
  * Returns links for the "create new personalized content" dropdown.
  *
  * This hook is typically implemented by modules that provide an

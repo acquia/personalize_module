@@ -161,6 +161,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
   );
   if (!empty($agent_data->machine_name)) {
+    $destination = url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/' . $form_state['storage']['step']);
     // Save the current subform.
     // NOTE: The button is hidden and activated via JavaScript when
     // clicking the dropbutton link of the same class name.
@@ -191,11 +192,14 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       $links[] = array(
         'title' => $transition_label,
         'href' => 'admin/structure/personalize/manage/' . $agent_data->machine_name . '/status/' . $next_status,
+        'query' => array(
+          'destination' => $destination,
+        ),
       );
     }
 
     // Allow other modules to add action links to the process bar.
-    drupal_alter('personalize_campaign_action_links', $links, $agent_data);
+    drupal_alter('personalize_campaign_action_links', $links, $agent_data, $destination);
     $form['process_bar']['actions']['action_links'] = array(
       '#markup' => theme('links__ctools_dropbutton', array(
         'title' => t('Operations'),
