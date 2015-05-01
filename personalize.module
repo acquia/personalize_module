@@ -413,11 +413,6 @@ function personalize_agent_start_now($agent_data) {
     $ts = time();
     return $ts >= $start_time;
   }
-  // No start time explicitly set, but the agent plugin might have some logic
-  // to determine that the agent should be started.
-  if ($agent = personalize_agent_load_agent($agent_data->machine_name)) {
-    return $agent->startNow();
-  }
   return FALSE;
 }
 
