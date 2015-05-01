@@ -85,6 +85,29 @@ function personalize_admin_form_submit($form, &$form_state) {
 }
 
 /**
+ * Menu callback for changing an agent status from a link and redirect.
+ *
+ * @param stdClass $agent_data
+ *   The agent to change.
+ * @param $status
+ *   The new status.
+ */
+function personalize_agent_status_callback($agent_data, $status) {
+  $form = array();
+  $form_state = array(
+    'values' => array(
+      'agent_name' => $agent_data->machine_name,
+      'status' => $status,
+    ),
+    'redirect' => 'admin/structure/personalize/manage/' . $agent_data->machine_name . '/review',
+  );
+  // The submit function will handle messaging and may update the redirect if
+  // needed.
+  personalize_status_change_form_submit($form, $form_state);
+  drupal_goto($form_state['redirect']);
+}
+
+/**
  * Form for changing the status of an agent.
  *
  * @param stdClass $agent_data
