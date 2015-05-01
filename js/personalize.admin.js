@@ -50,6 +50,26 @@
         }
         */
       });
+
+      // Submit the wizard form when the "Save" link is pressed.
+      $('#personalize-campaign-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links').once(function() {
+        var context = $(this).parent();
+        $('[data-personalize-action]', context).each(function() {
+          var buttonClass = $(this).attr('data-personalize-action');
+          var $actionButton = $('.' + buttonClass, context);
+          if ($actionButton.length > 0) {
+            // When the link is clicked, submit the button instead.
+            $(this).click(function(e) {
+              $actionButton.trigger('click');
+              e.stopImmediatePropagation();
+              return false;
+            });
+            // Can't use use the element-hidden class here because some
+            // themes will override it in their button styling.
+            $actionButton.hide();
+          }
+        });
+      });
     }
   };
 

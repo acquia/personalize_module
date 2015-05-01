@@ -162,16 +162,47 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
   );
   if (!empty($agent_data->machine_name)) {
     // Save the current subform.
+    // NOTE: The button is hidden and activated via JavaScript when
+    // clicking the dropbutton link of the same class name.
     $form['process_bar']['actions']['save'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
+      '#attributes' => array(
+        'class' => array(
+          'personalize-wizard-save',
+        ),
+      ),
+    );
+
+    $links = array(
+      array(
+        'title' => t('Save'),
+        'href' => '#',
+        'attributes' => array(
+          'data-personalize-action' => 'personalize-wizard-save',
+        ),
+      ),
     );
 
     // Change campaign status.
-    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data);
-    // Assign the submit handler to the button to bypass full form submission.
-    $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
-    $form['process_bar']['actions']['status']['status_wrapper']['submit']['#submit'] = array('personalize_status_change_form_submit');
+    $agent_status = personalize_agent_get_status($agent_data->machine_name);
+    $allowed_statuses = personalize_allowed_status_transitions($agent_status);
+    foreach ($allowed_statuses as $next_status => $transition_label) {
+      $links[] = array(
+        'title' => $transition_label,
+        'href' => 'admin/structure/personalize/manage/' . $agent_data->machine_name . '/status/' . $next_status,
+      );
+    }
+
+    // Allow other modules to add action links to the process bar.
+    drupal_alter('personalize_campaign_action_links', $links, $agent_data);
+    $form['process_bar']['actions']['action_links'] = array(
+      '#markup' => theme('links__ctools_dropbutton', array(
+        'title' => t('Operations'),
+        'links' => $links,
+        'class' => array('personalize-wizard-action-links'),
+      )),
+    );
   }
 
   // Instructions and help.
