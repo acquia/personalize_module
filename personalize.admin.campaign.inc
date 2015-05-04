@@ -187,7 +187,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
 
     // Change campaign status.
     $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    $allowed_statuses = personalize_allowed_status_transitions($agent_status);
+    $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
     foreach ($allowed_statuses as $next_status => $transition_label) {
       $links[] = array(
         'title' => $transition_label,
