@@ -171,6 +171,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       '#attributes' => array(
         'class' => array(
           'personalize-wizard-save',
+          'element-hidden',
         ),
       ),
     );
@@ -186,14 +187,20 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     );
 
     // Change campaign status.
-    $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
-    foreach ($allowed_statuses as $next_status => $transition_label) {
+    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data, FALSE);
+    // Assign the submit handler to the button to bypass full form submission.
+    $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
+    foreach (element_children($form['process_bar']['actions']['status']['status_wrapper']) as $form_element) {
+      $button = &$form['process_bar']['actions']['status']['status_wrapper'][$form_element];
+      $button['#submit'] = array('personalize_status_change_form_submit');
+      $button['#attributes']['class'] = array('element-hidden', 'personalize-wizard-status-' . $button['#personalize_next_status']);
+
+      // Add a link to the drop-down button.
       $links[] = array(
-        'title' => $transition_label,
-        'href' => 'admin/structure/personalize/manage/' . $agent_data->machine_name . '/status/' . $next_status,
-        'query' => array(
-          'destination' => $destination,
+        'title' => $button['#value'],
+        'href' => '#',
+        'attributes' => array(
+          'data-personalize-action' => 'personalize-wizard-status-' . $button['#personalize_next_status'],
         ),
       );
     }
