@@ -447,13 +447,14 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     // Header information.
     $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
     $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
+    $has_report = $agent_instance instanceof PersonalizeAgentReportInterface && !empty($agent_data->started);
     $section['option_set_' . $option_set->osid]['summary'] = array(
       '#type' => 'markup',
       '#markup' => theme('personalize_wizard_variations_header', array(
         'variation_title' => $option_sets_labels[$option_set->osid],
         'variation_count' => count($option_set->options),
-        'report' => $agent_instance instanceof PersonalizeAgentReportInterface ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => $agent_instance instanceof PersonalizeAgentReportInterface ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/results/{$option_set->osid}") : '',
+        'report' => $has_report ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
+        'report_link' => $has_report ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/results/{$option_set->osid}") : '',
         'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
         'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
