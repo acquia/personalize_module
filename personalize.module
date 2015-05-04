@@ -10,7 +10,6 @@ define('PERSONALIZE_OPTION_SET_PREFIX', 'osid-');
 define('PERSONALIZE_OPTION_NAME_DATA_ATTR', 'data-personalize-option-name');
 define('PERSONALIZE_PRESELECTION_PARAM', 'personalize-preselection');
 define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
-define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
 define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
 define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
@@ -2008,7 +2007,7 @@ function personalize_generate_machine_name($name, $exists_callback = NULL, $repl
   // Machine names must contain only lower case letters.
   $machine_name = drupal_strtolower($name);
   // Remove any disallowed characters.
-  $machine_name = preg_replace('/' . PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN . '/', $replace_character, $machine_name);
+  $machine_name = preg_replace('/[^a-z0-9\\' . $replace_character . ']+/', $replace_character, $machine_name);
   // Get rid of instances of multiple replace characters after replacement.
   $re = '\\' . $replace_character . '{2,}';
   $machine_name = preg_replace('/' . $re . '/', $replace_character, $machine_name);
