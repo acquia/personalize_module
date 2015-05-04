@@ -1467,7 +1467,10 @@ function personalize_ensure_unique_option_ids($options) {
     if (isset($option['option_id'])) {
       // Ensure existing option IDs are clean.
       $option['option_id'] = preg_replace('/[^a-zA-Z0-9_-]/', '-', $option['option_id']);
-      if (!isset($ids[$option['option_id']])) {
+      if (empty($option['option_id'])) {
+        unset($option['option_id']);
+      }
+      else if (!isset($ids[$option['option_id']])) {
         $ids[$option['option_id']] = $delta;
       }
     }

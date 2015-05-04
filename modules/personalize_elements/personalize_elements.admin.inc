@@ -358,7 +358,7 @@ function personalize_elements_form_validate($form, &$form_state) {
         $changed++;
       }
       $option['personalize_elements_content'] = $filtered;
-      if (!empty($option['personalize_elements_content'])) {
+      if ($option['option_id'] == PERSONALIZE_CONTROL_OPTION_ID || !empty($option['personalize_elements_content'])) {
         $non_empty_options++;
         if (empty($option['option_label'])) {
           form_set_error('options[' . $i . '][option_label', t('Please enter a label for each option'));
