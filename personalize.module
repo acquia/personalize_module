@@ -1354,7 +1354,10 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
       // we need to check whether the agent supports multiple decision points and if not,
       // whether it already has an option set.
       $agent_instance = personalize_agent_load_agent($agent->machine_name);
-      if (!$agent_instance->supportsMultipleDecisionPoints()) {
+      if (empty($agent_instance)) {
+        $include = FALSE;
+      }
+      else if (!$agent_instance->supportsMultipleDecisionPoints()) {
         $option_sets = personalize_option_set_load_by_agent($agent->machine_name);
         $include = empty($option_sets);
       }
