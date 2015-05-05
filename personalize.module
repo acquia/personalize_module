@@ -1345,12 +1345,13 @@ function personalize_get_agent_selection_form($default = '', $allow_add_new = TR
   );
   // Load available agents and put them in an options array.
   $agents = personalize_agent_load_multiple(array(), array(), FALSE, FALSE);
+  drupal_alter('personalize_agent_list', $agents);
   $agent_options = array();
   foreach($agents as $agent) {
     $include = TRUE;
     if ($limit_to_available) {
       // If we only want to include agents that can have a new option set added to them
-      // we need to check whether the agent supports mulitple decision points and if not,
+      // we need to check whether the agent supports multiple decision points and if not,
       // whether it already has an option set.
       $agent_instance = personalize_agent_load_agent($agent->machine_name);
       if (!$agent_instance->supportsMultipleDecisionPoints()) {
