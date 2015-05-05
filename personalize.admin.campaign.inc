@@ -1217,7 +1217,6 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
   );
   $form['review']['summary_column']['summary']['scheduling'] = array(
     '#markup' => theme('personalize_wizard_summary_schedule', array(
-      'status' => personalize_agent_get_status($agent_data->machine_name),
       'start_date' => personalize_agent_get_start_date($agent_data->machine_name),
       'stop_date' => personalize_agent_get_stop_date($agent_data->machine_name),
       'started_date' => empty($agent_data->started) ? 0 : $agent_data->started,

@@ -421,7 +421,6 @@ function theme_personalize_wizard_summary_count($variables) {
  *
  * @param $variables
  *   Associative array of enumerated list item details
- *   - status:  The current status of the agent
  *   - start_date: The timestamp to start the campaign or 0 if not indicated.
  *   - stop_date: The timestamp to stop the campaign or 0 if not indicated.
  *   - started_date: The timestamp that the campaign was started last or 0 if
@@ -432,19 +431,6 @@ function theme_personalize_wizard_summary_count($variables) {
 function theme_personalize_wizard_summary_schedule($variables) {
   $text = '';
   $text .= '<div class="personalize-wizard-summary-schedule">';
-  $text .= '<div class="personalize-wizard-summary-status"><strong>' . t('Current status:') . ' ' . '</strong>';
-  switch ($variables['status']) {
-    case PERSONALIZE_STATUS_PAUSED:
-      $text .= t('Paused');
-      break;
-    case PERSONALIZE_STATUS_RUNNING:
-      $text .= t('Running');
-      break;
-    case PERSONALIZE_STATUS_COMPLETED:
-      $text .= t('Completed');
-      break;
-  }
-  $text .= '</div>';
   if (!empty($variables['started_date'])) {
     $text .= '<div class="personalize-wizard-summary-started"><strong>' . t('Started:') . ' </strong>' . format_date($variables['started_date'], 'custom', 'D M. d, Y') . '</div>';
   }
