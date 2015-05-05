@@ -689,7 +689,30 @@ function personalize_campaign_wizard_variations_advanced_agent($form, &$form_sta
 function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data, $agent_instance = NULL) {
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
     return array(
-      '#markup' => t('This agent does not support targeting.'),
+      'unsupported' => array(
+        '#type' => 'container',
+        'message' => array(
+          '#markup' => t('This agent does not support targeting.'),
+        ),
+      ),
+    );
+  }
+  // Get the enabled targeting values for this agent.
+  $targeting_values = personalize_get_targeting_options_for_agent($agent_data);
+  if (empty($targeting_values)) {
+    return array(
+      'unsupported' => array(
+        '#type' => 'container',
+        'message' => array(
+          '#markup' => t('Either your website does not have any enabled targeting contexts, or there are no targeting contexts available for your personalization. Enable one or more applicable Context modules (such as the <a href="!module_url">Personalize URL Context</a> module) to allow for context targeting.',
+            array(
+              '!module_url' => url('admin/modules', array(
+                'fragment' => 'personalization',
+              )),
+            )
+          ),
+        ),
+      ),
     );
   }
 
@@ -732,8 +755,6 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   }
 
   $targeting_support = $agent_instance->explicitTargetingSupportMultiple();
-  // Build up a list of targeting values so we can map options to them.
-  $targeting_values = personalize_get_targeting_options_for_agent($agent_data);
 
   foreach ($option_sets as $option_set) {
     $replace_option_set_id = drupal_strtolower('personalize-option-set-' . $option_set->osid);
