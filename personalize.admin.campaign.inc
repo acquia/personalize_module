@@ -835,8 +835,6 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
         );
         break;
     }
-    // Add the advanced options.
-    $section['option_set_' . $option_set->osid]['advanced'] = personalize_campaign_wizard_variations_advanced($form, $form_state, $option_set);
   } // End loop through option sets.
   return $form;
 }
