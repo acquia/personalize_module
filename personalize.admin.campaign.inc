@@ -186,7 +186,10 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       ),
     );
 
-    // Change campaign status.
+    // Change campaign status.  Note that this status change form will not be
+    // run through hook_form_FORMID_alter.
+    // @todo: Examine this more closely as it prevents other module's hooks
+    // from being utilized.
     $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data, FALSE);
     // Assign the submit handler to the button to bypass full form submission.
     $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
