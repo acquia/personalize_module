@@ -2258,6 +2258,16 @@ function personalize_personalize_option_set_load($option_sets) {
   foreach ($option_sets as $option_set) {
     $option_set->decision_name = personalize_get_decision_name_for_option_set($option_set);
     $option_set->decision_point = personalize_get_decision_point_name_for_option_set($option_set);
+    if (!empty($option_set->targeting)) {
+      uasort($option_set->targeting, function ($a, $b) {
+        if ($a['weight'] === $b['weight']) {
+          return 0;
+        }
+        else {
+          return $a['weight'] < $b['weight'] ? -1 : 1;
+        }
+      });
+    }
   }
 }
 
@@ -3030,7 +3040,15 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
   $os_array += array(
     'selector' => '[data-personalize=' . $js_id . ']'
   );
-
+  if (!empty($option_set->targeting)) {
+    // The targeting needs to be converted to a numerically indexed array ordered
+    // by weight, otherwise the JS will re-order the audiences.
+    $os_array['targeting'] = array();
+    foreach ($option_set->targeting as $audience_name => $targeting) {
+      $targeting['name'] = $audience_name;
+      $os_array['targeting'][] = $targeting;
+    }
+  }
   return array(
     $js_id => $os_array
   );
