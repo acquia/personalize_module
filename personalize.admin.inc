@@ -349,7 +349,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     if (empty($agents)) {
       continue;
     }
-    $build['navigation_bar']['#markup'] .= '<li><a href="#personalization-group-' . $status . '">' . $status_map[$status] . '</a></li>';
+    $build['navigation_bar']['#markup'] .= '<li><a href="#personalization-group-' . $status . '"><h3>' . $status_map[$status] . '</h3></a></li>';
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
