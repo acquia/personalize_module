@@ -337,10 +337,16 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
   }
 
   $build = array();
+  $build['navigation_bar'] = array(
+    '#prefix' => '<ul>',
+    '#suffix' => '</ul>',
+    '#markup' => '',
+  );
   foreach ($sorted_agents as $status => $agents) {
     if (empty($agents)) {
       continue;
     }
+    $build['navigation_bar']['#markup'] .= '<li><a href="#personalization-group-' . $status . '">' . $status_map[$status] . '</a></li>';
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
@@ -359,8 +365,12 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         $description = t('This table lists personalizations that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused personalizations.');
         break;
     }
-    $build['status_' . $status] = array(
-      '#markup' => '<h2>' . $status_map[$status] . '</h2><p>' . $description . '</p>'
+    $build['personalization_group_' . $status] = array(
+      '#prefix' => '<div id="personalization-group-' . $status . '">',
+      '#suffix' => '</div>',
+    );
+    $build['personalization_group_' . $status]['description'] = array(
+      '#markup' => '<p>' . $description . '</p>'
     );
     $rows = array();
     foreach ($agents as $agent) {
@@ -414,14 +424,15 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
       array_splice($build_header, 2, 1);
     }
 
-    $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
-    $build['table_' . $status] = array(
+    $build['personalization_group_' . $status]['table'] = array(
       '#theme' => 'table',
       '#header' => $build_header,
       '#rows' => $rows,
       '#attributes' => array('id' => 'personalize'),
     );
   }
+  $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
+  $build['#attached']['library'][] = array('personalize', 'admin.campaign.list');
 
   return $build;
 }
