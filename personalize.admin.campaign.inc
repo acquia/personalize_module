@@ -162,9 +162,10 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
   );
   if (!empty($agent_data->machine_name)) {
     $destination = url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/' . $form_state['storage']['step']);
-    // Save the current subform.
     // NOTE: The button is hidden and activated via JavaScript when
-    // clicking the dropbutton link of the same class name.
+    // clicking the dropbutton link of the same class name.  This allows us
+    // to have button/form functionality that is called from the links in a
+    // ctools_dropbutton.
     $form['process_bar']['actions']['save'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
@@ -176,6 +177,9 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
       ),
     );
 
+    // Note that the link has a data attribute to point to the class of the
+    // button that should be activated.  This is generalized so that any
+    // combination of link/button can be used within the actions bar.
     $links = array(
       array(
         'title' => t('Save'),

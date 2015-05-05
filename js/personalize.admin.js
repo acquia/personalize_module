@@ -51,7 +51,7 @@
         */
       });
 
-      // Submit the wizard form when the "Save" link is pressed.
+      // Submit process bar buttons that have corresponding action links.
       $('#personalize-campaign-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links').once(function() {
         var context = $(this).parent();
         $('[data-personalize-action]', context).each(function() {
@@ -64,7 +64,7 @@
               e.stopImmediatePropagation();
               return false;
             });
-            // Can't use use the element-hidden class here because some
+            // Can't just rely on the element-hidden class here because some
             // themes will override it in their button styling.
             $actionButton.hide();
           }
