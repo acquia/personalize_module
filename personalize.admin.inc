@@ -339,17 +339,22 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     $sorted_agents[$agent_status][] = $agent;
   }
 
-  $build = array();
-  $build['navigation_bar'] = array(
-    '#prefix' => '<ul>',
-    '#suffix' => '</ul>',
-    '#markup' => '',
+  $build = array(
+    'personalizations_list' => array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => 'personalize-personalizations-list',
+      ),
+      'navigation_bar' => array(),
+    ),
   );
+  $navigation_bar = array();
   foreach ($sorted_agents as $status => $agents) {
     if (empty($agents)) {
       continue;
     }
-    $build['navigation_bar']['#markup'] .= '<li><a href="#personalization-group-' . $status . '"><h3>' . $status_map[$status] . '</h3></a></li>';
+    $link = l('<h3>' . $status_map[$status] . '</h3>', '', array('fragment' => 'personalization-group-' . $status, 'external' => TRUE, 'html' => TRUE));
+    $navigation_bar[] = array('data' => $link);
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
@@ -368,11 +373,13 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         $description = t('This table lists personalizations that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused personalizations.');
         break;
     }
-    $build['personalization_group_' . $status] = array(
-      '#prefix' => '<div id="personalization-group-' . $status . '">',
-      '#suffix' => '</div>',
+    $build['personalizations_list']['personalization_group_' . $status] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => 'personalization-group-' . $status,
+      ),
     );
-    $build['personalization_group_' . $status]['description'] = array(
+    $build['personalizations_list']['personalization_group_' . $status]['description'] = array(
       '#markup' => '<p>' . $description . '</p>'
     );
     $rows = array();
@@ -427,13 +434,14 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
       array_splice($build_header, 2, 1);
     }
 
-    $build['personalization_group_' . $status]['table'] = array(
+    $build['personalizations_list']['personalization_group_' . $status]['table'] = array(
       '#theme' => 'table',
       '#header' => $build_header,
       '#rows' => $rows,
       '#attributes' => array('id' => 'personalize'),
     );
   }
+  $build['personalizations_list']['navigation_bar']['#markup'] = theme('item_list', array('items' => $navigation_bar));
   $build['#attached']['library'][] = array('personalize', 'admin.campaign.list');
 
   return $build;
