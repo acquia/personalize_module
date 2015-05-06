@@ -194,7 +194,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     // run through hook_form_FORMID_alter.
     // @todo: Examine this more closely as it prevents other module's hooks
     // from being utilized.
-    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data, FALSE);
+    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data, FALSE, TRUE);
     // Assign the submit handler to the button to bypass full form submission.
     $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
     foreach (element_children($form['process_bar']['actions']['status']['status_wrapper']) as $form_element) {

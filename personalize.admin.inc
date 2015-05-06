@@ -89,10 +89,16 @@ function personalize_admin_form_submit($form, &$form_state) {
  *
  * @param stdClass $agent_data
  *   The standard data for the agent to change.
+ * @param bool $combine_status_choice
+ *   True if multiple statuses should be combined into a single select input.
+ *   False if each choice should get its own submit button.
+ * @param bool $include_all
+ *   True if all transitions should be shown (from the context of campaign
+ *   details).  False if only the standard options should be included.
  * @return array
  *   Array representing the status change form.
  */
-function personalize_status_change_form($form, &$form_state, $agent_data, $combine_status_choice = TRUE) {
+function personalize_status_change_form($form, &$form_state, $agent_data, $combine_status_choice = TRUE, $include_all = FALSE) {
   $agent_status = personalize_agent_get_status($agent_data->machine_name);
   $form = array();
   $form['agent_name'] = array(
@@ -106,7 +112,7 @@ function personalize_status_change_form($form, &$form_state, $agent_data, $combi
     ),
     '#tree' => FALSE,
   );
-  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
+  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data, $include_all);
   if ($combine_status_choice) {
     // Present a dropdown of all available next statuses when multiple allowed.
     if (count($allowed_statuses) === 1) {
