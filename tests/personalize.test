@@ -2210,7 +2210,142 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->resetAll();
     $this->assertFalse(personalize_agent_get_stop_date($first_agent_machine_name));
   }
-  
+
+  /**
+   * Tests the status options available on the campaign admin page.
+   */
+  function testAdminStatusOptions() {
+    $admin_user = $this->drupalCreateUser(array('access administration pages', 'manage personalized content'));
+    $this->drupalLogin($admin_user);
+    $agent = $this->createTestAgent();
+    $machine_name = $agent->getMachineName();
+
+    $campaign_pages = array(
+      "admin/structure/personalize/manage/$machine_name/variations",
+      "admin/structure/personalize/manage/$machine_name/goals",
+      "admin/structure/personalize/manage/$machine_name/targeting",
+      "admin/structure/personalize/manage/$machine_name/scheduling",
+      "admin/structure/personalize/manage/$machine_name/review",
+    );
+
+    // Schedule the campaign to start in the future.
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/scheduling");
+    $start_date = strtotime('+1 month midnight');
+
+    $edit = array(
+      'campaign_start' => 'specified',
+      'campaign_start_date[month]' => intval(date('m', $start_date)),
+      'campaign_start_date[day]' => date('d', $start_date),
+      'campaign_start_date[year]' => date('Y', $start_date),
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+
+    // Verify options.
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Remove the scheduled date prior to starting the campaign.
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/scheduling");
+
+    $edit = array(
+      'campaign_start' => 'none',
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+
+    // Verify options.
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Start the campaign.
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/review");
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_start'));
+
+    // Verify that the correct messaging is shown on all campaign wizard pages.
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Pause the campaign and verify that messaging is removed.
+    $this->drupalPost(NULL, array(), t('Pause'));
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Schedule the campaign to start in the future.
+    $this->drupalGet("admin/structure/personalize/manage/$machine_name/scheduling");
+    $start_date = strtotime('+1 month midnight');
+
+    $edit = array(
+      'campaign_start' => 'specified',
+      'campaign_start_date[month]' => intval(date('m', $start_date)),
+      'campaign_start_date[day]' => date('d', $start_date),
+      'campaign_start_date[year]' => date('Y', $start_date),
+    );
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+
+    // Verify that the correct messaging is shown on all campaign wizard pages.
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Actually schedule the campaign.
+    module_load_include('inc', 'personalize', 'personalize.admin.campaign');
+    $button_text = t('Start on @start_date', array(
+      '@start_date' => _personalize_campaign_wizard_date($start_date),
+    ));
+    $this->drupalPost(NULL, array(), $button_text);
+
+    // Verify that the correct messaging is shown on all campaign wizard pages.
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+
+    // Complete the campaign and verify messaging.
+    personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_COMPLETED);
+    $this->resetAll();
+    foreach ($campaign_pages as $page) {
+      $this->drupalGet($page);
+      $this->assertFieldById('edit-save');
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_RUNNING);
+      $this->assertFieldById('edit-submit-' . PERSONALIZE_STATUS_PAUSED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_COMPLETED);
+      $this->assertNoFieldById('edit-submit-' . PERSONALIZE_STATUS_SCHEDULED);
+    }
+  }
+
+
   /**
    * Tests the function that completes agents that are due to be completed.
    */
