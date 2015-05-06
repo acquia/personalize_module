@@ -310,6 +310,11 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     $agents = personalize_agent_load_multiple(array(), array(), FALSE, TRUE, 'label');
   }
 
+  if ($allow_alter) {
+    // Allow other modules to alter the list of agents being displayed here.
+    drupal_alter('personalize_agent_list', $agents);
+  }
+
   if (empty($agents)) {
     return array(
       'no_agents' => array(
@@ -318,10 +323,6 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     );
   }
 
-  if ($allow_alter) {
-    // Allow other modules to alter the list of agents being displayed here.
-    drupal_alter('personalize_agent_list', $agents);
-  }
   $sorted_agents = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(),
     PERSONALIZE_STATUS_SCHEDULED => array(),
