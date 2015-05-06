@@ -1266,7 +1266,7 @@ function personalize_agent_build_basic_form($agent_data = NULL, $include_machine
       '#machine_name' => array(
         'exists' => 'personalize_agent_machine_name_exists',
         'source' => $parent_array,
-        'replace_pattern' => PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN,
+        'replace_pattern' => '[^a-z0-9-]+',
         'replace' => '-',
       ),
       '#description' => t('A unique machine-readable name for this agent. It must only contain lowercase letters, numbers, and hyphens.'),

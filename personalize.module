@@ -10,7 +10,6 @@ define('PERSONALIZE_OPTION_SET_PREFIX', 'osid-');
 define('PERSONALIZE_OPTION_NAME_DATA_ATTR', 'data-personalize-option-name');
 define('PERSONALIZE_PRESELECTION_PARAM', 'personalize-preselection');
 define('PERSONALIZE_NEW_AGENT_FORM_VALUE', '__new__');
-define('PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN', '[^a-z0-9-]+');
 define('PERSONALIZE_MACHINE_NAME_MAXLENGTH', 64);
 define('PERSONALIZE_CONTEXT_EXPIRATION_CACHE', 'personalize:visitor_context:expiration');
 define('PERSONALIZE_TARGETING_OP_SEPARATOR', '-');
@@ -2008,7 +2007,7 @@ function personalize_generate_machine_name($name, $exists_callback = NULL, $repl
   // Machine names must contain only lower case letters.
   $machine_name = drupal_strtolower($name);
   // Remove any disallowed characters.
-  $machine_name = preg_replace('/' . PERSONALIZE_MACHINE_NAME_REPLACE_PATTERN . '/', $replace_character, $machine_name);
+  $machine_name = preg_replace('/[^a-z0-9\\' . $replace_character . ']+/', $replace_character, $machine_name);
   // Get rid of instances of multiple replace characters after replacement.
   $re = '\\' . $replace_character . '{2,}';
   $machine_name = preg_replace('/' . $re . '/', $replace_character, $machine_name);
@@ -2289,26 +2288,14 @@ function personalize_personalize_option_set_load($option_sets) {
  * Returns all Option Sets of a given type.
  */
 function personalize_option_set_load_by_type($type, $sort = NULL) {
-  $option_sets = &drupal_static(__FUNCTION__, array());
-
-  if (!isset($option_sets[$type])) {
-    $option_sets[$type] = personalize_option_set_load_multiple(FALSE, array('plugin' => $type), FALSE, $sort);
-  }
-
-  return $option_sets[$type];
+  return personalize_option_set_load_multiple(FALSE, array('plugin' => $type), FALSE, $sort);
 }
 
 /**
  * Returns all Option Sets for a given agent.
  */
 function personalize_option_set_load_by_agent($agent_name, $reset = FALSE) {
-  $option_sets = &drupal_static(__FUNCTION__, array());
-
-  if ($reset || !isset($option_sets[$agent_name])) {
-    $option_sets[$agent_name] = personalize_option_set_load_multiple(FALSE, array('agent' => $agent_name), $reset);
-  }
-
-  return $option_sets[$agent_name];
+  return personalize_option_set_load_multiple(FALSE, array('agent' => $agent_name), $reset);
 }
 
 /**
