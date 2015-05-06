@@ -353,6 +353,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     if (empty($agents)) {
       continue;
     }
+    // Notice the 'href', 'fragment', and 'external' here are made specific to theme an anchor link.
     $navigation_bar['personalization-group-' . $status] = array(
       'title' => '<h3>' . $status_map[$status] . '</h3>',
       'href' => '',
