@@ -353,8 +353,13 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     if (empty($agents)) {
       continue;
     }
-    $link = l('<h3>' . $status_map[$status] . '</h3>', '', array('fragment' => 'personalization-group-' . $status, 'external' => TRUE, 'html' => TRUE));
-    $navigation_bar[] = array('data' => $link);
+    $navigation_bar['personalization-group-' . $status] = array(
+      'title' => '<h3>' . $status_map[$status] . '</h3>',
+      'href' => '',
+      'fragment' => 'personalization-group-' . $status,
+      'external' => TRUE,
+      'html' => TRUE,
+    );
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
@@ -441,7 +446,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
       '#attributes' => array('id' => 'personalize'),
     );
   }
-  $build['personalizations_list']['navigation_bar']['#markup'] = theme('item_list', array('items' => $navigation_bar));
+  $build['personalizations_list']['navigation_bar']['#markup'] = theme('links', array('links' => $navigation_bar));
   $build['#attached']['library'][] = array('personalize', 'admin.campaign.list');
 
   return $build;
