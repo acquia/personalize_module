@@ -678,6 +678,9 @@ function personalize_library() {
     'js' => array(
       'jQuery(document).ready(function(){jQuery(".content").tabs();});' => $campaign_list_options,
     ),
+    'css' => array(
+      $path . '/css/personalize.admin.css' => array(),
+    ),
     'dependencies' => array(
       array('system', 'ui.tabs'),
     ),

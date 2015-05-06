@@ -434,7 +434,6 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
       '#attributes' => array('id' => 'personalize'),
     );
   }
-  $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
   $build['#attached']['library'][] = array('personalize', 'admin.campaign.list');
 
   return $build;
