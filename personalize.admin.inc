@@ -160,7 +160,7 @@ function personalize_status_change_form_submit(&$form, &$form_state) {
   }
   $status_map = personalize_get_agent_status_map();
   drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
-  if (current_path() === 'admin/structure/personalize') {
+  if (request_path() === 'admin/structure/personalize') {
     $form_state['redirect'] = array('admin/structure/personalize', array('fragment' => 'personalization-group-' . $status));
   }
 }
