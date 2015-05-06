@@ -2333,23 +2333,29 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
 
     $this->drupalGet('admin/structure/personalize');
     $this->assertNoText(t('No personalizations available.'));
-    // "Not started" should be the only section on the page.
-    $this->assertRaw('<h2>Draft</h2>');
-    $this->assertNoRaw('<h2>Scheduled</h2>');
-    $this->assertNoRaw('<h2>Running</h2>');
-    $this->assertNoRaw('<h2>Paused</h2>');
-    $this->assertNoRaw('<h2>Completed</h2>');
+    // "Draft" should be the only section on the page.
+    $this->assertRaw('<h3>Draft</h3>');
+    $this->assertNoRaw('<h3>Scheduled</h3>');
+    $this->assertNoRaw('<h3>Running</h3>');
+    $this->assertNoRaw('<h3>Paused</h3>');
+    $this->assertNoRaw('<h3>Completed</h3>');
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_RUNNING);
     $this->resetAll();
     // There should now be a "Running" section on the page.
     $this->drupalGet('admin/structure/personalize');
 
+    // Setting an campaign's status should redirect to the destination status' anchor.
+    $test_agent_html_id = "personalize-change-status-test-agent-form";
+    $this->drupalPost('admin/structure/personalize', array(), t('Pause'), array(), array(), $test_agent_html_id);
+    $url = $this->getUrl();
+    $this->assertEquals(1, preg_match('~/admin/structure/personalize\#personalization-group-' . PERSONALIZE_STATUS_PAUSED . '$~', $url));
+
     $this->assertNoText(t('No personalizations available.'));
-    $this->assertRaw('<h2>Draft</h2>');
-    $this->assertNoRaw('<h2>Scheduled</h2>');
-    $this->assertRaw('<h2>Running</h2>');
-    $this->assertNoRaw('<h2>Paused</h2>');
-    $this->assertNoRaw('<h2>Completed</h2>');
+    $this->assertRaw('<h3>Draft</h3>');
+    $this->assertNoRaw('<h3>Scheduled</h3>');
+    $this->assertNoRaw('<h3>Running</h3>');
+    $this->assertRaw('<h3>Paused</h3>');
+    $this->assertNoRaw('<h3>Completed</h3>');
 
     personalize_agent_set_status('test-agent', PERSONALIZE_STATUS_PAUSED);
     personalize_agent_set_status('test-agent-2', PERSONALIZE_STATUS_RUNNING);
@@ -2359,11 +2365,11 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $this->drupalGet('admin/structure/personalize');
 
     $this->assertNoText(t('No personalizations available.'));
-    $this->assertNoRaw('<h2>Not started</h2>');
-    $this->assertRaw('<h2>Scheduled</h2>');
-    $this->assertRaw('<h2>Running</h2>');
-    $this->assertRaw('<h2>Paused</h2>');
-    $this->assertNoRaw('<h2>Completed</h2>');
+    $this->assertNoRaw('<h3>Not started</h3>');
+    $this->assertRaw('<h3>Scheduled</h3>');
+    $this->assertRaw('<h3>Running</h3>');
+    $this->assertRaw('<h3>Paused</h3>');
+    $this->assertNoRaw('<h3>Completed</h3>');
 
   }
 

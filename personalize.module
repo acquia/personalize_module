@@ -651,6 +651,8 @@ function personalize_library() {
     'scope' => 'footer',
     'defer' => TRUE,
   );
+  $campaign_list_options = $options;
+  $campaign_list_options['type'] = 'inline';
 
   $libraries = array();
   $libraries['admin.campaign'] = array(
@@ -667,6 +669,20 @@ function personalize_library() {
     'dependencies' => array(
       array('system', 'jquery'),
       array('system', 'jquery.once'),
+    ),
+  );
+  $libraries['admin.campaign.list'] = array(
+    'title' => 'Personalization list',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      'jQuery(document).ready(function(){jQuery("#personalize-personalizations-list").tabs();});' => $campaign_list_options,
+    ),
+    'css' => array(
+      $path . '/css/personalize.admin.css' => array(),
+    ),
+    'dependencies' => array(
+      array('system', 'ui.tabs'),
     ),
   );
   $libraries['personalize'] = array(

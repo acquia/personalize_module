@@ -152,13 +152,16 @@ function personalize_status_change_form_submit(&$form, &$form_state) {
     // Redirect to a confirm form as this has more serious implications than
     // other status changes.
     $form_state['redirect'] = array('admin/structure/personalize/manage/'. $agent_name .'/complete');
+    return;
   }
-  else {
-    // Otherwise just change the status as requested.
-    $status_map = personalize_get_agent_status_map();
-    if (personalize_agent_set_status($agent_name, $status)) {
-      drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
-    }
+  // Otherwise just change the status as requested.
+  if (!personalize_agent_set_status($agent_name, $status)) {
+    return;
+  }
+  $status_map = personalize_get_agent_status_map();
+  drupal_set_message(t('The personalization status has been set to @status', array('@status' => $status_map[$status])));
+  if (request_path() === 'admin/structure/personalize') {
+    $form_state['redirect'] = array('admin/structure/personalize', array('fragment' => 'personalization-group-' . $status));
   }
 }
 
@@ -336,11 +339,28 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
     $sorted_agents[$agent_status][] = $agent;
   }
 
-  $build = array();
+  $build = array(
+    'personalizations_list' => array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => 'personalize-personalizations-list',
+      ),
+      'navigation_bar' => array(),
+    ),
+  );
+  $navigation_bar = array();
   foreach ($sorted_agents as $status => $agents) {
     if (empty($agents)) {
       continue;
     }
+    // Notice the 'href', 'fragment', and 'external' here are made specific to theme an anchor link.
+    $navigation_bar['personalization-group-' . $status] = array(
+      'title' => '<h3>' . $status_map[$status] . '</h3>',
+      'href' => '',
+      'fragment' => 'personalization-group-' . $status,
+      'external' => TRUE,
+      'html' => TRUE,
+    );
     $description = '';
     switch($status) {
       case PERSONALIZE_STATUS_NOT_STARTED:
@@ -359,8 +379,14 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         $description = t('This table lists personalizations that use PHP (whenever possible) to display the fallback/winner variation for each variation set, which can cause variations to display more quickly than those in paused personalizations.');
         break;
     }
-    $build['status_' . $status] = array(
-      '#markup' => '<h2>' . $status_map[$status] . '</h2><p>' . $description . '</p>'
+    $build['personalizations_list']['personalization_group_' . $status] = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => 'personalization-group-' . $status,
+      ),
+    );
+    $build['personalizations_list']['personalization_group_' . $status]['description'] = array(
+      '#markup' => '<p>' . $description . '</p>'
     );
     $rows = array();
     foreach ($agents as $agent) {
@@ -414,14 +440,15 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
       array_splice($build_header, 2, 1);
     }
 
-    $build['#attached']['css'][] = drupal_get_path('module', 'personalize') . '/css/personalize.admin.css';
-    $build['table_' . $status] = array(
+    $build['personalizations_list']['personalization_group_' . $status]['table'] = array(
       '#theme' => 'table',
       '#header' => $build_header,
       '#rows' => $rows,
       '#attributes' => array('id' => 'personalize'),
     );
   }
+  $build['personalizations_list']['navigation_bar']['#markup'] = theme('links', array('links' => $navigation_bar));
+  $build['#attached']['library'][] = array('personalize', 'admin.campaign.list');
 
   return $build;
 }
