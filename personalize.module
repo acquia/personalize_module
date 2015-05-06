@@ -1145,16 +1145,17 @@ function personalize_verify_agent($agent_name, $show_messages = TRUE) {
  * @param stdClass $agent_data
  *   (Optional) When provided then agent-specific transition steps can be
  *   included.  This is used for the "Scheduled" status.
- * @param bool $include_all
- *   (Optional) Include all transitions that are available.  If FALSE, only
- *   those transitions that should be shown outside the campaign details
- *   are returned.
+ * @param bool $forward_only
+ *   (Optional) When set to true, only transitions that move the campaign
+ *   status forward to the next level will be included.  Transitions to undo
+ *   a prior transition change (e.g., unarchive, unschedule) will not be
+ *   included.
  *
  * @return array
  *   An associative array with statuses as keys and an array of statuses,
  *   representing the set of allowed next statuses for each one, as the value.
  */
-function personalize_allowed_status_transitions($status = NULL, $agent_data = NULL, $include_all = FALSE) {
+function personalize_allowed_status_transitions($status = NULL, $agent_data = NULL, $forward_only = TRUE) {
   $transitions = array(
     PERSONALIZE_STATUS_NOT_STARTED => array(
       PERSONALIZE_STATUS_RUNNING => t('Start'),
@@ -1169,7 +1170,7 @@ function personalize_allowed_status_transitions($status = NULL, $agent_data = NU
     PERSONALIZE_STATUS_COMPLETED => array(
     ),
   );
-  if ($include_all) {
+  if (!$forward_only) {
     $transitions[PERSONALIZE_STATUS_COMPLETED][PERSONALIZE_STATUS_PAUSED] = t('Unarchive');
   }
   if (!empty($agent_data)) {
@@ -1184,7 +1185,7 @@ function personalize_allowed_status_transitions($status = NULL, $agent_data = NU
         // from the paused status.
         $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
         $transitions[PERSONALIZE_STATUS_PAUSED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
-        if ($include_all) {
+        if (!$forward_only) {
           $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
         }
       }
@@ -1193,7 +1194,7 @@ function personalize_allowed_status_transitions($status = NULL, $agent_data = NU
         // to and from the not started status.
         $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_SCHEDULED] = t('Schedule');
         $transitions[PERSONALIZE_STATUS_NOT_STARTED][PERSONALIZE_STATUS_RUNNING] = t('Start now');
-        if ($include_all) {
+        if (!$forward_only) {
           $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_NOT_STARTED] = t('Unschedule');
         }
       }
