@@ -2354,8 +2354,6 @@ function personalize_option_set_delete($osid) {
 
     // Clear the option set cache.
     personalize_option_set_load(NULL, TRUE);
-
-    module_invoke_all('personalize_option_set_delete', $option_set);
   }
 }
 
