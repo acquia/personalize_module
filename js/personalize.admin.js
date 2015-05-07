@@ -50,6 +50,26 @@
         }
         */
       });
+
+      // Submit process bar buttons that have corresponding action links.
+      $('#personalize-campaign-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links').once(function() {
+        var context = $(this).parent();
+        $('[data-personalize-action]', context).each(function() {
+          var buttonClass = $(this).attr('data-personalize-action');
+          var $actionButton = $('.' + buttonClass, context);
+          if ($actionButton.length > 0) {
+            // When the link is clicked, submit the button instead.
+            $(this).click(function(e) {
+              $actionButton.trigger('click');
+              e.stopImmediatePropagation();
+              return false;
+            });
+            // Can't just rely on the element-hidden class here because some
+            // themes will override it in their button styling.
+            $actionButton.hide();
+          }
+        });
+      });
     }
   };
 

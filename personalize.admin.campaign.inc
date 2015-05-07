@@ -161,17 +161,66 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
   );
   if (!empty($agent_data->machine_name)) {
-    // Save the current subform.
+    $destination = url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/' . $form_state['storage']['step']);
+    // NOTE: The button is hidden and activated via JavaScript when
+    // clicking the dropbutton link of the same class name.  This allows us
+    // to have button/form functionality that is called from the links in a
+    // ctools_dropbutton.
     $form['process_bar']['actions']['save'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
+      '#attributes' => array(
+        'class' => array(
+          'personalize-wizard-save',
+          'element-hidden',
+        ),
+      ),
     );
 
-    // Change campaign status.
-    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data);
+    // Note that the link has a data attribute to point to the class of the
+    // button that should be activated.  This is generalized so that any
+    // combination of link/button can be used within the actions bar.
+    $links = array(
+      array(
+        'title' => t('Save'),
+        'href' => '#',
+        'attributes' => array(
+          'data-personalize-action' => 'personalize-wizard-save',
+        ),
+      ),
+    );
+
+    // Change campaign status.  Note that this status change form will not be
+    // run through hook_form_FORMID_alter.
+    // @todo: Examine this more closely as it prevents other module's hooks
+    // from being utilized.
+    $form['process_bar']['actions']['status'] = personalize_status_change_form($form, $form_state, $agent_data, FALSE, FALSE);
     // Assign the submit handler to the button to bypass full form submission.
     $form_state['build_info']['files'][] = drupal_get_path('module', 'personalize') . '/personalize.admin.inc';
-    $form['process_bar']['actions']['status']['status_wrapper']['submit']['#submit'] = array('personalize_status_change_form_submit');
+    foreach (element_children($form['process_bar']['actions']['status']['status_wrapper']) as $form_element) {
+      $button = &$form['process_bar']['actions']['status']['status_wrapper'][$form_element];
+      $button['#submit'] = array('personalize_status_change_form_submit');
+      $button['#attributes']['class'] = array('element-hidden', 'personalize-wizard-status-' . $button['#personalize_next_status']);
+
+      // Add a link to the drop-down button.
+      $links[] = array(
+        'title' => $button['#value'],
+        'href' => '#',
+        'attributes' => array(
+          'data-personalize-action' => 'personalize-wizard-status-' . $button['#personalize_next_status'],
+        ),
+      );
+    }
+
+    // Allow other modules to add action links to the process bar.
+    drupal_alter('personalize_campaign_action_links', $links, $agent_data, $destination);
+    $form['process_bar']['actions']['action_links'] = array(
+      '#markup' => theme('links__ctools_dropbutton', array(
+        'title' => t('Operations'),
+        'links' => $links,
+        'class' => array('personalize-wizard-action-links'),
+      )),
+    );
   }
 
   // Instructions and help.
