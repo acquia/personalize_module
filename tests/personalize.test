@@ -1165,6 +1165,11 @@ class PersonalizeFundamentalsTest extends PersonalizeBaseTest {
     // Test with a different replace character.
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists', '_');
     $this->assertEqual('some_name_with_disallow_d_ch_racters_that_exceeds_the_max_allowe', $machine_name);
+    // Test with a different replace character and a combination of standard
+    // replacement characters.
+    $agent_name = 'Some-combination_of|common--separators__including duplication';
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists', '_');
+    $this->assertEqual('some_combination_of_common_separators_including_duplication', $machine_name);
   }
 
   /**
