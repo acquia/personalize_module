@@ -416,7 +416,7 @@ function personalize_agent_list($agents = NULL, $allow_edit = TRUE, $allow_alter
         array('data' => drupal_render($status_change_form)),
         //array('data' => $storage),
         array('data' => $allow_edit ? l(t('Edit'), 'admin/structure/personalize/manage/'. $agent->machine_name . '/edit') : ''),
-        array('data' => $plugin instanceof PersonalizeAgentReportInterface && !empty($agent->started) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/report') : ''),
+        array('data' => $plugin instanceof PersonalizeAgentReportInterface && !empty($agent->started) ? l(t('View reports'), 'admin/structure/personalize/manage/'. $agent->machine_name .'/results') : ''),
         array('data' => $delete_link),
       );
       // Show the scheduled start date for campaigns that aren't running yet.
