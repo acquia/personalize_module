@@ -2348,7 +2348,7 @@ class PersonalizeAgentAdminTest extends PersonalizeBaseTest {
     $test_agent_html_id = "personalize-change-status-test-agent-form";
     $this->drupalPost('admin/structure/personalize', array(), t('Pause'), array(), array(), $test_agent_html_id);
     $url = $this->getUrl();
-    $this->assertEquals(1, preg_match('~/admin/structure/personalize\#personalization-group-' . PERSONALIZE_STATUS_PAUSED . '$~', $url));
+    $this->assertEqual(1, preg_match('~/admin/structure/personalize\#personalization-group-' . PERSONALIZE_STATUS_PAUSED . '$~', $url));
 
     $this->assertNoText(t('No personalizations available.'));
     $this->assertRaw('<h3>Draft</h3>');
