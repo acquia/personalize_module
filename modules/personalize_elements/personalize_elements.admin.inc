@@ -297,7 +297,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#description' => t("Specify pages by using their paths or leave blank to apply to all pages. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
     '#states' => array(
       'disabled' => array(
-        ':input=[name="pages_all"]' => array('value' => '1'),
+        ':input[name="pages_all"]' => array('value' => '1'),
       )
     )
   );
