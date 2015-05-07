@@ -432,13 +432,13 @@ function theme_personalize_wizard_summary_schedule($variables) {
   $text = '';
   $text .= '<div class="personalize-wizard-summary-schedule">';
   if (!empty($variables['started_date'])) {
-    $text .= '<div class="personalize-wizard-summary-started"><strong>' . t('Started:') . ' </strong>' . format_date($variables['started_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-started"><strong>' . t('Actual start:') . ' </strong>' . format_date($variables['started_date'], 'custom', 'M. j, Y') . '</div>';
   }
   if (!empty($variables['start_date'])) {
-    $text .= '<div class="personalize-wizard-summary-start"><strong>' . t('Start: ') . ' </strong>' . format_date($variables['start_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-start"><strong>' . t('Scheduled start: ') . ' </strong>' . format_date($variables['start_date'], 'custom', 'M. j, Y') . '</div>';
   }
   if (!empty($variables['stop_date'])) {
-    $text .= '<div class="personalize-wizard-summary-stop"><strong>' . t('Stop: ') . ' </strong>' . format_date($variables['stop_date'], 'custom', 'D M. d, Y') . '</div>';
+    $text .= '<div class="personalize-wizard-summary-stop"><strong>' . t('Scheduled stop: ') . ' </strong>' . format_date($variables['stop_date'], 'custom', 'M. j, Y') . '</div>';
   }
   $text .= '</div>';
   return $text;
