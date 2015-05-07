@@ -89,10 +89,16 @@ function personalize_admin_form_submit($form, &$form_state) {
  *
  * @param stdClass $agent_data
  *   The standard data for the agent to change.
+ * @param bool $combine_status_choice
+ *   True if multiple statuses should be combined into a single select input.
+ *   False if each choice should get its own submit button.
+ * @param bool $include_all
+ *   True if all transitions should be shown (from the context of campaign
+ *   details).  False if only the standard options should be included.
  * @return array
  *   Array representing the status change form.
  */
-function personalize_status_change_form($form, &$form_state, $agent_data) {
+function personalize_status_change_form($form, &$form_state, $agent_data, $combine_status_choice = TRUE, $include_all = FALSE) {
   $agent_status = personalize_agent_get_status($agent_data->machine_name);
   $form = array();
   $form['agent_name'] = array(
@@ -106,31 +112,43 @@ function personalize_status_change_form($form, &$form_state, $agent_data) {
     ),
     '#tree' => FALSE,
   );
-  // Present a dropdown of all available next statuses.
-  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data);
-  if (count($allowed_statuses) === 1) {
-    $keys = array_keys($allowed_statuses);
-    // Just present a single button to change the status.
-    $form['status_wrapper']['status'] = array(
-      '#type' => 'value',
-      '#value' => reset($keys),
+  $allowed_statuses = personalize_allowed_status_transitions($agent_status, $agent_data, $include_all);
+  if ($combine_status_choice) {
+    // Present a dropdown of all available next statuses when multiple allowed.
+    if (count($allowed_statuses) === 1) {
+      $keys = array_keys($allowed_statuses);
+      // Just present a single button to change the status.
+      $form['status_wrapper']['status'] = array(
+        '#type' => 'value',
+        '#value' => reset($keys),
+      );
+      $submit_text = reset($allowed_statuses);
+    }
+    else {
+      $form['status_wrapper']['status'] = array(
+        '#type' => 'select',
+        '#options' => $allowed_statuses,
+        '#default_value' => '',
+        '#empty_option' => t('--Select--'),
+      );
+      $submit_text = t('Change');
+    }
+
+    $form['status_wrapper']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => $submit_text
     );
-    $submit_text = reset($allowed_statuses);
   }
   else {
-    $form['status_wrapper']['status'] = array(
-      '#type' => 'select',
-      '#options' => $allowed_statuses,
-      '#default_value' => '',
-      '#empty_option' => t('--Select--'),
-    );
-    $submit_text = t('Change');
+    // Show a button for each status change.
+    foreach ($allowed_statuses as $next_status => $transition_label) {
+      $form['status_wrapper']['submit_' . $next_status] = array(
+        '#type' => 'submit',
+        '#value' => $transition_label,
+        '#personalize_next_status' => $next_status,
+      );
+    }
   }
-
-  $form['status_wrapper']['submit'] = array(
-    '#type' => 'submit',
-    '#value' => $submit_text
-  );
   return $form;
 }
 

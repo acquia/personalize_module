@@ -216,7 +216,7 @@ div.personalize-target-wrapper div.form-item {
   border-bottom: 2px solid #999;
   padding: 0 1em;
 }
-#personalize-wizard-process-bar ul {
+#personalize-wizard-process-bar .personalize-wizard-navigation > ul {
   list-style: none;
   overflow: hidden;
   margin: 0;
@@ -224,7 +224,7 @@ div.personalize-target-wrapper div.form-item {
   display: inline-block;
   float: left;
 }
-#personalize-wizard-process-bar li {
+#personalize-wizard-process-bar .personalize-wizard-navigation > ul li {
   padding: 1em 1em 0 1em;
   position: relative;
   display: block;
@@ -252,8 +252,17 @@ div.personalize-target-wrapper div.form-item {
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions > div {
   display: inline-block;
 }
-#personalize-wizard-process-bar .personalize-wizard-process-bar-actions input {
-  margin: .7em 0 .7em .7em;
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links {
+  position: absolute;
+  right: .7em;
+  border-color: #999;
+  background-color: #fff;
+}
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links li {
+  padding: .3em;
+}
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links li:hover {
+  background-color: #e6e9ed;
 }
 #personalize-wizard-process-bar .personalize-wizard-section-help {
   border-bottom: 1px solid #0074BD;
