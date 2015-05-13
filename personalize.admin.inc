@@ -855,9 +855,11 @@ function personalize_targeting_support_form_elements($option_set, $option, $targ
   }
   else if (isset($targeting_for_options[$option['option_id']])) {
     $rule = $targeting_for_options[$option['option_id']];
-    foreach ($rule['targeting_features'] as $feature) {
-      if (isset($rule['targeting_rules'][$feature])) {
-        $mappings[] = $rule['targeting_rules'][$feature];
+    if (isset($rule['targeting_features'])) {
+      foreach ($rule['targeting_features'] as $feature) {
+        if (isset($rule['targeting_rules'][$feature])) {
+          $mappings[] = $rule['targeting_rules'][$feature];
+        }
       }
     }
   }
