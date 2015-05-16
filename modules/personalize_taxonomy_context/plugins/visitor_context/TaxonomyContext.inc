@@ -46,7 +46,7 @@ class TaxonomyContext extends PersonalizeContextBase {
       $count = 0;
       foreach($terms as $term) {
         // Collect terms up to the max count.
-        if ($count >= SELF::TERMS_MAX_COUNT) {
+        if ($count >= self::TERMS_MAX_COUNT) {
           break;
         }
         $values[$term->name] = $term->name;
