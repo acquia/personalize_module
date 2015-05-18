@@ -941,7 +941,11 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
         'option_label' => personalize_fields_generate_option_label(2, array('value' => 'third value'))
       )
     );
-    personalize_fields_option_set_save($option_set, 'node', $node, 'article_headline');
+    $entity_id = $node->nid;
+    if (personalize_fields_option_set_prepare($option_set, 'node', $entity_id, $node, 'article_headline')) {
+      personalize_fields_option_set_save($option_set, 'node', $entity_id, 'article_headline');
+    }
+
     $first_osid = 'osid-' . $option_set->osid;
     $this->resetAll();
 
