@@ -577,7 +577,9 @@ function personalize_fields_process_form_option_sets($entity_type, $entity, $fie
   // it will be processed on hook_entity_insert.
   if ($entity_id && isset($option_set->is_new)) {
     try {
-      personalize_fields_option_set_save($option_set, $entity_type, $entity, $field_name);
+      if (personalize_fields_option_set_prepare($option_set, $entity_type, $entity_id, $entity, $field_name)) {
+        personalize_fields_option_set_save($option_set, $entity_type, $entity_id, $field_name);
+      }
     }
     catch(PersonalizeFieldsException $e) {
       drupal_set_message($e->getMessage(), 'error');
@@ -650,11 +652,11 @@ function personalize_fields_form_personalize_admin_form_alter(&$form, &$form_sta
 }
 
 /**
- * Saves an Option Set to the database.
+ * Prepares a personalize fields Option Set for saving to the DB.
  *
- * This function should be used rather than a direct personalize_option_set_save()
- * call when saving Option Sets for fields. This updates both the actual Option
- * Set, as well as the table that links entities to Option Sets.
+ * This will cause the option set to be deleted if there are now fewer than 2
+ * field values. It also contains logic for creating a new agent for the option
+ * set if the new_agent_title property is set on the option set.
  *
  * @param $option_set
  *   An object representing the Option Set to be saved.
@@ -665,18 +667,17 @@ function personalize_fields_form_personalize_admin_form_alter(&$form, &$form_sta
  * @param $field_name
  *   The name of the field the Option Set is tied to.
  */
-function personalize_fields_option_set_save($option_set, $entity_type, $entity, $field_name) {
-  list($entity_id) = entity_extract_ids($entity_type, $entity);
+function personalize_fields_option_set_prepare($option_set, $entity_type, $entity_id, $entity, $field_name) {
 
   // If this is a new option set and there's only one option, abort.
   if (isset($option_set->is_new) && count($option_set->options) < 2) {
-    return;
+    return FALSE;
   }
   elseif (count($option_set->options) < 2) {
     // Removing all but one value from a personalized multi-value field means
     // the field is no longer personalized, so delete the Option Set.
     personalize_option_set_delete($option_set->osid);
-    return;
+    return FALSE;
   }
 
   if (!isset($option_set->agent) && isset($option_set->new_agent_title)) {
@@ -725,10 +726,31 @@ function personalize_fields_option_set_save($option_set, $entity_type, $entity, 
     }
     else {
       drupal_set_message('There was a problem saving the new campaign', 'error');
-      return;
+      return FALSE;
     }
   }
   $option_set->label = personalize_fields_generate_option_set_label($entity_type, $entity_id, $entity, $field_name);
+  return TRUE;
+}
+
+/**
+ * Saves a personalize_fields option set to the DB for a particular entity field
+ *.
+ * This function should be used rather than a direct personalize_option_set_save()
+ * call when saving Option Sets for fields. This adds the necessary data properties
+ * to the Option Set, as well storing an entry for it in the cache.
+ *
+ * @param $option_set
+ *   The stdClass object representing the option set.
+ * @param $entity_type
+ *   The type of entity the field is attached to.
+ * @param $entity_id
+ *   The ID of the entity.
+ * @param $field_name
+ *   The field name
+ * @throws \PersonalizeException
+ */
+function personalize_fields_option_set_save($option_set, $entity_type, $entity_id, $field_name) {
   $option_set->data['personalize_fields_entity_type'] = $entity_type;
   $option_set->data['personalize_fields_entity_id'] = $entity_id;
   $option_set->data['personalize_fields_field_name'] = $field_name;
@@ -770,7 +792,10 @@ function personalize_fields_entity_insert($entity, $type) {
   if (isset($entity->option_sets)) {
     foreach($entity->option_sets as $field_name => $option_set) {
       try {
-        personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+        list($entity_id) = entity_extract_ids($type, $entity);
+        if (personalize_fields_option_set_prepare($option_set, $type, $entity_id, $entity, $field_name)) {
+          personalize_fields_option_set_save($option_set, $type, $entity_id, $field_name);
+        }
       }
       catch(PersonalizeFieldsException $e) {
         drupal_set_message($e->getMessage(), 'error');
@@ -794,7 +819,9 @@ function personalize_fields_entity_update($entity, $type) {
     foreach($entity->option_sets as $field_name => $option_set) {
       if (isset($updates[$key]) && !empty($updates[$key][$field_name])) {
         try {
-          personalize_fields_option_set_save($option_set, $type, $entity, $field_name);
+          if (personalize_fields_option_set_prepare($option_set, $type, $entity_id, $entity, $field_name)) {
+            personalize_fields_option_set_save($option_set, $type, $entity_id, $field_name);
+          }
         }
         catch(PersonalizeFieldsException $e) {
           drupal_set_message($e->getMessage(), 'error');
