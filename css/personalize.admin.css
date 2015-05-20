@@ -179,7 +179,6 @@ div.personalize-target-wrapper div.form-item {
 #personalize-campaign-wizard .personalize-wizard-section .personalize-wizard-column {
   float: left;
   width: 48%;
-  min-width: 545px; /* Min width for half-size chosen within cards */
   margin: 1em;
 }
 #personalize-campaign-wizard .form-actions .description {
