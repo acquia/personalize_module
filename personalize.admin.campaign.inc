@@ -1247,23 +1247,25 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
     )),
   );
   // Get summary data for goals.
-  $goals = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
-  $count_goals = count($goals);
-  $actions = visitor_actions_get_actions();
-  $items = array();
-  foreach ($goals as $goal) {
-    $items[] = isset($actions[$goal->action]) ? $actions[$goal->action]['label'] : $goal->action;
-  }
+  if ($agent_instance instanceof PersonalizeAgentGoalInterface) {
+    $goals = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
+    $count_goals = count($goals);
+    $actions = visitor_actions_get_actions();
+    $items = array();
+    foreach ($goals as $goal) {
+      $items[] = isset($actions[$goal->action]) ? $actions[$goal->action]['label'] : $goal->action;
+    }
 
-  $form['review']['summary_column']['summary']['goals'] = array(
-    '#markup' => theme('personalize_wizard_summary_count', array(
-      'count' => $count_goals,
-      'details' => theme('item_list', array(
-        'title' => format_plural($count_goals, 'Goal', 'Goals'),
-        'items' => $items,
+    $form['review']['summary_column']['summary']['goals'] = array(
+      '#markup' => theme('personalize_wizard_summary_count', array(
+        'count' => $count_goals,
+        'details' => theme('item_list', array(
+          'title' => format_plural($count_goals, 'Goal', 'Goals'),
+          'items' => $items,
+        )),
       )),
-    )),
-  );
+    );
+  }
   $form['review']['summary_column']['summary']['scheduling'] = array(
     '#markup' => theme('personalize_wizard_summary_schedule', array(
       'start_date' => personalize_agent_get_start_date($agent_data->machine_name),
