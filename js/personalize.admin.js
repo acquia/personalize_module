@@ -20,35 +20,21 @@
         })
       });
 
-      /*
-      @todo This updates data as dirty when input is clicked on but not changed.
-      // Keep track of if the form has been changed.
-      $('#personalize-campaign-wizard').once('personalize-campaign-wizard-dirty', function() {
-        $(this).find(':input').change(function(e) {
-          $('#personalize-campaign-wizard').data('isDirty', true);
-        })
-      });
-      */
-
       // Handle checking for changes when using the process bar navigation
-      $('#personalize-campaign-wizard-process-bar .personalize-wizard-navigation a').once('personalize-campaign-navigation').click(function(e) {
+      $('#personalize-campaign-wizard-process-bar .personalize-wizard-navigation-item a').once('personalize-campaign-navigation').click(function(e) {
         var $parentLi = $(this).parents('li');
-        if ($parentLi.hasClass('personalize-wizard-navigation-disabled') || $parentLi.hasClass('personalize-wizard-navigation-current')) {
+        // If the clicked navigation link is available as a navigation item
+        // then set the next step, save the form, and prevent link actions.
+        if (!$parentLi.hasClass('personalize-wizard-navigation-disabled') && !$parentLi.hasClass('personalize-wizard-navigation-current')) {
+          var $campaignForm = $(this).closest('form');
+          $('input[name="override_step"]', $campaignForm).val($(this).attr('data-personalize-section'));
+          // TRICKY: Must actually click a button Drupal expects rather than
+          // a simple form.submit() or the submit function will not be called.
+          $('input#edit-save', $campaignForm).trigger('click');
           e.preventDefault();
           e.stopImmediatePropagation();
           return false;
         }
-        /*
-        @todo: Restore when isDirty functionality refined.
-        if ($('#personalize-campaign-wizard').data('isDirty')) {
-          // Show a warning.
-          if (!window.confirm(Drupal.t('You have unsaved changes.  Are you sure you want to continue?'))) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-          }
-        }
-        */
       });
 
       // Submit process bar buttons that have corresponding action links.
@@ -62,6 +48,7 @@
             $(this).click(function(e) {
               $actionButton.trigger('click');
               e.stopImmediatePropagation();
+              e.preventDefault();
               return false;
             });
             // Can't just rely on the element-hidden class here because some
