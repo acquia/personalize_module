@@ -655,8 +655,19 @@ function personalize_forms() {
   // We need a status toggle form for each agent on the site.
   foreach (personalize_agent_load_multiple(array(), array(), TRUE, TRUE) as $agent) {
     $forms["personalize_change_status_{$agent->machine_name}_form"]['callback'] = 'personalize_status_change_form';
+    $forms["personalize_change_status_{$agent->machine_name}_form"]['wrapper_callback'] = 'personalize_admin_form_wrapper';
   }
   return $forms;
+}
+
+/**
+ * Helper function to wrap function calls to the admin pages.
+ *
+ * @see personalize_forms().
+ */
+function personalize_admin_form_wrapper($form, &$form_state) {
+  form_load_include($form_state, 'inc', 'personalize', 'personalize.admin');
+  return $form;
 }
 
 /**
