@@ -1908,7 +1908,7 @@ function _personalize_campaign_wizard_rebuild(&$form_state, PersonalizeAgentInte
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
     // Use the redirect action to clear out any "new" item forms.
     // Specify the step to ensure remaining on the current step.
-    $form_state['redirect'] = url('admin/structure/personalize/manage/' . $agent_instance->getMachineName() . '/' . $form_state['storage']['step']);
+    $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent_instance->getMachineName() . '/' . $form_state['storage']['step'];
   }
   else {
     $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
