@@ -124,14 +124,6 @@ function personalize_menu() {
     'access arguments' => array('manage personalized content'),
     'file' => 'personalize.admin.campaign.inc',
   );
-  $items['admin/structure/personalize/manage/%personalize_agent/report'] = array(
-    'title callback' => 'personalize_campaign_title_callback',
-    'title arguments' => array(4),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('personalize_campaign_wizard', 4, 'review'),
-    'access arguments' => array('manage personalized content'),
-    'file' => 'personalize.admin.campaign.inc',
-  );
   $items['admin/structure/personalize/manage/%personalize_agent/delete'] = array(
     'title' => 'Delete personalization',
     'page callback' => 'drupal_get_form',
@@ -784,13 +776,6 @@ function personalize_theme($existing, $type, $theme, $path) {
           'option_sets' => array(),
       ),
     ),
-    'personalize_option_set_report' => array(
-      'path' => $path . '/theme',
-      'file' => 'personalize.theme.inc',
-      'variables' => array(
-        'report' => '',
-      ),
-    ),
     'personalize_admin_enumerated_item' => array(
       'path' => $path . '/theme',
       'file' => 'personalize.theme.inc',
@@ -808,8 +793,6 @@ function personalize_theme($existing, $type, $theme, $path) {
       'variables' => array(
         'variation_title' => t('Variation set'),
         'variation_count' => 0,
-        'report' => array(),
-        'report_link' => '',
       ),
     ),
     'personalize_wizard_section' => array(

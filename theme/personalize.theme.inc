@@ -162,29 +162,6 @@ function theme_personalize_admin_enumerated_item($variables) {
 }
 
 /**
- * Theme function to output a report for an Option Set.
- *
- * @param $variables
- *   An associative array of variables with a single 'report' key that
- *   holds an array of reporting statistics.
- * @return string
- *   The themed output.
- *
- * @ingroup themeable
- */
-function theme_personalize_option_set_report($variables) {
-  if (empty($variables['report'])) {
-    return '';
-  }
-  $output = '<div class="personalize-option-set-report">';
-  foreach($variables['report'] as $stat) {
-    $output .= '<span class="personalize-stat">' . $stat . '</span>';
-  }
-  $output .= '</div>';
-  return $output;
-}
-
-/**
  * Theme wrapper for an administrative option that displays optional
  * details beyond the base description.
  *

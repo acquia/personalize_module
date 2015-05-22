@@ -145,13 +145,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     $form['process_bar']['navigation']['#attributes']['class'][] = 'personalize-wizard-navigation-disabled';
     array_walk($form['process_bar']['navigation']['#options'], function(&$item) { $item['disabled'] = TRUE; });
   }
-  else {
-    // Disable the reporting link if the agent has not yet been started.
-    $agent_status = personalize_agent_get_status($agent_data->machine_name);
-    if (empty($agent_data->started)) {
-      $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
-    }
-  }
 
   // Campaign-specific actions.
   $form['process_bar']['actions'] = array(
@@ -496,14 +489,11 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
     // Header information.
     $edit_link = module_invoke($option_set_plugin['module'], 'personalize_edit_link', $option_set);
     $delete_link = module_invoke($option_set_plugin['module'], 'personalize_delete_link', $option_set);
-    $has_report = $agent_instance instanceof PersonalizeAgentReportInterface && !empty($agent_data->started);
     $section['option_set_' . $option_set->osid]['summary'] = array(
       '#type' => 'markup',
       '#markup' => theme('personalize_wizard_variations_header', array(
         'variation_title' => $option_sets_labels[$option_set->osid],
         'variation_count' => count($option_set->options),
-        'report' => $has_report ? $agent_instance->renderStatsForOptionSet($option_set, $agent_data->started) : array(),
-        'report_link' => $has_report ? l(t('report'), "admin/structure/personalize/manage/{$agent_data->machine_name}/results/{$option_set->osid}") : '',
         'edit_link' => !empty($edit_link) ? l('edit', $edit_link, array('query' => array('destination' => $campaign_page))) : '',
         'delete_link' => !empty($delete_link) ? l('delete', $delete_link, array('query' => array('destination' => $campaign_page))) : '',
       )),
@@ -1310,23 +1300,6 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
 }
 
 /**
- * Subform for campaign reporting.
- *
- * @param array $form
- *   The current form array.
- * @param array $form_state
- *   The current drupal form state
- * @param stdClass $agent_data
- *   The current campaign data.
- * @param PersonalizeAgentInterface $agent_instance
- *   The agent that defines the functionality for the campaign (if set).
- */
-function personalize_campaign_wizard_results($form, &$form_state, $agent_data, $agent_instance = NULL) {
-  $form['report'] = personalize_campaign_report($agent_data, NULL, $form, $form_state);
-  return $form;
-}
-
-/**
  ********************************************************************
  *
  * I N S T R U C T I O N S  &  H E L P
@@ -1849,11 +1822,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
     'review' => array(
       'label' => t('Review'),
       'button_value' => $review_button,
-      'preview_message' => $not_running ? t('Review personalization settings') : t('Review personalization results'),
-    ),
-    'results' => array(
-      'label' => t('Reports'),
-      'button_value' => $next,
+      'preview_message' => t('Review personalization settings'),
     )
   );
 
@@ -1869,6 +1838,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
     unset($steps['targeting']);
   }
+  drupal_alter('personalize_wizard_steps', $steps);
   return $steps;
 }
 
