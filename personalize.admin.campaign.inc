@@ -161,7 +161,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
   );
   if (!empty($agent_data->machine_name)) {
-    $destination = url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/' . $form_state['storage']['step']);
+    $destination = 'admin/structure/personalize/manage/' . $agent_data->machine_name . '/' . $form_state['storage']['step'];
     // NOTE: The button is hidden and activated via JavaScript when
     // clicking the dropbutton link of the same class name.  This allows us
     // to have button/form functionality that is called from the links in a
