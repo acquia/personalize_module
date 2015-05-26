@@ -4,7 +4,7 @@
  * Provides an agent type for testing purposes.
  */
 
-class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAgentGoalInterface, PersonalizeAgentReportInterface {
+class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAgentGoalInterface {
 
   public $goals_received = array();
 
@@ -50,19 +50,4 @@ class PersonalizeTestAgent extends PersonalizeAgentBase implements PersonalizeAg
     );
   }
 
-  /**
-   * Implements PersonalizeAgentReportInterface::renderStatsforOptionSet().
-   */
-  public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL) {
-    return NULL;
-  }
-
-  /**
-   * Implements PersonalizeAgentReportInterface::buildCampaignReports().
-   */
-  public function buildCampaignReports($options) {
-    return array(
-      'report' => NULL,
-    );
-  }
 }

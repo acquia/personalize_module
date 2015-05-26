@@ -161,39 +161,6 @@ interface PersonalizeAgentGoalInterface {
  */
 class PersonalizeException extends Exception {};
 
-interface PersonalizeAgentReportInterface {
-
-  /**
-   * Returns information about the performance of the Option Set.
-   *
-   * @param $option_set
-   *   The Option Set to return stats for.
-   * @param $date_from
-   *   The starting date for the report.
-   * @param null $date_to
-   *   The end date for the report.
-   * @return string
-   *   An array of stats to display.
-   */
-  public function renderStatsForOptionSet($option_set, $date_from, $date_to = NULL);
-
-  /**
-   * Returns an array of reports available for a campaign.
-   *
-   * Each report is returned as a render array.
-   *
-   * @param $options
-   * An array of report filter options.
-   * - decision: Preselected decision to display.
-   * - start: The start date of the report.
-   * - from: The end date of the report.
-   * - goal: (optional) A selected goal for reporting; defaults to all.
-   * - conversion_metric: (optional) Metric to display within the conversion report.  One
-   *   of 'rate' (conversion rate) or 'value' (conversion value).
-   */
-  public function buildCampaignReports($options);
-}
-
 /**
  * An interface to implement when an agent supports explicit targeting for
  * content variations.
