@@ -319,12 +319,14 @@ function hook_personalize_delete_link($option_set) {
 }
 
 /**
- * Allows alteration of the wizard steps.
+ * Allows alteration of the wizard steps for managing a campaign.
  *
  * @param array $steps
  *   An array of steps defining the wizard navigation.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent whose steps are being altered.
  */
-function hook_personalize_wizard_steps_alter(&$steps) {
+function hook_personalize_wizard_steps_alter(&$steps, $agent_instance) {
 
 }
 

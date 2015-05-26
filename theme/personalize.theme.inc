@@ -353,12 +353,6 @@ function theme_personalize_wizard_variations_header($variables) {
   $output .= '<h3>';
   $output .= $variables['variation_title'] . ' ' . format_plural($variables['variation_count'], '1 variation', '@count variations');
   $output .= '</h3>';
-  if (!empty($variables['report'])) {
-    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
-  }
-  if (!empty($variables['report_link'])) {
-    $output .= '<span class="personalize-option-header-item">' . $variables['report_link'] . '</span>';
-  }
   if (!empty($variables['edit_link'])) {
     $output .= '<span class="personalize-option-header-item">' . $variables['edit_link'] . '</span>';
   }

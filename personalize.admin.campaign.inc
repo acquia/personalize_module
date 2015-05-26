@@ -1838,7 +1838,7 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   if (empty($agent_instance) || !($agent_instance instanceof PersonalizeExplicitTargetingInterface)) {
     unset($steps['targeting']);
   }
-  drupal_alter('personalize_wizard_steps', $steps);
+  drupal_alter('personalize_wizard_steps', $steps, $agent_instance);
   return $steps;
 }
 
