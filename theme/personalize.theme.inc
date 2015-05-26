@@ -248,7 +248,7 @@ function theme_personalize_wizard_process_bar($variables) {
     $output .= '<ul>';
     foreach ($navigation['#options'] as $key => $option) {
       $option_url = $base_path . $key;
-      $class = array();
+      $class = array('personalize-wizard-navigation-item');
       if ($current === $key) {
         $class[] = 'personalize-wizard-navigation-current';
       }
@@ -256,7 +256,9 @@ function theme_personalize_wizard_process_bar($variables) {
         $class[] = 'personalize-wizard-navigation-disabled';
       }
       $output .= '<li class="' . implode(' ', $class) . '">';
-      $output .= l($option['label'], $option_url);
+      $output .= l($option['label'], $option_url, array('attributes' => array(
+        'data-personalize-section' => $key,
+      )));
       $output .= '</li>';
     }
     $output .= '</ul>';

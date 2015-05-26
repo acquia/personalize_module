@@ -121,6 +121,9 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
  */
 function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_data, $agent_instance) {
   $form = array();
+  $form['override_step'] = array(
+    '#type' => 'hidden',
+  );
   $form['process_bar'] = array(
     '#type' => 'container',
     '#attributes' => array(
@@ -147,7 +150,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
   }
   else {
     // Disable the reporting link if the agent has not yet been started.
-    $agent_status = personalize_agent_get_status($agent_data->machine_name);
     if (empty($agent_data->started)) {
       $form['process_bar']['navigation']['#options']['results']['disabled'] = TRUE;
     }
@@ -187,6 +189,7 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
         'attributes' => array(
           'data-personalize-action' => 'personalize-wizard-save',
         ),
+        'external' => TRUE, // Prevents url-encoding of #
       ),
     );
 
@@ -1526,7 +1529,7 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   }
 
   // If a new status was indicated, then update the agent status.
-  if (!empty($form_state['triggering_element']['#personalize_next_status'])) {
+  if (!empty($form_state['triggering_element']['#personalize_next_status']) && empty($form_state['values']['override_step'])) {
     personalize_agent_set_status($agent->machine_name, $form_state['triggering_element']['#personalize_next_status']);
   }
 
@@ -1905,13 +1908,24 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
  *   The agent instance for the current agent.
  */
 function _personalize_campaign_wizard_rebuild(&$form_state, PersonalizeAgentInterface $agent_instance) {
+  // If an override was specified, then use it as long as it is valid.
+  if (!empty($form_state['values']['override_step'])) {
+    $steps = _personalize_campaign_wizard_steps($agent_instance);
+    if (!empty($steps[$form_state['values']['override_step']])) {
+      $form_state['storage']['step'] = $form_state['values']['override_step'];
+      $form_state['rebuild'] = TRUE;
+      return;
+    }
+  }
+  // Otherwise check to see if the save button was pressed.
   if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] === t('Save')) {
     // Use the redirect action to clear out any "new" item forms.
     // Specify the step to ensure remaining on the current step.
     $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent_instance->getMachineName() . '/' . $form_state['storage']['step'];
+    $form_state['rebuild'] = FALSE;
+    return;
   }
-  else {
-    $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
-    $form_state['rebuild'] = TRUE;
-  }
+  // Default behavior is to just move on to the next step in the wizard.
+  $form_state['storage']['step'] = _personalize_campaign_wizard_next_step($form_state, $agent_instance);
+  $form_state['rebuild'] = TRUE;
 }
