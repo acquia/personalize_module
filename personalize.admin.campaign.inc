@@ -1863,7 +1863,7 @@ function _personalize_campaign_wizard_next_step($form_state, PersonalizeAgentInt
   $agent_steps = array_keys(_personalize_campaign_wizard_steps($agent_instance));
   $index = array_search($form_state['storage']['step'], $agent_steps);
   $index++;
-  return $index < count($agent_steps) ? $agent_steps[$index] : NULL;
+  return $index < count($agent_steps) ? $agent_steps[$index] : $agent_steps[$index-1];
 }
 
 /**
