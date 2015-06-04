@@ -693,6 +693,7 @@ function personalize_library() {
     'version' => VERSION,
     'js' => array(
       $path . '/js/promise-1.0.0.min.js' => $options,
+      $path . '/js/personalize.storage.js' => $options,
       $path . '/js/personalize.js' => $options,
     ),
     'dependencies' => array(
@@ -702,6 +703,18 @@ function personalize_library() {
       array('system', 'jquery.bbq'),
       array('system', 'drupal.ajax'),
     )
+  );
+  $libraries['debugger'] = array(
+    'title' => 'Personalize debugger integration',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/personalize.storage.js' => $options,
+      $path . '/js/personalize.debug.js' => $options,
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+    ),
   );
   return $libraries;
 }
