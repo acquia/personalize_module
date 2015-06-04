@@ -454,7 +454,14 @@ function personalize_page_build(&$page) {
   $js = array();
   // Add JS for debug mode if enabled.
   if (!path_is_admin(current_path()) && personalize_debug_mode_enabled()) {
-    $js_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js';
+    $page['footer']['personalize_debug'] = array(
+      '#attached' => array(
+        'library' => array(array('personalize', 'debugger')),
+      ),
+      'container' => array(
+        '#markup' => theme('personalize_debugger'),
+      ),
+    );
     $settings['debugMode'] = TRUE;
     $js[$js_file] = array();
   }
@@ -693,7 +700,6 @@ function personalize_library() {
     'version' => VERSION,
     'js' => array(
       $path . '/js/promise-1.0.0.min.js' => $options,
-      $path . '/js/personalize.storage.js' => $options,
       $path . '/js/personalize.js' => $options,
     ),
     'dependencies' => array(
@@ -702,18 +708,32 @@ function personalize_library() {
       array('system', 'jquery.cookie'),
       array('system', 'jquery.bbq'),
       array('system', 'drupal.ajax'),
-    )
+      array('personalize', 'storage'),
+    ),
+  );
+  $libraries['storage'] = array(
+    'title' => 'Personalize local storage integration',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/personalize.storage.js' => $options,
+    ),
   );
   $libraries['debugger'] = array(
     'title' => 'Personalize debugger integration',
     'website' => '',
     'version' => VERSION,
     'js' => array(
-      $path . '/js/personalize.storage.js' => $options,
+      'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular.min.js' => $options,
+      $path . '/js/debugger/app.js' => $options,
       $path . '/js/personalize.debug.js' => $options,
+    ),
+    'css' => array(
+      $path . '/js/debugger/css/debugger.css' => array(),
     ),
     'dependencies' => array(
       array('system', 'jquery'),
+      array('personalize', 'storage'),
     ),
   );
   return $libraries;
@@ -841,6 +861,10 @@ function personalize_theme($existing, $type, $theme, $path) {
         'started_date' => 0,
       ),
     ),
+    'personalize_debugger' => array(
+      'path' => $path . '/theme',
+      'file' => 'personalize.theme.inc',
+    )
   );
 }
 
