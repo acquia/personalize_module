@@ -164,4 +164,4 @@
        }
      }; 
   })();
-})(Drupal.jQuery, Drupal.personalizeStorage);
+})(Drupal.jQuery, Drupal, Drupal.personalizeStorage);
