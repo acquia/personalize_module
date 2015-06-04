@@ -40,8 +40,6 @@
        *   The message to output (already translated).
        * @param code
        *   The message code.
-       *
-       * @todo Make this accept message parameters and use Drupal.t to translate.
        */
       'log': function(message, code) {
         if (debuggedMessages.indexOf(message) != -1) {
