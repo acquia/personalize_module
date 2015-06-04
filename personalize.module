@@ -460,11 +460,12 @@ function personalize_page_build(&$page) {
     $settings['status'] = personalize_get_agent_status_map();
   }
   $js = array();
+  $libraries = array();
+  $libraries[] = array('personalize', 'personalize');
   // Add JS for debug mode if enabled.
   if (!path_is_admin(current_path()) && personalize_debug_mode_enabled()) {
-    $js_file = drupal_get_path('module', 'personalize') . '/js/personalize.debug.js';
+    $libraries[] = array('personalize', 'debugger');
     $settings['debugMode'] = TRUE;
-    $js[$js_file] = array();
   }
 
   $js[] = array(
@@ -474,9 +475,7 @@ function personalize_page_build(&$page) {
   $page['page_top']['personalization'] = array(
     '#attached' => array(
       'js' => $js,
-      'library' => array(
-        array('personalize', 'personalize'),
-      ),
+      'library' => $libraries,
     )
   );
 
@@ -701,6 +700,7 @@ function personalize_library() {
     'version' => VERSION,
     'js' => array(
       $path . '/js/promise-1.0.0.min.js' => $options,
+      $path . '/js/personalize.storage.js' => $options,
       $path . '/js/personalize.js' => $options,
     ),
     'dependencies' => array(
@@ -710,6 +710,18 @@ function personalize_library() {
       array('system', 'jquery.bbq'),
       array('system', 'drupal.ajax'),
     )
+  );
+  $libraries['debugger'] = array(
+    'title' => 'Personalize debugger integration',
+    'website' => '',
+    'version' => VERSION,
+    'js' => array(
+      $path . '/js/personalize.storage.js' => $options,
+      $path . '/js/personalize.debug.js' => $options,
+    ),
+    'dependencies' => array(
+      array('system', 'jquery'),
+    ),
   );
   return $libraries;
 }
