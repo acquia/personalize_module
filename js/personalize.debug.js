@@ -90,7 +90,7 @@
      var curSegmentsOverride;
      var curIdentities = [];
      
-     $(document).bind("segmentsUpdated", function( segments, capture ) {
+     $(document).bind("segmentsUpdated", function( event, segments, capture ) {
        curSegmentCapture = capture;
        curSegments = segments;
        if ( curSegmentsOverride ) {
@@ -99,7 +99,7 @@
        } 
        Drupal.personalizeDebug.log( "Segments Returned", "INFO", curSegments); 
      });
-     $(document).bind("identitiesAdded", function( identities ) {
+     $(document).bind("identitiesAdded", function( event, identities ) {
        // TODO: Check if the person id changed because TC_CONF.userIdentitySourceInTrackingId is true
        $(identities).each( function (index, identity) { curIdentities.push( identity ); } );
      });
