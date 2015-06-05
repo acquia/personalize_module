@@ -1,5 +1,7 @@
+//var $ = JQuery;
 var app = angular.module("debuggerModule", []);
 app.constant('liftwebURl', "");
+app.value('debugPrefix', 'personalize::debug');
 app.factory('debuggerFactory', function($http, liftwebURl){
     var factory = {};
 
@@ -29,12 +31,13 @@ app.factory('debuggerFactory', function($http, liftwebURl){
 
                 this.element =
                     this.options =
-                        this.triggerActivate =
-                            this.triggerExpand =
+                        this.triggerOpen =
+                            this.triggerMaximize =
                                 this.triggerClose =
-                                    this.isActive =
-                                        this.isExpanded =
-                                            this.isClosed = null;
+                                    this.triggerDestroy =
+                                        this.isOpen =
+                                            this.isMaximized =
+                                                this.isClosed = null;
 
                 this.init(element, options);
 
@@ -46,11 +49,12 @@ app.factory('debuggerFactory', function($http, liftwebURl){
 
                 this.element = element;
                 this.options = options;
-                this.triggerActivate = this.getTrigger('activate');
-                this.triggerExpand = this.getTrigger('expand');
+                this.triggerOpen = this.getTrigger('open');
+                this.triggerMaximize = this.getTrigger('maximize');
                 this.triggerClose = this.getTrigger('close');
-                this.isActive = false;
-                this.isExpanded = false;
+                this.triggerDestroy = this.getTrigger('destroy');
+                this.isOpem = false;
+                this.isMaximized = false;
                 this.isClosed = true;
 
                 this.render();
@@ -68,15 +72,15 @@ app.factory('debuggerFactory', function($http, liftwebURl){
 
             }
 
-            Lift.debugger.prototype.clickActivate = function (event) {
+            Lift.debugger.prototype.clickOpen = function (event) {
 
-                this.activate();
+                this.open();
 
             }
 
-            Lift.debugger.prototype.clickExpand = function (event) {
+            Lift.debugger.prototype.clickMaximize = function (event) {
 
-                this.expand();
+                this.maximize();
 
             }
 
@@ -86,76 +90,105 @@ app.factory('debuggerFactory', function($http, liftwebURl){
 
             }
 
-            Lift.debugger.prototype.setActive = function () {
+            Lift.debugger.prototype.clickDestroy = function (event) {
 
-                this.isExpanded = false;
+                this.destroy();
+
+            }
+
+            Lift.debugger.prototype.setOpen = function () {
+
+                this.isMaximized = false;
                 this.isClosed = false;
-                this.isActive = true;
+                this.isOpen = true;
 
             };
 
-            Lift.debugger.prototype.setExpanded = function () {
+            Lift.debugger.prototype.setMaximized = function () {
 
-                this.isActive = false;
+                this.isOpen = false;
                 this.isClosed = false;
-                this.isExpanded = true;
+                this.isMaximized = true;
 
             };
 
             Lift.debugger.prototype.setClosed = function () {
 
-                this.isActive = false;
-                this.isExpanded = false;
+                this.isOpen = false;
+                this.isMaximized = false;
                 this.isClosed = true;
 
             };
 
-            Lift.debugger.prototype.activate = function () {
+            Lift.debugger.prototype.open = function () {
 
-                this.setActive();
+                this.setOpen();
                 this.render();
 
-            }
+            };
 
-            Lift.debugger.prototype.expand = function () {
+            Lift.debugger.prototype.maximize = function () {
 
-                this.setExpanded();
+                this.setMaximized();
                 this.render();
 
-            }
+            };
 
             Lift.debugger.prototype.close = function () {
 
                 this.setClosed();
                 this.render();
 
-            }
+            };
 
             Lift.debugger.prototype.render = function () {
 
                 if (!this.element.classList.contains('debugger-processed')) {
+                    this.element.classList.add('debugger');
                     this.element.classList.add('debugger-processed');
                 }
 
                 if (this.isClosed) {
-                    this.element.classList.remove('is-active');
-                    this.element.classList.remove('is-expanded');
+                    this.element.classList.remove('is-open');
+                    this.element.classList.remove('is-maximized');
                     this.element.classList.add('is-closed');
+                    this.triggerOpen.setAttribute('aria-hidden', 'false');
+                    this.triggerMaximize.setAttribute('aria-hidden', 'false');
+                    this.triggerDestroy.setAttribute('aria-hidden', 'false');
+                    this.triggerClose.setAttribute('aria-hidden', 'true');
                 }
 
-                if (this.isActive) {
-                    this.element.classList.add('is-active');
-                    this.element.classList.remove('is-expanded');
+                if (this.isOpen) {
+                    this.element.classList.add('is-open');
+                    this.element.classList.remove('is-maximized');
                     this.element.classList.remove('is-closed');
+                    this.triggerClose.setAttribute('aria-hidden', 'false');
+                    this.triggerMaximize.setAttribute('aria-hidden', 'false');
+                    this.triggerDestroy.setAttribute('aria-hidden', 'false');
+                    this.triggerOpen.setAttribute('aria-hidden', 'true');
                 }
 
-                if (this.isExpanded) {
-                    this.element.classList.add('is-expanded');
-                    this.element.classList.remove('is-active');
+                if (this.isMaximized) {
+                    this.element.classList.add('is-maximized');
+                    this.element.classList.remove('is-open');
                     this.element.classList.remove('is-closed');
+                    this.triggerOpen.setAttribute('aria-hidden', 'false');
+                    this.triggerClose.setAttribute('aria-hidden', 'false');
+                    this.triggerDestroy.setAttribute('aria-hidden', 'false');
+                    this.triggerMaximize.setAttribute('aria-hidden', 'true');
                 }
 
-            }
+            };
+
+            Lift.debugger.prototype.destroy = function () {
+
+                this.element.classList.remove('is-open');
+                this.element.classList.remove('is-maximized');
+                this.element.classList.remove('is-closed');
+                this.element.classList.remove('debugger');
+                this.element.classList.remove('debugger-processed');
+
+            };
 
         })(Lift);
         return Lift;
@@ -202,24 +235,44 @@ app.factory('debuggerFactory', function($http, liftwebURl){
     }
 }])
 
-app.controller("DebuggerController", function($scope, $timeout, liftwebURl, debuggerFactory, $localstorage, $window, liftDebugger){
-    $scope.debugger = "hello world";
+app.controller("DebuggerController", function($scope, $timeout, liftwebURl, debuggerFactory, $localstorage, $window, liftDebugger, debugPrefix){
     $scope.url = liftwebURl;
     $scope.items = [];
+    $scope.tab = 'log';
+    $scope.profile = {};
 
-    $(document).bind("acquialiftDebugEvent", function(e, value){
-        alert(value.key);
-        console.log(value);
-        var item = $localstorage.get(value.key);
-        $timeout(function(){
-            $scope.items.push({value: item});
-            console.log($scope.items);
-        });
-
-
-    });
+    for (var key in $window.localStorage){
+        console.log(key);
+        if(key.indexOf(debugPrefix) >= 0){
+            console.log($localstorage.getObject(key));
+            $timeout(function(index){
+                return function(){
+                    $scope.items.push($localstorage.getObject(index));
+                }
+            }(key));
+        }
+    }
 
     var debugConsole = new liftDebugger.debugger(document.getElementById('debugger'));
+
+    $(document).bind("acquiaLiftDebugEvent", function(e, value){
+//        alert(value.key);
+        console.log(value);
+        if(key.indexOf(debugPrefix) >= 0) {
+            $timeout(function (index) {
+                return function () {
+                    $scope.items.push($localstorage.getObject(index));
+                }
+            }(value.key));
+        }
+    });
+    $scope.profile.personId = Drupal.liftWebDebug.getPersonId();
+    $scope.profile.touchId = Drupal.liftWebDebug.getTouchId();
+    $scope.profile.allSegments = Drupal.liftWebDebug.getAllSegments();
+    $scope.profile.curSegments = Drupal.liftWebDebug.getCurrentSegments();
+    $scope.profile.identities = Drupal.liftWebDebug.getAdditionalIdentities();
+    $scope.profile.overrideSegments = Drupal.liftWebDebug.getOverrideSegments();
+
 
 });
 
