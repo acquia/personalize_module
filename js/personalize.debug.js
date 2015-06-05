@@ -151,12 +151,14 @@
        },
        
        'evaluateSegment' : function( segmentName, callback ) {
+         var personId = this.getPersonId();
+         var touchId = this.getTouchId();
          _tcwq.push( ["getApiUrl", function( apiUrl ) { 
            jQuery.ajax( {
-             url : apiUrl + "?tcla="+Drupal.Settings.lift_user_profiles.accountName+
-               "&tcptid="+getPersonId()+
-               "&tcttid="+getTouchId()+
-               "&evalSegment="+segmentName,
+             url : apiUrl + "?tcla="+window.encodeURIComponent(Drupal.Settings.lift_user_profiles.accountName)+
+               "&tcptid="+window.encodeURIComponent(personId)+
+               "&tcttid="+window.encodeURIComponent(touchId)+
+               "&evalSegment="+window.encodeURIComponent(segmentName),
              cache : false,
              dataType : "jsonp",
              success : function( data, text, request ) {
