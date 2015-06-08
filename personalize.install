@@ -279,6 +279,8 @@ function personalize_uninstall() {
     ->execute();
   foreach ($result as $row) {
     variable_del("personalize_campaign_{$row->machine_name}_status");
+    variable_del("personalize_campaign_{$row->machine_name}_stop");
+    variable_del("personalize_campaign_{$row->machine_name}_start");
   }
 }
 
