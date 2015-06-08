@@ -319,24 +319,14 @@ function hook_personalize_delete_link($option_set) {
 }
 
 /**
- * Returns a render array or themed output for a report on the specified agent.
+ * Allows alteration of the wizard steps for managing a campaign.
  *
- * This hook will be invoked on the module responsible for the agent type of
- * the agent in question.
- *
- * @param stdClass $agent_data
- *   A stdClass object representing the loaded agent.
- * @param stdClass $option_set
- *   (optional) The content variation set for filtering report data.
- * @param array $form
- *   (optional) The form array if this is called in the context of a form.
- * @param array $form_state
- *   (optional) The form_state array if this is called in the context of a form.
- *
- * @return string|array
- *   Either a string of themed output or an array that can be passed to drupal_render.
+ * @param array $steps
+ *   An array of steps defining the wizard navigation.
+ * @param PersonalizeAgentInterface $agent_instance
+ *   The agent whose steps are being altered.
  */
-function hook_personalize_campaign_report($agent_data, $option_set, $form, &$form_state) {
+function hook_personalize_wizard_steps_alter(&$steps, $agent_instance) {
 
 }
 

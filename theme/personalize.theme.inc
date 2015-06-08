@@ -162,29 +162,6 @@ function theme_personalize_admin_enumerated_item($variables) {
 }
 
 /**
- * Theme function to output a report for an Option Set.
- *
- * @param $variables
- *   An associative array of variables with a single 'report' key that
- *   holds an array of reporting statistics.
- * @return string
- *   The themed output.
- *
- * @ingroup themeable
- */
-function theme_personalize_option_set_report($variables) {
-  if (empty($variables['report'])) {
-    return '';
-  }
-  $output = '<div class="personalize-option-set-report">';
-  foreach($variables['report'] as $stat) {
-    $output .= '<span class="personalize-stat">' . $stat . '</span>';
-  }
-  $output .= '</div>';
-  return $output;
-}
-
-/**
  * Theme wrapper for an administrative option that displays optional
  * details beyond the base description.
  *
@@ -378,12 +355,6 @@ function theme_personalize_wizard_variations_header($variables) {
   $output .= '<h3>';
   $output .= $variables['variation_title'] . ' ' . format_plural($variables['variation_count'], '1 variation', '@count variations');
   $output .= '</h3>';
-  if (!empty($variables['report'])) {
-    $output .= theme('personalize_option_set_report', array('report' => $variables['report']));
-  }
-  if (!empty($variables['report_link'])) {
-    $output .= '<span class="personalize-option-header-item">' . $variables['report_link'] . '</span>';
-  }
   if (!empty($variables['edit_link'])) {
     $output .= '<span class="personalize-option-header-item">' . $variables['edit_link'] . '</span>';
   }
