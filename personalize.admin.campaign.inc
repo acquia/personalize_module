@@ -224,6 +224,16 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
         'class' => array('personalize-wizard-action-links'),
       )),
     );
+    // ctools calls drupal_add_js() and drupal_add_css() to load assets. Unfortunately,
+    //   1) drupal_add_*() don't get called when page is cached, and;
+    //   2) when there is a form validation error, the cached form is served.
+    // In this special case, dropbuttons are loaded without their supporting js and css.
+    // The fix is to manually configure #attached to ensure the assets are loaded, regardless.
+    if (count($links) > 1) {
+      $form['process_bar']['actions']['action_links']['#attached']['js'][] = drupal_get_path('module', 'ctools') . '/js/dropbutton.js';
+      $form['process_bar']['actions']['action_links']['#attached']['css'][] = drupal_get_path('module', 'ctools') . '/css/dropbutton.css';
+    }
+    $form['process_bar']['actions']['action_links']['#attached']['css'][] = drupal_get_path('module', 'ctools') . '/css/button.css';
   }
 
   // Instructions and help.
