@@ -2095,6 +2095,8 @@ function personalize_agent_delete($agent_name) {
     personalize_goal_delete($row->id);
   }
   variable_del(_personalize_agent_get_status_variable($agent_name));
+  variable_del(_personalize_agent_get_starttime_variable($agent_name));
+  variable_del(_personalize_agent_get_stoptime_variable($agent_name));
   module_invoke_all('personalize_agent_delete', $agent);
 }
 
