@@ -1893,8 +1893,8 @@ function _personalize_campaign_wizard_rebuild(&$form_state, PersonalizeAgentInte
   if (!empty($form_state['values']['override_step'])) {
     $steps = _personalize_campaign_wizard_steps($agent_instance);
     if (!empty($steps[$form_state['values']['override_step']])) {
-      $form_state['storage']['step'] = $form_state['values']['override_step'];
-      $form_state['rebuild'] = TRUE;
+      $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent_instance->getMachineName() . '/' . $form_state['values']['override_step'];
+      $form_state['rebuild'] = FALSE;
       return;
     }
   }
