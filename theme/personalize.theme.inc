@@ -300,6 +300,9 @@ function theme_personalize_wizard_section($variables) {
     return drupal_render($element);
   }
   else {
+    if (!empty($element['#attributes']['id'])) {
+      unset($element['#attributes']['id']);
+    }
     $output .= '<div ' . drupal_attributes($element['#attributes']) . '>';
     if (!empty($title_child)) {
       $output .= drupal_render($element[$title_child]);
