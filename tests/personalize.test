@@ -1062,17 +1062,18 @@ EOT;
     );
     $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_1][options][option-A][explicit_targeting][add_new]');
     $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_1][options][option-A][explicit_targeting][add_new]');
+    $os_str = 'option_set_' . $option_set->osid;
     $edit = array(
-      'option_sets[option_set_1][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_session',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'equals',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => '',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][context]' => 'personalize_test_visitor_context__test_local_none',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]' => 'equals',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][1][value][match]' => '',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][context]' => 'personalize_test_visitor_context__test_nocache',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]' => 'equals',
-      'option_sets[option_set_1][options][option-A][explicit_targeting][mapping][contexts][2][value][match]' => '',
+      "option_sets[$os_str][options][option-A][enable_explicit_targeting]" => 1,
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][0][context]" => 'personalize_test_visitor_context__test_session',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]" => 'equals',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => '',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][1][context]" => 'personalize_test_visitor_context__test_local_none',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]" => 'equals',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][1][value][match]" => '',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][2][context]" => 'personalize_test_visitor_context__test_nocache',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]" => 'equals',
+      "option_sets[$os_str][options][option-A][explicit_targeting][mapping][contexts][2][value][match]" => '',
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_save'));
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
@@ -1094,23 +1095,24 @@ EOT;
     $second_machine_name = $second_agent->machine_name;
 
     $second_option_set = $this->createOptionSet(1, array('plugin' => 'block', 'agent' => $second_machine_name, 'options' => $options, 'data' => array('block_title' => $this->randomName())));
+    $second_os_str = 'option_set_' . $second_option_set->osid;
     $this->drupalGet("admin/structure/personalize/manage/$second_machine_name/targeting");
     $edit = array(
-      'option_sets[option_set_2][options][option-A][enable_explicit_targeting]' => 1,
+      "option_sets[$second_os_str][options][option-A][enable_explicit_targeting]" => 1,
     );
-    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_2][options][option-A][explicit_targeting][add_new]');
-    $this->drupalPostAJAX(NULL, $edit, 'option_sets[option_set_2][options][option-A][explicit_targeting][add_new]');
+    $this->drupalPostAJAX(NULL, $edit, "option_sets[$second_os_str][options][option-A][explicit_targeting][add_new]");
+    $this->drupalPostAJAX(NULL, $edit, "option_sets[$second_os_str][options][option-A][explicit_targeting][add_new]");
     $edit = array(
-      'option_sets[option_set_2][options][option-A][enable_explicit_targeting]' => 1,
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][context]' => 'personalize_test_visitor_context__test_local_30',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]' => 'equals',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][0][value][match]' => '',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][context]' => 'personalize_test_visitor_context__test_local_none',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]' => 'equals',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][1][value][match]' => '',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][context]' => 'personalize_test_visitor_context__test_nocache',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]' => 'equals',
-      'option_sets[option_set_2][options][option-A][explicit_targeting][mapping][contexts][2][value][match]' => '',
+      "option_sets[$second_os_str][options][option-A][enable_explicit_targeting]" => 1,
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][0][context]" => 'personalize_test_visitor_context__test_local_30',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][0][value][operator]" => 'equals',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => '',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][1][context]" => 'personalize_test_visitor_context__test_local_none',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][1][value][operator]" => 'equals',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][1][value][match]" => '',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][2][context]" => 'personalize_test_visitor_context__test_nocache',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][2][value][operator]" => 'equals',
+      "option_sets[$second_os_str][options][option-A][explicit_targeting][mapping][contexts][2][value][match]" => '',
 
     );
     $this->drupalPost(NULL, $edit, $this->getButton('wizard_save'));
