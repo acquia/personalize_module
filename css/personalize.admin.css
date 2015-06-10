@@ -173,6 +173,11 @@ div.personalize-target-wrapper div.form-item {
 }
 
 /* Personalize campaign wizard forms */
+/* Shouldn't have to do this but some forms actually override the display
+   on inputs */
+.personalize-wizard-process-bar-actions .element-hidden {
+  display: none;
+}
 #personalize-campaign-wizard .personalize-wizard-section {
   width: 100%;
 }
@@ -259,6 +264,16 @@ div.personalize-target-wrapper div.form-item {
   border-color: #999;
   background-color: #fff;
 }
+/** Work-around for additional mark-up added by ember theme **/
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions .ctools-dropbutton-wrapper {
+  position: absolute;
+  right: .7em;
+}
+#personalize-wizard-process-bar .personalize-wizard-process-bar-actions .ctools-dropbutton-wrapper .personalize-wizard-action-links {
+  position: relative;
+  right: 0;
+}
+/** End work around **/
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links li {
   padding: .3em;
 }

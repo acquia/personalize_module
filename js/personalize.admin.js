@@ -38,8 +38,8 @@
       });
 
       // Submit process bar buttons that have corresponding action links.
-      $('#personalize-campaign-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links').once(function() {
-        var context = $(this).parent();
+      $('#personalize-campaign-wizard-process-bar .personalize-wizard-process-bar-actions').once(function() {
+        var context = $(this);
         $('[data-personalize-action]', context).each(function() {
           var buttonClass = $(this).attr('data-personalize-action');
           var $actionButton = $('.' + buttonClass, context);
