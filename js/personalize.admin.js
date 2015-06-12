@@ -31,10 +31,10 @@
           // TRICKY: Must actually click a button Drupal expects rather than
           // a simple form.submit() or the submit function will not be called.
           $('input#edit-save', $campaignForm).trigger('click');
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          return false;
         }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
       });
 
       // Submit process bar buttons that have corresponding action links.
