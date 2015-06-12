@@ -248,12 +248,24 @@ class PersonalizeBaseTest extends DrupalWebTestCase {
    * Kind of Page Objects Patterns
    *
    * @param $type string
+   *   The type of button to grab the label for.
+   * @param $context array
+   *   An array of contextual information to determine the button text.
    * @return string
    */
-  protected function getButton($type = '') {
+  protected function getButton($type = '', $context = array()) {
     switch ($type) {
       case 'wizard_next':
-        return t('Next');
+        module_load_include('inc', 'personalize', 'personalize.admin.campaign');
+        $agent_instance = NULL;
+        if (isset($context['agent_name'])) {
+          $agent_instance = personalize_agent_load_agent($context['agent_name']);
+        }
+        $steps = _personalize_campaign_wizard_steps($agent_instance);
+        $next_step = _personalize_campaign_wizard_next_step(array('storage' => array('step' => $context['step'])), $agent_instance);
+        $next_info = $steps[$next_step];
+        $button_text = 'Next: ' . $next_info['preview_message'];
+        return t($button_text);
       case 'wizard_done':
       case 'wizard_save':
         return t('Save');
@@ -907,7 +919,7 @@ EOT;
 
     // Now turn on decision caching for this agent.
     $edit = array('cache_decisions' => TRUE);
-    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/variations", $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'variations')));
     $this->resetAll();
 
     $this->drupalGet('');
@@ -990,7 +1002,7 @@ EOT;
       "option_sets[option_set_{$osid}][advanced][executor]" => 'callback',
       "option_sets[option_set_{$osid}][advanced][label]" => $option_set->label,
     );
-    $this->drupalPost(null, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(null, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'variations')));
 
     // Now callback should be checked.
     $this->drupalGet("admin/structure/personalize/manage/{$machine_name}/variations");
@@ -1012,7 +1024,7 @@ EOT;
       "option_sets[option_set_{$osid}][advanced][executor]" => 'show',
       "option_sets[option_set_{$osid}][advanced][label]" => $option_set->label,
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$machine_name}/variations", $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'variations')));
 
     // Verify on the page there is a template script tag for the option set.
     $this->drupalGet('');
@@ -1177,7 +1189,7 @@ EOT;
       "option_sets[option_set_$osid2][options][option-A][explicit_targeting][mapping][contexts][0][value][match]" => 'first value',
       "option_sets[option_set_$osid2][options][option-A][explicit_targeting][strategy]" => 'OR',
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/targeting", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent->machine_name}/targeting", $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'targeting')));
 
     // Start the agent up and verify the various contexts are included.
     personalize_agent_set_status($machine_name, PERSONALIZE_STATUS_RUNNING);
@@ -1450,7 +1462,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $edit = array(
       "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $decision_name
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/variations", $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'variations')));
     $second_os = personalize_option_set_load($option_sets[1]->osid, TRUE);
     $this->assertEqual(PERSONALIZE_OPTION_SET_PREFIX . $option_sets[0]->osid, $second_os->decision_name);
 
@@ -1473,7 +1485,7 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
       "option_sets[option_set_{$option_sets[0]->osid}][advanced][decision_name]" => $new_name,
       "option_sets[option_set_{$option_sets[1]->osid}][advanced][decision_name]" => $new_name
     );
-    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/variations", $edit, $this->getButton('wizard_next'));
+    $this->drupalPost("admin/structure/personalize/manage/{$agent_name}/variations", $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'variations')));
     $this->drupalGet('');
     $settings = $this->drupalGetSettings();
     $option_set_settings = $settings['personalize']['option_sets'];
@@ -1538,21 +1550,21 @@ class PersonalizeOptionSetTest extends PersonalizeBaseTest {
     $edit = array(
       'option_sets[option_set_1][advanced][preview_link]' => 'http://google.com',
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'variations')));
     $this->assertText(t('External paths are not allowed for Preview link'));
 
     // Try adding a link to a page that does not exist.
     $edit = array(
       'option_sets[option_set_1][advanced][preview_link]' => 'node/' . $this->randomString(),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'variations')));
     $this->assertText(t('You have specified an invalid path for Preview link'));
 
     // Add a good preview link and verify that preview links are added.
     $edit = array(
       'option_sets[option_set_1][advanced][preview_link]' => '<front>',
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'variations')));
     $this->assertNoText(t('The preview link for "Option Set 1" must be a valid internal Drupal path.'));
 
     // In the preview link page, test that the option is pre-selected in the
@@ -1964,7 +1976,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_end_date[day]' => date('d', $end_date),
       'campaign_end_date[year]' => date('Y', $end_date),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
     $this->assertText('When provided, the start date for the personalization must be in the future.');
     $this->assertText('When provided, the end date for the personalization must be in the future.');
     // Make sure the variables did not get updated.
@@ -1984,7 +1996,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_end_date[day]' => date('d', $end_date),
       'campaign_end_date[year]' => date('Y', $end_date),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
     $this->assertText('When provided, the end date for the personalization must be after the start date for the personalization.');
     // Make sure the variables did not get updated.
     $this->assertEqual(0, personalize_agent_get_start_date($machine_name));
@@ -2003,7 +2015,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_end_date[day]' => date('d', $end_date),
       'campaign_end_date[year]' => date('Y', $end_date),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
     $this->resetAll();
     $this->assertEqual($start_date, personalize_agent_get_start_date($machine_name));
     $this->assertEqual($end_date, personalize_agent_get_stop_date($machine_name));
@@ -2016,7 +2028,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_start' => 'none',
       'campaign_end' => 'none',
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
     $this->assertEqual(0, personalize_agent_get_start_date($machine_name));
     $this->assertEqual(0, personalize_agent_get_stop_date($machine_name));
 
@@ -2172,7 +2184,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_start_date[day]' => date('d', $start_date),
       'campaign_start_date[year]' => date('Y', $start_date),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
 
     // Verify options.
     foreach ($campaign_pages as $page) {
@@ -2190,7 +2202,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
     $edit = array(
       'campaign_start' => 'none',
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
 
     // Verify options.
     foreach ($campaign_pages as $page) {
@@ -2237,7 +2249,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
       'campaign_start_date[day]' => date('d', $start_date),
       'campaign_start_date[year]' => date('Y', $start_date),
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
 
     // Verify that the correct messaging is shown on all campaign wizard pages.
     foreach ($campaign_pages as $page) {
@@ -2353,12 +2365,12 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
     // Create a new campaign via the UI.
     $this->drupalGet('admin/structure/personalize/add');
 
-    // Verify that all navigation is disabled before campaign is created.
-    $this->assertCampaignNavigationWithClass(t('What'), 'personalize-wizard-navigation-disabled');
+    // Verify that all navigation is hidden before campaign is created.
+    $this->assertNoLink(t('What'));
     $this->assertNoLink(t('Why'));
     $this->assertNoLink(t('Who'));
-    $this->assertCampaignNavigationWithClass(t('When'), 'personalize-wizard-navigation-disabled');
-    $this->assertCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-disabled');
+    $this->assertNoLink(t('When'));
+    $this->assertNoLink(t('Review'));
 
     $agent_label = $this->randomName();
     $machine_name = personalize_generate_machine_name($agent_label);
@@ -2383,7 +2395,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
 
     // Move through the campaign using the next button and confirm steps.
     // We cannot test the URL as it doesn't change when using the next button.
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'variations')));
 
     // Now we should be on the goals page.
     $this->assertText(t('Goals'));
@@ -2401,7 +2413,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
     $this->assertNoCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-disabled');
     $this->assertNoCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-current');
 
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'goals')));
 
     // Now we should be on the Scheduling page (because this agent does not
     // support targeting.
@@ -2419,7 +2431,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
     $this->assertNoCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-disabled');
     $this->assertNoCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-current');
 
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_next', array('agent_name' => $machine_name, 'step' => 'scheduling')));
 
     // Now we should be on the Review page.
     $this->assertText(t('Overview'));
@@ -2436,7 +2448,7 @@ class PersonalizeAgentAdminUITest extends PersonalizeBaseTest {
     $this->assertNoCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-disabled');
     $this->assertCampaignNavigationWithClass(t('Review'), 'personalize-wizard-navigation-current');
 
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_start'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_start', array('agent_name' => $machine_name, 'step' => 'review')));
 
     // Should still be on the Review page.
     $this->assertText(t('Overview'));
@@ -2779,7 +2791,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
       'all_goals[0][action_name]' => 'user_login',
       'all_goals[0][value]' => 1,
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'goals')));
 
     // Verify new goal is on page
     $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/goals");
@@ -2801,7 +2813,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
       'all_goals[2][action_name]' => 'user_register',
       'all_goals[2][value]' => 2,
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'goals')));
 
     // Verify that we only have two goals saved on the page now.
     $this->drupalGet("admin/structure/personalize/manage/{$agent_name}/goals");
@@ -2813,7 +2825,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $edit = array(
       'all_goals[0][value]' => 5,
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'goals')));
 
     $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
     $new_id = FALSE;
@@ -2831,7 +2843,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     $edit = array(
       'all_goals[0][action_name]' => 'form_submit',
     );
-    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, $edit, $this->getButton('wizard_next', array('agent_name' => $agent_name, 'step' => 'goals')));
 
     $goals = personalize_goal_load_by_conditions(array('agent' => $agent_name));
     $new_id = FALSE;
@@ -3016,7 +3028,7 @@ class PersonalizeGoalAdminTest extends PersonalizeBaseTest {
     // orphaned goal.
     $this->drupalGet('admin/structure/personalize/manage/' . $agents[1]->getMachineName() . '/goals');
     $this->assertText('At least one of your goals no longer has an action associated with it. Saving this form will cause the goal to be removed from the personalization.');
-    $this->drupalPost(NULL, array(), $this->getButton('wizard_next'));
+    $this->drupalPost(NULL, array(), $this->getButton('wizard_next', array('agent_name' => $agents[1]->getMachineName(), 'step' => 'goals')));
     $goals = personalize_goal_load_by_conditions(array('agent' => $agents[1]->getMachineName()), TRUE);
     $this->assertEqual(0, count($goals));
     // Set the third agent to completed, this should not cause the action to be

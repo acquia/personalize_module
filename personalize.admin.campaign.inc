@@ -268,7 +268,7 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
   // TRICKY: Don't name this "submit" or it does crazy things to JS form
   // submission.
   $button_text = $current_info['button_value'];
-  if (!empty($next_info['preview_message'])) {
+  if ($form_state['storage']['step'] !== $next_step && !empty($next_info['preview_message'])) {
     $button_text .= ': ' . $next_info['preview_message'];
   }
   $form['actions']['submit'] = array(

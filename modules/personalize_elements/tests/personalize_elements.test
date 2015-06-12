@@ -571,14 +571,14 @@ class PersonalizeElementsTest extends PersonalizeBaseTest {
    * @return string
    *   The text of the button
    */
-  protected function getButton($type = '') {
+  protected function getButton($type = '', $context = array()) {
     switch ($type) {
       case 'add_another':
         return t('Add variation');
       case 'save':
         return t('Save');
       default:
-        return $type;
+        return parent::getButton($type, $context);
     }
   }
 
