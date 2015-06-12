@@ -232,9 +232,11 @@ function theme_personalize_wizard_process_bar($variables) {
       else if (!empty($option['disabled'])) {
         $class[] = 'personalize-wizard-navigation-disabled';
       }
+      $title = empty($option['description']) ? $option['label'] : $option['description'];
       $output .= '<li class="' . implode(' ', $class) . '">';
       $output .= l($option['label'], $option_url, array('attributes' => array(
         'data-personalize-section' => $key,
+        'title' => $title,
       )));
       $output .= '</li>';
     }
@@ -334,6 +336,9 @@ function theme_personalize_wizard_section_title($variables) {
   $output .= '<div class="personalize-wizard-section-title"><h2>' . $element['#title'] . '</h2>';
   $output .= drupal_render_children($element);
   $output .=  '</div>';
+  if (!empty($element['#instructions'])) {
+    $output .= '<div class="personalize-wizard-section-instructions">' . $element['#instructions'] . '</div>';
+  }
   return $output;
 }
 

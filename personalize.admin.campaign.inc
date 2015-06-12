@@ -84,14 +84,14 @@ function personalize_campaign_wizard($form, &$form_state, $agent_data = NULL, $s
   }
   $form += $header_form;
 
-  // Add the form process bar (includes navigation and other campaign
-  // level actions).
-  $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
-
   // Create the campaign before being able to add variations/goals/etc.
   if (empty($agent_data->machine_name)) {
     return $form;
   }
+
+  // Add the form process bar (includes navigation and other campaign
+  // level actions).
+  $form += personalize_campaign_wizard_process_bar($form, $form_state, $agent_data, $agent_instance);
 
   // Add the current sub-form.
   $function = 'personalize_campaign_wizard_' . $form_state['storage']['step'];
@@ -142,12 +142,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     ),
     '#options' => _personalize_campaign_wizard_steps($agent_instance),
   );
-
-  // Disable all options when creating a campaign for the first time.
-  if (empty($agent_data->machine_name)) {
-    $form['process_bar']['navigation']['#attributes']['class'][] = 'personalize-wizard-navigation-disabled';
-    array_walk($form['process_bar']['navigation']['#options'], function(&$item) { $item['disabled'] = TRUE; });
-  }
 
   // Campaign-specific actions.
   $form['process_bar']['actions'] = array(
@@ -230,16 +224,6 @@ function personalize_campaign_wizard_process_bar($form, &$form_state, $agent_dat
     $form['process_bar']['actions']['action_links']['#attached']['css'][] = drupal_get_path('module', 'ctools') . '/css/button.css';
   }
 
-  // Instructions and help.
-  $instructions_function = 'personalize_campaign_wizard_instructions_' . $form_state['storage']['step'];
-  if (function_exists($instructions_function)) {
-    $form['process_bar']['message'] = $instructions_function($form, $form_state, $agent_instance);
-  }
-  $help_function = 'personalize_campaign_wizard_help_' . $form_state['storage']['step'];
-  if (function_exists($help_function)) {
-    $form['process_bar']['help'] = $help_function($form, $form_state, $agent_data, $agent_instance);
-  }
-
   return $form;
 }
 
@@ -275,22 +259,22 @@ function personalize_campaign_wizard_action($form, &$form_state, $agent_data, $a
 
   $form['actions'] = array(
     '#type' => 'actions',
+    '#attributes' => array(
+      'class' => array(
+        'personalize-wizard-actions',
+      ),
+    ),
   );
   // TRICKY: Don't name this "submit" or it does crazy things to JS form
   // submission.
+  $button_text = $current_info['button_value'];
+  if (!empty($next_info['preview_message'])) {
+    $button_text .= ': ' . $next_info['preview_message'];
+  }
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#name' => 'wizard_submit',
-    '#value' => $current_info['button_value'],
-    '#suffix' => empty($next_info['preview_message']) ? '' : theme('html_tag', array(
-      'element' => array(
-        '#value' => $next_info['preview_message'],
-        '#tag' => 'span',
-        '#attributes' => array(
-          'class' => array('description'),
-        ),
-      ),
-    )),
+    '#value' => $button_text,
     '#disabled' => !($form_state['storage']['allow_submit']),
     '#attributes' => array(
       'class' => array('action-item-primary-active'),
@@ -453,6 +437,7 @@ function personalize_campaign_wizard_variations($form, &$form_state, $agent_data
   $form['variations']['title'] = array(
     '#type' => 'container',
     '#title' => t('Variation sets'),
+    '#instructions' => t('A variation set is a collection of related content for a website object, from which content items are selected for display to each visitor based on the personalization\'s settings and the visitors\' contexts.'),
     '#theme' => 'personalize_wizard_section_title',
   );
   $form['variations']['title']['summary'] = array(
@@ -777,6 +762,7 @@ function personalize_campaign_wizard_targeting($form, &$form_state, $agent_data,
   $form['targeting']['title'] = array(
     '#type' => 'container',
     '#title' => t('Targeting'),
+    '#instructions' => t('Determine which of the variations in your personalizations are displayed to specific groups of website visitors.'),
     '#theme' => 'personalize_wizard_section_title',
   );
 
@@ -932,6 +918,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
       '#markup' => t('This agent does not support goals.'),
     );
   }
+
   $goal_entities = personalize_goal_load_by_conditions(array('agent' => $agent_data->machine_name));
   $goals = $exclude = array();
   $all_actions = visitor_actions_get_actions();
@@ -998,6 +985,7 @@ function personalize_campaign_wizard_goals($form, &$form_state, $agent_data, $ag
   $form['goals']['title'] = array(
     '#type' => 'container',
     '#title' => t('Goals'),
+    '#instructions' => t('Create your personalization\'s goals, which are the website actions that you want your visitors to take. Completed goals for a variation increase its chance of being the winning variation for a group of visitors.'),
     '#theme' => 'personalize_wizard_section_title',
   );
   $form['goals']['title']['title_summary'] = array(
@@ -1154,6 +1142,12 @@ function personalize_campaign_wizard_scheduling($form, &$form_state, $agent_data
   $form['scheduling'] = array(
     '#type' => 'container',
     '#tree' => FALSE,
+  );
+  $form['scheduling']['title'] = array(
+    '#type' => 'container',
+    '#title' => t('Scheduling'),
+    '#instructions' => t('Control the settings that define how and when your personalization will begin and end.'),
+    '#theme' => 'personalize_wizard_section_title',
   );
 
   $agent_start_date = array('year' => date('Y', $default_start), 'month' => intval(date('m', $default_start)), 'day' => date('d', $default_start));
@@ -1496,7 +1490,6 @@ function personalize_campaign_wizard_submit($form, &$form_state) {
   $agent = personalize_campaign_wizard_submit_base($form, $form_state);
   personalize_set_campaign_context($agent->machine_name);
   if ($form_state['storage']['step'] === 'base') {
-    drupal_set_message(t('The personalization has been created'));
     // Redirect to the full wizard view with variations selected.
     $form_state['redirect'] = 'admin/structure/personalize/manage/' . $agent->machine_name . '/variations';
     return;
@@ -1816,25 +1809,30 @@ function _personalize_campaign_wizard_steps(PersonalizeAgentInterface $agent_ins
   $steps = array(
     'variations' => array(
       'label' => t('What'),
+      'description' => t('Create variation sets of personalized content for visitors'),
       'button_value' => $next,
     ),
     'goals' => array(
       'label' => t('Why'),
+      'description' => t('Create goals to gauge the effectiveness of variation sets'),
       'button_value' => $next,
       'preview_message' => t('Goals for these variations'),
     ),
     'targeting' => array(
       'label' => t('Who'),
+      'description' => t('Determine how variations are displayed to visitor segments'),
       'button_value' => $next,
       'preview_message' => t('Who\'s going to see what'),
     ),
     'scheduling' => array(
       'label' => t('When'),
+      'description' => t('Control how and when personalizations start and end'),
       'button_value' => $next,
       'preview_message' => t('When should this personalization run'),
     ),
     'review' => array(
       'label' => t('Review'),
+      'description' => t('Examine an overview of your personalization'),
       'button_value' => $review_button,
       'preview_message' => t('Review personalization settings'),
     )
