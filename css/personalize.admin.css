@@ -167,7 +167,7 @@ div.personalize-target-wrapper div.form-item {
   display: inline-block;
 }
 
-.personalize-status-change * {
+.personalize-status-change *:not(option) {
   display: inline-block;
   margin-left: 1em;
 }
