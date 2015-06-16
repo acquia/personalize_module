@@ -1168,7 +1168,7 @@ function personalize_allowed_status_transitions($status = NULL, $agent_data = NU
   );
   if (!$forward_only) {
     $transitions[PERSONALIZE_STATUS_COMPLETED][PERSONALIZE_STATUS_PAUSED] = t('Unarchive');
-    if (empty($agent_data->started)) {
+    if (!empty($agent_data->started)) {
       $transitions[PERSONALIZE_STATUS_SCHEDULED][PERSONALIZE_STATUS_PAUSED] = t('Unschedule');
     }
     else {
