@@ -276,6 +276,7 @@ div.personalize-target-wrapper div.form-item {
 /** End work around **/
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links li {
   padding: .3em;
+  white-space: nowrap;
 }
 #personalize-wizard-process-bar .personalize-wizard-process-bar-actions .personalize-wizard-action-links li:hover {
   background-color: #e6e9ed;
