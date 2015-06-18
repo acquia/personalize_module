@@ -1224,15 +1224,9 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
   $summary_list = array();
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $count_option_sets = count($option_sets);
-  foreach ($option_sets as $option_set) {
-    if (empty($summary_list[$option_set->plugin])) {
-      $summary_list[$option_set->plugin] = 0;
-    }
-    $summary_list[$option_set->plugin]++;
-  }
   $items = array();
-  foreach ($summary_list as $plugin => $count) {
-    $items[] = $count . ' ' . $plugin;
+  foreach ($option_sets as $option_set) {
+    $items[] = $option_set->label . ' (' . $option_set->plugin . ')';
   }
 
   $form['review']['summary_column']['summary']['option_sets'] = array(
