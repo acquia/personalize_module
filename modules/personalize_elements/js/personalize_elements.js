@@ -152,6 +152,10 @@
       var events = this.getElementEvents($selector);
       var data = $selector.data();
       if (isControl) {
+        // Don't do anything if the control is already being shown.
+        if (this.controlContent[osid] == this.getOuterHtml($selector)) {
+          return;
+        }
         $selector.replaceWith(this.controlContent[osid]);
         // Reset the $selector variable to the new element.
         $selector = this.getElement(osid);
