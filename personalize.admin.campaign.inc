@@ -1383,10 +1383,16 @@ function personalize_campaign_wizard_ajax_process_bar_callback($form, &$form_sta
  * Validate handler for wizard form.
  */
 function personalize_campaign_wizard_validate($form, &$form_state) {
+  $step_name = $form_state['storage']['step'];
+  // Do not validate if the form is disabled.
+  if (!empty($form[$step_name]['#disabled'])) {
+    return;
+  }
+
   module_load_include('inc', 'personalize', 'personalize.admin');
 
   // Call the validation step for the appropriate subform.
-  $function = 'personalize_campaign_wizard_validate_' . $form_state['storage']['step'];
+  $function = 'personalize_campaign_wizard_validate_' . $step_name;
   if (function_exists($function)) {
     $function($form, $form_state);
   }
