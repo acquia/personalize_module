@@ -52,30 +52,21 @@ function personalize_taxonomy_context_node_taxonomy($node = NULL) {
 
   // 2) Otherwise, use the node to collect taxonomy data.
   // For each vocabulary, add any terms that are applied to the viewed node.
+  if (isset($taxonomy['vocabularies'])) {
+    return;
+  }
+  $results = db_query('SELECT tid FROM {taxonomy_index} WHERE nid = :nid', array(':nid' => $node->nid));
+  $terms = taxonomy_term_load_multiple($results->fetchCol());
+
   $vocabularies = array();
-  foreach($node as $property_name => $property_value) {
-    $language = field_language('node', $node, $property_name);
-    // If the field is not a vocabulary, move on.
-    if (!$language || !isset($property_value[$language])) {
+  foreach ($terms as $term) {
+    $vocabulary_machine_name = $term->vocabulary_machine_name;
+    if (!isset($vocabularies[$vocabulary_machine_name])) {
+      $vocabularies[$vocabulary_machine_name] = $term->name;
       continue;
     }
-    // Process vocabulary.
-    foreach ($property_value[$language] as $field) {
-      // If the field is not an taxonomy term, move on.
-      if (!isset($field['taxonomy_term']) || $field['taxonomy_term']->entity_type !== 'taxonomy_term') {
-        continue;
-      };
-      // Process term.
-      $vocabulary_machine_name = $field['taxonomy_term']->vocabulary_machine_name;
-      $name = $field['taxonomy_term']->name;
-      if (!isset($vocabularies[$vocabulary_machine_name])) {
-        $vocabularies[$vocabulary_machine_name] = $name;
-        continue;
-      }
-      $vocabularies[$vocabulary_machine_name] .= ',' . $name;
-    }
+    $vocabularies[$vocabulary_machine_name] .= ',' . $term->name;
   }
-
   $taxonomy['vocabularies'] = $vocabularies;
 }
 
