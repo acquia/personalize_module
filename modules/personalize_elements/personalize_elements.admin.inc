@@ -366,11 +366,6 @@ function personalize_elements_form_validate($form, &$form_state) {
     if ($needs_control_option && !$has_control_option) {
       $num_required = 1;
     }
-    elseif ($has_control_option && !$needs_control_option) {
-      // THe control option will be removed, there should be an additional 2
-      // options besides the control option.
-      $num_required = 3;
-    }
     // If an option has an empty label and empty content, it will be removed so
     // we need to count how many non-empty options there are.
     $non_empty_options = 0;
@@ -384,6 +379,12 @@ function personalize_elements_form_validate($form, &$form_state) {
         $changed++;
       }
       $option['personalize_elements_content'] = $filtered;
+      if ($option['option_label'] == PERSONALIZE_CONTROL_OPTION_LABEL) {
+        if ($needs_control_option) {
+          $non_empty_options++;
+        }
+        continue;
+      }
       if (!empty($option['personalize_elements_content'])) {
         $non_empty_options++;
         if (empty($option['option_label'])) {
@@ -429,7 +430,7 @@ function personalize_elements_form_submit($form, &$form_state) {
       }
     }
     personalize_option_set_save($option_set);
-    drupal_set_message(t('The option set was saved.'));
+    drupal_set_message(t('The variation set was saved.'));
     $form_state['redirect'] = 'admin/structure/personalize/variations/personalize-elements';
   }
 }
