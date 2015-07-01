@@ -185,7 +185,7 @@ function _personalize_blocks_form(array $block, $pblock) {
   $bid_id = "personalize_blocks_{$delta}_bid";
   $form['block']['bid'] = array(
     '#type' => 'select',
-    '#options' => array('' => t('Select a block...')) + personalize_blocks_get_blocks() + array('add' => t('Add a new block')),
+    '#options' => array('' => t('Select a block...')) + array('add' => t('Add a new block')) + personalize_blocks_get_blocks(),
     '#default_value' => $default,
     '#title' => t('Select a block'),
     '#title_display' => 'invisible',
