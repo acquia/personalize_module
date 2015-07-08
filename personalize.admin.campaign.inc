@@ -1221,7 +1221,6 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
   );
 
   // Get summary data for option sets.
-  $summary_list = array();
   $option_sets = personalize_option_set_load_by_agent($agent_data->machine_name);
   $count_option_sets = count($option_sets);
   $items = array();
@@ -1276,20 +1275,20 @@ function personalize_campaign_wizard_review($form, &$form_state, $agent_data, $a
       '!schedule_url' => url('admin/structure/personalize/manage/' . $agent_data->machine_name . '/scheduling'),
     ));
   }
+  $form['review']['messages'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('personalize-wizard-column'),
+    ),
+  );
   if (!empty($warnings)) {
     $form_state['storage']['allow_submit'] = FALSE;
-    $form['review']['warnings_column'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('personalize-wizard-column'),
-      ),
-    );
-    $form['review']['warnings_column']['warnings'] = array(
+    $form['review']['messages']['warnings'] = array(
       '#type' => 'fieldset',
       '#title' => t('Let\'s fix this'),
       '#collapsible' => FALSE,
     );
-    $form['review']['warnings_column']['warnings']['details'] = array(
+    $form['review']['messages']['warnings']['details'] = array(
       '#markup' => theme('item_list', array(
         'items' => $warnings,
         'attributes' => array(
