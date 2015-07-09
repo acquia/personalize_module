@@ -182,15 +182,29 @@ function _personalize_blocks_form(array $block, $pblock) {
     '#type' => 'container',
   );
 
-  $bid_id = "personalize_blocks_{$delta}_bid";
+  $select_class = 'personalize-blocks-select-' . $delta;
+  $form['block']['block_type'] = array(
+    '#type' => 'radios',
+    '#options' => array(
+      'select' => t('Select existing block'),
+      'add' => t('Create new block'),
+    ),
+    '#attributes' => array(
+      'class' => array('personalize-blocks-inline', $select_class),
+    ),
+    '#default_value' => 'select',
+  );
   $form['block']['bid'] = array(
     '#type' => 'select',
-    '#options' => array('' => t('Select a block...')) + array('add' => t('Add a new block')) + personalize_blocks_get_blocks(),
+    '#options' => personalize_blocks_get_blocks(),
+    '#empty_option' => t('Select a block...'),
     '#default_value' => $default,
     '#title' => t('Select a block'),
     '#title_display' => 'invisible',
-    '#attributes' => array(
-      'id' => $bid_id,
+    '#states' => array(
+      'visible' => array(
+        ':input.' . $select_class => array('value' => 'select'),
+      ),
     ),
   );
 
@@ -199,7 +213,7 @@ function _personalize_blocks_form(array $block, $pblock) {
     '#title' => t('Add a new block'),
     '#states' => array(
       'visible' => array(
-        '#' . $bid_id => array('value' => 'add'),
+        ':input.' . $select_class => array('value' => 'add'),
       ),
     ),
   );
@@ -412,7 +426,7 @@ function personalize_blocks_form_validate($form, &$form_state) {
       if (empty($block['option_label'])) {
         form_set_error('blocks][' . $j . '][option_label', t('A label is required for each block option.'));
       }
-      if ($block['block']['bid'] === 'add') {
+      if ($block['block']['block_type'] === 'add') {
         if (empty($block['block']['add']['info'])) {
           form_set_error('blocks][' . $j . '][block][add][info', t('A block description is required when creating a new block.'));
         }
@@ -454,8 +468,8 @@ function personalize_blocks_form_validate($form, &$form_state) {
 function personalize_blocks_form_submit($form, &$form_state) {
   if ($form_state['clicked_button']['#id'] == 'edit-submit-form') {
     // Create any new blocks
-    foreach($form_state['values']['blocks'] as &$block) {
-      if ($block['block']['bid'] === 'add') {
+    foreach($form_state['values']['blocks'] as $delta => &$block) {
+      if ($block['block']['block_type'] === 'add') {
         $block['block']['bid'] = _personalize_blocks_add_custom_block($block['block']['add']);
       }
     }

@@ -87,7 +87,7 @@ class PersonalizeBlocksTest extends PersonalizeBaseTest {
       'blocks[0][option_label]' => $this->randomName(),
       'blocks[0][block][bid]' => 'personalize_blocks_test_delta_custom_block_3',
       'blocks[1][option_label]' => $this->randomName(),
-      'blocks[1][block][bid]' => 'add',
+      'blocks[1][block][block_type]' => 'add',
       'blocks[1][block][add][body][value]' => $this->randomName(25),
     );
     $this->drupalPost(NULL, $edit, t('Save'));
@@ -114,10 +114,11 @@ class PersonalizeBlocksTest extends PersonalizeBaseTest {
     $add_block_info_2 = $this->randomName(10);
     unset($edit['blocks[0][block][add][info]']);
     unset($edit['blocks[0][block][add][body][value]']);
-    $edit['blocks[0][block][bid]'] = 'add';
+    $edit['blocks[0][block][block_type]'] = 'add';
     $edit['blocks[0][block][add][info]'] = $add_block_info_2;
     $edit['blocks[0][block][add][body][value]'] = $this->randomName(25);
     // Edit the second block to be the block created above.
+    $edit['blocks[1][block][block_type]'] = 'select';
     $edit['blocks[1][block][bid]'] = 'block_delta_' . $block['bid'];
 
     // Submit and verify that the new block was created.
