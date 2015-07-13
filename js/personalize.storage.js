@@ -157,9 +157,32 @@
       removeItem: function (key, session) {
         var store;
 
-        if (!_supportsHtmlLocalStorage()) { return; }
+        if (!_supportsLocalStorage()) { return; }
         store = _getStore(session);
         store.removeItem(key);
+      },
+
+      /**
+       * Clears all items key containing prefix in storage
+       *
+       * @param prefix
+       *    The bucket-specific key to use to remove the item.
+       * @param session
+       *    True if session storage, false if local storage. Defaults true.
+       */
+      clearStorage: function(prefix, session){
+        var store;
+        var i;
+        if (!_supportsLocalStorage()) { return; }
+
+        store = _getStore(session);
+        i = store.length;
+        while(i--) {
+          var key = store.key(i);
+          if(key.indexOf(prefix) !== 0) {
+            store.removeItem(key);
+          }
+        }
       }
 
     };
