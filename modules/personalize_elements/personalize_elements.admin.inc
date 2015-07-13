@@ -501,6 +501,41 @@ function personalize_elements_element_delete_submit($form, &$form_state) {
 }
 
 /**
+ * Form for deleting an option within a personalized element.
+ */
+function personalize_elements_option_delete($form, $form_state, $option_set, $option_id) {
+  $option_label = $option_id;
+  foreach($option_set->options as $option) {
+    if ($option['option_id'] === $option_id) {
+      $option_label = $option['option_label'];
+      break;
+    }
+  }
+  $form['osid'] = array('#type' => 'hidden', '#value' => $option_set->osid);
+  $form['option_id'] = array('#type' => 'hidden', '#value' => $option_id);
+  $form['title'] = array('#type' => 'hidden', '#value' => $option_set->label);
+  $form['option_label'] = array('#type' => 'hidden', '#value' => $option_label);
+  return confirm_form($form, t('Are you sure you want to delete variation %option_label from the %title personalized element?', array('%option_label' => $option_label, '%title' => $option_set->label)), 'admin/structure/personalize/variations/personalize-blocks/manage/' . $option_set->osid, '', t('Delete'), t('Cancel'));
+}
+
+/**
+ * Submit handler for personalize_elements_option_delete().
+ */
+function personalize_elements_option_delete_submit($form, &$form_state) {
+  $option_set = personalize_option_set_load($form_state['values']['osid']);
+  foreach($option_set->options as $i => $option) {
+    if ($option['option_id'] === $form_state['values']['option_id']) {
+      unset($option_set->options[$i]);
+      break;
+    }
+  }
+  personalize_option_set_save($option_set);
+  drupal_set_message(t('The variation %option_label has been removed from the %title personalized element.', array('%option_label' => $form_state['values']['option_label'], '%title' => $form_state['values']['title'])));
+  cache_clear_all();
+  $form_state['redirect'] = 'admin/structure/personalize/manage/' . $option_set->agent . '/variations';
+}
+
+/**
  * Menu callback for the configuration form.
  */
 function personalize_elements_configuration_form($form, &$form_state) {
