@@ -1436,7 +1436,7 @@ function personalize_campaign_wizard_validate_targeting($form, &$form_state) {
  */
 function personalize_campaign_wizard_validate_variations_advanced($form_values, $parents) {
   if (!empty($form_values['advanced']['preview_link'])) {
-    if ($form_values['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values['advanced']['preview_link']) === FALSE) {
+    if ($form_values['advanced']['preview_link'] != '<front>' && drupal_lookup_path('source', $form_values['advanced']['preview_link']) === FALSE && drupal_valid_path($form_values['advanced']['preview_link']) === FALSE) {
       form_set_error($parents . '[advanced][preview_link', t('The preview link for "@option_set" must be a valid internal Drupal path.', array(
         '@option_set' => $form_values['advanced']['label'],
       )));
