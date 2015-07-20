@@ -5,6 +5,36 @@
  */
 
 /**
+ * Page callback to list personalize_blocks instances in the system.
+ */
+function personalize_blocks_list() {
+  $header = array(
+    array('data' => t('Block')),
+    array('data' => t('Operations'), 'colspan' => 3),
+  );
+  $rows = array();
+  foreach (personalize_option_set_load_by_type('block') as $personalized_block) {
+    $tablerow = array(
+      array('data' => check_plain($personalized_block->data['block_title'])),
+      array('data' => l(t('Edit'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/edit')),
+      array('data' => l(t('Clone'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/clone')),
+      array('data' => l(t('Delete'), 'admin/structure/personalize/variations/personalize-blocks/manage/'. $personalized_block->osid .'/delete')),
+    );
+    $rows[] = $tablerow;
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' => t('No personalize_blocks instances available.'), 'colspan' => 4));
+  }
+  $build = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('id' => 'personalize_blocks'),
+  );
+  return $build;
+}
+
+/**
  * Build the personalize_blocks creation and edit form.
  */
 function personalize_blocks_form($form, &$form_state, $formtype, $pblock = NULL) {
