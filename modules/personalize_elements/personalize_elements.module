@@ -11,6 +11,22 @@ define('PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR', 'https://docs.acquia.com/lift/p
  * Implements hook_menu().
  */
 function personalize_elements_menu() {
+  $items['admin/structure/personalize-elements'] = array(
+    'title' => 'Personalize elements',
+    'description' => 'Manage your personalized elements',
+    'page callback' => 'personalize_elements_list',
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'personalize_elements.admin.inc',
+  );
+  $items['admin/structure/personalize-elements/add'] = array(
+    'title' => 'Add personalized element',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('personalize_elements_form', 'add'),
+    'access arguments' => array('manage personalized content'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'personalize_elements.admin.inc',
+  );
   $items['admin/structure/personalize/variations/personalize-elements/add'] = array(
     'title' => 'Add personalized element',
     'page callback' => 'drupal_get_form',

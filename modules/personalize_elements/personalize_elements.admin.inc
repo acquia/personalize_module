@@ -24,6 +24,35 @@ function personalize_elements_edit($element) {
 }
 
 /**
+ * Menu callback for displaying a list of all existing custom elements.
+ */
+function personalize_elements_list() {
+  $header = array(
+    array('data' => t('Variation set name')),
+    array('data' => t('Operations'), 'colspan' => 2),
+  );
+  $rows = array();
+  foreach (personalize_option_set_load_by_type('elements') as $option_set) {
+    $tablerow = array(
+      array('data' => check_plain($option_set->label)),
+      array('data' => l(t('Edit'), 'admin/structure/personalize/variations/personalize-elements/manage/'. $option_set->osid . '/edit')),
+      array('data' => l(t('Delete'), 'admin/structure/personalize/variations/personalize-elements/manage/'. $option_set->osid . '/delete')),
+    );
+    $rows[] = $tablerow;
+  }
+  if (empty($rows)) {
+    $rows[] = array(array('data' => t('No elements available.'), 'colspan' => 3));
+  }
+  $build = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#attributes' => array('id' => 'personalize_elements'),
+  );
+  return $build;
+}
+
+/**
  * Form for creating a new action.
  */
 function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option_set = NULL) {
