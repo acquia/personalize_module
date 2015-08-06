@@ -25,16 +25,15 @@
        * @param code
        *   The message code.
        */
-      'log': function(message, code) {
-        if (debuggedMessages.indexOf(message) == -1) {
-          var messageType = getMessageType(code);
-          console.log(messageType + ': ' + message + ' [Code ' + code + ']');
-          debuggedMessages.push(message);
+      'log': function(message, code, type) {
+        if (debuggedMessages.indexOf(message) != -1) {
+          return;
         }
         if (console && console.log) {
           console.log(code + ': ' + message);
         }
         $(document).trigger('personalizeDebugEvent', {
+          'type' : type,
           'code': code,
           'message': message
         });
