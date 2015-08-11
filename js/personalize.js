@@ -1321,7 +1321,9 @@
    */
   Drupal.personalize.storage.bucket = function(bucketName, bucketType, expiration) {
     this.bucketName = bucketName;
-    this.store = bucketType === 'session' ? sessionStorage : localStorage;
+    if (Drupal.personalize.storage.utilities.supportsLocalStorage()) {
+      this.store = bucketType === 'session' ? sessionStorage : localStorage;
+    }
     this.expiration = expiration;
 
   }
