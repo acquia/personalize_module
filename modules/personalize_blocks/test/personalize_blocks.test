@@ -261,6 +261,29 @@ class PersonalizeBlocksTest extends PersonalizeBaseTest {
 
   }
 
+  public function testRenderBlocksInAdmin() {
+    $pblock = $this->createPersonalizeBlock();
+    $edit = array(
+      'blocks[personalize_blocks_' . $pblock->osid . '][region]' => 'content',
+    );
+    $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
+
+    $agent_name = 'test-agent';
+    personalize_agent_set_status($agent_name, PERSONALIZE_STATUS_RUNNING);
+    $this->resetAll();
+
+    $this->drupalGet('admin/structure');
+    $settings = $this->drupalGetSettings();
+    $personalize_settings = $settings['personalize'];
+    // Assert that there is no 'agent_map' in personalize_settings.
+    $this->assertFalse(array_key_exists('agent_map', $personalize_settings));
+    // Assert that the js for the agent has not been loaded.
+    $this->assertNoRaw('personalize_test.js');
+    // Assert that the content of the first option has been output.
+    $this->assertText('Custom block 1');
+    $this->assertNoText('Custom block 2');
+  }
+
   public function testContextualLinks() {
     $pblock = $this->createPersonalizeBlock();
 
