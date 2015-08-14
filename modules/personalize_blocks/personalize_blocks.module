@@ -151,7 +151,8 @@ function personalize_blocks_block_info() {
  */
 function personalize_blocks_block_view($delta = '') {
   $block = array();
-  if ($pblock = personalize_blocks_build_personalized_block($delta)) {
+  $path_is_admin = path_is_admin(current_path());
+  if ($pblock = personalize_blocks_build_personalized_block($delta, $path_is_admin)) {
       $block['content'] = $pblock;
       $block['content']['#contextual_links']['personalize_blocks'] = array('admin/structure/personalize/variations/personalize-blocks/manage', array($delta));
       $block['subject'] = FALSE;
@@ -178,10 +179,15 @@ function personalize_blocks_contextual_links_view_alter(&$element, $items) {
 /**
  * Builds a personalized block given an option set id.
  */
-function personalize_blocks_build_personalized_block($osid) {
+function personalize_blocks_build_personalized_block($osid, $show_default_only = FALSE) {
   if ($option_set = personalize_block_load($osid)) {
     $personalized_block = new PersonalizedBlock($option_set->options, $option_set->executor);
     try {
+      // Show only the default variation block.
+      if ($show_default_only) {
+        return $personalized_block->buildDefault();
+      }
+
       $renderable = $personalized_block->build();
     }
     catch (Exception $e) {
