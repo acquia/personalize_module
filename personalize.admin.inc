@@ -1516,7 +1516,7 @@ function personalize_goals_options($exclude_limited_use = FALSE) {
   $actions = visitor_actions_get_actions($exclude_limited_use);
   $options = array();
   foreach($actions as $name => $info) {
-    $options[$name] = isset($info['label']) ? check_plain($info['label']) : $name;
+    $options[$name] = isset($info['label']) ? personalize_sanitize_string($info['label']) : $name;
   }
   return $options;
 }

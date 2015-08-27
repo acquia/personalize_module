@@ -603,7 +603,7 @@ function personalize_elements_filter_personalize_element_option($variation_type,
 
   $filtered = $option_content;
     if ($variation_type !== 'runJS') {
-      $filtered = filter_xss($filtered, $allowed_tags);
+      $filtered = personalize_sanitize_string($filtered, $allowed_tags);
     }
   return $filtered;
 }

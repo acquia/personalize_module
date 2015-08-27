@@ -631,6 +631,13 @@ function personalize_admin_form_wrapper($form, &$form_state) {
 }
 
 /**
+ * Helper function to sanitize string.
+ */
+function personalize_sanitize_string($string) {
+  return html_entity_decode(filter_xss($string));
+}
+
+/**
  * Title callback for the campaign admin UI.
  *
  * @param $agent_data
@@ -639,7 +646,7 @@ function personalize_admin_form_wrapper($form, &$form_state) {
  *   The title to use for the page.
  */
 function personalize_campaign_title_callback($agent_data) {
-  $title = isset($agent_data->label) ? filter_xss($agent_data->label) : $agent_data->machine_name;
+  $title = isset($agent_data->label) ? personalize_sanitize_string($agent_data->label) : $agent_data->machine_name;
   return $title;
 }
 
@@ -3038,7 +3045,7 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
   $js_id = personalize_stringify_osid($option_set->osid);
   $os_array = (array) $option_set;
   $os_array['osid'] = $js_id;
-  $os_array['label'] = filter_xss($os_array['label']);
+  $os_array['label'] = personalize_sanitize_string($os_array['label']);
   $option_names = array();
   foreach ($option_set->options as $i => $option) {
     $option_names[] = $option['option_id'];
@@ -3046,7 +3053,7 @@ function _personalize_convert_option_set_to_js_setting($option_set) {
       $os_array['winner'] = $i;
     }
     if (isset($option['option_label'])) {
-      $os_array['options'][$i]['option_label'] = filter_xss($option['option_label']);
+      $os_array['options'][$i]['option_label'] = personalize_sanitize_string($option['option_label']);
     }
   }
   $os_array['option_names'] = $option_names;
