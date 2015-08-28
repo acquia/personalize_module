@@ -25,6 +25,37 @@ QUnit.module("Personalize Elements", {
   }
 });
 
+QUnit.test("Personalize page control text", function(assert) {
+  addOptionSet('osid-1', '#personalize-option-set-edit-text p', 'editText', [{option_id: 'variation-1', option_label: 'Variation #1', personalize_elements_content: 'The Rainbow Connection'}], 'variation-1');
+  addOptionSet('osid-2', '#personalize-option-set-edit-html', 'editHtml', [{option_id: 'variation-1', option_label: 'Variation #1', personalize_elements_content: '<div id="when">Someday we\'ll find it</div>'}], 'variation-1');
+  addOptionSet('osid-3', '#personalize-option-set-replace-html', 'replaceHtml', [{option_id: 'variation-1', option_label: 'Variation #1', personalize_elements_content: '<div id="who">The lovers the dreamers and me</div>'}], 'variation-1');
+  // Preselect variation 1s
+  Drupal.settings.personalize.preselected = Drupal.settings.personalize.preselected || {};
+  Drupal.settings.personalize.preselected['osid-1'] = 'variation-1';
+  Drupal.settings.personalize.preselected['osid-2'] = 'variation-1';
+  Drupal.settings.personalize.preselected['osid-3'] = 'variation-1';
+
+  Drupal.personalize.personalizePage(Drupal.settings);
+  // Check personalizations correctly made.
+  assert.ok($('#personalize-option-set-edit-text p').data('personalize') == 'osid-1', 'Personalized element was assigned a data identifier.');
+  assert.equal($('#personalize-option-set-edit-text p').text(), 'The Rainbow Connection', 'Text was replaced.');
+
+  assert.equal($('#personalize-option-set-edit-html').length, 0, 'Original unpersonalized HTML has been removed.');
+  assert.ok($('#when').data('personalize') == 'osid-2', 'Personalized element was assigned a data identifier.');
+  assert.equal($('#when').html(), "Someday we'll find it", 'HTML was replaced.');
+
+  assert.ok($('#personalize-option-set-replace-html').data('personalize') == 'osid-3', 'Personalized element was assigned a data identifier.');
+  assert.equal($('#personalize-option-set-replace-html').html(), '<div id="who">The lovers the dreamers and me</div>', 'HTML was set within replacement container.');
+
+  var expectedControl = {};
+  expectedControl.editText = 'Unpersonalized content.';
+  expectedControl.editHtml = "<p>Unpersonalized content.</p>";
+  expectedControl.replaceHtml = '<p>Unpersonalized content.</p>';
+  assert.equal(Drupal.personalizeElements.editText.controlContent['osid-1'], expectedControl.editText, 'Control value was saved for edit text operation');
+  assert.equal($(Drupal.personalizeElements.editHtml.controlContent['osid-2']).html().trim(), expectedControl.editHtml, 'Control value was saved for edit html operation');
+  assert.equal(Drupal.personalizeElements.replaceHtml.controlContent['osid-3'].trim(), expectedControl.replaceHtml, 'Control value was saved for replace html operation');
+});
+
 QUnit.test("Personalize page editText", function( assert ) {
   expect(2);
 
