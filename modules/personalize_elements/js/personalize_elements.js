@@ -76,7 +76,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // We need to keep track of how we've changed the element, if only
       // to support previewing different options.
-      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
+      if (!this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.html();
       }
       if (isControl) {
@@ -143,7 +143,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // Keep track of how the element has been changed in order to preview
       // different options.
-      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
+      if (!this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = this.getOuterHtml($selector);
       }
       if ($selector.length === 0) {
@@ -182,7 +182,7 @@
     execute : function($selector, selectedContent, isControl, osid) {
       // Keep track of how the element has been changed in order to preview
       // different options.
-      if (isControl && !this.controlContent.hasOwnProperty(osid)) {
+      if (!this.controlContent.hasOwnProperty(osid)) {
         this.controlContent[osid] = $selector.text();
       }
       if (isControl) {
