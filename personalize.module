@@ -632,9 +632,20 @@ function personalize_admin_form_wrapper($form, &$form_state) {
 
 /**
  * Helper function to sanitize string.
+ *
+ * @param $string
+ *   The string with raw HTML in it. It will be stripped of everything that can
+ *   cause an XSS attack.
+ * @param $allowed_tags
+ *   An array of allowed tags.
+ *
+ * @return
+ *   An XSS safe version of $string, or an empty string if $string is not
+ *   valid UTF-8. Notice the "&", "<", and ">" are decoded.
  */
-function personalize_sanitize_string($string) {
-  return html_entity_decode(filter_xss($string));
+function personalize_sanitize_string($string, $allowed_tags = NULL) {
+  $filtered_string = $allowed_tags ? filter_xss($string, $allowed_tags) : filter_xss($string);
+  return html_entity_decode($filtered_string);
 }
 
 /**
