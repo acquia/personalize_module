@@ -193,7 +193,6 @@ function _personalize_blocks_form(array $block, $pblock) {
     '#type' => 'textfield',
     '#size' => '10',
     '#default_value' => isset($block['option_label']) ? $block['option_label'] : '',
-    '#required' => TRUE,
   );
   $form['weight'] = array(
     '#type' => 'weight',
