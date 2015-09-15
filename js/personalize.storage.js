@@ -1,22 +1,10 @@
+'use strict';
+
 (function (Drupal) {
+
   Drupal.personalizeStorage = (function() {
 
     var personalizeStorageKey = 'personalize::storage::keys';
-
-     /**
-     * Determine if the current browser supports web storage.
-     */
-    function _supportsLocalStorage() {
-      if (this.supportsHtmlLocalStorage != undefined) {
-        return this.supportsHtmlLocalStorage;
-      }
-      try {
-        this.supportsHtmlLocalStorage = 'localStorage' in window && window['localStorage'] !== null;
-      } catch (e) {
-        this.supportsHtmlLocalStorage = false;
-      }
-      return this.supportsHtmlLocalStorage;
-    }
 
     /**
      * Determine the kind of storage to use based on session type requested.
@@ -25,7 +13,7 @@
      *   True if session storage, false if local storage.  Defaults true.
      */
     function _getStore(session) {
-      session = typeof(session) == 'undefined' ? true : session;
+      session = session === undefined ? true : session;
       return session ? sessionStorage : localStorage;
     }
 
@@ -76,8 +64,9 @@
       var keys = _getTrackedKeys(session);
       var totalKeys = keys.length;
       var until = totalKeys > numEntries ? totalKeys - numEntries : 0;
+      var key, i;
 
-      for (var i=totalKeys; i>=until; i--) {
+      for (i = totalKeys; i >= until; i--) {
         key = keys.pop();
         this.removeItem(key, session);
       }
@@ -86,9 +75,19 @@
     return {
       /**
        * Determine if the current browser supports web storage.
+       * @return
+       *   True if the current browser supports local storage, false otherwise.
        */
-      'supportsLocalStorage': function() {
-        return _supportsLocalStorage();
+      supportsLocalStorage: function() {
+        if (this.supportsHtmlLocalStorage !== undefined) {
+          return this.supportsHtmlLocalStorage;
+        }
+        try {
+          this.supportsHtmlLocalStorage = window.hasOwnProperty('localStorage') && window.localStorage !== null;
+        } catch (e) {
+          this.supportsHtmlLocalStorage = false;
+        }
+        return this.supportsHtmlLocalStorage;
       },
 
       /**
@@ -102,14 +101,14 @@
        *   The value set for the key or null if not available.
        */
       read: function (key, session) {
-        var store, stored, record;
-        if (!_supportsLocalStorage()) { return null; }
+        if (!this.supportsLocalStorage()) { return null; }
 
-        store = _getStore(session);
-        stored = store.getItem(key);
+        var store = _getStore(session),
+            stored = store.getItem(key),
+            record;
         if (stored) {
           record = JSON.parse(stored);
-          if (typeof record.val !== 'undefined') {
+          if (record.val !== undefined) {
             return record.val;
           }
         }
@@ -127,11 +126,9 @@
        *   True if session storage, false if local storage.  Defaults true.
        */
       write: function (key, value, session) {
-        var store;
+        if (!this.supportsLocalStorage()) { return; }
 
-        if (!_supportsLocalStorage()) { return; }
-
-        store = _getStore(session);
+        var store = _getStore(session);
         // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
         store.removeItem(key);
         try {
@@ -141,8 +138,15 @@
           if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
             // Prune off the oldest entries and try again.
             _pruneOldest(session);
-            this.write(key, value, session);
+            try {
+              store.setItem(key, JSON.stringify(value));
+              _trackKey(key, session);
+            } catch (e2) {
+              console.error('Failed to write to storage, unhandled exception: ', e2);
+            }
+            return;
           }
+          console.error('Failed to write to storage, unhandled exception: ', e);
         }
       },
 
@@ -155,10 +159,9 @@
        *   True if session storage, false if local storage.  Defaults true.
        */
       removeItem: function (key, session) {
-        var store;
+        if (!this.supportsLocalStorage()) { return; }
 
-        if (!_supportsLocalStorage()) { return; }
-        store = _getStore(session);
+        var store = _getStore(session);
         store.removeItem(key);
       },
 
@@ -171,18 +174,18 @@
        *    True if session storage, false if local storage. Defaults true.
        */
       clearStorage: function(prefix, session){
-        var store;
-        var i;
-        if (!_supportsLocalStorage()) { return; }
+        if (!this.supportsLocalStorage()) { return; }
 
-        store = _getStore(session);
-        i = store.length;
+        var store = _getStore(session),
+            i = store.length,
+            key;
         while(i--) {
-          var key = store.key(i);
-          if(key.indexOf(prefix) !== 0) {
+          key = store.key(i);
+          if(key.indexOf(prefix) === 0) {
             store.removeItem(key);
           }
         }
+        store.removeItem(personalizeStorageKey);
       }
 
     };
