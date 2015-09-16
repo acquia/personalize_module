@@ -4,7 +4,7 @@
 
   Drupal.personalizeStorage = (function() {
 
-    var personalizeStorageKey = 'personalize::storage::keys';
+    var keyListKey = 'personalize::storage::keys';
 
     /**
      * Determine the kind of storage to use based on session type requested.
@@ -27,7 +27,7 @@
      */
     function _getTrackedKeys(session) {
       var store = _getStore(session);
-      var keys = store.getItem(personalizeStorageKey);
+      var keys = store.getItem(keyListKey);
       if (keys) {
         keys = JSON.parse(keys);
       } else {
@@ -37,18 +37,36 @@
     }
 
     /**
-     * Update the listing of keys and the order in which they were added.
+     * Add key to the end of the key list.
+     *
+     * @param key
+     *   The key of the item add to storage
+     * @param session
+     *   True if session storage, false if local storage.  Defaults true.
+     */
+    function _addToKeyList(key, session) {
+      var store = _getStore(session);
+      var keys = _getTrackedKeys(session);
+      keys.push(key);
+      store.setItem(keyListKey, JSON.stringify(keys));
+    }
+
+    /**
+     * Remove key from the key list.
      *
      * @param key
      *   The key of the item saved to storage
      * @param session
-     *   True if session storage, false if local storage.  Defaults true.
+     *   True if session storage, false if local storage. Defaults true.
      */
-    function _trackKey(key, session) {
+    function _removeFromKeyList(key, session) {
       var store = _getStore(session);
       var keys = _getTrackedKeys(session);
-      keys.push(key);
-      store.setItem(personalizeStorageKey, JSON.stringify(keys));
+      var index = keys.indexOf(key);
+      if (index > -1) {
+        keys.splice(index, 1);
+      }
+      store.setItem(keyListKey, JSON.stringify(keys));
     }
 
     /**
@@ -72,7 +90,39 @@
       }
     }
 
+    /**
+     * Writes an item to storage.
+     *
+     * @param key
+     *   The bucket-specific key to use to store the item.
+     * @param value
+     *   The value to store (in any format that JSON.stringify can handle).
+     * @param session
+     *   True if session storage, false if local storage.  Defaults true.
+     */
+    function _write(key, value, session) {
+      var store = _getStore(session);
+      store.setItem(key, JSON.stringify(value));
+      _addToKeyList(key, session);
+    }
+
+    /**
+     * Removes an item from storage.
+     *
+     * @param key
+     *   The bucket-specific key to use to remove the item.
+     * @param session
+     *   True if session storage, false if local storage.  Defaults true.
+     */
+    function _remove(key, session) {
+      var store = _getStore(session);
+      store.removeItem(key);
+      _removeFromKeyList(key, session);
+    }
+
     return {
+      keyListKey: keyListKey,
+
       /**
        * Determine if the current browser supports web storage.
        * @return
@@ -128,19 +178,16 @@
       write: function (key, value, session) {
         if (!this.supportsLocalStorage()) { return; }
 
-        var store = _getStore(session);
-        // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
-        store.removeItem(key);
+        _remove(key, session);
         try {
-          store.setItem(key, JSON.stringify(value));
-          _trackKey(key, session);
+          _write(key, value, session);
         } catch (e) {
+          // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
           if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
             // Prune off the oldest entries and try again.
             _pruneOldest(session);
             try {
-              store.setItem(key, JSON.stringify(value));
-              _trackKey(key, session);
+              _write(key, value, session);
             } catch (e2) {
               console.error('Failed to write to storage, unhandled exception: ', e2);
             }
@@ -158,11 +205,10 @@
        * @param session
        *   True if session storage, false if local storage.  Defaults true.
        */
-      removeItem: function (key, session) {
+      remove: function (key, session) {
         if (!this.supportsLocalStorage()) { return; }
 
-        var store = _getStore(session);
-        store.removeItem(key);
+        _remove(key, session);
       },
 
       /**
@@ -182,12 +228,10 @@
         while(i--) {
           key = store.key(i);
           if(key.indexOf(prefix) === 0) {
-            store.removeItem(key);
+            _remove(key, session);
           }
         }
-        store.removeItem(personalizeStorageKey);
       }
-
     };
   })();
 
