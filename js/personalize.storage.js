@@ -86,7 +86,7 @@
 
       for (i = totalKeys; i >= until; i--) {
         key = keys.pop();
-        this.removeItem(key, session);
+        _remove(key, session);
       }
     }
 
@@ -178,11 +178,11 @@
       write: function (key, value, session) {
         if (!this.supportsLocalStorage()) { return; }
 
+        // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
         _remove(key, session);
         try {
           _write(key, value, session);
         } catch (e) {
-          // Fix for iPad issue - sometimes throws QUOTA_EXCEEDED_ERR on setItem.
           if (e.name === 'QUOTA_EXCEEDED_ERR' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
             // Prune off the oldest entries and try again.
             _pruneOldest(session);
