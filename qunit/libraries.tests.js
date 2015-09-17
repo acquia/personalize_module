@@ -7,10 +7,10 @@ var personalizeStorage = Drupal.personalizeStorage,
 QUnit.module("Personalize storage tests", {
   'setup': function() {
     // Create fixtures.
-    personalizeStorage.write(personalizeStorageKeyPrefix + '1', {val: 'my_session_value_1'}, true);
-    personalizeStorage.write(personalizeStorageKeyPrefix + '2', {val: {field: 'my_session_value_2'}}, true);
-    personalizeStorage.write(personalizeStorageKeyPrefix + '1', {val: 'my_local_value_1'}, false);
-    personalizeStorage.write(personalizeStorageKeyPrefix + '2', {val: {field: 'my_local_value_2'}}, false);
+    personalizeStorage.write(personalizeStorageKeyPrefix + '1', 'my_session_value_1', true);
+    personalizeStorage.write(personalizeStorageKeyPrefix + '2', {field: 'my_session_value_2'}, true);
+    personalizeStorage.write(personalizeStorageKeyPrefix + '1', 'my_local_value_1', false);
+    personalizeStorage.write(personalizeStorageKeyPrefix + '2', {field: 'my_local_value_2'}, false);
   },
   'teardown': function() {
     // Remove all fixtures.
@@ -50,10 +50,10 @@ QUnit.test("Read", function(assert) {
 QUnit.test("Write", function(assert) {
   expect(6);
   // Overwrite existing values.
-  personalizeStorage.write(personalizeStorageKeyPrefix + '1', {val: 'my_session_value_1_new'}, true);
-  personalizeStorage.write(personalizeStorageKeyPrefix + '2', {val: {field: 'my_session_value_2_new'}}, true);
-  personalizeStorage.write(personalizeStorageKeyPrefix + '1', {val: 'my_local_value_1_new'}, false);
-  personalizeStorage.write(personalizeStorageKeyPrefix + '2', {val: {field: 'my_local_value_2_new'}}, false);
+  personalizeStorage.write(personalizeStorageKeyPrefix + '1', 'my_session_value_1_new', true);
+  personalizeStorage.write(personalizeStorageKeyPrefix + '2', {field: 'my_session_value_2_new'}, true);
+  personalizeStorage.write(personalizeStorageKeyPrefix + '1', 'my_local_value_1_new', false);
+  personalizeStorage.write(personalizeStorageKeyPrefix + '2', {field: 'my_local_value_2_new'}, false);
 
   var sessionData1 = personalizeStorage.read(personalizeStorageKeyPrefix + '1', true),
       sessionData2 = personalizeStorage.read(personalizeStorageKeyPrefix + '2', true),
@@ -89,8 +89,8 @@ QUnit.test("Clean storage", function(assert) {
   expect(8);
   // Create items using a new prefix.
   var personalizeStorageTestClearKeyPrefix = "Personalize::qunit::test_clear::";
-  personalizeStorage.write(personalizeStorageTestClearKeyPrefix + '1', {val: 'my_session_value_1'}, true);
-  personalizeStorage.write(personalizeStorageTestClearKeyPrefix + '1', {val: 'my_local_value_1'}, false);
+  personalizeStorage.write(personalizeStorageTestClearKeyPrefix + '1', 'my_session_value_1', true);
+  personalizeStorage.write(personalizeStorageTestClearKeyPrefix + '1', 'my_local_value_1', false);
 
   // Assert the keys are added accordingly.
   assert.deepEqual(_getStorageKeyList(true), ["Personalize::qunit::1","Personalize::qunit::2","Personalize::qunit::test_clear::1"], 'Session storage key list are added new keys, accordingly.');

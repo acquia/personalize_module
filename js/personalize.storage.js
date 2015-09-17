@@ -158,8 +158,8 @@
             record;
         if (stored) {
           record = JSON.parse(stored);
-          if (record.val !== undefined) {
-            return record.val;
+          if (record !== undefined) {
+            return record;
           }
         }
         return null;
