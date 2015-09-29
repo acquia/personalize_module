@@ -225,7 +225,7 @@ class PersonalizeElementsTest extends PersonalizeBaseTest {
       'pages' => '<front>',
     );
     $this->drupalPost("admin/structure/personalize/variations/personalize-elements/manage/{$option_set->osid}/edit", $edit, $this->getButton('save'));
-    $this->assertNoText('The selected pages must contain valid paths.');
+    $this->assertNoText('You have specified an invalid path for Pages');
     // Now edit the action and specify an invalid path.
     $edit = array(
       'pages' => 'some invalid url',

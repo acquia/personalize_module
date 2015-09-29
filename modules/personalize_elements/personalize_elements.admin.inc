@@ -297,7 +297,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#title_display' => 'invisible',
     '#field_prefix' => $base_url . base_path(),
     '#default_value' => isset($_GET['path']) ? urldecode($_GET['path']) : (isset($option_set->data['pages']) ? $option_set->data['pages'] : ''),
-    '#description' => t("Specify pages by using specifying one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
+    '#description' => t("Specify pages by using specifying one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page. If the URL's language prefix is skipped, all languages of the same URL will be selected.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
     '#states' => array(
       'disabled' => array(
         ':input[name="pages_all"]' => array('value' => '1'),
@@ -404,7 +404,7 @@ function personalize_elements_form_validate($form, &$form_state) {
     if ($values['pages_all'] == 0) {
       $form['details']['pages']['#allow_external'] = FALSE;
       $form['details']['pages']['#allow_dynamic'] = TRUE;
-      personalize_form_element_path_validate($form['details']['pages'], $form_state);
+      visitor_actions_form_element_path_validate($form['details']['pages'], $form_state);
     }
 
     if (!personalize_elements_selector_validate($form_state['values']['selector'])) {

@@ -629,7 +629,7 @@ function personalize_campaign_wizard_variations_advanced(&$form, &$form_state, $
     '#title' => 'Preview link',
     '#description' => t('Enter the internal Drupal path on your site to a page containing this content variation set. Enter &lt;front&gt; to link to the front page.'),
     '#default_value' => !empty($option_set->preview_link) ? $option_set->preview_link : '',
-    '#element_validate' => array('personalize_form_element_path_validate'),
+    '#element_validate' => array('visitor_actions_form_element_path_validate'),
     '#allow_external' => FALSE,
   );
   // Display options to select the executor if supported.
