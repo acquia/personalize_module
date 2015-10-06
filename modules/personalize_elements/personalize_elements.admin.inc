@@ -297,7 +297,7 @@ function personalize_elements_form($form, &$form_state, $isAjax = FALSE, $option
     '#title_display' => 'invisible',
     '#field_prefix' => $base_url . base_path(),
     '#default_value' => isset($_GET['path']) ? urldecode($_GET['path']) : (isset($option_set->data['pages']) ? $option_set->data['pages'] : ''),
-    '#description' => t("Specify pages by using specifying one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page. If the URL's language prefix is skipped, all languages of the same URL will be selected.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
+    '#description' => t("Specify pages by using one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page. If the URL's language prefix is skipped, all languages of the same URL will be selected.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
     '#states' => array(
       'disabled' => array(
         ':input[name="pages_all"]' => array('value' => '1'),
