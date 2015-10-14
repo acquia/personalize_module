@@ -226,18 +226,22 @@ function theme_personalize_wizard_process_bar($variables) {
     foreach ($navigation['#options'] as $key => $option) {
       $option_url = $base_path . $key;
       $class = array('personalize-wizard-navigation-item');
+      $title = empty($option['description']) ? $option['label'] : $option['description'];
+      $link_attributes = array(
+        'data-personalize-section' => $key,
+        'title' => $title,
+      );
       if ($current === $key) {
         $class[] = 'personalize-wizard-navigation-current';
+        $link_attributes['class'] = array('active');
       }
       else if (!empty($option['disabled'])) {
         $class[] = 'personalize-wizard-navigation-disabled';
       }
-      $title = empty($option['description']) ? $option['label'] : $option['description'];
       $output .= '<li class="' . implode(' ', $class) . '">';
-      $output .= l($option['label'], $option_url, array('attributes' => array(
-        'data-personalize-section' => $key,
-        'title' => $title,
-      )));
+      // We avoid using the l() function here, because l() automatically adds an
+      // "active" class to the link, which misrepresents in UI.
+      $output .= '<a href="' . check_plain(url($option_url)) . '"' . drupal_attributes($link_attributes) . '>' . check_plain($option['label']) . '</a>';
       $output .= '</li>';
     }
     $output .= '</ul>';
