@@ -960,7 +960,8 @@
     }
     // If we have a pre-selected decision for this option set, just
     // use that.
-    if (selection = getPreselection(osid)) {
+    var selection = getPreselection(osid);
+    if (selection !== false) {
       chosenOption = selection;
       Drupal.personalize.debug('Preselected option being shown for ' + agent_name, 2002);
     }
