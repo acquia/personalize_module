@@ -41,7 +41,7 @@ function personalize_taxonomy_context_ctools_render_alter(&$info, &$page, &$cont
     $nid = $context['args'][0];
     if (isset($context['contexts']['argument_entity_id:node_1']) && $context['contexts']['argument_entity_id:node_1']->argument == $nid) {
       $node = $context['contexts']['argument_entity_id:node_1']->data;
-      personalize_taxonomy_context_node_view($node, 'full');
+      personalize_taxonomy_context_node_view($node, 'full', NULL);
     }
   }
 }
