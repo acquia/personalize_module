@@ -973,12 +973,17 @@ function personalize_element_with_option_set(&$element, $option_set, $skip_compl
   if (!isset($assets['js'])) {
     $assets['js'] = array();
   }
+  $agent_settings = personalize_agent_get_map_settings($agent_name, $option_set, $assets);
+  if (empty($agent_settings)) {
+    // Somehow we have a non-existent agent, just bail.
+    return;
+  }
   $personalize_settings = array(
     'type' => 'setting',
     'data' => array(
       'personalize' => array(
         'agent_map' => array(
-          $agent_name => personalize_agent_get_map_settings($agent_name, $option_set, $assets),
+          $agent_name => $agent_settings,
         ),
         'option_sets' => _personalize_convert_option_set_to_js_setting($option_set)
       )
