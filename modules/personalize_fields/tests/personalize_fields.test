@@ -160,7 +160,7 @@ class PersonalizeFieldsTest extends PersonalizeBaseTest {
         'option_label' => 'first option',
       ),
       array(
-        'option_id' => 'ridiculously-long-long-long-long-long-long-long-',
+        'option_id' => 'ridiculously-long-long-long-long-long-long-long',
         'option_label' => 'ridiculously long long long long long long long...',
       ),
     );
