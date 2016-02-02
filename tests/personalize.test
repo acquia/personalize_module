@@ -1240,6 +1240,10 @@ class PersonalizeFundamentalsTest extends PersonalizeBaseTest {
     $agent_name = 'Some-combination_of|common--separators__including duplication';
     $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists', '_');
     $this->assertEqual('some_combination_of_common_separators_including_duplication', $machine_name);
+    // Test with placing the replace characters at the start and/or the end of the string.
+    $agent_name = '__^%&with_start_and_end_chars@#$__';
+    $machine_name = personalize_generate_machine_name($agent_name, 'personalize_agent_machine_name_exists', '_');
+    $this->assertEqual('with_start_and_end_chars', $machine_name);
   }
 
   /**

@@ -2048,6 +2048,8 @@ function personalize_generate_machine_name($name, $exists_callback = NULL, $repl
   // Get rid of instances of multiple replace characters after replacement.
   $re = '\\' . $replace_character . '{2,}';
   $machine_name = preg_replace('/' . $re . '/', $replace_character, $machine_name);
+  // Trim the replace characters off the start and the end of the machine name.
+  $machine_name = trim($machine_name, $replace_character);
   // Keep the name within the allowed length.
   $machine_name = substr($machine_name, 0, PERSONALIZE_MACHINE_NAME_MAXLENGTH);
 
