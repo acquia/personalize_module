@@ -5,7 +5,7 @@
  * Provides an option set plugin for personalizing ALL THE THINGS.
  */
 
-define('PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR', 'https://docs.acquia.com/lift/personalize/element#selector');
+define('PERSONALIZE_ELEMENTS_HELP_URL_SELECTOR', 'https://docs.acquia.com/lift/drupal/personalize/element#selector');
 
 /**
  * Implements hook_menu().
