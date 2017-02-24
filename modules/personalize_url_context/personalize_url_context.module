@@ -65,6 +65,9 @@ function personalize_url_context_page_build(&$page) {
   // in our config.
   foreach (drupal_get_query_parameters() as $key => $value) {
     if (in_array($key, $contexts)) {
+      //ensure that querystring parameter values with spaces will match properly
+      $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
+      $value = preg_replace('/\-{2,}/', '-', $value);
       $params[$key] = check_plain($value);
     }
   }
