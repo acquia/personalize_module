@@ -56,6 +56,29 @@ function hook_personalize_option_set_type() {
 }
 
 /**
+ * CTools plugin hook for defining a visitor context.
+ *
+ * All agent type plugins must specify a class that implements
+ * PersonalizeContextBase. Example contexts could be the referer from
+ * the browser, geolocation, screen resolution, approximate bandwidth
+ * category, age, profession and so on.
+ *
+ * @see personalize_agent_get_map_settings()
+ */
+function hook_personalize_visitor_contexts() {
+  $info = array();
+  $path = drupal_get_path('module', 'my_module') . '/plugins';
+  $info['my_context'] = array(
+    'path' => $path . '/my_context',
+    'handler' => array(
+      'file' => 'MyContext.inc',
+      'class' => 'MyContext',
+    ),
+  );
+  return $info;
+}
+
+/**
  * An agent is about to be created or updated.
  *
  * This hook is invoked before the agent is saved to the database so
