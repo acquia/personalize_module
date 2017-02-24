@@ -887,7 +887,9 @@ function personalize_fields_entity_presave($entity, $type) {
 function personalize_fields_entity_load($entities, $type) {
   // We need an entity_type property on the entity.
   foreach ($entities as $entity) {
-    $entity->entity_type = $type;
+    if (!isset($entity->entity_type)) {
+      $entity->entity_type = $type;
+    }
   }
 }
 
