@@ -138,7 +138,7 @@ function personalize_fields_is_supported_field_instance($field, $instance) {
   if ($field['module'] == 'field_collection') {
     return FALSE;
   }
-  return in_array($field['type'], array('image', 'text')) || field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT;
+  return in_array($field['type'], array('image', 'text', 'entityreference')) || field_behaviors_widget('multiple values', $instance) == FIELD_BEHAVIOR_DEFAULT;
 }
 
 /**
