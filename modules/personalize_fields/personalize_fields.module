@@ -956,13 +956,13 @@ function personalize_fields_personalize_option_set_load($option_sets) {
  */
 function personalize_fields_field_attach_view_alter(&$output, $context) {
   $entity = $context['entity'];
-  if (!isset($entity->entity_type)) {
+  if (!isset($context['entity_type'])) {
     return;
   }
-  list($entity_id) = entity_extract_ids($entity->entity_type, $entity);
+  list($entity_id) = entity_extract_ids($context['entity_type'], $entity);
   foreach (element_children($output) as $field_name) {
     $element = &$output[$field_name];
-    if ($option_set = _personalize_fields_get_option_set_for_field($entity->entity_type, $entity_id, $field_name)) {
+    if ($option_set = _personalize_fields_get_option_set_for_field($context['entity_type'], $entity_id, $field_name)) {
       // For field types that should have a #markup property in their output, we
       // can do a check to make sure each value has a non-empty #markup property.
       $uses_markup = isset($element[0]['#markup']);
